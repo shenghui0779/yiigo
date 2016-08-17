@@ -2,8 +2,9 @@ package yiigo
 
 import (
 	"fmt"
-	"github.com/dlintw/goconf"
 	"path/filepath"
+
+	"github.com/dlintw/goconf"
 )
 
 var (

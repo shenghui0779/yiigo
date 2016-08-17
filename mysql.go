@@ -3,13 +3,14 @@ package yiigo
 import (
 	"errors"
 	"fmt"
+	"strings"
+	"sync"
+	"time"
+
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jinzhu/gorm"
 	"github.com/youtube/vitess/go/pools"
 	"golang.org/x/net/context"
-	"strings"
-	"sync"
-	"time"
 )
 
 type MysqlBase struct {
@@ -35,36 +36,9 @@ func (o Orm) Close() {
 	}
 }
 
-func initReadDb() (*gorm.DB, error) {
-	host := GetConfigString("mysql", "slaveHost", "localhost")
-	port := GetConfigInt("mysql", "slavePort", 3306)
-	username := GetConfigString("mysql", "username", "root")
-	password := GetConfigString("mysql", "password", "root")
-	dbname := GetConfigString("mysql", "dbname", "yiicms")
-	charset := GetConfigString("mysql", "charset", "utf8mb4")
-
-	address := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s&parseTime=True&loc=Local", username, password, host, port, dbname, charset)
-	readDb, err := gorm.Open("mysql", address)
-
-	if err != nil {
-		LogError("connect mysql error: ", err.Error())
-		return nil, err
-	}
-
-	readDb.SingularTable(true)
-
-	debug := GetConfigBool("default", "debug", true)
-
-	if debug {
-		readDb.LogMode(true)
-	}
-
-	return readDb, err
-}
-
 func initWriteDb() (*gorm.DB, error) {
-	host := GetConfigString("mysql", "masterHost", "localhost")
-	port := GetConfigInt("mysql", "masterPort", 3306)
+	host := GetConfigString("mysql", "writeHost", "localhost")
+	port := GetConfigInt("mysql", "writePort", 3306)
 	username := GetConfigString("mysql", "username", "root")
 	password := GetConfigString("mysql", "password", "root")
 	dbname := GetConfigString("mysql", "dbname", "yiicms")
@@ -89,22 +63,31 @@ func initWriteDb() (*gorm.DB, error) {
 	return writeDb, err
 }
 
-func initReadDbPool() {
-	if mysqlReadPool == nil || mysqlReadPool.IsClosed() {
-		mysqlReadPoolMux.Lock()
-		defer mysqlReadPoolMux.Unlock()
+func initReadDb() (*gorm.DB, error) {
+	host := GetConfigString("mysql", "readHost", "localhost")
+	port := GetConfigInt("mysql", "readPort", 3306)
+	username := GetConfigString("mysql", "username", "root")
+	password := GetConfigString("mysql", "password", "root")
+	dbname := GetConfigString("mysql", "dbname", "yiicms")
+	charset := GetConfigString("mysql", "charset", "utf8mb4")
 
-		if mysqlReadPool == nil {
-			poolMinActive := GetConfigInt("mysql", "poolMinActive", 100)
-			poolMaxActive := GetConfigInt("mysql", "poolMaxActive", 200)
-			poolIdleTimeout := GetConfigInt("mysql", "poolIdleTimeout", 2000)
+	address := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s&parseTime=True&loc=Local", username, password, host, port, dbname, charset)
+	readDb, err := gorm.Open("mysql", address)
 
-			mysqlReadPool = pools.NewResourcePool(func() (pools.Resource, error) {
-				readDb, err := initReadDb()
-				return Orm{Db: readDb}, err
-			}, poolMinActive, poolMaxActive, time.Duration(poolIdleTimeout)*time.Millisecond)
-		}
+	if err != nil {
+		LogError("connect mysql error: ", err.Error())
+		return nil, err
 	}
+
+	readDb.SingularTable(true)
+
+	debug := GetConfigBool("default", "debug", true)
+
+	if debug {
+		readDb.LogMode(true)
+	}
+
+	return readDb, err
 }
 
 func initWriteDbPool() {
@@ -125,45 +108,22 @@ func initWriteDbPool() {
 	}
 }
 
-func poolGetReadDb() (pools.Resource, error) {
-	initReadDbPool()
+func initReadDbPool() {
+	if mysqlReadPool == nil || mysqlReadPool.IsClosed() {
+		mysqlReadPoolMux.Lock()
+		defer mysqlReadPoolMux.Unlock()
 
-	if mysqlReadPool == nil {
-		LogError("mysql read db pool is null")
-		return nil, errors.New("mysql read db pool is null")
-	}
+		if mysqlReadPool == nil {
+			poolMinActive := GetConfigInt("mysql", "poolMinActive", 100)
+			poolMaxActive := GetConfigInt("mysql", "poolMaxActive", 200)
+			poolIdleTimeout := GetConfigInt("mysql", "poolIdleTimeout", 2000)
 
-	ctx := context.TODO()
-	readOrmResource, err := mysqlReadPool.Get(ctx)
-
-	if err != nil {
-		LogError("mysql get read db error: ", err.Error())
-		return nil, err
-	}
-
-	if readOrmResource == nil {
-		LogError("mysql read pool resource is null")
-		return nil, errors.New("mysql read pool resource is null")
-	}
-
-	orm := readOrmResource.(Orm)
-
-	if orm.Db.Error != nil {
-		LogError("mysql read resource connection err: ", orm.Db.Error.Error())
-
-		orm.Close()
-		//连接断开，重新打开
-		db, connErr := initReadDb()
-
-		if connErr != nil {
-			LogError("mysql read db reconnection err: ", connErr.Error())
-			return nil, connErr
-		} else {
-			return Orm{Db: db}, nil
+			mysqlReadPool = pools.NewResourcePool(func() (pools.Resource, error) {
+				readDb, err := initReadDb()
+				return Orm{Db: readDb}, err
+			}, poolMinActive, poolMaxActive, time.Duration(poolIdleTimeout)*time.Millisecond)
 		}
 	}
-
-	return readOrmResource, err
 }
 
 func poolGetWriteDb() (pools.Resource, error) {
@@ -205,6 +165,47 @@ func poolGetWriteDb() (pools.Resource, error) {
 	}
 
 	return writeOrmResource, err
+}
+
+func poolGetReadDb() (pools.Resource, error) {
+	initReadDbPool()
+
+	if mysqlReadPool == nil {
+		LogError("mysql read db pool is null")
+		return nil, errors.New("mysql read db pool is null")
+	}
+
+	ctx := context.TODO()
+	readOrmResource, err := mysqlReadPool.Get(ctx)
+
+	if err != nil {
+		LogError("mysql get read db error: ", err.Error())
+		return nil, err
+	}
+
+	if readOrmResource == nil {
+		LogError("mysql read pool resource is null")
+		return nil, errors.New("mysql read pool resource is null")
+	}
+
+	orm := readOrmResource.(Orm)
+
+	if orm.Db.Error != nil {
+		LogError("mysql read resource connection err: ", orm.Db.Error.Error())
+
+		orm.Close()
+		//连接断开，重新打开
+		db, connErr := initReadDb()
+
+		if connErr != nil {
+			LogError("mysql read db reconnection err: ", connErr.Error())
+			return nil, connErr
+		} else {
+			return Orm{Db: db}, nil
+		}
+	}
+
+	return readOrmResource, err
 }
 
 /**
@@ -281,7 +282,7 @@ func (m *MysqlBase) Update(query map[string]interface{}, data map[string]interfa
 
 	db = db.Table(table)
 
-	db = formatQuery(db, query)
+	db = buildQuery(db, query)
 
 	updateErr := db.Updates(data).Error
 
@@ -328,7 +329,7 @@ func (m *MysqlBase) Increment(query map[string]interface{}, column string, inc i
 
 	db = db.Table(table)
 
-	db = formatQuery(db, query)
+	db = buildQuery(db, query)
 
 	expr := fmt.Sprintf("%s + ?", column)
 	incErr := db.Update(column, gorm.Expr(expr, inc)).Error
@@ -376,7 +377,7 @@ func (m *MysqlBase) Decrement(query map[string]interface{}, column string, dec i
 
 	db = db.Table(table)
 
-	db = formatQuery(db, query)
+	db = buildQuery(db, query)
 
 	expr := fmt.Sprintf("%s - ?", column)
 	decErr := db.Update(column, gorm.Expr(expr, dec)).Error
@@ -392,11 +393,11 @@ func (m *MysqlBase) Decrement(query map[string]interface{}, column string, dec i
 
 /**
  * findOne 查询
- * query 查询条件 (map[string]interface{})
  * data 查询数据 (interface{})
+ * query 查询条件 (map[string]interface{})
  * fields 查询的字段 ([]string)
  */
-func (m *MysqlBase) FindOne(query map[string]interface{}, data interface{}, fields ...[]string) error {
+func (m *MysqlBase) FindOne(data interface{}, query map[string]interface{}, fields ...[]string) error {
 	dbResource, err := poolGetReadDb()
 	defer mysqlReadPool.Put(dbResource)
 
@@ -428,7 +429,7 @@ func (m *MysqlBase) FindOne(query map[string]interface{}, data interface{}, fiel
 		db = db.Select(fields[0])
 	}
 
-	db = formatQuery(db, query)
+	db = buildQuery(db, query)
 
 	findErr := db.First(data).Error
 
@@ -447,8 +448,8 @@ func (m *MysqlBase) FindOne(query map[string]interface{}, data interface{}, fiel
 
 /**
  * find 查询
- * query 查询条件 (map[string]interface{})
  * data 查询数据 (interface{})
+ * query 查询条件 (map[string]interface{})
  * options (map[string]interface{}) [
  *      fields 查询的字段 ([]string)
  *      count (*int)
@@ -457,7 +458,7 @@ func (m *MysqlBase) FindOne(query map[string]interface{}, data interface{}, fiel
  *      limit (int)
  * ]
  */
-func (m *MysqlBase) Find(query map[string]interface{}, data interface{}, options ...map[string]interface{}) error {
+func (m *MysqlBase) Find(data interface{}, query map[string]interface{}, options ...map[string]interface{}) error {
 	dbResource, err := poolGetReadDb()
 	defer mysqlReadPool.Put(dbResource)
 
@@ -490,7 +491,7 @@ func (m *MysqlBase) Find(query map[string]interface{}, data interface{}, options
 			db = db.Select(fields)
 		}
 
-		db = formatQuery(db, query)
+		db = buildQuery(db, query)
 
 		if count, ok := options[0]["count"]; ok {
 			db = db.Count(count)
@@ -514,7 +515,7 @@ func (m *MysqlBase) Find(query map[string]interface{}, data interface{}, options
 			}
 		}
 	} else {
-		db = formatQuery(db, query)
+		db = buildQuery(db, query)
 	}
 
 	findErr := db.Find(data).Error
@@ -534,14 +535,14 @@ func (m *MysqlBase) Find(query map[string]interface{}, data interface{}, options
 
 /**
  * findOneBySql 查询
+ * data 查询数据 (interface{})
  * query 查询条件 (map[string]interface{}) [
  *      sql SQL查询语句 (string)
  *      fields 查询的字段 ([]string)
  * ]
- * data 查询数据 (interface{})
  * bindParams SQL语句中 "?" 绑定的值
  */
-func (m *MysqlBase) FindOneBySql(query map[string]interface{}, data interface{}, bindParams ...interface{}) error {
+func (m *MysqlBase) FindOneBySql(data interface{}, query map[string]interface{}, bindParams ...interface{}) error {
 	dbResource, err := poolGetReadDb()
 	defer mysqlReadPool.Put(dbResource)
 
@@ -594,6 +595,7 @@ func (m *MysqlBase) FindOneBySql(query map[string]interface{}, data interface{},
 
 /**
  * findBySql 查询
+ * data 查询数据 (interface{})
  * query 查询条件 (map[string]interface{}) [
  *      sql SQL查询语句 (string)
  *      fields 查询的字段 ([]string)
@@ -602,10 +604,9 @@ func (m *MysqlBase) FindOneBySql(query map[string]interface{}, data interface{},
  *      offset (int)
  *      limit (int)
  * ]
- * data 查询数据 (interface{})
  * bindParams SQL语句中 "?" 绑定的值
  */
-func (m *MysqlBase) FindBySql(query map[string]interface{}, data interface{}, bindParams ...interface{}) error {
+func (m *MysqlBase) FindBySql(data interface{}, query map[string]interface{}, bindParams ...interface{}) error {
 	dbResource, err := poolGetReadDb()
 	defer mysqlReadPool.Put(dbResource)
 
@@ -678,7 +679,7 @@ func (m *MysqlBase) FindBySql(query map[string]interface{}, data interface{}, bi
 	return nil
 }
 
-func formatQuery(db *gorm.DB, query map[string]interface{}) *gorm.DB {
+func buildQuery(db *gorm.DB, query map[string]interface{}) *gorm.DB {
 	if len(query) > 0 {
 		for key, value := range query {
 			tmp := strings.Split(key, ":")

@@ -3,9 +3,10 @@ package yiigo
 import (
 	"errors"
 	"fmt"
+	"strings"
+
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jinzhu/gorm"
-	"strings"
 )
 
 type MysqlBaseX struct {
@@ -133,7 +134,7 @@ func (m *MysqlBaseX) Update(query map[string]interface{}, data map[string]interf
 
 	defer db.Close()
 
-	db = formatQueryX(db, query)
+	db = buildQueryX(db, query)
 
 	updateErr := db.Updates(data).Error
 
@@ -162,7 +163,7 @@ func (m *MysqlBaseX) Increment(query map[string]interface{}, column string, inc 
 
 	defer db.Close()
 
-	db = formatQueryX(db, query)
+	db = buildQueryX(db, query)
 
 	expr := fmt.Sprintf("%s + ?", column)
 	incErr := db.Update(column, gorm.Expr(expr, inc)).Error
@@ -192,7 +193,7 @@ func (m *MysqlBaseX) Decrement(query map[string]interface{}, column string, dec 
 
 	defer db.Close()
 
-	db = formatQueryX(db, query)
+	db = buildQueryX(db, query)
 
 	expr := fmt.Sprintf("%s - ?", column)
 	decErr := db.Update(column, gorm.Expr(expr, dec)).Error
@@ -208,11 +209,11 @@ func (m *MysqlBaseX) Decrement(query map[string]interface{}, column string, dec 
 
 /**
  * findOne 查询
- * query 查询条件 (map[string]interface{})
  * data 查询数据 (interface{})
+ * query 查询条件 (map[string]interface{})
  * fields 查询的字段 ([]string)
  */
-func (m *MysqlBaseX) FindOne(query map[string]interface{}, data interface{}, fields ...[]string) error {
+func (m *MysqlBaseX) FindOne(data interface{}, query map[string]interface{}, fields ...[]string) error {
 
 	db, err := m.GetReadDb()
 
@@ -226,7 +227,7 @@ func (m *MysqlBaseX) FindOne(query map[string]interface{}, data interface{}, fie
 		db = db.Select(fields[0])
 	}
 
-	db = formatQueryX(db, query)
+	db = buildQueryX(db, query)
 
 	findErr := db.First(data).Error
 
@@ -245,8 +246,8 @@ func (m *MysqlBaseX) FindOne(query map[string]interface{}, data interface{}, fie
 
 /**
  * find 查询
- * query 查询条件 (map[string]interface{})
  * data 查询数据 (interface{})
+ * query 查询条件 (map[string]interface{})
  * options (map[string]interface{}) [
  *      fields 查询的字段 ([]string)
  *      count (*int)
@@ -255,7 +256,7 @@ func (m *MysqlBaseX) FindOne(query map[string]interface{}, data interface{}, fie
  *      limit (int)
  * ]
  */
-func (m *MysqlBaseX) Find(query map[string]interface{}, data interface{}, options ...map[string]interface{}) error {
+func (m *MysqlBaseX) Find(data interface{}, query map[string]interface{}, options ...map[string]interface{}) error {
 
 	db, err := m.GetReadDb()
 
@@ -270,7 +271,7 @@ func (m *MysqlBaseX) Find(query map[string]interface{}, data interface{}, option
 			db = db.Select(fields)
 		}
 
-		db = formatQueryX(db, query)
+		db = buildQueryX(db, query)
 
 		if count, ok := options[0]["count"]; ok {
 			db = db.Count(count)
@@ -294,7 +295,7 @@ func (m *MysqlBaseX) Find(query map[string]interface{}, data interface{}, option
 			}
 		}
 	} else {
-		db = formatQueryX(db, query)
+		db = buildQueryX(db, query)
 	}
 
 	findErr := db.Find(data).Error
@@ -314,14 +315,14 @@ func (m *MysqlBaseX) Find(query map[string]interface{}, data interface{}, option
 
 /**
  * findOneBySql 查询
+ * data 查询数据 (interface{})
  * query 查询条件 (map[string]interface{}) [
  *      sql SQL查询语句 (string)
  *      fields 查询的字段 ([]string)
  * ]
- * data 查询数据 (interface{})
  * bindParams SQL语句中 "?" 绑定的值
  */
-func (m *MysqlBaseX) FindOneBySql(query map[string]interface{}, data interface{}, bindParams ...interface{}) error {
+func (m *MysqlBaseX) FindOneBySql(data interface{}, query map[string]interface{}, bindParams ...interface{}) error {
 	db, err := m.GetReadDb()
 
 	if err != nil {
@@ -355,6 +356,7 @@ func (m *MysqlBaseX) FindOneBySql(query map[string]interface{}, data interface{}
 
 /**
  * findBySql 查询
+ * data 查询数据 (interface{})
  * query 查询条件 (map[string]interface{}) [
  *      sql SQL查询语句 (string)
  *      fields 查询的字段 ([]string)
@@ -363,10 +365,9 @@ func (m *MysqlBaseX) FindOneBySql(query map[string]interface{}, data interface{}
  *      offset (int)
  *      limit (int)
  * ]
- * data 查询数据 (interface{})
  * bindParams SQL语句中 "?" 绑定的值
  */
-func (m *MysqlBaseX) FindBySql(query map[string]interface{}, data interface{}, bindParams ...interface{}) error {
+func (m *MysqlBaseX) FindBySql(data interface{}, query map[string]interface{}, bindParams ...interface{}) error {
 	db, err := m.GetReadDb()
 
 	if err != nil {
@@ -420,7 +421,7 @@ func (m *MysqlBaseX) FindBySql(query map[string]interface{}, data interface{}, b
 	return nil
 }
 
-func formatQueryX(db *gorm.DB, query map[string]interface{}) *gorm.DB {
+func buildQueryX(db *gorm.DB, query map[string]interface{}) *gorm.DB {
 	if len(query) > 0 {
 		for key, value := range query {
 			tmp := strings.Split(key, ":")

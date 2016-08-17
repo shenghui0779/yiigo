@@ -2,8 +2,9 @@ package yiigo
 
 import (
 	"fmt"
-	"github.com/cihub/seelog"
 	"path/filepath"
+
+	"github.com/cihub/seelog"
 )
 
 func InitLogger(name string) {
