@@ -153,6 +153,39 @@ func (r *RedisBase) Set(key string, data interface{}) bool {
 	return true
 }
 
+func (r *RedisBase) MSet(data map[string]interface{}) bool {
+	redisResource, err := poolGetRedisConn()
+	defer redisPool.Put(redisResource)
+
+	if err != nil {
+		return false
+	}
+
+	redisConn := redisResource.(ResourceConn).Conn
+
+	args := []interface{}{}
+
+	for k, v := range data {
+		cacheData, jsonErr := json.Marshal(v)
+
+		if jsonErr != nil {
+			LogError("redis SET marshal data error: ", jsonErr.Error())
+			return false
+		}
+
+		args = append(args, r.getKey(k), cacheData)
+	}
+
+	_, doErr := redisConn.Do("MSET", args...)
+
+	if doErr != nil {
+		LogError("redis do MSET error: ", doErr.Error())
+		return false
+	}
+
+	return true
+}
+
 func (r *RedisBase) Get(data interface{}, key string) bool {
 	redisResource, err := poolGetRedisConn()
 	defer redisPool.Put(redisResource)
@@ -241,7 +274,7 @@ func (r *RedisBase) MGet(data interface{}, keys []string) bool {
 
 // hash cmd
 
-func (r *RedisBase) HSet(key string, field string, data interface{}) bool {
+func (r *RedisBase) HSet(key string, field interface{}, data interface{}) bool {
 	redisResource, err := poolGetRedisConn()
 	defer redisPool.Put(redisResource)
 
@@ -270,7 +303,41 @@ func (r *RedisBase) HSet(key string, field string, data interface{}) bool {
 	return true
 }
 
-func (r *RedisBase) HGet(data interface{}, key string, field string) bool {
+func (r *RedisBase) HMSet(key string, data map[interface{}]interface{}) bool {
+	redisResource, err := poolGetRedisConn()
+	defer redisPool.Put(redisResource)
+
+	if err != nil {
+		return false
+	}
+
+	redisConn := redisResource.(ResourceConn).Conn
+
+	args := []interface{}{}
+	args = append(args, r.getKey(key))
+
+	for field, v := range data {
+		cacheData, jsonErr := json.Marshal(v)
+
+		if jsonErr != nil {
+			LogError("redis HMSet marshal data error: ", jsonErr.Error())
+			return false
+		}
+
+		args = append(args, field, cacheData)
+	}
+
+	_, doErr := redisConn.Do("HMSet", args...)
+
+	if doErr != nil {
+		LogError("redis do HMSet error: ", doErr.Error())
+		return false
+	}
+
+	return true
+}
+
+func (r *RedisBase) HGet(data interface{}, key string, field interface{}) bool {
 	redisResource, err := poolGetRedisConn()
 	defer redisPool.Put(redisResource)
 
@@ -303,7 +370,7 @@ func (r *RedisBase) HGet(data interface{}, key string, field string) bool {
 	return true
 }
 
-func (r *RedisBase) HMGet(data interface{}, key string, fields []string) bool {
+func (r *RedisBase) HMGet(data interface{}, key string, fields []interface{}) bool {
 	redisResource, err := poolGetRedisConn()
 	defer redisPool.Put(redisResource)
 
@@ -357,7 +424,7 @@ func (r *RedisBase) HMGet(data interface{}, key string, fields []string) bool {
 	return true
 }
 
-func (r *RedisBase) HDel(key string, field string) bool {
+func (r *RedisBase) HDel(key string, field interface{}) bool {
 	redisResource, err := poolGetRedisConn()
 	defer redisPool.Put(redisResource)
 
@@ -408,7 +475,7 @@ func (r *RedisBase) HLen(key string) (int64, bool) {
 	return count, true
 }
 
-func (r *RedisBase) HIncrBy(key string, field string, inc int) (int64, bool) {
+func (r *RedisBase) HIncrBy(key string, field interface{}, inc int) (int64, bool) {
 	redisResource, err := poolGetRedisConn()
 	defer redisPool.Put(redisResource)
 
