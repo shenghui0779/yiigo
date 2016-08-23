@@ -97,8 +97,8 @@ func (m *MongoBase) refreshSequence() (int64, error) {
 }
 
 /**
- * Insert 新增记录
- * data 新增数据 interface{} (指针)
+ * Insert 鏂板璁板綍
+ * data 鏂板鏁版嵁 interface{} (鎸囬拡)
  */
 func (m *MongoBase) Insert(data interface{}) error {
 	session, db, err := getSession()
@@ -138,9 +138,9 @@ func (m *MongoBase) Insert(data interface{}) error {
 }
 
 /**
- * Update 更新记录
- * query 查询条件 bson.M (map[string]interface{})
- * data 更新字段 bson.M (map[string]interface{})
+ * Update 鏇存柊璁板綍
+ * query 鏌ヨ鏉′欢 bson.M (map[string]interface{})
+ * data 鏇存柊瀛楁 bson.M (map[string]interface{})
  */
 func (m *MongoBase) Update(query bson.M, data bson.M) error {
 	session, db, err := getSession()
@@ -164,10 +164,10 @@ func (m *MongoBase) Update(query bson.M, data bson.M) error {
 }
 
 /**
- * Increment 自增
- * query 查询条件 bson.M (map[string]interface{})
- * column 自增字段 string
- * inc 增量 int
+ * Increment 鑷
+ * query 鏌ヨ鏉′欢 bson.M (map[string]interface{})
+ * column 鑷瀛楁 string
+ * inc 澧為噺 int
  */
 func (m *MongoBase) Increment(query bson.M, column string, incr int) error {
 	session, db, err := getSession()
@@ -192,9 +192,9 @@ func (m *MongoBase) Increment(query bson.M, column string, incr int) error {
 }
 
 /**
- * FindOne 查询
- * data 查询数据 interface{} (指针)
- * query 查询条件 bson.M (map[string]interface{})
+ * FindOne 鏌ヨ
+ * data 鏌ヨ鏁版嵁 interface{} (鎸囬拡)
+ * query 鏌ヨ鏉′欢 bson.M (map[string]interface{})
  */
 func (m *MongoBase) FindOne(data interface{}, query bson.M) error {
 	session, db, err := getSession()
@@ -218,9 +218,9 @@ func (m *MongoBase) FindOne(data interface{}, query bson.M) error {
 }
 
 /**
- * Find 查询
- * data 查询数据 interface{} (切片指针：*[]struct{})
- * query 查询条件 map[string]interface{}
+ * Find 鏌ヨ
+ * data 鏌ヨ鏁版嵁 interface{} (鍒囩墖鎸囬拡)
+ * query 鏌ヨ鏉′欢 map[string]interface{}
  * options map[string]interface{}
  * [
  *      count *int
