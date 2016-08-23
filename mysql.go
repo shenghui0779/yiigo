@@ -210,15 +210,16 @@ func poolGetReadDb() (pools.Resource, error) {
 
 /**
  * insert 插入
- * data 插入数据 (interface{} 指针)
+ * data 插入数据 interface{} (指针)
  */
 func (m *MysqlBase) Insert(data interface{}) error {
 	dbResource, err := poolGetWriteDb()
-	defer mysqlWritePool.Put(dbResource)
 
 	if err != nil {
 		return err
 	}
+
+	defer mysqlWritePool.Put(dbResource)
 
 	db := dbResource.(Orm).Db
 
@@ -251,16 +252,17 @@ func (m *MysqlBase) Insert(data interface{}) error {
 
 /**
  * update 更新
- * query 查询条件 (map[string]interface{})
- * data 更新字段 (map[string]interface{})
+ * query 查询条件 map[string]interface{}
+ * data 更新字段 map[string]interface{}
  */
 func (m *MysqlBase) Update(query map[string]interface{}, data map[string]interface{}) error {
 	dbResource, err := poolGetWriteDb()
-	defer mysqlWritePool.Put(dbResource)
 
 	if err != nil {
 		return err
 	}
+
+	defer mysqlWritePool.Put(dbResource)
 
 	db := dbResource.(Orm).Db
 
@@ -297,17 +299,18 @@ func (m *MysqlBase) Update(query map[string]interface{}, data map[string]interfa
 
 /**
  * increment 自增
- * query 查询条件 (map[string]interface{})
- * column 自增字段 (string)
- * inc 增量 (int)
+ * query 查询条件 map[string]interface{}
+ * column 自增字段 string
+ * inc 增量 int
  */
 func (m *MysqlBase) Increment(query map[string]interface{}, column string, inc int) error {
 	dbResource, err := poolGetWriteDb()
-	defer mysqlWritePool.Put(dbResource)
 
 	if err != nil {
 		return err
 	}
+
+	defer mysqlWritePool.Put(dbResource)
 
 	db := dbResource.(Orm).Db
 
@@ -345,17 +348,18 @@ func (m *MysqlBase) Increment(query map[string]interface{}, column string, inc i
 
 /**
  * decrement 自减
- * query 查询条件 (map[string]interface{})
- * column 自减字段 (string)
- * dec 减量 (int)
+ * query 查询条件 map[string]interface{}
+ * column 自减字段 string
+ * dec 减量 int
  */
 func (m *MysqlBase) Decrement(query map[string]interface{}, column string, dec int) error {
 	dbResource, err := poolGetWriteDb()
-	defer mysqlWritePool.Put(dbResource)
 
 	if err != nil {
 		return err
 	}
+
+	defer mysqlWritePool.Put(dbResource)
 
 	db := dbResource.(Orm).Db
 
@@ -393,17 +397,18 @@ func (m *MysqlBase) Decrement(query map[string]interface{}, column string, dec i
 
 /**
  * findOne 查询
- * data 查询数据 (interface{})
- * query 查询条件 (map[string]interface{})
- * fields 查询的字段 ([]string)
+ * data 查询数据 interface{} (指针)
+ * query 查询条件 map[string]interface{}
+ * fields 查询的字段 []string
  */
 func (m *MysqlBase) FindOne(data interface{}, query map[string]interface{}, fields ...[]string) error {
 	dbResource, err := poolGetReadDb()
-	defer mysqlReadPool.Put(dbResource)
 
 	if err != nil {
 		return err
 	}
+
+	defer mysqlReadPool.Put(dbResource)
 
 	db := dbResource.(Orm).Db
 
@@ -448,23 +453,25 @@ func (m *MysqlBase) FindOne(data interface{}, query map[string]interface{}, fiel
 
 /**
  * find 查询
- * data 查询数据 (interface{})
- * query 查询条件 (map[string]interface{})
- * options (map[string]interface{}) [
- *      fields 查询的字段 ([]string)
- *      count (*int)
- *      order (string)
- *      offset (int)
- *      limit (int)
+ * data 查询数据 interface{} (切片指针)
+ * query 查询条件 map[string]interface{}
+ * options map[string]interface{}
+ * [
+ *      fields 查询的字段 []string
+ *      count *int
+ *      order string
+ *      offset int
+ *      limit int
  * ]
  */
 func (m *MysqlBase) Find(data interface{}, query map[string]interface{}, options ...map[string]interface{}) error {
 	dbResource, err := poolGetReadDb()
-	defer mysqlReadPool.Put(dbResource)
 
 	if err != nil {
 		return err
 	}
+
+	defer mysqlReadPool.Put(dbResource)
 
 	db := dbResource.(Orm).Db
 
@@ -497,21 +504,21 @@ func (m *MysqlBase) Find(data interface{}, query map[string]interface{}, options
 			db = db.Count(count)
 		}
 
-		if ord, ok := options[0]["order"]; ok {
-			if order, ok := ord.(string); ok {
-				db = db.Order(order)
+		if order, ok := options[0]["order"]; ok {
+			if ord, ok := order.(string); ok {
+				db = db.Order(ord)
 			}
 		}
 
-		if off, ok := options[0]["offset"]; ok {
-			if offset, ok := off.(int); ok {
-				db = db.Offset(offset)
+		if offset, ok := options[0]["offset"]; ok {
+			if off, ok := offset.(int); ok {
+				db = db.Offset(off)
 			}
 		}
 
-		if lmt, ok := options[0]["limit"]; ok {
-			if limit, ok := lmt.(int); ok {
-				db = db.Limit(limit)
+		if limit, ok := options[0]["limit"]; ok {
+			if lmt, ok := limit.(int); ok {
+				db = db.Limit(lmt)
 			}
 		}
 	} else {
@@ -535,20 +542,22 @@ func (m *MysqlBase) Find(data interface{}, query map[string]interface{}, options
 
 /**
  * findOneBySql 查询
- * data 查询数据 (interface{})
- * query 查询条件 (map[string]interface{}) [
- *      sql SQL查询语句 (string)
- *      fields 查询的字段 ([]string)
+ * data 查询数据 interface{}
+ * query 查询条件 map[string]interface{}
+ * [
+ *      sql SQL查询语句 string
+ *      fields 查询的字段 []string
  * ]
  * bindParams SQL语句中 "?" 绑定的值
  */
 func (m *MysqlBase) FindOneBySql(data interface{}, query map[string]interface{}, bindParams ...interface{}) error {
 	dbResource, err := poolGetReadDb()
-	defer mysqlReadPool.Put(dbResource)
 
 	if err != nil {
 		return err
 	}
+
+	defer mysqlReadPool.Put(dbResource)
 
 	db := dbResource.(Orm).Db
 
@@ -595,24 +604,26 @@ func (m *MysqlBase) FindOneBySql(data interface{}, query map[string]interface{},
 
 /**
  * findBySql 查询
- * data 查询数据 (interface{})
- * query 查询条件 (map[string]interface{}) [
- *      sql SQL查询语句 (string)
- *      fields 查询的字段 ([]string)
- *      count (*int)
- *      order (string)
- *      offset (int)
- *      limit (int)
+ * data 查询数据 interface{} (切片指针)
+ * query 查询条件 map[string]interface{}
+ * [
+ *      sql SQL查询语句 string
+ *      fields 查询的字段 []string
+ *      count *int
+ *      order string
+ *      offset int
+ *      limit int
  * ]
  * bindParams SQL语句中 "?" 绑定的值
  */
 func (m *MysqlBase) FindBySql(data interface{}, query map[string]interface{}, bindParams ...interface{}) error {
 	dbResource, err := poolGetReadDb()
-	defer mysqlReadPool.Put(dbResource)
 
 	if err != nil {
 		return err
 	}
+
+	defer mysqlReadPool.Put(dbResource)
 
 	db := dbResource.(Orm).Db
 
@@ -646,21 +657,21 @@ func (m *MysqlBase) FindBySql(data interface{}, query map[string]interface{}, bi
 		db = db.Count(count)
 	}
 
-	if ord, ok := query["order"]; ok {
-		if order, ok := ord.(string); ok {
-			db = db.Order(order)
+	if order, ok := query["order"]; ok {
+		if ord, ok := order.(string); ok {
+			db = db.Order(ord)
 		}
 	}
 
-	if off, ok := query["offset"]; ok {
-		if offset, ok := off.(int); ok {
-			db = db.Offset(offset)
+	if offset, ok := query["offset"]; ok {
+		if off, ok := offset.(int); ok {
+			db = db.Offset(off)
 		}
 	}
 
-	if lmt, ok := query["limit"]; ok {
-		if limit, ok := lmt.(int); ok {
-			db = db.Limit(limit)
+	if limit, ok := query["limit"]; ok {
+		if lmt, ok := limit.(int); ok {
+			db = db.Limit(lmt)
 		}
 	}
 
