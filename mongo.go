@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"strings"
 	"sync"
 
 	"gopkg.in/mgo.v2"
@@ -66,11 +67,12 @@ func getSession() (*mgo.Session, string, error) {
 
 func (m *MongoBase) refreshSequence() (int64, error) {
 	session, db, err := getSession()
-	defer session.Close()
 
 	if err != nil {
 		return 0, err
 	}
+
+	defer session.Close()
 
 	c := session.DB(db).C("sequence")
 
@@ -91,28 +93,24 @@ func (m *MongoBase) refreshSequence() (int64, error) {
 		return 0, applyErr
 	}
 
-	fmt.Println(sequence)
-
 	return sequence.Seq, nil
 }
 
+/**
+ * Insert 新增记录
+ * data 新增数据 interface{} (指针)
+ */
 func (m *MongoBase) Insert(data interface{}) error {
 	session, db, err := getSession()
-	defer session.Close()
 
 	if err != nil {
 		return err
 	}
 
+	defer session.Close()
+
 	refVal := reflect.ValueOf(data)
-
-	if refVal.Kind() != reflect.Ptr {
-		refVal = reflect.ValueOf(&data)
-	}
-
 	elem := refVal.Elem()
-	fmt.Println(elem.Kind())
-	return nil
 
 	if elem.Kind() != reflect.Struct {
 		LogErrorf("cannot use (type %v) as mongo Insert param", elem.Type())
@@ -134,6 +132,152 @@ func (m *MongoBase) Insert(data interface{}) error {
 	if insertErr != nil {
 		LogErrorf("mongo collection %s insert error: %s", m.CollectionName, insertErr.Error())
 		return insertErr
+	}
+
+	return nil
+}
+
+/**
+ * Update 更新记录
+ * query 查询条件 bson.M (map[string]interface{})
+ * data 更新字段 bson.M (map[string]interface{})
+ */
+func (m *MongoBase) Update(query bson.M, data bson.M) error {
+	session, db, err := getSession()
+
+	if err != nil {
+		return err
+	}
+
+	defer session.Close()
+
+	c := session.DB(db).C(m.CollectionName)
+
+	updateErr := c.Update(query, bson.M{"$set": data})
+
+	if updateErr != nil {
+		LogErrorf("mongo collection %s update error: %s", m.CollectionName, updateErr.Error())
+		return updateErr
+	}
+
+	return nil
+}
+
+/**
+ * Increment 自增
+ * query 查询条件 bson.M (map[string]interface{})
+ * column 自增字段 string
+ * inc 增量 int
+ */
+func (m *MongoBase) Increment(query bson.M, column string, incr int) error {
+	session, db, err := getSession()
+
+	if err != nil {
+		return err
+	}
+
+	defer session.Close()
+
+	c := session.DB(db).C(m.CollectionName)
+
+	data := bson.M{column: incr}
+	updateErr := c.Update(query, bson.M{"$inc": data})
+
+	if updateErr != nil {
+		LogErrorf("mongo collection %s update error: %s", m.CollectionName, updateErr.Error())
+		return updateErr
+	}
+
+	return nil
+}
+
+/**
+ * FindOne 查询
+ * data 查询数据 interface{} (指针)
+ * query 查询条件 bson.M (map[string]interface{})
+ */
+func (m *MongoBase) FindOne(data interface{}, query bson.M) error {
+	session, db, err := getSession()
+
+	if err != nil {
+		return err
+	}
+
+	defer session.Close()
+
+	c := session.DB(db).C(m.CollectionName)
+
+	findErr := c.Find(query).One(data)
+
+	if findErr != nil {
+		LogErrorf("mongo collection %s findone error: %s", m.CollectionName, findErr.Error())
+		return findErr
+	}
+
+	return nil
+}
+
+/**
+ * Find 查询
+ * data 查询数据 interface{} (切片指针：*[]struct{})
+ * query 查询条件 map[string]interface{}
+ * options map[string]interface{}
+ * [
+ *      count *int
+ *      order string
+ *      skip int
+ *      limit int
+ * ]
+ */
+func (m *MongoBase) Find(data interface{}, query bson.M, options ...map[string]interface{}) error {
+	session, db, err := getSession()
+
+	if err != nil {
+		return err
+	}
+
+	defer session.Close()
+
+	q := session.DB(db).C(m.CollectionName).Find(query)
+
+	if count, ok := options[0]["count"]; ok {
+		refVal := reflect.ValueOf(count)
+		elem := refVal.Elem()
+
+		total, countErr := q.Count()
+
+		if countErr != nil {
+			LogError("mongo collection %s count error: %s", m.CollectionName, countErr.Error())
+			elem.Set(reflect.ValueOf(0))
+		} else {
+			elem.Set(reflect.ValueOf(total))
+		}
+	}
+
+	if order, ok := options[0]["order"]; ok {
+		if ordStr, ok := order.(string); ok {
+			ordArr := strings.Split(ordStr, ",")
+			q = q.Sort(ordArr...)
+		}
+	}
+
+	if skip, ok := options[0]["skip"]; ok {
+		if skp, ok := skip.(int); ok {
+			q = q.Skip(skp)
+		}
+	}
+
+	if limit, ok := options[0]["limit"]; ok {
+		if lmt, ok := limit.(int); ok {
+			q = q.Limit(lmt)
+		}
+	}
+
+	findErr := q.All(data)
+
+	if findErr != nil {
+		LogErrorf("mongo collection %s find error: %s", m.CollectionName, findErr.Error())
+		return findErr
 	}
 
 	return nil
