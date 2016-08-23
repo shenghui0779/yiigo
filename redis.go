@@ -658,8 +658,8 @@ func (r *RedisBase) LLen(key string) (int64, bool) {
 	return count, true
 }
 
-func (b *DaoRedis) LRange(data interface{}, key string, start int, end int) bool {
-	redisResource, err := b.InitRedisPool()
+func (r *RedisBase) LRange(data interface{}, key string, start int, end int) bool {
+	redisResource, err := poolGetRedisConn()
 	defer redisPool.Put(redisResource)
 
 	if err != nil {
