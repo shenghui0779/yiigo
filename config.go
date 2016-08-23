@@ -7,17 +7,15 @@ import (
 	"github.com/dlintw/goconf"
 )
 
-var (
-	config    *goconf.ConfigFile
-	configErr error
-)
+var config *goconf.ConfigFile
 
 func InitConfig(name string) {
+	var err error
 	path, _ := filepath.Abs(fmt.Sprintf("config/%s.config", name))
-	config, configErr = goconf.ReadConfigFile(path)
+	config, err = goconf.ReadConfigFile(path)
 
-	if configErr != nil {
-		LogCritical("load configuration file error: ", configErr.Error())
+	if err != nil {
+		LogCritical("load configuration file error: ", err.Error())
 		return
 	}
 

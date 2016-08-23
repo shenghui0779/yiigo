@@ -658,6 +658,55 @@ func (r *RedisBase) LLen(key string) (int64, bool) {
 	return count, true
 }
 
+func (b *DaoRedis) LRange(data interface{}, key string, start int, end int) bool {
+	redisResource, err := b.InitRedisPool()
+	defer redisPool.Put(redisResource)
+
+	if err != nil {
+		return false
+	}
+
+	redisConn := redisResource.(ResourceConn)
+
+	cacheKey := r.getKey(key)
+
+	cacheData, doErr := redis.ByteSlices(redisConn.Do("LRANGE", cacheKey, start, end))
+
+	if doErr != nil {
+		LogError("redis do LRANGE error: ", doErr.Error())
+		return false
+	}
+
+	if cacheData == nil {
+		return false
+	}
+
+	if len(cacheData) > 0 {
+		refVal := reflect.Indirect(reflect.ValueOf(data))
+
+		if refVal.Kind() == reflect.Slice {
+			refValType := refVal.Type().Elem()
+			refVal.Set(reflect.MakeSlice(refVal.Type(), 0, 0))
+
+			for _, v := range cacheData {
+				if v != nil {
+					elem := reflect.New(refValType).Elem()
+					jsonErr := json.Unmarshal(v, elem.Addr().Interface())
+
+					if jsonErr != nil {
+						LogError("redis LRANGE unmarshal cacheData error: ", jsonErr.Error())
+						return false
+					}
+
+					refVal.Set(reflect.Append(refVal, elem))
+				}
+			}
+		}
+	}
+
+	return true
+}
+
 // key cmd
 
 func (r *RedisBase) Del(key string) bool {

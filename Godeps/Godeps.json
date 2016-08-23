@@ -1,0 +1,93 @@
+{
+	"ImportPath": "github.com/iiinsomnia/yiigo",
+	"GoVersion": "go1.6",
+	"GodepVersion": "v74",
+	"Deps": [
+		{
+			"ImportPath": "github.com/cihub/seelog",
+			"Comment": "v2.6-22-g752ef64",
+			"Rev": "752ef646ce438bc649b2bb565188471879185c33"
+		},
+		{
+			"ImportPath": "github.com/dlintw/goconf",
+			"Rev": "dcc070983490608a14480e3bf943bad464785df5"
+		},
+		{
+			"ImportPath": "github.com/garyburd/redigo/internal",
+			"Comment": "v1.0.0-1-gb8dc900",
+			"Rev": "b8dc90050f24c1a73a52f107f3f575be67b21b7c"
+		},
+		{
+			"ImportPath": "github.com/garyburd/redigo/redis",
+			"Comment": "v1.0.0-1-gb8dc900",
+			"Rev": "b8dc90050f24c1a73a52f107f3f575be67b21b7c"
+		},
+		{
+			"ImportPath": "github.com/go-sql-driver/mysql",
+			"Comment": "v1.2-196-g3654d25",
+			"Rev": "3654d25ec346ee8ce71a68431025458d52a38ac0"
+		},
+		{
+			"ImportPath": "github.com/golang/glog",
+			"Rev": "23def4e6c14b4da8ac2ed8007337bc5eb5007998"
+		},
+		{
+			"ImportPath": "github.com/jinzhu/gorm",
+			"Comment": "v1.0-50-ga646b13",
+			"Rev": "a646b13548ec0aa812fe805b2780f460dd2771b6"
+		},
+		{
+			"ImportPath": "github.com/jinzhu/inflection",
+			"Rev": "8f4d3a0d04ce0b7c0cf3126fb98524246d00d102"
+		},
+		{
+			"ImportPath": "github.com/youtube/vitess/go/acl",
+			"Comment": "v2.0.0-rc.2-340-g47dabe9",
+			"Rev": "47dabe97c8aa967f1a6640e87ffb16da54dda1df"
+		},
+		{
+			"ImportPath": "github.com/youtube/vitess/go/cache",
+			"Comment": "v2.0.0-rc.2-340-g47dabe9",
+			"Rev": "47dabe97c8aa967f1a6640e87ffb16da54dda1df"
+		},
+		{
+			"ImportPath": "github.com/youtube/vitess/go/pools",
+			"Comment": "v2.0.0-rc.2-340-g47dabe9",
+			"Rev": "47dabe97c8aa967f1a6640e87ffb16da54dda1df"
+		},
+		{
+			"ImportPath": "github.com/youtube/vitess/go/sync2",
+			"Comment": "v2.0.0-rc.2-340-g47dabe9",
+			"Rev": "47dabe97c8aa967f1a6640e87ffb16da54dda1df"
+		},
+		{
+			"ImportPath": "golang.org/x/net/context",
+			"Rev": "fb93926129b8ec0056f2f458b1f519654814edf0"
+		},
+		{
+			"ImportPath": "gopkg.in/mgo.v2",
+			"Comment": "r2016.08.01-5-g3f83fa5",
+			"Rev": "3f83fa5005286a7fe593b055f0d7771a7dce4655"
+		},
+		{
+			"ImportPath": "gopkg.in/mgo.v2/bson",
+			"Comment": "r2016.08.01-5-g3f83fa5",
+			"Rev": "3f83fa5005286a7fe593b055f0d7771a7dce4655"
+		},
+		{
+			"ImportPath": "gopkg.in/mgo.v2/internal/json",
+			"Comment": "r2016.08.01-5-g3f83fa5",
+			"Rev": "3f83fa5005286a7fe593b055f0d7771a7dce4655"
+		},
+		{
+			"ImportPath": "gopkg.in/mgo.v2/internal/sasl",
+			"Comment": "r2016.08.01-5-g3f83fa5",
+			"Rev": "3f83fa5005286a7fe593b055f0d7771a7dce4655"
+		},
+		{
+			"ImportPath": "gopkg.in/mgo.v2/internal/scram",
+			"Comment": "r2016.08.01-5-g3f83fa5",
+			"Rev": "3f83fa5005286a7fe593b055f0d7771a7dce4655"
+		}
+	]
+}
