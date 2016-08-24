@@ -459,6 +459,7 @@ func (m *MysqlBase) FindOne(data interface{}, query map[string]interface{}, fiel
  * [
  *      fields 查询的字段 []string
  *      count *int
+ *      group string
  *      order string
  *      offset int
  *      limit int
@@ -504,6 +505,12 @@ func (m *MysqlBase) Find(data interface{}, query map[string]interface{}, options
 			db = db.Count(count)
 		}
 
+		if group, ok := options[0]["group"]; ok {
+			if gro, ok := group.(string); ok {
+				db = db.Group(gro)
+			}
+		}
+
 		if order, ok := options[0]["order"]; ok {
 			if ord, ok := order.(string); ok {
 				db = db.Order(ord)
@@ -545,10 +552,11 @@ func (m *MysqlBase) Find(data interface{}, query map[string]interface{}, options
  * data 查询数据 interface{}
  * query 查询条件 map[string]interface{}
  * [
- *      sql SQL查询语句 string
- *      fields 查询的字段 []string
+ *      select SQL查询select语句 string
+ *      join SQL查询join语句 string
+ *      where SQL查询where语句 string
  * ]
- * bindParams SQL语句中 "?" 绑定的值
+ * bindParams where语句中 "?" 绑定的值
  */
 func (m *MysqlBase) FindOneBySql(data interface{}, query map[string]interface{}, bindParams ...interface{}) error {
 	dbResource, err := poolGetReadDb()
@@ -579,12 +587,18 @@ func (m *MysqlBase) FindOneBySql(data interface{}, query map[string]interface{},
 
 	db = db.Table(table)
 
-	if fields, ok := query["fields"]; ok {
-		db = db.Select(fields)
+	if sel, ok := query["select"]; ok {
+		db = db.Select(sel)
 	}
 
-	if sql, ok := query["sql"]; ok {
-		db = db.Where(sql, bindParams...)
+	if join, ok := query["join"]; ok {
+		if jn, ok := join.(string); ok {
+			db = db.Joins(jn)
+		}
+	}
+
+	if where, ok := query["where"]; ok {
+		db = db.Where(where, bindParams...)
 	}
 
 	findErr := db.First(data).Error
@@ -607,14 +621,16 @@ func (m *MysqlBase) FindOneBySql(data interface{}, query map[string]interface{},
  * data 查询数据 interface{} (切片指针)
  * query 查询条件 map[string]interface{}
  * [
- *      sql SQL查询语句 string
- *      fields 查询的字段 []string
+ *      select SQL查询select语句 string
+ *      join SQL查询join语句 string
+ *      where SQL查询where语句 string
  *      count *int
+ *      group string
  *      order string
  *      offset int
  *      limit int
  * ]
- * bindParams SQL语句中 "?" 绑定的值
+ * bindParams where语句中 "?" 绑定的值
  */
 func (m *MysqlBase) FindBySql(data interface{}, query map[string]interface{}, bindParams ...interface{}) error {
 	dbResource, err := poolGetReadDb()
@@ -645,16 +661,28 @@ func (m *MysqlBase) FindBySql(data interface{}, query map[string]interface{}, bi
 
 	db = db.Table(table)
 
-	if fields, ok := query["fields"]; ok {
-		db = db.Select(fields)
+	if sel, ok := query["select"]; ok {
+		db = db.Select(sel)
 	}
 
-	if sql, ok := query["sql"]; ok {
-		db = db.Where(sql, bindParams...)
+	if join, ok := query["join"]; ok {
+		if jn, ok := join.(string); ok {
+			db = db.Joins(jn)
+		}
+	}
+
+	if where, ok := query["where"]; ok {
+		db = db.Where(where, bindParams...)
 	}
 
 	if count, ok := query["count"]; ok {
 		db = db.Count(count)
+	}
+
+	if group, ok := query["group"]; ok {
+		if gro, ok := group.(string); ok {
+			db = db.Joins(gro)
+		}
 	}
 
 	if order, ok := query["order"]; ok {
@@ -722,12 +750,13 @@ func buildQuery(db *gorm.DB, query map[string]interface{}) *gorm.DB {
 						db = db.Where(query, value)
 					}
 				case "in":
-					query := fmt.Sprintf("%s in (?)", tmp[0])
+					query := fmt.Sprintf("%s IN (?)", tmp[0])
 					db = db.Where(query, value)
 				case "ni":
-					db = db.Not(tmp[0], value)
+					query := fmt.Sprintf("%s NOT IN (?)", tmp[0])
+					db = db.Where(query, value)
 				case "fi":
-					query := fmt.Sprintf("find_in_set(?, %s)", tmp[0])
+					query := fmt.Sprintf("FIND_IN_SET(?, %s)", tmp[0])
 					db = db.Where(query, value)
 				}
 			} else {
