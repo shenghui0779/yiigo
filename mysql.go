@@ -24,18 +24,21 @@ var (
 	mysqlWritePoolMux sync.Mutex
 )
 
-type Orm struct {
+type ResourceDb struct {
 	Db *gorm.DB
 }
 
-func (o Orm) Close() {
-	err := o.Db.Close()
+func (r ResourceDb) Close() {
+	err := r.Db.Close()
 
 	if err != nil {
 		LogError("mysql connection close error: ", err.Error())
 	}
 }
 
+/**
+ * 连接写库
+ */
 func initWriteDb() (*gorm.DB, error) {
 	host := GetConfigString("mysql", "writeHost", "localhost")
 	port := GetConfigInt("mysql", "writePort", 3306)
@@ -63,6 +66,9 @@ func initWriteDb() (*gorm.DB, error) {
 	return writeDb, err
 }
 
+/**
+ * 连接读库
+ */
 func initReadDb() (*gorm.DB, error) {
 	host := GetConfigString("mysql", "readHost", "localhost")
 	port := GetConfigInt("mysql", "readPort", 3306)
@@ -90,44 +96,51 @@ func initReadDb() (*gorm.DB, error) {
 	return readDb, err
 }
 
+/**
+ * 初始化写库连接池
+ */
 func initWriteDbPool() {
-	if mysqlWritePool == nil || mysqlWritePool.IsClosed() {
-		mysqlWritePoolMux.Lock()
-		defer mysqlWritePoolMux.Unlock()
+	mysqlWritePoolMux.Lock()
+	defer mysqlWritePoolMux.Unlock()
 
+	poolMinActive := GetConfigInt("mysql", "poolMinActive", 100)
+	poolMaxActive := GetConfigInt("mysql", "poolMaxActive", 200)
+	poolIdleTimeout := GetConfigInt("mysql", "poolIdleTimeout", 2000)
+
+	if mysqlWritePool == nil {
+		mysqlWritePool = pools.NewResourcePool(func() (pools.Resource, error) {
+			writeDb, err := initWriteDb()
+			return ResourceDb{Db: writeDb}, err
+		}, poolMinActive, poolMaxActive, time.Duration(poolIdleTimeout)*time.Millisecond)
+	}
+}
+
+/**
+ * 初始化读库连接池
+ */
+func initReadDbPool() {
+	mysqlReadPoolMux.Lock()
+	defer mysqlReadPoolMux.Unlock()
+
+	if mysqlReadPool == nil {
 		poolMinActive := GetConfigInt("mysql", "poolMinActive", 100)
 		poolMaxActive := GetConfigInt("mysql", "poolMaxActive", 200)
 		poolIdleTimeout := GetConfigInt("mysql", "poolIdleTimeout", 2000)
 
-		if mysqlWritePool == nil {
-			mysqlWritePool = pools.NewResourcePool(func() (pools.Resource, error) {
-				writeDb, err := initWriteDb()
-				return Orm{Db: writeDb}, err
-			}, poolMinActive, poolMaxActive, time.Duration(poolIdleTimeout)*time.Millisecond)
-		}
+		mysqlReadPool = pools.NewResourcePool(func() (pools.Resource, error) {
+			readDb, err := initReadDb()
+			return ResourceDb{Db: readDb}, err
+		}, poolMinActive, poolMaxActive, time.Duration(poolIdleTimeout)*time.Millisecond)
 	}
 }
 
-func initReadDbPool() {
-	if mysqlReadPool == nil || mysqlReadPool.IsClosed() {
-		mysqlReadPoolMux.Lock()
-		defer mysqlReadPoolMux.Unlock()
-
-		if mysqlReadPool == nil {
-			poolMinActive := GetConfigInt("mysql", "poolMinActive", 100)
-			poolMaxActive := GetConfigInt("mysql", "poolMaxActive", 200)
-			poolIdleTimeout := GetConfigInt("mysql", "poolIdleTimeout", 2000)
-
-			mysqlReadPool = pools.NewResourcePool(func() (pools.Resource, error) {
-				readDb, err := initReadDb()
-				return Orm{Db: readDb}, err
-			}, poolMinActive, poolMaxActive, time.Duration(poolIdleTimeout)*time.Millisecond)
-		}
-	}
-}
-
+/**
+ * 获取写库资源
+ */
 func poolGetWriteDb() (pools.Resource, error) {
-	initWriteDbPool()
+	if mysqlWritePool == nil || mysqlWritePool.IsClosed() {
+		initWriteDbPool()
+	}
 
 	if mysqlWritePool == nil {
 		LogError("mysql write db pool is null")
@@ -135,40 +148,47 @@ func poolGetWriteDb() (pools.Resource, error) {
 	}
 
 	ctx := context.TODO()
-	writeOrmResource, err := mysqlWritePool.Get(ctx)
+	writeResourceDb, err := mysqlWritePool.Get(ctx)
 
 	if err != nil {
 		LogError("mysql get write db error: ", err.Error())
 		return nil, err
 	}
 
-	if writeOrmResource == nil {
+	if writeResourceDb == nil {
 		LogError("mysql write pool resource is null")
 		return nil, errors.New("mysql write pool resource is null")
 	}
 
-	orm := writeOrmResource.(Orm)
+	resourceDb := writeResourceDb.(ResourceDb)
 
-	if orm.Db.Error != nil {
-		LogError("mysql write resource connection err: ", orm.Db.Error.Error())
+	if resourceDb.Db.Error != nil {
+		LogError("mysql write resource connection err: ", resourceDb.Db.Error.Error())
 
-		orm.Close()
+		resourceDb.Close()
 		//连接断开，重新打开
 		db, connErr := initWriteDb()
 
 		if connErr != nil {
+			mysqlWritePool.Put(writeResourceDb)
 			LogError("mysql write db reconnection err: ", connErr.Error())
+
 			return nil, connErr
 		} else {
-			return Orm{Db: db}, nil
+			return ResourceDb{Db: db}, nil
 		}
 	}
 
-	return writeOrmResource, err
+	return writeResourceDb, err
 }
 
+/**
+ * 获取读库资源
+ */
 func poolGetReadDb() (pools.Resource, error) {
-	initReadDbPool()
+	if mysqlReadPool == nil || mysqlReadPool.IsClosed() {
+		initReadDbPool()
+	}
 
 	if mysqlReadPool == nil {
 		LogError("mysql read db pool is null")
@@ -176,36 +196,38 @@ func poolGetReadDb() (pools.Resource, error) {
 	}
 
 	ctx := context.TODO()
-	readOrmResource, err := mysqlReadPool.Get(ctx)
+	readResourceDb, err := mysqlReadPool.Get(ctx)
 
 	if err != nil {
 		LogError("mysql get read db error: ", err.Error())
 		return nil, err
 	}
 
-	if readOrmResource == nil {
+	if readResourceDb == nil {
 		LogError("mysql read pool resource is null")
 		return nil, errors.New("mysql read pool resource is null")
 	}
 
-	orm := readOrmResource.(Orm)
+	resourceDb := readResourceDb.(ResourceDb)
 
-	if orm.Db.Error != nil {
-		LogError("mysql read resource connection err: ", orm.Db.Error.Error())
+	if resourceDb.Db.Error != nil {
+		LogError("mysql read resource connection err: ", resourceDb.Db.Error.Error())
 
-		orm.Close()
+		resourceDb.Close()
 		//连接断开，重新打开
 		db, connErr := initReadDb()
 
 		if connErr != nil {
+			mysqlReadPool.Put(readResourceDb)
 			LogError("mysql read db reconnection err: ", connErr.Error())
+
 			return nil, connErr
 		} else {
-			return Orm{Db: db}, nil
+			return ResourceDb{Db: db}, nil
 		}
 	}
 
-	return readOrmResource, err
+	return readResourceDb, err
 }
 
 /**
@@ -213,15 +235,15 @@ func poolGetReadDb() (pools.Resource, error) {
  * data 插入数据 interface{} (指针)
  */
 func (m *MysqlBase) Insert(data interface{}) error {
-	dbResource, err := poolGetWriteDb()
+	writeResourceDb, err := poolGetWriteDb()
 
 	if err != nil {
 		return err
 	}
 
-	defer mysqlWritePool.Put(dbResource)
+	defer mysqlWritePool.Put(writeResourceDb)
 
-	db := dbResource.(Orm).Db
+	db := writeResourceDb.(ResourceDb).Db
 
 	if m.TableName == "" {
 		tableErr := errors.New("tablename empty")
@@ -256,15 +278,15 @@ func (m *MysqlBase) Insert(data interface{}) error {
  * data 更新字段 map[string]interface{}
  */
 func (m *MysqlBase) Update(query map[string]interface{}, data map[string]interface{}) error {
-	dbResource, err := poolGetWriteDb()
+	writeResourceDb, err := poolGetWriteDb()
 
 	if err != nil {
 		return err
 	}
 
-	defer mysqlWritePool.Put(dbResource)
+	defer mysqlWritePool.Put(writeResourceDb)
 
-	db := dbResource.(Orm).Db
+	db := writeResourceDb.(ResourceDb).Db
 
 	if m.TableName == "" {
 		tableErr := errors.New("tablename empty")
@@ -304,15 +326,15 @@ func (m *MysqlBase) Update(query map[string]interface{}, data map[string]interfa
  * inc 增量 int
  */
 func (m *MysqlBase) Increment(query map[string]interface{}, column string, inc int) error {
-	dbResource, err := poolGetWriteDb()
+	writeResourceDb, err := poolGetWriteDb()
 
 	if err != nil {
 		return err
 	}
 
-	defer mysqlWritePool.Put(dbResource)
+	defer mysqlWritePool.Put(writeResourceDb)
 
-	db := dbResource.(Orm).Db
+	db := writeResourceDb.(ResourceDb).Db
 
 	if m.TableName == "" {
 		tableErr := errors.New("tablename empty")
@@ -353,15 +375,15 @@ func (m *MysqlBase) Increment(query map[string]interface{}, column string, inc i
  * dec 减量 int
  */
 func (m *MysqlBase) Decrement(query map[string]interface{}, column string, dec int) error {
-	dbResource, err := poolGetWriteDb()
+	writeResourceDb, err := poolGetWriteDb()
 
 	if err != nil {
 		return err
 	}
 
-	defer mysqlWritePool.Put(dbResource)
+	defer mysqlWritePool.Put(writeResourceDb)
 
-	db := dbResource.(Orm).Db
+	db := writeResourceDb.(ResourceDb).Db
 
 	if m.TableName == "" {
 		tableErr := errors.New("tablename empty")
@@ -402,15 +424,15 @@ func (m *MysqlBase) Decrement(query map[string]interface{}, column string, dec i
  * fields 查询的字段 []string
  */
 func (m *MysqlBase) FindOne(data interface{}, query map[string]interface{}, fields ...[]string) error {
-	dbResource, err := poolGetReadDb()
+	readResourceDb, err := poolGetReadDb()
 
 	if err != nil {
 		return err
 	}
 
-	defer mysqlReadPool.Put(dbResource)
+	defer mysqlReadPool.Put(readResourceDb)
 
-	db := dbResource.(Orm).Db
+	db := readResourceDb.(ResourceDb).Db
 
 	if m.TableName == "" {
 		tableErr := errors.New("tablename empty")
@@ -466,15 +488,15 @@ func (m *MysqlBase) FindOne(data interface{}, query map[string]interface{}, fiel
  * ]
  */
 func (m *MysqlBase) Find(data interface{}, query map[string]interface{}, options ...map[string]interface{}) error {
-	dbResource, err := poolGetReadDb()
+	readResourceDb, err := poolGetReadDb()
 
 	if err != nil {
 		return err
 	}
 
-	defer mysqlReadPool.Put(dbResource)
+	defer mysqlReadPool.Put(readResourceDb)
 
-	db := dbResource.(Orm).Db
+	db := readResourceDb.(ResourceDb).Db
 
 	if m.TableName == "" {
 		tableErr := errors.New("tablename empty")
@@ -559,15 +581,15 @@ func (m *MysqlBase) Find(data interface{}, query map[string]interface{}, options
  * bindParams where语句中 "?" 绑定的值
  */
 func (m *MysqlBase) FindOneBySql(data interface{}, query map[string]interface{}, bindParams ...interface{}) error {
-	dbResource, err := poolGetReadDb()
+	readResourceDb, err := poolGetReadDb()
 
 	if err != nil {
 		return err
 	}
 
-	defer mysqlReadPool.Put(dbResource)
+	defer mysqlReadPool.Put(readResourceDb)
 
-	db := dbResource.(Orm).Db
+	db := readResourceDb.(ResourceDb).Db
 
 	if m.TableName == "" {
 		tableErr := errors.New("tablename empty")
@@ -633,15 +655,15 @@ func (m *MysqlBase) FindOneBySql(data interface{}, query map[string]interface{},
  * bindParams where语句中 "?" 绑定的值
  */
 func (m *MysqlBase) FindBySql(data interface{}, query map[string]interface{}, bindParams ...interface{}) error {
-	dbResource, err := poolGetReadDb()
+	readResourceDb, err := poolGetReadDb()
 
 	if err != nil {
 		return err
 	}
 
-	defer mysqlReadPool.Put(dbResource)
+	defer mysqlReadPool.Put(readResourceDb)
 
-	db := dbResource.(Orm).Db
+	db := readResourceDb.(ResourceDb).Db
 
 	if m.TableName == "" {
 		tableErr := errors.New("tablename empty")
