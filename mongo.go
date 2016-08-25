@@ -165,7 +165,10 @@ func (m *MongoBase) Update(query bson.M, data bson.M) error {
 	updateErr := c.Update(query, bson.M{"$set": data})
 
 	if updateErr != nil {
-		LogErrorf("mongo collection %s update error: %s", m.CollectionName, updateErr.Error())
+		if updateErr.Error() != "not found" {
+			LogErrorf("mongo collection %s update error: %s", m.CollectionName, updateErr.Error())
+		}
+
 		return updateErr
 	}
 
@@ -193,7 +196,10 @@ func (m *MongoBase) Increment(query bson.M, column string, incr int) error {
 	updateErr := c.Update(query, bson.M{"$inc": data})
 
 	if updateErr != nil {
-		LogErrorf("mongo collection %s update error: %s", m.CollectionName, updateErr.Error())
+		if updateErr.Error() != "not found" {
+			LogErrorf("mongo collection %s update error: %s", m.CollectionName, updateErr.Error())
+		}
+
 		return updateErr
 	}
 
@@ -219,7 +225,10 @@ func (m *MongoBase) FindOne(data interface{}, query bson.M) error {
 	findErr := c.Find(query).One(data)
 
 	if findErr != nil {
-		LogErrorf("mongo collection %s findone error: %s", m.CollectionName, findErr.Error())
+		if findErr.Error() != "not found" {
+			LogErrorf("mongo collection %s findone error: %s", m.CollectionName, findErr.Error())
+		}
+
 		return findErr
 	}
 
@@ -285,7 +294,10 @@ func (m *MongoBase) Find(data interface{}, query bson.M, options ...map[string]i
 	findErr := q.All(data)
 
 	if findErr != nil {
-		LogErrorf("mongo collection %s find error: %s", m.CollectionName, findErr.Error())
+		if findErr.Error() != "not found" {
+			LogErrorf("mongo collection %s find error: %s", m.CollectionName, findErr.Error())
+		}
+
 		return findErr
 	}
 
