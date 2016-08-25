@@ -25,6 +25,9 @@ var (
 	mongoMux     sync.Mutex
 )
 
+/**
+ * 初始化mongodb连接
+ */
 func initMongo() error {
 	mongoMux.Lock()
 	defer mongoMux.Unlock()
@@ -44,12 +47,15 @@ func initMongo() error {
 			return err
 		}
 
-		mongoSession.SetPoolLimit(poolLimit)
+		mongoSession.SetPoolLimit(poolLimit) //设置连接池大小
 	}
 
 	return nil
 }
 
+/**
+ * 获取连接资源
+ */
 func getSession() (*mgo.Session, string, error) {
 	if mongoSession == nil {
 		err := initMongo()
@@ -65,6 +71,9 @@ func getSession() (*mgo.Session, string, error) {
 	return session, db, nil
 }
 
+/**
+ * 刷新当前主键(_id)的自增值
+ */
 func (m *MongoBase) refreshSequence() (int64, error) {
 	session, db, err := getSession()
 
@@ -281,4 +290,73 @@ func (m *MongoBase) Find(data interface{}, query bson.M, options ...map[string]i
 	}
 
 	return nil
+}
+
+/**
+ * Delete 删除记录
+ * query 查询条件 bson.M (map[string]interface{})
+ */
+func (m *MongoBase) Delete(query bson.M) error {
+	session, db, err := getSession()
+
+	if err != nil {
+		return err
+	}
+
+	defer session.Close()
+
+	c := session.DB(db).C(m.CollectionName)
+
+	_, delErr := c.RemoveAll(query)
+
+	if delErr != nil {
+		LogErrorf("mongo collection %s delete error: %s", m.CollectionName, delErr.Error())
+		return delErr
+	}
+
+	return nil
+}
+
+/**
+ * Sum 字段求和
+ * match 匹配条件 bson.M (map[string]interface{})
+ * field 聚合字段 string (如："$count")
+ */
+func (m *MongoBase) Sum(match bson.M, field string) (int, error) {
+	session, db, err := getSession()
+
+	if err != nil {
+		return 0, err
+	}
+
+	defer session.Close()
+
+	c := session.DB(db).C(m.CollectionName)
+
+	p := c.Pipe([]bson.M{
+		{"$match": match},
+		{"$group": bson.M{"_id": 1, "total": bson.M{"$sum": field}}},
+	})
+
+	result := bson.M{}
+
+	pipeErr := p.One(&result)
+
+	if pipeErr != nil {
+		LogErrorf("mongo collection %s sum error: %s", m.CollectionName, pipeErr.Error())
+		return 0, pipeErr
+	}
+
+	fmt.Println(result)
+	total, ok := result["total"].(int)
+
+	if !ok {
+		errMsg := fmt.Sprintf("mongo collection %s sum error: type assertion error, result %v is %v", m.CollectionName, result["total"], reflect.TypeOf(result["total"]))
+		assertionErr := errors.New(errMsg)
+		LogError(errMsg)
+
+		return 0, assertionErr
+	}
+
+	return total, nil
 }
