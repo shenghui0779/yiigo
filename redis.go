@@ -35,6 +35,9 @@ func (r ResourceConn) Close() {
 	}
 }
 
+/**
+ * 连接Redis
+ */
 func initRedis() (redis.Conn, error) {
 	host := GetConfigString("redis", "host", "localhost")
 	port := GetConfigInt("redis", "port", 6379)
@@ -53,26 +56,32 @@ func initRedis() (redis.Conn, error) {
 	return conn, err
 }
 
+/**
+ * 初始化Redis连接池
+ */
 func initRedisPool() {
-	if redisPool == nil || redisPool.IsClosed() {
-		redisPoolMux.Lock()
-		defer redisPoolMux.Unlock()
+	redisPoolMux.Lock()
+	defer redisPoolMux.Unlock()
 
-		if redisPool == nil {
-			poolMinActive := GetConfigInt("redis", "poolMinActive", 100)
-			poolMaxActive := GetConfigInt("redis", "poolMaxActive", 200)
-			poolIdleTimeout := GetConfigInt("redis", "poolIdleTimeout", 2000)
+	if redisPool == nil {
+		poolMinActive := GetConfigInt("redis", "poolMinActive", 100)
+		poolMaxActive := GetConfigInt("redis", "poolMaxActive", 200)
+		poolIdleTimeout := GetConfigInt("redis", "poolIdleTimeout", 2000)
 
-			redisPool = pools.NewResourcePool(func() (pools.Resource, error) {
-				conn, err := initRedis()
-				return ResourceConn{conn}, err
-			}, poolMinActive, poolMaxActive, time.Duration(poolIdleTimeout)*time.Millisecond)
-		}
+		redisPool = pools.NewResourcePool(func() (pools.Resource, error) {
+			conn, err := initRedis()
+			return ResourceConn{conn}, err
+		}, poolMinActive, poolMaxActive, time.Duration(poolIdleTimeout)*time.Millisecond)
 	}
 }
 
+/**
+ * 获取Redis资源
+ */
 func poolGetRedisConn() (pools.Resource, error) {
-	initRedisPool()
+	if redisPool == nil || redisPool.IsClosed() {
+		initRedisPool()
+	}
 
 	if redisPool == nil {
 		LogError("redis pool is null")
@@ -102,7 +111,9 @@ func poolGetRedisConn() (pools.Resource, error) {
 		conn, connErr := initRedis()
 
 		if connErr != nil {
+			redisPool.Put(redisResource)
 			LogError("redis reconnection err: ", connErr.Error())
+
 			return nil, connErr
 		} else {
 			return ResourceConn{conn}, nil
