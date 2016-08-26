@@ -1,28 +1,39 @@
 package yiigo
 
 import (
-	"fmt"
 	"path/filepath"
+	"sync"
 
 	"github.com/dlintw/goconf"
 )
 
-var config *goconf.ConfigFile
+var (
+	config    *goconf.ConfigFile
+	configMux sync.Mutex
+)
 
-func InitConfig(name string) {
-	var err error
-	path, _ := filepath.Abs(fmt.Sprintf("config/%s.config", name))
-	config, err = goconf.ReadConfigFile(path)
+func initConfig() {
+	configMux.Lock()
+	defer configMux.Unlock()
 
-	if err != nil {
-		LogCritical("load configuration file error: ", err.Error())
-		return
+	if config == nil {
+		var err error
+
+		path, _ := filepath.Abs("config/app.config")
+		config, err = goconf.ReadConfigFile(path)
+
+		if err != nil {
+			LogCritical("load configuration file error: ", err.Error())
+			return
+		}
 	}
-
-	fmt.Println("Init Configuration")
 }
 
 func GetConfigString(section string, option string, defaultValue string) string {
+	if config == nil {
+		initConfig()
+	}
+
 	conf, err := config.GetString(section, option)
 
 	if err != nil {
@@ -33,6 +44,10 @@ func GetConfigString(section string, option string, defaultValue string) string 
 }
 
 func GetConfigInt(section string, option string, defaultValue int) int {
+	if config == nil {
+		initConfig()
+	}
+
 	conf, err := config.GetInt(section, option)
 
 	if err != nil {
@@ -43,6 +58,10 @@ func GetConfigInt(section string, option string, defaultValue int) int {
 }
 
 func GetConfigFloat64(section string, option string, defaultValue float64) float64 {
+	if config == nil {
+		initConfig()
+	}
+
 	conf, err := config.GetFloat64(section, option)
 
 	if err != nil {
@@ -53,6 +72,10 @@ func GetConfigFloat64(section string, option string, defaultValue float64) float
 }
 
 func GetConfigBool(section string, option string, defaultValue bool) bool {
+	if config == nil {
+		initConfig()
+	}
+
 	conf, err := config.GetBool(section, option)
 
 	if err != nil {

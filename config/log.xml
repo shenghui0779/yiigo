@@ -20,6 +20,6 @@
         </filter>
     </outputs>
     <formats>
-        <format id="main" format="%Date|%Time [%LEV] %Msg%n"/>
+        <format id="main" format="[%Date | %Time] [%LEV] %Msg%n"/>
     </formats>
 </seelog>
