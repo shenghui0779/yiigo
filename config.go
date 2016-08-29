@@ -83,7 +83,7 @@ func GetConfigBool(section string, option string, defaultValue bool) bool {
 }
 
 /**
- * sep ×Ö·û´®·Ö¸ô·û
+ * sep å­—ç¬¦ä¸²åˆ†éš”ç¬¦
  */
 func GetConfigArray(section string, option string, sep string) []string {
 	if config == nil {
