@@ -4,11 +4,11 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/dlintw/goconf"
+	"github.com/Unknwon/goconfig"
 )
 
 var (
-	config    *goconf.ConfigFile
+	config    *goconfig.ConfigFile
 	configMux sync.Mutex
 )
 
@@ -19,8 +19,11 @@ func initConfig() {
 	if config == nil {
 		var err error
 
-		path, _ := filepath.Abs("config/app.config")
-		config, err = goconf.ReadConfigFile(path)
+		appCfg, _ := filepath.Abs("config/app.ini")
+		dbCfg, _ := filepath.Abs("config/db.ini")
+		cacheCfg, _ := filepath.Abs("config/cache.ini")
+
+		config, err = goconfig.LoadConfigFile(appCfg, dbCfg, cacheCfg)
 
 		if err != nil {
 			LogCritical("load configuration file error: ", err.Error())
@@ -34,11 +37,7 @@ func GetConfigString(section string, option string, defaultValue string) string 
 		initConfig()
 	}
 
-	conf, err := config.GetString(section, option)
-
-	if err != nil {
-		return defaultValue
-	}
+	conf := config.MustValue(section, option, defaultValue)
 
 	return conf
 }
@@ -48,11 +47,17 @@ func GetConfigInt(section string, option string, defaultValue int) int {
 		initConfig()
 	}
 
-	conf, err := config.GetInt(section, option)
+	conf := config.MustInt(section, option, defaultValue)
 
-	if err != nil {
-		return defaultValue
+	return conf
+}
+
+func GetConfigInt64(section string, option string, defaultValue int64) int64 {
+	if config == nil {
+		initConfig()
 	}
+
+	conf := config.MustInt64(section, option, defaultValue)
 
 	return conf
 }
@@ -62,11 +67,7 @@ func GetConfigFloat64(section string, option string, defaultValue float64) float
 		initConfig()
 	}
 
-	conf, err := config.GetFloat64(section, option)
-
-	if err != nil {
-		return defaultValue
-	}
+	conf := config.MustFloat64(section, option, defaultValue)
 
 	return conf
 }
@@ -76,11 +77,20 @@ func GetConfigBool(section string, option string, defaultValue bool) bool {
 		initConfig()
 	}
 
-	conf, err := config.GetBool(section, option)
+	conf := config.MustBool(section, option, defaultValue)
 
-	if err != nil {
-		return defaultValue
+	return conf
+}
+
+/**
+ * sep ×Ö·û´®·Ö¸ô·û
+ */
+func GetConfigArray(section string, option string, sep string) []string {
+	if config == nil {
+		initConfig()
 	}
+
+	conf := config.MustValueArray(section, option, sep)
 
 	return conf
 }

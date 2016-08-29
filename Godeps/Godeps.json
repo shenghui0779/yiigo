@@ -4,13 +4,13 @@
 	"GodepVersion": "v74",
 	"Deps": [
 		{
+			"ImportPath": "github.com/Unknwon/goconfig",
+			"Rev": "5aa4f8cd5a472c2411c778b4680f59f2223f1966"
+		},
+		{
 			"ImportPath": "github.com/cihub/seelog",
 			"Comment": "v2.6-22-g752ef64",
 			"Rev": "752ef646ce438bc649b2bb565188471879185c33"
-		},
-		{
-			"ImportPath": "github.com/dlintw/goconf",
-			"Rev": "dcc070983490608a14480e3bf943bad464785df5"
 		},
 		{
 			"ImportPath": "github.com/garyburd/redigo/internal",
