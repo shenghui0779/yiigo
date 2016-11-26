@@ -1,5 +1,5 @@
 # yiigo
-Golang常用类库整合，用于开发API
+Golang常用类库整合，用于API开发和爬虫
 
 ### 获取：
 go get github.com/iiinsomnia/yiigo

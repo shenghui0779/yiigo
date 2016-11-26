@@ -389,18 +389,6 @@ func (this *SpiderBase) SaveHttpCookie(newCookies []*http.Cookie, clearOldCookie
 }
 
 /**
- * 处理字符串,去除空格字符
- * @param [string] str
- * @return string
- */
-func (this *SpiderBase) TrimString(str string) string {
-	text := strings.Trim(str, "&nbsp;")
-	text = strings.TrimSpace(text)
-
-	return text
-}
-
-/**
  * 获取验证码图片
  * @param [string] httpUrl 获取验证码URL
  * @param [string] host 请求头部Host
@@ -507,4 +495,16 @@ func (this *SpiderBase) CallShowApi(httpUrl string, host string, setCookie bool,
 	}
 
 	return data.ShowapiResBody.Result, nil
+}
+
+/**
+ * 处理字符串,去除页面数据中的 &nbsp; 和 空格字符
+ * @param [string] str
+ * @return string
+ */
+func (this *SpiderBase) TrimString(str string) string {
+	text := strings.Trim(str, "&nbsp;")
+	text = strings.TrimSpace(text)
+
+	return text
 }
