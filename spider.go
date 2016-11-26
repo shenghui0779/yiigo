@@ -18,7 +18,7 @@ import (
 
 /**
  * 爬虫基础类 [包括：http、https(CA证书)、cookie、验证码处理]
- * 做爬虫是需用到另外两个库：
+ * 做爬虫时需用到另外两个库：
  * 1、jbk 转 utf8：gopkg.in/iconv.v1 [https://github.com/qiniu/iconv]
  * 2、页面 dom 处理：github.com/PuerkitoBio/goquery
  * CAPath string CA证书存放路径 [默认 certificate 目录，证书需用 openssl 转化为 pem格式]
