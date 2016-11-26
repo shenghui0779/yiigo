@@ -429,7 +429,7 @@ func (this *SpiderBase) getVerifyCode(httpUrl string, host string, setCookie boo
 }
 
 /**
- * 调用 ShowApi 识别验证码 [showApi是付费服务，需购买可用]
+ * 调用 ShowApi 识别验证码 [showApi是付费服务：https://market.aliyun.com/products/57124001/cmapi011148.html#sku=yuncode514800004]
  * @param {string} httpUrl 请求验证码URL
  * @param {string} host 请求的头部Host
  * @param {bool} setCookie [请求是否需要加cookie]
@@ -460,7 +460,7 @@ func (this *SpiderBase) CallShowApi(httpUrl string, host string, setCookie bool,
 		return "", httpErr
 	}
 
-	appCode := GetConfigString("showapi", "appcode", "794434d1937e4f438223b37fd7951d54")
+	appCode := GetConfigString("spider", "appcode", "794434d1937e4f438223b37fd7951d54")
 	req.Header.Set("Authorization", fmt.Sprintf("APPCODE %s", appCode))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
