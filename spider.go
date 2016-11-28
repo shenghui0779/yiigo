@@ -21,13 +21,18 @@ import (
  * 做爬虫时需用到另外两个库：
  * 1、gbk 转 utf8：gopkg.in/iconv.v1 [https://github.com/qiniu/iconv]
  * 2、页面 dom 处理：github.com/PuerkitoBio/goquery
- * CAPath string CA证书存放路径 [默认 certificate 目录，证书需用 openssl 转化为 pem格式]
- * CookiePath string cookie存放路径 [默认 cookies 目录]
+ * CAPath {*CAPath} CA证书存放路径 [默认 certificate 目录，证书需用 openssl 转化为 pem格式]
+ * CookiePath {string} cookie存放路径 [默认 cookies 目录]
  * 验证码图片默认存放路径为 verifycode 目录
  */
 type SpiderBase struct {
-	CAPath     string
+	CAPath     *CAPath
 	CookiePath string
+}
+
+type CAPath struct {
+	Cert           string
+	UnencryptedKey string
 }
 
 /**
@@ -187,8 +192,8 @@ func (this *SpiderBase) HttpsGet(httpUrl string, host string, setCookie bool, sa
 		this.SetHttpCookie(req)
 	}
 
-	certFile, _ := filepath.Abs(fmt.Sprintf("certificate/%s/cert.pem", this.CAPath))
-	keyFile, _ := filepath.Abs(fmt.Sprintf("certificate/%s/key.unencrypted.pem", this.CAPath))
+	certFile, _ := filepath.Abs(fmt.Sprintf("certificate/%s", this.CAPath.Cert))
+	keyFile, _ := filepath.Abs(fmt.Sprintf("certificate/%s", this.CAPath.UnencryptedKey))
 
 	cert, certErr := tls.LoadX509KeyPair(certFile, keyFile)
 
