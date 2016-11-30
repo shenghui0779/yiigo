@@ -267,8 +267,8 @@ func (this *SpiderBase) HttpsPost(httpUrl string, host string, v url.Values, set
 		this.SetHttpCookie(req)
 	}
 
-	certFile, _ := filepath.Abs(fmt.Sprintf("certificate/%s/cert.pem", this.CAPath))
-	keyFile, _ := filepath.Abs(fmt.Sprintf("certificate/%s/key.unencrypted.pem", this.CAPath))
+	certFile, _ := filepath.Abs(fmt.Sprintf("certificate/%s", this.CAPath.Cert))
+	keyFile, _ := filepath.Abs(fmt.Sprintf("certificate/%s", this.CAPath.UnencryptedKey))
 
 	cert, certErr := tls.LoadX509KeyPair(certFile, keyFile)
 
