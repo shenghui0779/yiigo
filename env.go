@@ -2,6 +2,7 @@ package yiigo
 
 import (
 	"path/filepath"
+	"strings"
 	"sync"
 
 	"github.com/Unknwon/goconfig"
@@ -83,12 +84,16 @@ func GetEnvBool(section string, option string, defaultValue bool) bool {
 /**
  * sep 字符串分隔符
  */
-func GetEnvArray(section string, option string, sep string) []string {
+func GetEnvArray(section string, option string, sep string, defaultValue string) []string {
 	if env == nil {
 		initEnv()
 	}
 
-	val := env.MustValueArray(section, option, sep)
+	arr := env.MustValueArray(section, option, sep)
 
-	return val
+	if len(arr) == 0 {
+		arr = strings.Split(defaultValue, sep)
+	}
+
+	return arr
 }
