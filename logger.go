@@ -20,7 +20,7 @@ func initLogger() {
 
 	if logger == nil {
 		var err error
-		path, _ := filepath.Abs("config/log.xml")
+		path, _ := filepath.Abs("log.xml")
 		logger, err = seelog.LoggerFromConfigAsFile(path)
 
 		if err != nil {

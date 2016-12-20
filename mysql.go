@@ -44,13 +44,13 @@ func mysqlDial() (*gorm.DB, error) {
 		password string
 	)
 
-	host = GetConfigString("mysql", "host", "localhost")
-	port = GetConfigInt("mysql", "port", 3306)
-	username = GetConfigString("mysql", "username", "root")
-	password = GetConfigString("mysql", "password", "root")
+	host = GetEnvString("mysql", "host", "localhost")
+	port = GetEnvInt("mysql", "port", 3306)
+	username = GetEnvString("mysql", "username", "root")
+	password = GetEnvString("mysql", "password", "root")
 
-	database := GetConfigString("db", "database", "yiicms")
-	charset := GetConfigString("db", "charset", "utf8mb4")
+	database := GetEnvString("db", "database", "yiicms")
+	charset := GetEnvString("db", "charset", "utf8mb4")
 
 	address := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s&parseTime=True&loc=Local", username, password, host, port, database, charset)
 	db, err := gorm.Open("mysql", address)
@@ -62,7 +62,7 @@ func mysqlDial() (*gorm.DB, error) {
 
 	db.SingularTable(true)
 
-	debug := GetConfigBool("default", "debug", true)
+	debug := GetEnvBool("app", "debug", true)
 
 	if debug {
 		db.LogMode(true)
@@ -85,9 +85,9 @@ func initMysqlPool() {
 	)
 
 	if mysqlPool == nil {
-		poolMinActive = GetConfigInt("mysql", "poolMinActive", 10)
-		poolMaxActive = GetConfigInt("mysql", "poolMaxActive", 20)
-		poolIdleTimeout = GetConfigInt("mysql", "poolIdleTimeout", 10000)
+		poolMinActive = GetEnvInt("mysql", "poolMinActive", 10)
+		poolMaxActive = GetEnvInt("mysql", "poolMaxActive", 20)
+		poolIdleTimeout = GetEnvInt("mysql", "poolIdleTimeout", 10000)
 
 		mysqlPool = pools.NewResourcePool(func() (pools.Resource, error) {
 			db, err := mysqlDial()
@@ -129,7 +129,7 @@ func poolGetDbResource() (pools.Resource, error) {
  */
 func (this *MysqlBase) initDb(db *gorm.DB) *gorm.DB {
 	var table string
-	prefix := GetConfigString("db", "prefix", "")
+	prefix := GetEnvString("db", "prefix", "")
 
 	if prefix != "" {
 		table = prefix + this.TableName

@@ -34,9 +34,9 @@ func initMongo() error {
 
 	if mongoSession == nil {
 		var err error
-		host := GetConfigString("mongo", "host", "localhost")
-		port := GetConfigInt("mongo", "port", 27017)
-		poolLimit := GetConfigInt("mongo", "poolLimit", 10)
+		host := GetEnvString("mongo", "host", "localhost")
+		port := GetEnvInt("mongo", "port", 27017)
+		poolLimit := GetEnvInt("mongo", "poolLimit", 10)
 
 		connStr := fmt.Sprintf("mongodb://%s:%d", host, port)
 
@@ -66,7 +66,7 @@ func getSession() (*mgo.Session, string, error) {
 	}
 
 	session := mongoSession.Clone()
-	db := GetConfigString("mongo", "database", "test")
+	db := GetEnvString("mongo", "database", "test")
 
 	return session, db, nil
 }

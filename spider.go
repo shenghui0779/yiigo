@@ -192,8 +192,10 @@ func (this *SpiderBase) HttpsGet(httpUrl string, host string, setCookie bool, sa
 		this.SetHttpCookie(req)
 	}
 
-	certFile, _ := filepath.Abs(fmt.Sprintf("certificate/%s", this.CAPath.Cert))
-	keyFile, _ := filepath.Abs(fmt.Sprintf("certificate/%s", this.CAPath.UnencryptedKey))
+	caDir := GetEnvString("spider", "cadir", "certificate")
+
+	certFile, _ := filepath.Abs(fmt.Sprintf("%s/%s", caDir, this.CAPath.Cert))
+	keyFile, _ := filepath.Abs(fmt.Sprintf("%s/%s", caDir, this.CAPath.UnencryptedKey))
 
 	cert, certErr := tls.LoadX509KeyPair(certFile, keyFile)
 
@@ -267,8 +269,10 @@ func (this *SpiderBase) HttpsPost(httpUrl string, host string, v url.Values, set
 		this.SetHttpCookie(req)
 	}
 
-	certFile, _ := filepath.Abs(fmt.Sprintf("certificate/%s", this.CAPath.Cert))
-	keyFile, _ := filepath.Abs(fmt.Sprintf("certificate/%s", this.CAPath.UnencryptedKey))
+	caDir := GetEnvString("spider", "cadir", "certificate")
+
+	certFile, _ := filepath.Abs(fmt.Sprintf("%s/%s", caDir, this.CAPath.Cert))
+	keyFile, _ := filepath.Abs(fmt.Sprintf("%s/%s", caDir, this.CAPath.UnencryptedKey))
 
 	cert, certErr := tls.LoadX509KeyPair(certFile, keyFile)
 
@@ -308,7 +312,8 @@ func (this *SpiderBase) HttpsPost(httpUrl string, host string, v url.Values, set
  * @param {*http.Request} req [http请求对象指针]
  */
 func (this *SpiderBase) SetHttpCookie(req *http.Request) {
-	path, _ := filepath.Abs(fmt.Sprintf("cookies/%s", this.CookiePath))
+	cookieDir := GetEnvString("spider", "cookiedir", "cookies")
+	path, _ := filepath.Abs(fmt.Sprintf("%s/%s", cookieDir, this.CookiePath))
 
 	cookies := map[string]*http.Cookie{}
 	content, readErr := ioutil.ReadFile(path)
@@ -336,7 +341,8 @@ func (this *SpiderBase) SetHttpCookie(req *http.Request) {
  * @param {bool} clearOldCookie [是否需要清空原来的cookie]
  */
 func (this *SpiderBase) SaveHttpCookie(newCookies []*http.Cookie, clearOldCookie bool) {
-	path, _ := filepath.Abs(fmt.Sprintf("cookies/%s", this.CookiePath))
+	cookieDir := GetEnvString("spider", "cookiedir", "cookies")
+	path, _ := filepath.Abs(fmt.Sprintf("%s/%s", cookieDir, this.CookiePath))
 
 	if len(newCookies) == 0 {
 		return
@@ -420,7 +426,9 @@ func (this *SpiderBase) getVerifyCode(httpUrl string, host string, setCookie boo
 		return "", readErr
 	}
 
-	path, _ := filepath.Abs(fmt.Sprintf("verifycode/%s", imgName))
+	verifyDir := GetEnvString("spider", "verifydir", "verifycode")
+
+	path, _ := filepath.Abs(fmt.Sprintf("%s/%s", verifyDir, imgName))
 	writeErr := ioutil.WriteFile(path, body, 0777)
 
 	if writeErr != nil {
@@ -451,8 +459,9 @@ func (this *SpiderBase) CallShowApi(httpUrl string, host string, setCookie bool,
 	if err != nil {
 		return "", err
 	}
-
+	return "", errors.New("IIInsomnia")
 	v := url.Values{}
+
 	v.Set("img_base64", verifyCodeBase64)
 	v.Set("typeId", typeId)
 	v.Set("convert_to_jpg", convertToJpg)
@@ -465,7 +474,7 @@ func (this *SpiderBase) CallShowApi(httpUrl string, host string, setCookie bool,
 		return "", httpErr
 	}
 
-	appCode := GetConfigString("spider", "appcode", "794434d1937e4f438223b37fd7951d54")
+	appCode := GetEnvString("spider", "appcode", "794434d1937e4f438223b37fd7951d54")
 	req.Header.Set("Authorization", fmt.Sprintf("APPCODE %s", appCode))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 

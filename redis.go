@@ -39,11 +39,11 @@ func (this ResourceConn) Close() {
  * 连接Redis
  */
 func redisDial() (redis.Conn, error) {
-	host := GetConfigString("redis", "host", "localhost")
-	port := GetConfigInt("redis", "port", 6379)
-	connectTimeout := GetConfigInt("redis", "connectTimeout", 10000)
-	readTimeout := GetConfigInt("redis", "readTimeout", 10000)
-	writeTimeout := GetConfigInt("redis", "writeTimeout", 10000)
+	host := GetEnvString("redis", "host", "localhost")
+	port := GetEnvInt("redis", "port", 6379)
+	connectTimeout := GetEnvInt("redis", "connectTimeout", 10000)
+	readTimeout := GetEnvInt("redis", "readTimeout", 10000)
+	writeTimeout := GetEnvInt("redis", "writeTimeout", 10000)
 
 	address := fmt.Sprintf("%s:%d", host, port)
 	conn, err := redis.DialTimeout("tcp", address, time.Duration(connectTimeout)*time.Millisecond, time.Duration(readTimeout)*time.Millisecond, time.Duration(writeTimeout)*time.Millisecond)
@@ -64,9 +64,9 @@ func initRedisPool() {
 	defer redisPoolMux.Unlock()
 
 	if redisPool == nil {
-		poolMinActive := GetConfigInt("redis", "poolMinActive", 10)
-		poolMaxActive := GetConfigInt("redis", "poolMaxActive", 20)
-		poolIdleTimeout := GetConfigInt("redis", "poolIdleTimeout", 10000)
+		poolMinActive := GetEnvInt("redis", "poolMinActive", 10)
+		poolMaxActive := GetEnvInt("redis", "poolMaxActive", 20)
+		poolIdleTimeout := GetEnvInt("redis", "poolIdleTimeout", 10000)
 
 		redisPool = pools.NewResourcePool(func() (pools.Resource, error) {
 			conn, err := redisDial()
@@ -123,7 +123,7 @@ func poolGetRedisConn() (pools.Resource, error) {
 }
 
 func (this *RedisBase) getKey(key string) string {
-	prefix := GetConfigString("redis", "prefix", "yii")
+	prefix := GetEnvString("redis", "prefix", "yii")
 
 	if strings.Trim(key, " ") == "" {
 		return fmt.Sprintf("%s:%s", prefix, this.CacheName)
