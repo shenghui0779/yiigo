@@ -25,6 +25,9 @@ type ResourceDb struct {
 	Db *gorm.DB
 }
 
+/**
+ * 关闭连接
+ */
 func (r ResourceDb) Close() {
 	err := r.Db.Close()
 
@@ -35,6 +38,7 @@ func (r ResourceDb) Close() {
 
 /**
  * 连接数据库
+ * @return *gorm.DB, error
  */
 func mysqlDial() (*gorm.DB, error) {
 	var (
@@ -98,6 +102,7 @@ func initMysqlPool() {
 
 /**
  * 获取db资源
+ * @return pools.Resource, error
  */
 func poolGetDbResource() (pools.Resource, error) {
 	if mysqlPool == nil || mysqlPool.IsClosed() {
@@ -126,25 +131,28 @@ func poolGetDbResource() (pools.Resource, error) {
 
 /**
  * 初始化db
+ * @param db *gorm.DB
+ * @return *gorm.DB
  */
-func (this *MysqlBase) initDb(db *gorm.DB) *gorm.DB {
+func (m *MysqlBase) initDb(db *gorm.DB) *gorm.DB {
 	var table string
 	prefix := GetEnvString("db", "prefix", "")
 
 	if prefix != "" {
-		table = prefix + this.TableName
+		table = prefix + m.TableName
 	} else {
-		table = this.TableName
+		table = m.TableName
 	}
 
 	return db.Table(table)
 }
 
 /**
- * insert 插入
- * data 插入数据 interface{} (指针)
+ * Insert 插入
+ * @param data interface{} 插入数据 (struct指针)
+ * @return error
  */
-func (this *MysqlBase) Insert(data interface{}) error {
+func (m *MysqlBase) Insert(data interface{}) error {
 	rd, err := poolGetDbResource()
 
 	if err != nil {
@@ -153,13 +161,12 @@ func (this *MysqlBase) Insert(data interface{}) error {
 
 	defer mysqlPool.Put(rd)
 
-	db := this.initDb(rd.(ResourceDb).Db)
+	db := m.initDb(rd.(ResourceDb).Db)
 
 	insertErr := db.Create(data).Error
 
 	if insertErr != nil {
-		LogErrorf("mysql table %s insert error: %s", this.TableName, insertErr.Error())
-
+		LogErrorf("mysql table %s insert error: %s", m.TableName, insertErr.Error())
 		return insertErr
 	}
 
@@ -167,10 +174,11 @@ func (this *MysqlBase) Insert(data interface{}) error {
 }
 
 /**
- * batch insert 批量插入(支持事务)
- * data 插入数据 []interface{} (指针切片)
+ * BatchInsert 批量插入 (支持事务)
+ * @param data []interface{} 插入数据 (struct指针切片)
+ * @return error
  */
-func (this *MysqlBase) BatchInsert(data []interface{}) error {
+func (m *MysqlBase) BatchInsert(data []interface{}) error {
 	rd, err := poolGetDbResource()
 
 	if err != nil {
@@ -179,7 +187,7 @@ func (this *MysqlBase) BatchInsert(data []interface{}) error {
 
 	defer mysqlPool.Put(rd)
 
-	db := this.initDb(rd.(ResourceDb).Db)
+	db := m.initDb(rd.(ResourceDb).Db)
 
 	tx := db.Begin()
 
@@ -194,8 +202,8 @@ func (this *MysqlBase) BatchInsert(data []interface{}) error {
 	}
 
 	if insertErr != nil {
-		LogErrorf("mysql table %s insert error: %s", this.TableName, insertErr.Error())
 		tx.Rollback()
+		LogErrorf("mysql table %s insert error: %s", m.TableName, insertErr.Error())
 
 		return insertErr
 	}
@@ -206,17 +214,18 @@ func (this *MysqlBase) BatchInsert(data []interface{}) error {
 }
 
 /**
- * batchInsertWithAction 带操作的批量插入(支持事务)
- * data 插入数据 []interface{} (指针切片)
- * action 执行数据插入前的操作(支持更新和删除) map[string]interface{}
+ * BatchInsertWithAction 带操作的批量插入 (支持事务)
+ * @param data []interface{} 插入数据 (struct指针切片)
+ * @param action map[string]interface{} 执行数据插入前的操作 (支持更新和删除)
  * [
- * 		type 操作类型(delete或update)
- * 		query SQL查询where语句 string
- * 		bind SQL语句中 "?" 的绑定值 []interface{}
- * 		data 删除的表Model或需更新的字段 interface{}
+ * 		type string 操作类型 (delete 或 update)
+ * 		query string SQL查询where语句
+ * 		bind []interface{} SQL语句中 "?" 的绑定值
+ * 		data interface{} 删除的struct指针或更新的字段
  * ]
+ * @return error
  */
-func (this *MysqlBase) BatchInsertWithAction(data []interface{}, action map[string]interface{}) error {
+func (m *MysqlBase) BatchInsertWithAction(data []interface{}, action map[string]interface{}) error {
 	rd, err := poolGetDbResource()
 
 	if err != nil {
@@ -225,7 +234,7 @@ func (this *MysqlBase) BatchInsertWithAction(data []interface{}, action map[stri
 
 	defer mysqlPool.Put(rd)
 
-	db := this.initDb(rd.(ResourceDb).Db)
+	db := m.initDb(rd.(ResourceDb).Db)
 
 	tx := db.Begin()
 
@@ -261,8 +270,8 @@ func (this *MysqlBase) BatchInsertWithAction(data []interface{}, action map[stri
 	}
 
 	if dbErr != nil {
-		LogErrorf("mysql table %s %s error: %s", this.TableName, actionType, dbErr.Error())
 		tx.Rollback()
+		LogErrorf("mysql table %s %s error: %s", m.TableName, actionType, dbErr.Error())
 
 		return dbErr
 	}
@@ -276,8 +285,8 @@ func (this *MysqlBase) BatchInsertWithAction(data []interface{}, action map[stri
 	}
 
 	if dbErr != nil {
-		LogErrorf("mysql table %s insert error: %s", this.TableName, dbErr.Error())
 		tx.Rollback()
+		LogErrorf("mysql table %s insert error: %s", m.TableName, dbErr.Error())
 
 		return dbErr
 	}
@@ -288,15 +297,16 @@ func (this *MysqlBase) BatchInsertWithAction(data []interface{}, action map[stri
 }
 
 /**
- * update 更新
- * query 查询条件 map[string]interface{}
+ * Update 更新
+ * @param query map[string]interface{} 查询条件
  * [
- * 		where SQL查询where语句 string
- * 		bind SQL语句中 "?" 的绑定值 []interface{}
+ * 		where string SQL查询where语句
+ * 		bind []interface{} SQL语句中 "?" 的绑定值
  * ]
- * data 更新字段 map[string]interface{}
+ * @param data map[string]interface{} 更新字段
+ * @return error
  */
-func (this *MysqlBase) Update(query map[string]interface{}, data map[string]interface{}) error {
+func (m *MysqlBase) Update(query map[string]interface{}, data map[string]interface{}) error {
 	rd, err := poolGetDbResource()
 
 	if err != nil {
@@ -305,7 +315,7 @@ func (this *MysqlBase) Update(query map[string]interface{}, data map[string]inte
 
 	defer mysqlPool.Put(rd)
 
-	db := this.initDb(rd.(ResourceDb).Db)
+	db := m.initDb(rd.(ResourceDb).Db)
 
 	var (
 		where interface{}
@@ -323,8 +333,7 @@ func (this *MysqlBase) Update(query map[string]interface{}, data map[string]inte
 	updateErr := db.Where(where, bind...).Updates(data).Error
 
 	if updateErr != nil {
-		LogErrorf("mysql table %s update error: %s", this.TableName, updateErr.Error())
-
+		LogErrorf("mysql table %s update error: %s", m.TableName, updateErr.Error())
 		return updateErr
 	}
 
@@ -332,16 +341,17 @@ func (this *MysqlBase) Update(query map[string]interface{}, data map[string]inte
 }
 
 /**
- * increment 自增
- * query 查询条件 map[string]interface{}
+ * Increment 自增
+ * @param query map[string]interface{} 查询条件
  * [
- * 		where SQL查询where语句 string
- * 		bind SQL语句中 "?" 的绑定值 []interface{}
+ * 		where string SQL查询where语句
+ * 		bind []interface{} SQL语句中 "?" 的绑定值
  * ]
- * column 自增字段 string
- * inc 增量 int
+ * @param column string 自增字段
+ * @param inc int 增量
+ * @return error
  */
-func (this *MysqlBase) Increment(query map[string]interface{}, column string, inc int) error {
+func (m *MysqlBase) Increment(query map[string]interface{}, column string, inc int) error {
 	rd, err := poolGetDbResource()
 
 	if err != nil {
@@ -350,7 +360,7 @@ func (this *MysqlBase) Increment(query map[string]interface{}, column string, in
 
 	defer mysqlPool.Put(rd)
 
-	db := this.initDb(rd.(ResourceDb).Db)
+	db := m.initDb(rd.(ResourceDb).Db)
 
 	var (
 		where interface{}
@@ -369,8 +379,7 @@ func (this *MysqlBase) Increment(query map[string]interface{}, column string, in
 	incErr := db.Where(where, bind...).Update(column, gorm.Expr(expr, inc)).Error
 
 	if incErr != nil {
-		LogErrorf("mysql table %s inc error: %s", this.TableName, incErr.Error())
-
+		LogErrorf("mysql table %s inc error: %s", m.TableName, incErr.Error())
 		return incErr
 	}
 
@@ -378,16 +387,17 @@ func (this *MysqlBase) Increment(query map[string]interface{}, column string, in
 }
 
 /**
- * decrement 自减
- * query 查询条件 map[string]interface{}
+ * Decrement 自减
+ * @param query map[string]interface{} 查询条件
  * [
- * 		where SQL查询where语句 string
- * 		bind SQL语句中 "?" 的绑定值 []interface{}
+ * 		where string SQL查询where语句
+ * 		bind []interface{} SQL语句中 "?" 的绑定值
  * ]
- * column 自减字段 string
- * dec 减量 int
+ * @param column string 自减字段
+ * @param dec int 减量
+ * @return error
  */
-func (this *MysqlBase) Decrement(query map[string]interface{}, column string, dec int) error {
+func (m *MysqlBase) Decrement(query map[string]interface{}, column string, dec int) error {
 	rd, err := poolGetDbResource()
 
 	if err != nil {
@@ -396,7 +406,7 @@ func (this *MysqlBase) Decrement(query map[string]interface{}, column string, de
 
 	defer mysqlPool.Put(rd)
 
-	db := this.initDb(rd.(ResourceDb).Db)
+	db := m.initDb(rd.(ResourceDb).Db)
 
 	var (
 		where interface{}
@@ -415,8 +425,7 @@ func (this *MysqlBase) Decrement(query map[string]interface{}, column string, de
 	decErr := db.Where(where, bind...).Update(column, gorm.Expr(expr, dec)).Error
 
 	if decErr != nil {
-		LogErrorf("mysql table %s dec error: %s", this.TableName, decErr.Error())
-
+		LogErrorf("mysql table %s dec error: %s", m.TableName, decErr.Error())
 		return decErr
 	}
 
@@ -424,17 +433,18 @@ func (this *MysqlBase) Decrement(query map[string]interface{}, column string, de
 }
 
 /**
- * findOne 查询
- * data 查询数据 interface{}
- * query 查询条件 map[string]interface{}
+ * FindOne 查询
+ * @param query map[string]interface{} 查询条件
  * [
- *      select SQL查询select语句 string
- *      join SQL查询join语句 string
- *      where SQL查询where语句 string
- *      bind SQL语句中 "?" 的绑定值 []interface{}
+ *      select string SQL查询select语句
+ *      join string SQL查询join语句
+ *      where string SQL查询where语句
+ *      bind []interface{} SQL语句中 "?" 的绑定值
  * ]
+ * @param data interface{} 查询数据 (struct指针)
+ * @return error
  */
-func (this *MysqlBase) FindOne(data interface{}, query map[string]interface{}) error {
+func (m *MysqlBase) FindOne(query map[string]interface{}, data interface{}) error {
 	rd, err := poolGetDbResource()
 
 	if err != nil {
@@ -443,7 +453,7 @@ func (this *MysqlBase) FindOne(data interface{}, query map[string]interface{}) e
 
 	defer mysqlPool.Put(rd)
 
-	db := this.initDb(rd.(ResourceDb).Db)
+	db := m.initDb(rd.(ResourceDb).Db)
 
 	if sel, ok := query["select"]; ok {
 		db = db.Select(sel)
@@ -476,7 +486,7 @@ func (this *MysqlBase) FindOne(data interface{}, query map[string]interface{}) e
 		errMsg := findErr.Error()
 
 		if errMsg != "record not found" {
-			LogErrorf("mysql table %s findone error: %s", this.TableName, errMsg)
+			LogErrorf("mysql table %s findone error: %s", m.TableName, errMsg)
 		}
 
 		return findErr
@@ -486,22 +496,23 @@ func (this *MysqlBase) FindOne(data interface{}, query map[string]interface{}) e
 }
 
 /**
- * find 查询
- * data 查询数据 interface{} (切片指针)
- * query 查询条件 map[string]interface{}
+ * Find 查询
+ * query map[string]interface{} 查询条件
  * [
- *      select SQL查询select语句 string
- *      join SQL查询join语句 string
- *      where SQL查询where语句 string
- *      bind SQL语句中 "?" 的绑定值 []interface{}
+ *      select string SQL查询select语句
+ *      join string SQL查询join语句
+ *      where string SQL查询where语句
+ *      bind []interface{} SQL语句中 "?" 的绑定值
  *      count *int
  *      group string
  *      order string
  *      offset int
  *      limit int
  * ]
+ * data interface{} 查询数据 (struct切片指针)
+ * @return error
  */
-func (this *MysqlBase) Find(data interface{}, query map[string]interface{}) error {
+func (m *MysqlBase) Find(query map[string]interface{}, data interface{}) error {
 	rd, err := poolGetDbResource()
 
 	if err != nil {
@@ -510,7 +521,7 @@ func (this *MysqlBase) Find(data interface{}, query map[string]interface{}) erro
 
 	defer mysqlPool.Put(rd)
 
-	db := this.initDb(rd.(ResourceDb).Db)
+	db := m.initDb(rd.(ResourceDb).Db)
 
 	if sel, ok := query["select"]; ok {
 		db = db.Select(sel)
@@ -565,7 +576,7 @@ func (this *MysqlBase) Find(data interface{}, query map[string]interface{}) erro
 		errMsg := findErr.Error()
 
 		if errMsg != "record not found" {
-			LogErrorf("mysql table %s find error: %s", this.TableName, errMsg)
+			LogErrorf("mysql table %s find error: %s", m.TableName, errMsg)
 		}
 
 		return findErr
@@ -575,15 +586,16 @@ func (this *MysqlBase) Find(data interface{}, query map[string]interface{}) erro
 }
 
 /**
- * delete 删除
- * data 需要删除的表Model interface{} (struct)
- * query 查询条件 map[string]interface{}
+ * Delete 删除
+ * @param query map[string]interface{} 查询条件
  * [
- * 		where SQL查询where语句 string
- * 		bind SQL语句中 "?" 的绑定值 []interface{}
+ * 		where string SQL查询where语句
+ * 		bind []interface{} SQL语句中 "?" 的绑定值
  * ]
+ * @param data interface{} (struct指针)
+ * @return error
  */
-func (this *MysqlBase) Delete(data interface{}, query map[string]interface{}) error {
+func (m *MysqlBase) Delete(query map[string]interface{}, data interface{}) error {
 	rd, err := poolGetDbResource()
 
 	if err != nil {
@@ -592,7 +604,7 @@ func (this *MysqlBase) Delete(data interface{}, query map[string]interface{}) er
 
 	defer mysqlPool.Put(rd)
 
-	db := this.initDb(rd.(ResourceDb).Db)
+	db := m.initDb(rd.(ResourceDb).Db)
 
 	var (
 		where interface{}
@@ -613,7 +625,7 @@ func (this *MysqlBase) Delete(data interface{}, query map[string]interface{}) er
 		errMsg := delErr.Error()
 
 		if errMsg != "record not found" {
-			LogErrorf("mysql table %s delete error: %s", this.TableName, errMsg)
+			LogErrorf("mysql table %s delete error: %s", m.TableName, errMsg)
 		}
 
 		return delErr

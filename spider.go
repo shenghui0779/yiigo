@@ -36,16 +36,16 @@ type CAPath struct {
 }
 
 /**
- * @title get请求
- * @param {string} httpUrl [请求地址]
- * @param {string} host [请求头部Host]
- * @param {bool} setCookie [请求是否需要加cookie]
- * @param {bool} saveCookie [是否保存返回的cookie]
- * @param {bool} clearOldCookie [是否需要清空原来的cookie]
- * @param {string} referer [请求头部referer]
+ * HttpGet请求
+ * @param httpUrl string 请求地址
+ * @param host string 请求头部Host
+ * @param setCookie bool 请求是否需要加cookie
+ * @param saveCookie bool 是否保存返回的cookie
+ * @param clearOldCookie bool 是否需要清空原来的cookie
+ * @param referer string 请求头部referer
  * @return io.ReadCloser
  */
-func (this *SpiderBase) HttpGet(httpUrl string, host string, setCookie bool, saveCookie bool, clearOldCookie bool, referer ...string) (io.ReadCloser, error) {
+func (s *SpiderBase) HttpGet(httpUrl string, host string, setCookie bool, saveCookie bool, clearOldCookie bool, referer ...string) (io.ReadCloser, error) {
 	req, httpErr := http.NewRequest("GET", httpUrl, nil)
 
 	if httpErr != nil {
@@ -53,22 +53,10 @@ func (this *SpiderBase) HttpGet(httpUrl string, host string, setCookie bool, sav
 		return nil, httpErr
 	}
 
-	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/*,*/*;q=0.8")
-	req.Header.Set("Accept-Encoding", "gzip, deflate")
-	req.Header.Set("Accept-Language", "zh-CN,zh;q=0.8")
-	req.Header.Set("Cache-Control", "max-age=0")
-	req.Header.Set("Connection", "Keep-Alive")
-	req.Header.Set("Host", host)
-
-	if len(referer) > 0 {
-		req.Header.Set("Referer", referer[0])
-	}
-
-	req.Header.Set("Upgrade-Insecure-Requests", "1")
-	req.Header.Set("User-Agent", "Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; WOW64; Trident/5.0)")
+	s.setHttpCommonHeader(req, false, host, referer...)
 
 	if setCookie {
-		this.SetHttpCookie(req)
+		s.setHttpCookie(req)
 	}
 
 	//忽略对服务端传过来的数字证书进行校验
@@ -88,24 +76,24 @@ func (this *SpiderBase) HttpGet(httpUrl string, host string, setCookie bool, sav
 	}
 
 	if saveCookie {
-		this.SaveHttpCookie(res.Cookies(), clearOldCookie)
+		s.saveHttpCookie(res.Cookies(), clearOldCookie)
 	}
 
 	return res.Body, nil
 }
 
 /**
- * @title post请求
- * @param {string} httpUrl [请求地址]
- * @param {string} host [请求头部Host]
- * @param {url.Values} v [post参数]
- * @param {bool} setCookie [请求是否需要加cookie]
- * @param {bool} saveCookie [是否保存返回的cookie]
- * @param {bool} clearOldCookie [是否需要清空原来的cookie]
- * @param {string} referer [请求头部referer]
+ * HttpPost请求
+ * @param httpUrl string 请求地址
+ * @param host string 请求头部Host
+ * @param v url.Values post参数
+ * @param setCookie bool 请求是否需要加cookie
+ * @param saveCookie bool 是否保存返回的cookie
+ * @param clearOldCookie bool 是否需要清空原来的cookie
+ * @param referer string 请求头部referer
  * @return io.ReadCloser
  */
-func (this *SpiderBase) HttpPost(httpUrl string, host string, v url.Values, setCookie bool, saveCookie bool, clearOldCookie bool, referer ...string) (io.ReadCloser, error) {
+func (s *SpiderBase) HttpPost(httpUrl string, host string, v url.Values, setCookie bool, saveCookie bool, clearOldCookie bool, referer ...string) (io.ReadCloser, error) {
 	postParam := strings.NewReader(v.Encode())
 	req, httpErr := http.NewRequest("POST", httpUrl, postParam)
 
@@ -114,23 +102,10 @@ func (this *SpiderBase) HttpPost(httpUrl string, host string, v url.Values, setC
 		return nil, httpErr
 	}
 
-	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/*,*/*;q=0.8")
-	req.Header.Set("Accept-Encoding", "gzip, deflate")
-	req.Header.Set("Accept-Language", "zh-CN,zh;q=0.8")
-	req.Header.Set("Cache-Control", "no-cache")
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("Connection", "Keep-Alive")
-	req.Header.Set("Host", host)
-
-	if len(referer) > 0 {
-		req.Header.Set("Referer", referer[0])
-	}
-
-	req.Header.Set("Upgrade-Insecure-Requests", "1")
-	req.Header.Set("User-Agent", "Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; WOW64; Trident/5.0)")
+	s.setHttpCommonHeader(req, true, host, referer...)
 
 	if setCookie {
-		this.SetHttpCookie(req)
+		s.setHttpCookie(req)
 	}
 
 	//忽略对服务端传过来的数字证书进行校验
@@ -150,23 +125,23 @@ func (this *SpiderBase) HttpPost(httpUrl string, host string, v url.Values, setC
 	}
 
 	if saveCookie {
-		this.SaveHttpCookie(res.Cookies(), clearOldCookie)
+		s.saveHttpCookie(res.Cookies(), clearOldCookie)
 	}
 
 	return res.Body, nil
 }
 
 /**
- * @title get请求 [https 需要CA证书，用openssl转换成pem格式：cert.pem、key.pem]
- * @param {string} httpUrl [请求地址]
- * @param {string} host [请求头部Host]
- * @param {bool} setCookie [请求是否需要加cookie]
- * @param {bool} saveCookie [是否保存返回的cookie]
- * @param {bool} clearOldCookie [是否需要清空原来的cookie]
- * @param {string} referer [请求头部referer]
+ * HttpsGet请求 [https 需要CA证书，用openssl转换成pem格式：cert.pem、key.pem]
+ * @param httpUrl string 请求地址
+ * @param host string 请求头部Host
+ * @param setCookie bool 请求是否需要加cookie
+ * @param saveCookie bool 是否保存返回的cookie
+ * @param clearOldCookie bool 是否需要清空原来的cookie
+ * @param referer string 请求头部referer
  * @return io.ReadCloser
  */
-func (this *SpiderBase) HttpsGet(httpUrl string, host string, setCookie bool, saveCookie bool, clearOldCookie bool, referer ...string) (io.ReadCloser, error) {
+func (s *SpiderBase) HttpsGet(httpUrl string, host string, setCookie bool, saveCookie bool, clearOldCookie bool, referer ...string) (io.ReadCloser, error) {
 	req, httpErr := http.NewRequest("GET", httpUrl, nil)
 
 	if httpErr != nil {
@@ -174,28 +149,16 @@ func (this *SpiderBase) HttpsGet(httpUrl string, host string, setCookie bool, sa
 		return nil, httpErr
 	}
 
-	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/*,*/*;q=0.8")
-	req.Header.Set("Accept-Encoding", "gzip, deflate")
-	req.Header.Set("Accept-Language", "zh-CN,zh;q=0.8")
-	req.Header.Set("Cache-Control", "max-age=0")
-	req.Header.Set("Connection", "Keep-Alive")
-	req.Header.Set("Host", host)
-
-	if len(referer) > 0 {
-		req.Header.Set("Referer", referer[0])
-	}
-
-	req.Header.Set("Upgrade-Insecure-Requests", "1")
-	req.Header.Set("User-Agent", "Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; WOW64; Trident/5.0)")
+	s.setHttpCommonHeader(req, false, host, referer...)
 
 	if setCookie {
-		this.SetHttpCookie(req)
+		s.setHttpCookie(req)
 	}
 
 	caDir := GetEnvString("spider", "cadir", "certificate")
 
-	certFile, _ := filepath.Abs(fmt.Sprintf("%s/%s", caDir, this.CAPath.Cert))
-	keyFile, _ := filepath.Abs(fmt.Sprintf("%s/%s", caDir, this.CAPath.UnencryptedKey))
+	certFile, _ := filepath.Abs(fmt.Sprintf("%s/%s", caDir, s.CAPath.Cert))
+	keyFile, _ := filepath.Abs(fmt.Sprintf("%s/%s", caDir, s.CAPath.UnencryptedKey))
 
 	cert, certErr := tls.LoadX509KeyPair(certFile, keyFile)
 
@@ -224,24 +187,24 @@ func (this *SpiderBase) HttpsGet(httpUrl string, host string, setCookie bool, sa
 	}
 
 	if saveCookie {
-		this.SaveHttpCookie(res.Cookies(), clearOldCookie)
+		s.saveHttpCookie(res.Cookies(), clearOldCookie)
 	}
 
 	return res.Body, nil
 }
 
 /**
- * @title post请求 [https 需要CA证书，用openssl转换成pem格式：cert.pem、key.pem]
- * @param {string} httpUrl [请求地址]
- * @param {string} host [请求头部Host]
- * @param {url.Values} v [post参数]
- * @param {bool} setCookie [请求是否需要加cookie]
- * @param {bool} saveCookie [是否保存返回的cookie]
- * @param {bool} clearOldCookie [是否需要清空原来的cookie]
- * @param {string} referer [请求头部referer]
+ * post请求 [https 需要CA证书，用openssl转换成pem格式：cert.pem、key.pem]
+ * @param httpUrl string 请求地址
+ * @param host string 请求头部Host
+ * @param v url.Values post参数
+ * @param setCookie bool 请求是否需要加cookie
+ * @param saveCookie bool 是否保存返回的cookie
+ * @param clearOldCookie bool 是否需要清空原来的cookie
+ * @param referer string 请求头部referer
  * @return io.ReadCloser
  */
-func (this *SpiderBase) HttpsPost(httpUrl string, host string, v url.Values, setCookie bool, saveCookie bool, clearOldCookie bool, referer ...string) (io.ReadCloser, error) {
+func (s *SpiderBase) HttpsPost(httpUrl string, host string, v url.Values, setCookie bool, saveCookie bool, clearOldCookie bool, referer ...string) (io.ReadCloser, error) {
 	postParam := strings.NewReader(v.Encode())
 	req, httpErr := http.NewRequest("POST", httpUrl, postParam)
 
@@ -250,29 +213,16 @@ func (this *SpiderBase) HttpsPost(httpUrl string, host string, v url.Values, set
 		return nil, httpErr
 	}
 
-	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/*,*/*;q=0.8")
-	req.Header.Set("Accept-Encoding", "gzip, deflate")
-	req.Header.Set("Accept-Language", "zh-CN,zh;q=0.8")
-	req.Header.Set("Cache-Control", "no-cache")
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("Connection", "Keep-Alive")
-	req.Header.Set("Host", host)
-
-	if len(referer) > 0 {
-		req.Header.Set("Referer", referer[0])
-	}
-
-	req.Header.Set("Upgrade-Insecure-Requests", "1")
-	req.Header.Set("User-Agent", "Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; WOW64; Trident/5.0)")
+	s.setHttpCommonHeader(req, false, host, referer...)
 
 	if setCookie {
-		this.SetHttpCookie(req)
+		s.setHttpCookie(req)
 	}
 
 	caDir := GetEnvString("spider", "cadir", "certificate")
 
-	certFile, _ := filepath.Abs(fmt.Sprintf("%s/%s", caDir, this.CAPath.Cert))
-	keyFile, _ := filepath.Abs(fmt.Sprintf("%s/%s", caDir, this.CAPath.UnencryptedKey))
+	certFile, _ := filepath.Abs(fmt.Sprintf("%s/%s", caDir, s.CAPath.Cert))
+	keyFile, _ := filepath.Abs(fmt.Sprintf("%s/%s", caDir, s.CAPath.UnencryptedKey))
 
 	cert, certErr := tls.LoadX509KeyPair(certFile, keyFile)
 
@@ -301,19 +251,49 @@ func (this *SpiderBase) HttpsPost(httpUrl string, host string, v url.Values, set
 	}
 
 	if saveCookie {
-		this.SaveHttpCookie(res.Cookies(), clearOldCookie)
+		s.saveHttpCookie(res.Cookies(), clearOldCookie)
 	}
 
 	return res.Body, nil
 }
 
 /**
- * @title 设置http请求cookie
- * @param {*http.Request} req [http请求对象指针]
+ * 设置Http请求公共头部
+ * @param req *http.Request http请求对象指针
+ * @param isPost bool 是否为post请求
+ * @param host string 请求头部Host
+ * @param referer string 请求头部referer
  */
-func (this *SpiderBase) SetHttpCookie(req *http.Request) {
+func (s *SpiderBase) setHttpCommonHeader(req *http.Request, isPost bool, host string, referer ...string) {
+	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/*,*/*;q=0.8")
+	req.Header.Set("Accept-Encoding", "gzip, deflate")
+	req.Header.Set("Accept-Language", "zh-CN,zh;q=0.8")
+
+	if isPost {
+		req.Header.Set("Cache-Control", "no-cache")
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	} else {
+		req.Header.Set("Cache-Control", "max-age=0")
+	}
+
+	req.Header.Set("Connection", "Keep-Alive")
+	req.Header.Set("Host", host)
+
+	if len(referer) > 0 {
+		req.Header.Set("Referer", referer[0])
+	}
+
+	req.Header.Set("Upgrade-Insecure-Requests", "1")
+	req.Header.Set("User-Agent", "Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; WOW64; Trident/5.0)")
+}
+
+/**
+ * 设置http请求cookie
+ * @param req *http.Request http请求对象指针
+ */
+func (s *SpiderBase) setHttpCookie(req *http.Request) {
 	cookieDir := GetEnvString("spider", "cookiedir", "cookies")
-	path, _ := filepath.Abs(fmt.Sprintf("%s/%s", cookieDir, this.CookiePath))
+	path, _ := filepath.Abs(fmt.Sprintf("%s/%s", cookieDir, s.CookiePath))
 
 	cookies := map[string]*http.Cookie{}
 	content, readErr := ioutil.ReadFile(path)
@@ -336,13 +316,13 @@ func (this *SpiderBase) SetHttpCookie(req *http.Request) {
 }
 
 /**
- * @title 保存http请求返回的cookie
- * @param {[]*http.Cookie} newCookies [Cookie实例指针]
- * @param {bool} clearOldCookie [是否需要清空原来的cookie]
+ * 保存http请求返回的cookie
+ * @param newCookies []*http.Cookie Cookie实例指针
+ * @param clearOldCookie bool 是否需要清空原来的cookie
  */
-func (this *SpiderBase) SaveHttpCookie(newCookies []*http.Cookie, clearOldCookie bool) {
+func (s *SpiderBase) saveHttpCookie(newCookies []*http.Cookie, clearOldCookie bool) {
 	cookieDir := GetEnvString("spider", "cookiedir", "cookies")
-	path, _ := filepath.Abs(fmt.Sprintf("%s/%s", cookieDir, this.CookiePath))
+	path, _ := filepath.Abs(fmt.Sprintf("%s/%s", cookieDir, s.CookiePath))
 
 	if len(newCookies) == 0 {
 		return
@@ -400,17 +380,17 @@ func (this *SpiderBase) SaveHttpCookie(newCookies []*http.Cookie, clearOldCookie
 }
 
 /**
- * 获取验证码图片
- * @param [string] httpUrl 获取验证码URL
- * @param [string] host 请求头部Host
- * @param {bool} setCookie [请求是否需要加cookie]
- * @param {bool} saveCookie [是否保存返回的cookie]
- * @param {bool} clearOldCookie [是否需要清空原来的cookie]
- * @param [string] imgName 验证码图片保存名称
- * @return [string, error] 返回图片的base64字符串
+ * 获取验证码图片 (base64字符串)
+ * @param httpUrl string 获取验证码URL
+ * @param host string 请求头部Host
+ * @param setCookie bool 请求是否需要加cookie
+ * @param saveCookie bool 是否保存返回的cookie
+ * @param clearOldCookie bool 是否需要清空原来的cookie
+ * @param imgName string 验证码图片保存名称
+ * @return string, error
  */
-func (this *SpiderBase) getVerifyCode(httpUrl string, host string, setCookie bool, saveCookie bool, clearOldCookie bool, imgName string) (string, error) {
-	resBody, err := this.HttpGet(httpUrl, host, setCookie, saveCookie, clearOldCookie)
+func (s *SpiderBase) getVerifyCode(httpUrl string, host string, setCookie bool, saveCookie bool, clearOldCookie bool, imgName string) (string, error) {
+	resBody, err := s.HttpGet(httpUrl, host, setCookie, saveCookie, clearOldCookie)
 
 	if err != nil {
 		LogError("get verifycode error: ", err.Error())
@@ -443,18 +423,18 @@ func (this *SpiderBase) getVerifyCode(httpUrl string, host string, setCookie boo
 
 /**
  * 调用 ShowApi 识别验证码 [showApi是付费服务：https://market.aliyun.com/products/57124001/cmapi011148.html#sku=yuncode514800004]
- * @param {string} httpUrl 请求验证码URL
- * @param {string} host 请求的头部Host
- * @param {bool} setCookie [请求是否需要加cookie]
- * @param {bool} saveCookie [是否保存返回的cookie]
- * @param {bool} clearOldCookie [是否需要清空原来的cookie]
- * @param {string} imgName 验证码图片保存名称
- * @param {string} typeId 验证码类型(具体查看showapi文档)
- * @param {string} convertToJpg 是否转化为jpg格式进行识别("0" 否；"1" 是)
- * @return {string} 识别后的验证码字符串
+ * @param httpUrl string 请求验证码URL
+ * @param host string 请求的头部Host
+ * @param setCookie bool 请求是否需要加cookie
+ * @param saveCookie bool 是否保存返回的cookie
+ * @param clearOldCookie bool 是否需要清空原来的cookie
+ * @param imgName string 验证码图片保存名称
+ * @param typeId string 验证码类型 (具体查看showapi文档)
+ * @param convertToJpg string 是否转化为jpg格式进行识别("0" 否；"1" 是)
+ * @return string
  */
-func (this *SpiderBase) CallShowApi(httpUrl string, host string, setCookie bool, saveCookie bool, clearOldCookie bool, imgName string, typeId string, convertToJpg string) (string, error) {
-	verifyCodeBase64, err := this.getVerifyCode(httpUrl, host, setCookie, saveCookie, clearOldCookie, imgName)
+func (s *SpiderBase) CallShowApi(httpUrl string, host string, setCookie bool, saveCookie bool, clearOldCookie bool, imgName string, typeId string, convertToJpg string) (string, error) {
+	verifyCodeBase64, err := s.getVerifyCode(httpUrl, host, setCookie, saveCookie, clearOldCookie, imgName)
 
 	if err != nil {
 		return "", err
@@ -513,10 +493,10 @@ func (this *SpiderBase) CallShowApi(httpUrl string, host string, setCookie bool,
 
 /**
  * 处理字符串,去除页面数据中的 &nbsp; 和 空格字符
- * @param [string] str
+ * @param str string
  * @return string
  */
-func (this *SpiderBase) TrimString(str string) string {
+func (s *SpiderBase) TrimString(str string) string {
 	text := strings.Trim(str, "&nbsp;")
 	text = strings.TrimSpace(text)
 

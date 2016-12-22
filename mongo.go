@@ -27,6 +27,7 @@ var (
 
 /**
  * 初始化mongodb连接
+ * @return error
  */
 func initMongo() error {
 	mongoMux.Lock()
@@ -55,6 +56,7 @@ func initMongo() error {
 
 /**
  * 获取连接资源
+ * @return *mgo.Session, string, error
  */
 func getSession() (*mgo.Session, string, error) {
 	if mongoSession == nil {
@@ -73,8 +75,9 @@ func getSession() (*mgo.Session, string, error) {
 
 /**
  * 刷新当前主键(_id)的自增值
+ * @return int64, error
  */
-func (this *MongoBase) refreshSequence() (int64, error) {
+func (m *MongoBase) refreshSequence() (int64, error) {
 	session, db, err := getSession()
 
 	if err != nil {
@@ -85,7 +88,7 @@ func (this *MongoBase) refreshSequence() (int64, error) {
 
 	c := session.DB(db).C("sequence")
 
-	condition := bson.M{"_id": this.CollectionName}
+	condition := bson.M{"_id": m.CollectionName}
 
 	change := mgo.Change{
 		Update:    bson.M{"$inc": bson.M{"seq": 1}},
@@ -107,9 +110,10 @@ func (this *MongoBase) refreshSequence() (int64, error) {
 
 /**
  * Insert 新增记录
- * data 新增数据 interface{} (指针)
+ * @param data interface{} 插入数据 (struct指针)
+ * @return error
  */
-func (this *MongoBase) Insert(data interface{}) error {
+func (m *MongoBase) Insert(data interface{}) error {
 	session, db, err := getSession()
 
 	if err != nil {
@@ -123,10 +127,10 @@ func (this *MongoBase) Insert(data interface{}) error {
 
 	if elem.Kind() != reflect.Struct {
 		LogErrorf("cannot use (type %v) as mongo Insert param", elem.Type())
-		return errors.New(fmt.Sprintf("cannot use (type %v) as mongo Insert param", elem.Type()))
+		return fmt.Errorf("cannot use (type %v) as mongo Insert param", elem.Type())
 	}
 
-	id, seqErr := this.refreshSequence()
+	id, seqErr := m.refreshSequence()
 
 	if seqErr != nil {
 		return seqErr
@@ -134,12 +138,12 @@ func (this *MongoBase) Insert(data interface{}) error {
 
 	elem.Field(0).SetInt(id)
 
-	c := session.DB(db).C(this.CollectionName)
+	c := session.DB(db).C(m.CollectionName)
 
 	insertErr := c.Insert(data)
 
 	if insertErr != nil {
-		LogErrorf("mongo collection %s insert error: %s", this.CollectionName, insertErr.Error())
+		LogErrorf("mongo collection %s insert error: %s", m.CollectionName, insertErr.Error())
 		return insertErr
 	}
 
@@ -148,10 +152,11 @@ func (this *MongoBase) Insert(data interface{}) error {
 
 /**
  * Update 更新记录
- * query 查询条件 bson.M (map[string]interface{})
- * data 更新字段 bson.M (map[string]interface{})
+ * @param query bson.M (map[string]interface{}) 查询条件
+ * @param data bson.M (map[string]interface{}) 更新字段
+ * @return error
  */
-func (this *MongoBase) Update(query bson.M, data bson.M) error {
+func (m *MongoBase) Update(query bson.M, data bson.M) error {
 	session, db, err := getSession()
 
 	if err != nil {
@@ -160,13 +165,13 @@ func (this *MongoBase) Update(query bson.M, data bson.M) error {
 
 	defer session.Close()
 
-	c := session.DB(db).C(this.CollectionName)
+	c := session.DB(db).C(m.CollectionName)
 
 	updateErr := c.Update(query, bson.M{"$set": data})
 
 	if updateErr != nil {
 		if updateErr.Error() != "not found" {
-			LogErrorf("mongo collection %s update error: %s", this.CollectionName, updateErr.Error())
+			LogErrorf("mongo collection %s update error: %s", m.CollectionName, updateErr.Error())
 		}
 
 		return updateErr
@@ -177,11 +182,12 @@ func (this *MongoBase) Update(query bson.M, data bson.M) error {
 
 /**
  * Increment 自增
- * query 查询条件 bson.M (map[string]interface{})
- * column 自增字段 string
- * inc 增量 int
+ * @param query bson.M (map[string]interface{}) 查询条件
+ * @param column string 自增字段
+ * @param inc int 增量
+ * @return error
  */
-func (this *MongoBase) Increment(query bson.M, column string, incr int) error {
+func (m *MongoBase) Increment(query bson.M, column string, incr int) error {
 	session, db, err := getSession()
 
 	if err != nil {
@@ -190,14 +196,14 @@ func (this *MongoBase) Increment(query bson.M, column string, incr int) error {
 
 	defer session.Close()
 
-	c := session.DB(db).C(this.CollectionName)
+	c := session.DB(db).C(m.CollectionName)
 
 	data := bson.M{column: incr}
 	updateErr := c.Update(query, bson.M{"$inc": data})
 
 	if updateErr != nil {
 		if updateErr.Error() != "not found" {
-			LogErrorf("mongo collection %s update error: %s", this.CollectionName, updateErr.Error())
+			LogErrorf("mongo collection %s update error: %s", m.CollectionName, updateErr.Error())
 		}
 
 		return updateErr
@@ -208,10 +214,11 @@ func (this *MongoBase) Increment(query bson.M, column string, incr int) error {
 
 /**
  * FindOne 查询
- * data 查询数据 interface{} (指针)
- * query 查询条件 bson.M (map[string]interface{})
+ * @param data interface{} (指针) 查询数据
+ * @param query bson.M (map[string]interface{}) 查询条件
+ * @return error
  */
-func (this *MongoBase) FindOne(data interface{}, query bson.M) error {
+func (m *MongoBase) FindOne(data interface{}, query bson.M) error {
 	session, db, err := getSession()
 
 	if err != nil {
@@ -220,13 +227,13 @@ func (this *MongoBase) FindOne(data interface{}, query bson.M) error {
 
 	defer session.Close()
 
-	c := session.DB(db).C(this.CollectionName)
+	c := session.DB(db).C(m.CollectionName)
 
 	findErr := c.Find(query).One(data)
 
 	if findErr != nil {
 		if findErr.Error() != "not found" {
-			LogErrorf("mongo collection %s findone error: %s", this.CollectionName, findErr.Error())
+			LogErrorf("mongo collection %s findone error: %s", m.CollectionName, findErr.Error())
 		}
 
 		return findErr
@@ -237,8 +244,8 @@ func (this *MongoBase) FindOne(data interface{}, query bson.M) error {
 
 /**
  * Find 查询
- * data 查询数据 interface{} (切片指针)
- * query 查询条件 map[string]interface{}
+ * @param data interface{} (切片指针) 查询数据
+ * @param query map[string]interface{} 查询条件
  * [
  * 		condition bson.M
  *      count *int
@@ -246,8 +253,9 @@ func (this *MongoBase) FindOne(data interface{}, query bson.M) error {
  *      skip int
  *      limit int
  * ]
+ * @return error
  */
-func (this *MongoBase) Find(data interface{}, query map[string]interface{}) error {
+func (m *MongoBase) Find(data interface{}, query map[string]interface{}) error {
 	session, db, err := getSession()
 
 	if err != nil {
@@ -256,7 +264,7 @@ func (this *MongoBase) Find(data interface{}, query map[string]interface{}) erro
 
 	defer session.Close()
 
-	q := session.DB(db).C(this.CollectionName).Find(query["condition"].(bson.M))
+	q := session.DB(db).C(m.CollectionName).Find(query["condition"].(bson.M))
 
 	if count, ok := query["count"]; ok {
 		refVal := reflect.ValueOf(count)
@@ -265,7 +273,7 @@ func (this *MongoBase) Find(data interface{}, query map[string]interface{}) erro
 		total, countErr := q.Count()
 
 		if countErr != nil {
-			LogError("mongo collection %s count error: %s", this.CollectionName, countErr.Error())
+			LogError("mongo collection %s count error: %s", m.CollectionName, countErr.Error())
 			elem.Set(reflect.ValueOf(0))
 		} else {
 			elem.Set(reflect.ValueOf(total))
@@ -295,7 +303,7 @@ func (this *MongoBase) Find(data interface{}, query map[string]interface{}) erro
 
 	if findErr != nil {
 		if findErr.Error() != "not found" {
-			LogErrorf("mongo collection %s find error: %s", this.CollectionName, findErr.Error())
+			LogErrorf("mongo collection %s find error: %s", m.CollectionName, findErr.Error())
 		}
 
 		return findErr
@@ -306,9 +314,10 @@ func (this *MongoBase) Find(data interface{}, query map[string]interface{}) erro
 
 /**
  * Delete 删除记录
- * query 查询条件 bson.M (map[string]interface{})
+ * @param query bson.M (map[string]interface{}) 查询条件
+ * @return error
  */
-func (this *MongoBase) Delete(query bson.M) error {
+func (m *MongoBase) Delete(query bson.M) error {
 	session, db, err := getSession()
 
 	if err != nil {
@@ -317,12 +326,12 @@ func (this *MongoBase) Delete(query bson.M) error {
 
 	defer session.Close()
 
-	c := session.DB(db).C(this.CollectionName)
+	c := session.DB(db).C(m.CollectionName)
 
 	_, delErr := c.RemoveAll(query)
 
 	if delErr != nil {
-		LogErrorf("mongo collection %s delete error: %s", this.CollectionName, delErr.Error())
+		LogErrorf("mongo collection %s delete error: %s", m.CollectionName, delErr.Error())
 		return delErr
 	}
 
@@ -331,10 +340,11 @@ func (this *MongoBase) Delete(query bson.M) error {
 
 /**
  * Sum 字段求和
- * match 匹配条件 bson.M (map[string]interface{})
- * field 聚合字段 string (如："$count")
+ * @param match bson.M (map[string]interface{}) 匹配条件
+ * @param field string 聚合字段 (如："$count")
+ * @return int, error
  */
-func (this *MongoBase) Sum(match bson.M, field string) (int, error) {
+func (m *MongoBase) Sum(match bson.M, field string) (int, error) {
 	session, db, err := getSession()
 
 	if err != nil {
@@ -343,7 +353,7 @@ func (this *MongoBase) Sum(match bson.M, field string) (int, error) {
 
 	defer session.Close()
 
-	c := session.DB(db).C(this.CollectionName)
+	c := session.DB(db).C(m.CollectionName)
 
 	p := c.Pipe([]bson.M{
 		{"$match": match},
@@ -355,7 +365,7 @@ func (this *MongoBase) Sum(match bson.M, field string) (int, error) {
 	pipeErr := p.One(&result)
 
 	if pipeErr != nil {
-		LogErrorf("mongo collection %s sum error: %s", this.CollectionName, pipeErr.Error())
+		LogErrorf("mongo collection %s sum error: %s", m.CollectionName, pipeErr.Error())
 		return 0, pipeErr
 	}
 
@@ -363,7 +373,7 @@ func (this *MongoBase) Sum(match bson.M, field string) (int, error) {
 	total, ok := result["total"].(int)
 
 	if !ok {
-		errMsg := fmt.Sprintf("mongo collection %s sum error: type assertion error, result %v is %v", this.CollectionName, result["total"], reflect.TypeOf(result["total"]))
+		errMsg := fmt.Sprintf("mongo collection %s sum error: type assertion error, result %v is %v", m.CollectionName, result["total"], reflect.TypeOf(result["total"]))
 		assertionErr := errors.New(errMsg)
 		LogError(errMsg)
 

@@ -13,6 +13,9 @@ var (
 	envMux sync.Mutex
 )
 
+/**
+ * 初始化ENV配置
+ */
 func initEnv() {
 	envMux.Lock()
 	defer envMux.Unlock()
@@ -31,6 +34,13 @@ func initEnv() {
 	}
 }
 
+/**
+ * 获取 string 配置
+ * @param section string
+ * @param option string
+ * @param defaultValue string
+ * @return string
+ */
 func GetEnvString(section string, option string, defaultValue string) string {
 	if env == nil {
 		initEnv()
@@ -41,6 +51,13 @@ func GetEnvString(section string, option string, defaultValue string) string {
 	return val
 }
 
+/**
+ * 获取 int 配置
+ * @param section string
+ * @param option string
+ * @param defaultValue int
+ * @return int
+ */
 func GetEnvInt(section string, option string, defaultValue int) int {
 	if env == nil {
 		initEnv()
@@ -51,6 +68,13 @@ func GetEnvInt(section string, option string, defaultValue int) int {
 	return val
 }
 
+/**
+ * 获取 int64 配置
+ * @param section string
+ * @param option string
+ * @param defaultValue int64
+ * @return int64
+ */
 func GetEnvInt64(section string, option string, defaultValue int64) int64 {
 	if env == nil {
 		initEnv()
@@ -61,6 +85,13 @@ func GetEnvInt64(section string, option string, defaultValue int64) int64 {
 	return val
 }
 
+/**
+ * 获取 float64 配置
+ * @param section string
+ * @param option string
+ * @param defaultValue float64
+ * @return float64
+ */
 func GetEnvFloat64(section string, option string, defaultValue float64) float64 {
 	if env == nil {
 		initEnv()
@@ -71,6 +102,13 @@ func GetEnvFloat64(section string, option string, defaultValue float64) float64 
 	return val
 }
 
+/**
+ * 获取 bool 配置
+ * @param section string
+ * @param option string
+ * @param defaultValue bool
+ * @return bool
+ */
 func GetEnvBool(section string, option string, defaultValue bool) bool {
 	if env == nil {
 		initEnv()
@@ -82,7 +120,12 @@ func GetEnvBool(section string, option string, defaultValue bool) bool {
 }
 
 /**
- * sep 字符串分隔符
+ * 获取 []string 配置
+ * @param section string
+ * @param option string
+ * @param sep string 字符串分隔符(建议使用：,)
+ * @param defaultValue string
+ * @return []string
  */
 func GetEnvArray(section string, option string, sep string, defaultValue string) []string {
 	if env == nil {

@@ -14,6 +14,9 @@ var (
 	logMux sync.Mutex
 )
 
+/**
+ * 初始化日志配置
+ */
 func initLogger() {
 	logMux.Lock()
 	defer logMux.Unlock()
@@ -33,6 +36,10 @@ func initLogger() {
 	}
 }
 
+/**
+ * 记录 Debug 日志
+ * @param msg ...interface{}
+ */
 func LogDebug(msg ...interface{}) {
 	if logger == nil {
 		initLogger()
@@ -52,6 +59,10 @@ func LogDebug(msg ...interface{}) {
 	seelog.Flush()
 }
 
+/**
+ * 记录 Info 日志
+ * @param msg ...interface{}
+ */
 func LogInfo(msg ...interface{}) {
 	if logger == nil {
 		initLogger()
@@ -71,6 +82,10 @@ func LogInfo(msg ...interface{}) {
 	seelog.Flush()
 }
 
+/**
+ * 记录 Warn 日志
+ * @param msg ...interface{}
+ */
 func LogWarn(msg ...interface{}) {
 	if logger == nil {
 		initLogger()
@@ -90,6 +105,10 @@ func LogWarn(msg ...interface{}) {
 	seelog.Flush()
 }
 
+/**
+ * 记录 Error 日志
+ * @param msg ...interface{}
+ */
 func LogError(msg ...interface{}) {
 	if logger == nil {
 		initLogger()
@@ -109,6 +128,10 @@ func LogError(msg ...interface{}) {
 	seelog.Flush()
 }
 
+/**
+ * 记录 Critical 日志
+ * @param msg ...interface{}
+ */
 func LogCritical(msg ...interface{}) {
 	if logger == nil {
 		initLogger()
@@ -128,6 +151,11 @@ func LogCritical(msg ...interface{}) {
 	seelog.Flush()
 }
 
+/**
+ * 记录 Debug 格式化日志
+ * @param format string
+ * @param params ...interface{}
+ */
 func LogDebugf(format string, params ...interface{}) {
 	if logger == nil {
 		initLogger()
@@ -148,6 +176,11 @@ func LogDebugf(format string, params ...interface{}) {
 	seelog.Flush()
 }
 
+/**
+ * 记录 Info 格式化日志
+ * @param format string
+ * @param params ...interface{}
+ */
 func LogInfof(format string, params ...interface{}) {
 	if logger == nil {
 		initLogger()
@@ -168,6 +201,11 @@ func LogInfof(format string, params ...interface{}) {
 	seelog.Flush()
 }
 
+/**
+ * 记录 Warn 格式化日志
+ * @param format string
+ * @param params ...interface{}
+ */
 func LogWarnf(format string, params ...interface{}) {
 	if logger == nil {
 		initLogger()
@@ -188,6 +226,11 @@ func LogWarnf(format string, params ...interface{}) {
 	seelog.Flush()
 }
 
+/**
+ * 记录 Error 格式化日志
+ * @param format string
+ * @param params ...interface{}
+ */
 func LogErrorf(format string, params ...interface{}) {
 	if logger == nil {
 		initLogger()
@@ -208,6 +251,11 @@ func LogErrorf(format string, params ...interface{}) {
 	seelog.Flush()
 }
 
+/**
+ * 记录 Critical 格式化日志
+ * @param format string
+ * @param params ...interface{}
+ */
 func LogCriticalf(format string, params ...interface{}) {
 	if logger == nil {
 		initLogger()
