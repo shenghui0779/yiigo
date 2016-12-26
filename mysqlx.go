@@ -1,182 +1,125 @@
 package yiigo
 
 import (
-	"errors"
 	"fmt"
 	"sync"
-	"time"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jinzhu/gorm"
-	"github.com/youtube/vitess/go/pools"
-	"golang.org/x/net/context"
 )
 
-type Mysqlx struct {
+type MysqlxBase struct {
 	TableName string
 }
 
 var (
-	mysqlxReadPool  *pools.ResourcePool
-	mysqlxWritePool *pools.ResourcePool
-	mysqlxPoolMux   sync.Mutex
+	readDb     *gorm.DB
+	writeDb    *gorm.DB
+	readDbMux  sync.Mutex
+	writeDbMux sync.Mutex
 )
 
-type ResourceDbx struct {
-	Db *gorm.DB
-}
-
 /**
- * 关闭连接
+ * 初始化readDb
+ * @return error
  */
-func (r ResourceDbx) Close() {
-	err := r.Db.Close()
+func initReadDb() error {
+	readDbMux.Lock()
+	defer readDbMux.Unlock()
 
-	if err != nil {
-		LogError("mysql connection close error: ", err.Error())
+	if readDb == nil {
+		var err error
+
+		host := GetEnvString("sdb", "host", "localhost")
+		port := GetEnvInt("sdb", "port", 3306)
+		username := GetEnvString("sdb", "username", "root")
+		password := GetEnvString("sdb", "password", "")
+		maxOpenConns := GetEnvInt("sdb", "maxOpenConns", 10)
+		maxIdleConns := GetEnvInt("sdb", "maxIdleConns", 10)
+		database := GetEnvString("sdb", "database", "test")
+		charset := GetEnvString("sdb", "charset", "utf8mb4")
+
+		address := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s&parseTime=True&loc=Local", username, password, host, port, database, charset)
+		readDb, err = gorm.Open("mysql", address)
+
+		if err != nil {
+			LogErrorf("connect mysql server %s:%d error: %s", host, port, err.Error())
+			return err
+		}
+
+		readDb.SingularTable(true)
+
+		readDb.DB().SetMaxOpenConns(maxOpenConns)
+		readDb.DB().SetMaxIdleConns(maxIdleConns)
+
+		debug := GetEnvBool("app", "debug", true)
+
+		if debug {
+			readDb.LogMode(true)
+		}
 	}
+
+	return nil
 }
 
 /**
- * 连接数据库
+ * 初始化writeDb
+ * @return error
+ */
+func initWriteDb() error {
+	writeDbMux.Lock()
+	defer writeDbMux.Unlock()
+
+	if writeDb == nil {
+		var err error
+
+		host := GetEnvString("mdb", "host", "localhost")
+		port := GetEnvInt("mdb", "port", 3306)
+		username := GetEnvString("mdb", "username", "root")
+		password := GetEnvString("mdb", "password", "")
+		maxOpenConns := GetEnvInt("mdb", "maxOpenConns", 10)
+		maxIdleConns := GetEnvInt("mdb", "maxIdleConns", 10)
+		database := GetEnvString("mdb", "database", "test")
+		charset := GetEnvString("mdb", "charset", "utf8mb4")
+
+		address := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s&parseTime=True&loc=Local", username, password, host, port, database, charset)
+		writeDb, err = gorm.Open("mysql", address)
+
+		if err != nil {
+			LogErrorf("connect mysql server %s:%d error: %s", host, port, err.Error())
+			return err
+		}
+
+		writeDb.SingularTable(true)
+
+		writeDb.DB().SetMaxOpenConns(maxOpenConns)
+		writeDb.DB().SetMaxIdleConns(maxIdleConns)
+
+		debug := GetEnvBool("app", "debug", true)
+
+		if debug {
+			writeDb.LogMode(true)
+		}
+	}
+
+	return nil
+}
+
+/**
+ * 获取readDb
  * @return *gorm.DB, error
  */
-func mysqlxDial(isRead bool) (*gorm.DB, error) {
-	var (
-		host     string
-		port     int
-		username string
-		password string
-	)
+func (m *MysqlxBase) getReadDb() (*gorm.DB, error) {
+	if readDb == nil {
+		err := initReadDb()
 
-	if isRead {
-		host = GetEnvString("mysql-s", "host", "localhost")
-		port = GetEnvInt("mysql-s", "port", 3306)
-		username = GetEnvString("mysql-s", "username", "root")
-		password = GetEnvString("mysql-s", "password", "root")
-	} else {
-		host = GetEnvString("mysql-m", "host", "localhost")
-		port = GetEnvInt("mysql-m", "port", 3306)
-		username = GetEnvString("mysql-m", "username", "root")
-		password = GetEnvString("mysql-m", "password", "root")
-	}
-
-	database := GetEnvString("db", "database", "yiicms")
-	charset := GetEnvString("db", "charset", "utf8mb4")
-
-	address := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s&parseTime=True&loc=Local", username, password, host, port, database, charset)
-	db, err := gorm.Open("mysql", address)
-
-	if err != nil {
-		LogErrorf("connect mysql server %s:%d error: %s", host, port, err.Error())
-		return nil, err
-	}
-
-	db.SingularTable(true)
-
-	debug := GetEnvBool("app", "debug", true)
-
-	if debug {
-		db.LogMode(true)
-	}
-
-	return db, err
-}
-
-/**
- * 初始化mysql连接池
- */
-func initMysqlxPool(isRead bool) {
-	mysqlPoolMux.Lock()
-	defer mysqlPoolMux.Unlock()
-
-	var (
-		poolMinActive   int
-		poolMaxActive   int
-		poolIdleTimeout int
-	)
-
-	if isRead {
-		if mysqlxReadPool == nil {
-			poolMinActive = GetEnvInt("mysql-s", "poolMinActive", 10)
-			poolMaxActive = GetEnvInt("mysql-s", "poolMaxActive", 20)
-			poolIdleTimeout = GetEnvInt("mysql-s", "poolIdleTimeout", 10000)
-
-			mysqlxReadPool = pools.NewResourcePool(func() (pools.Resource, error) {
-				db, err := mysqlxDial(true)
-				return ResourceDbx{Db: db}, err
-			}, poolMinActive, poolMaxActive, time.Duration(poolIdleTimeout)*time.Millisecond)
-		}
-	} else {
-		if mysqlxWritePool == nil {
-			poolMinActive = GetEnvInt("mysql-m", "poolMinActive", 10)
-			poolMaxActive = GetEnvInt("mysql-m", "poolMaxActive", 20)
-			poolIdleTimeout = GetEnvInt("mysql-m", "poolIdleTimeout", 10000)
-
-			mysqlxWritePool = pools.NewResourcePool(func() (pools.Resource, error) {
-				db, err := mysqlxDial(false)
-				return ResourceDbx{Db: db}, err
-			}, poolMinActive, poolMaxActive, time.Duration(poolIdleTimeout)*time.Millisecond)
+		if err != nil {
+			return nil, err
 		}
 	}
-}
 
-/**
- * 获取db资源
- * @return pools.Resource, error
- */
-func poolGetDbxResource(isRead bool) (pools.Resource, error) {
-	var (
-		rd  pools.Resource
-		err error
-	)
-
-	if isRead {
-		if mysqlxReadPool == nil || mysqlxReadPool.IsClosed() {
-			initMysqlxPool(true)
-		}
-
-		if mysqlxReadPool == nil {
-			LogError("mysql write db pool is null")
-			return nil, errors.New("mysql write db pool is null")
-		}
-
-		ctx := context.TODO()
-		rd, err = mysqlxReadPool.Get(ctx)
-	} else {
-		if mysqlxWritePool == nil || mysqlxWritePool.IsClosed() {
-			initMysqlxPool(false)
-		}
-
-		if mysqlxWritePool == nil {
-			LogError("mysql write db pool is null")
-			return nil, errors.New("mysql write db pool is null")
-		}
-
-		ctx := context.TODO()
-		rd, err = mysqlxWritePool.Get(ctx)
-	}
-
-	if err != nil {
-		return nil, err
-	}
-
-	if rd == nil {
-		LogError("mysql pool resource is null")
-		return nil, errors.New("mysql pool resource is null")
-	}
-
-	return rd, err
-}
-
-/**
- * 初始化db
- * @param db *gorm.DB
- * @return *gorm.DB
- */
-func (m *Mysqlx) initDb(db *gorm.DB) *gorm.DB {
 	var table string
-	prefix := GetEnvString("db", "prefix", "")
+	prefix := GetEnvString("sdb", "prefix", "")
 
 	if prefix != "" {
 		table = prefix + m.TableName
@@ -184,7 +127,32 @@ func (m *Mysqlx) initDb(db *gorm.DB) *gorm.DB {
 		table = m.TableName
 	}
 
-	return db.Table(table)
+	return readDb.Table(table), nil
+}
+
+/**
+ * 获取writeDb
+ * @return *gorm.DB, error
+ */
+func (m *MysqlxBase) getWriteDb() (*gorm.DB, error) {
+	if writeDb == nil {
+		err := initWriteDb()
+
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	var table string
+	prefix := GetEnvString("mdb", "prefix", "")
+
+	if prefix != "" {
+		table = prefix + m.TableName
+	} else {
+		table = m.TableName
+	}
+
+	return writeDb.Table(table), nil
 }
 
 /**
@@ -192,18 +160,14 @@ func (m *Mysqlx) initDb(db *gorm.DB) *gorm.DB {
  * @param data interface{} 插入数据 (struct指针)
  * @return error
  */
-func (m *Mysqlx) Insert(data interface{}) error {
-	rd, err := poolGetDbxResource(false)
+func (m *MysqlxBase) Insert(data interface{}) error {
+	writeDb, err := m.getWriteDb()
 
 	if err != nil {
 		return err
 	}
 
-	defer mysqlPool.Put(rd)
-
-	db := m.initDb(rd.(ResourceDbx).Db)
-
-	insertErr := db.Create(data).Error
+	insertErr := writeDb.Create(data).Error
 
 	if insertErr != nil {
 		LogErrorf("mysql table %s insert error: %s", m.TableName, insertErr.Error())
@@ -218,18 +182,14 @@ func (m *Mysqlx) Insert(data interface{}) error {
  * @param data []interface{} 插入数据 (struct指针切片)
  * @return error
  */
-func (m *Mysqlx) BatchInsert(data []interface{}) error {
-	rd, err := poolGetDbxResource(false)
+func (m *MysqlxBase) BatchInsert(data []interface{}) error {
+	writeDb, err := m.getWriteDb()
 
 	if err != nil {
 		return err
 	}
 
-	defer mysqlPool.Put(rd)
-
-	db := m.initDb(rd.(ResourceDbx).Db)
-
-	tx := db.Begin()
+	tx := writeDb.Begin()
 
 	var insertErr error
 
@@ -265,18 +225,14 @@ func (m *Mysqlx) BatchInsert(data []interface{}) error {
  * ]
  * @return error
  */
-func (m *Mysqlx) BatchInsertWithAction(data []interface{}, action map[string]interface{}) error {
-	rd, err := poolGetDbxResource(false)
+func (m *MysqlxBase) BatchInsertWithAction(data []interface{}, action map[string]interface{}) error {
+	writeDb, err := m.getWriteDb()
 
 	if err != nil {
 		return err
 	}
 
-	defer mysqlPool.Put(rd)
-
-	db := m.initDb(rd.(ResourceDbx).Db)
-
-	tx := db.Begin()
+	tx := writeDb.Begin()
 
 	var (
 		dbErr      error
@@ -346,16 +302,12 @@ func (m *Mysqlx) BatchInsertWithAction(data []interface{}, action map[string]int
  * @param data map[string]interface{} 更新字段
  * @return error
  */
-func (m *Mysqlx) Update(query map[string]interface{}, data map[string]interface{}) error {
-	rd, err := poolGetDbxResource(false)
+func (m *MysqlxBase) Update(query map[string]interface{}, data map[string]interface{}) error {
+	writeDb, err := m.getWriteDb()
 
 	if err != nil {
 		return err
 	}
-
-	defer mysqlPool.Put(rd)
-
-	db := m.initDb(rd.(ResourceDbx).Db)
 
 	var (
 		where interface{}
@@ -370,7 +322,7 @@ func (m *Mysqlx) Update(query map[string]interface{}, data map[string]interface{
 		bind = v.([]interface{})
 	}
 
-	updateErr := db.Where(where, bind...).Updates(data).Error
+	updateErr := writeDb.Where(where, bind...).Updates(data).Error
 
 	if updateErr != nil {
 		LogErrorf("mysql table %s update error: %s", m.TableName, updateErr.Error())
@@ -391,16 +343,12 @@ func (m *Mysqlx) Update(query map[string]interface{}, data map[string]interface{
  * @param inc int 增量
  * @return error
  */
-func (m *Mysqlx) Increment(query map[string]interface{}, column string, inc int) error {
-	rd, err := poolGetDbxResource(false)
+func (m *MysqlxBase) Increment(query map[string]interface{}, column string, inc int) error {
+	writeDb, err := m.getWriteDb()
 
 	if err != nil {
 		return err
 	}
-
-	defer mysqlPool.Put(rd)
-
-	db := m.initDb(rd.(ResourceDbx).Db)
 
 	var (
 		where interface{}
@@ -416,7 +364,7 @@ func (m *Mysqlx) Increment(query map[string]interface{}, column string, inc int)
 	}
 
 	expr := fmt.Sprintf("%s + ?", column)
-	incErr := db.Where(where, bind...).Update(column, gorm.Expr(expr, inc)).Error
+	incErr := writeDb.Where(where, bind...).Update(column, gorm.Expr(expr, inc)).Error
 
 	if incErr != nil {
 		LogErrorf("mysql table %s inc error: %s", m.TableName, incErr.Error())
@@ -437,16 +385,12 @@ func (m *Mysqlx) Increment(query map[string]interface{}, column string, inc int)
  * @param dec int 减量
  * @return error
  */
-func (m *Mysqlx) Decrement(query map[string]interface{}, column string, dec int) error {
-	rd, err := poolGetDbxResource(false)
+func (m *MysqlxBase) Decrement(query map[string]interface{}, column string, dec int) error {
+	writeDb, err := m.getWriteDb()
 
 	if err != nil {
 		return err
 	}
-
-	defer mysqlPool.Put(rd)
-
-	db := m.initDb(rd.(ResourceDbx).Db)
 
 	var (
 		where interface{}
@@ -462,7 +406,7 @@ func (m *Mysqlx) Decrement(query map[string]interface{}, column string, dec int)
 	}
 
 	expr := fmt.Sprintf("%s - ?", column)
-	decErr := db.Where(where, bind...).Update(column, gorm.Expr(expr, dec)).Error
+	decErr := writeDb.Where(where, bind...).Update(column, gorm.Expr(expr, dec)).Error
 
 	if decErr != nil {
 		LogErrorf("mysql table %s dec error: %s", m.TableName, decErr.Error())
@@ -484,24 +428,20 @@ func (m *Mysqlx) Decrement(query map[string]interface{}, column string, dec int)
  * @param data interface{} 查询数据 (struct指针)
  * @return error
  */
-func (m *Mysqlx) FindOne(query map[string]interface{}, data interface{}) error {
-	rd, err := poolGetDbxResource(true)
+func (m *MysqlxBase) FindOne(query map[string]interface{}, data interface{}) error {
+	readDb, err := m.getReadDb()
 
 	if err != nil {
 		return err
 	}
 
-	defer mysqlPool.Put(rd)
-
-	db := m.initDb(rd.(ResourceDbx).Db)
-
 	if sel, ok := query["select"]; ok {
-		db = db.Select(sel)
+		readDb = readDb.Select(sel)
 	}
 
 	if join, ok := query["join"]; ok {
 		if jn, ok := join.(string); ok {
-			db = db.Joins(jn)
+			readDb = readDb.Joins(jn)
 		}
 	}
 
@@ -518,9 +458,9 @@ func (m *Mysqlx) FindOne(query map[string]interface{}, data interface{}) error {
 		bind = v.([]interface{})
 	}
 
-	db = db.Where(where, bind...)
+	readDb = readDb.Where(where, bind...)
 
-	findErr := db.First(data).Error
+	findErr := readDb.First(data).Error
 
 	if findErr != nil {
 		errMsg := findErr.Error()
@@ -552,24 +492,20 @@ func (m *Mysqlx) FindOne(query map[string]interface{}, data interface{}) error {
  * data interface{} 查询数据 (struct切片指针)
  * @return error
  */
-func (m *Mysqlx) Find(query map[string]interface{}, data interface{}) error {
-	rd, err := poolGetDbxResource(true)
+func (m *MysqlxBase) Find(query map[string]interface{}, data interface{}) error {
+	readDb, err := m.getReadDb()
 
 	if err != nil {
 		return err
 	}
 
-	defer mysqlPool.Put(rd)
-
-	db := m.initDb(rd.(ResourceDbx).Db)
-
 	if sel, ok := query["select"]; ok {
-		db = db.Select(sel)
+		readDb = readDb.Select(sel)
 	}
 
 	if join, ok := query["join"]; ok {
 		if jn, ok := join.(string); ok {
-			db = db.Joins(jn)
+			readDb = readDb.Joins(jn)
 		}
 	}
 
@@ -586,31 +522,31 @@ func (m *Mysqlx) Find(query map[string]interface{}, data interface{}) error {
 		bind = v.([]interface{})
 	}
 
-	db = db.Where(where, bind...)
+	readDb = readDb.Where(where, bind...)
 
 	if count, ok := query["count"]; ok {
-		db = db.Count(count)
+		readDb = readDb.Count(count)
 	}
 
 	if group, ok := query["group"]; ok {
 		if gro, ok := group.(string); ok {
-			db = db.Group(gro)
+			readDb = readDb.Group(gro)
 		}
 	}
 
 	if order, ok := query["order"]; ok {
-		db = db.Order(order)
+		readDb = readDb.Order(order)
 	}
 
 	if offset, ok := query["offset"]; ok {
-		db = db.Offset(offset)
+		readDb = readDb.Offset(offset)
 	}
 
 	if limit, ok := query["limit"]; ok {
-		db = db.Limit(limit)
+		readDb = readDb.Limit(limit)
 	}
 
-	findErr := db.Find(data).Error
+	findErr := readDb.Find(data).Error
 
 	if findErr != nil {
 		errMsg := findErr.Error()
@@ -635,16 +571,12 @@ func (m *Mysqlx) Find(query map[string]interface{}, data interface{}) error {
  * @param data interface{} (struct指针)
  * @return error
  */
-func (m *Mysqlx) Delete(query map[string]interface{}, data interface{}) error {
-	rd, err := poolGetDbxResource(false)
+func (m *MysqlxBase) Delete(query map[string]interface{}, data interface{}) error {
+	readDb, err := m.getReadDb()
 
 	if err != nil {
 		return err
 	}
-
-	defer mysqlPool.Put(rd)
-
-	db := m.initDb(rd.(ResourceDbx).Db)
 
 	var (
 		where interface{}
@@ -659,7 +591,7 @@ func (m *Mysqlx) Delete(query map[string]interface{}, data interface{}) error {
 		bind = v.([]interface{})
 	}
 
-	delErr := db.Where(where, bind...).Delete(data).Error
+	delErr := readDb.Where(where, bind...).Delete(data).Error
 
 	if delErr != nil {
 		errMsg := delErr.Error()

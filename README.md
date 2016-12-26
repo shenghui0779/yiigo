@@ -9,4 +9,4 @@ go get github.com/iiinsomnia/yiigo
  - http://www.golangtc.com/download/package
 
 ##### [2] 数据库默认没有主从，如果要使用主从库，则：
- - env配置文件中 [mysql] 部分采用 dbx.ini 中的配置
+ - env配置文件中 [db] 部分采用 dbx.ini 中的配置

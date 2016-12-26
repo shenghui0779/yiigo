@@ -35,6 +35,7 @@ func initMongo() error {
 
 	if mongoSession == nil {
 		var err error
+
 		host := GetEnvString("mongo", "host", "localhost")
 		port := GetEnvInt("mongo", "port", 27017)
 		poolLimit := GetEnvInt("mongo", "poolLimit", 10)

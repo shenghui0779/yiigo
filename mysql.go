@@ -1,15 +1,11 @@
 package yiigo
 
 import (
-	"errors"
 	"fmt"
 	"sync"
-	"time"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jinzhu/gorm"
-	"github.com/youtube/vitess/go/pools"
-	"golang.org/x/net/context"
 )
 
 type MysqlBase struct {
@@ -17,124 +13,66 @@ type MysqlBase struct {
 }
 
 var (
-	mysqlPool    *pools.ResourcePool
-	mysqlPoolMux sync.Mutex
+	db    *gorm.DB
+	dbMux sync.Mutex
 )
-
-type ResourceDb struct {
-	Db *gorm.DB
-}
-
-/**
- * 关闭连接
- */
-func (r ResourceDb) Close() {
-	err := r.Db.Close()
-
-	if err != nil {
-		LogError("mysql connection close error: ", err.Error())
-	}
-}
-
-/**
- * 连接数据库
- * @return *gorm.DB, error
- */
-func mysqlDial() (*gorm.DB, error) {
-	var (
-		host     string
-		port     int
-		username string
-		password string
-	)
-
-	host = GetEnvString("mysql", "host", "localhost")
-	port = GetEnvInt("mysql", "port", 3306)
-	username = GetEnvString("mysql", "username", "root")
-	password = GetEnvString("mysql", "password", "root")
-
-	database := GetEnvString("db", "database", "yiicms")
-	charset := GetEnvString("db", "charset", "utf8mb4")
-
-	address := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s&parseTime=True&loc=Local", username, password, host, port, database, charset)
-	db, err := gorm.Open("mysql", address)
-
-	if err != nil {
-		LogErrorf("connect mysql server %s:%d error: %s", host, port, err.Error())
-		return nil, err
-	}
-
-	db.SingularTable(true)
-
-	debug := GetEnvBool("app", "debug", true)
-
-	if debug {
-		db.LogMode(true)
-	}
-
-	return db, err
-}
-
-/**
- * 初始化mysql连接池
- */
-func initMysqlPool() {
-	mysqlPoolMux.Lock()
-	defer mysqlPoolMux.Unlock()
-
-	var (
-		poolMinActive   int
-		poolMaxActive   int
-		poolIdleTimeout int
-	)
-
-	if mysqlPool == nil {
-		poolMinActive = GetEnvInt("mysql", "poolMinActive", 10)
-		poolMaxActive = GetEnvInt("mysql", "poolMaxActive", 20)
-		poolIdleTimeout = GetEnvInt("mysql", "poolIdleTimeout", 10000)
-
-		mysqlPool = pools.NewResourcePool(func() (pools.Resource, error) {
-			db, err := mysqlDial()
-			return ResourceDb{Db: db}, err
-		}, poolMinActive, poolMaxActive, time.Duration(poolIdleTimeout)*time.Millisecond)
-	}
-}
-
-/**
- * 获取db资源
- * @return pools.Resource, error
- */
-func poolGetDbResource() (pools.Resource, error) {
-	if mysqlPool == nil || mysqlPool.IsClosed() {
-		initMysqlPool()
-	}
-
-	if mysqlPool == nil {
-		LogError("mysql pool is null")
-		return nil, errors.New("mysql pool is null")
-	}
-
-	ctx := context.TODO()
-	rd, err := mysqlPool.Get(ctx)
-
-	if err != nil {
-		return nil, err
-	}
-
-	if rd == nil {
-		LogError("mysql pool resource is null")
-		return nil, errors.New("mysql pool resource is null")
-	}
-
-	return rd, err
-}
 
 /**
  * 初始化db
- * @param db *gorm.DB
- * @return *gorm.DB
+ * @return error
  */
-func (m *MysqlBase) initDb(db *gorm.DB) *gorm.DB {
+func initDb() error {
+	dbMux.Lock()
+	defer dbMux.Unlock()
+
+	if db == nil {
+		var err error
+
+		host := GetEnvString("db", "host", "localhost")
+		port := GetEnvInt("db", "port", 3306)
+		username := GetEnvString("db", "username", "root")
+		password := GetEnvString("db", "password", "")
+		maxOpenConns := GetEnvInt("db", "maxOpenConns", 10)
+		maxIdleConns := GetEnvInt("db", "maxIdleConns", 10)
+		database := GetEnvString("db", "database", "test")
+		charset := GetEnvString("db", "charset", "utf8mb4")
+
+		address := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s&parseTime=True&loc=Local", username, password, host, port, database, charset)
+		db, err = gorm.Open("mysql", address)
+
+		if err != nil {
+			LogErrorf("connect mysql server %s:%d error: %s", host, port, err.Error())
+			return err
+		}
+
+		db.SingularTable(true)
+
+		db.DB().SetMaxOpenConns(maxOpenConns)
+		db.DB().SetMaxIdleConns(maxIdleConns)
+
+		debug := GetEnvBool("app", "debug", true)
+
+		if debug {
+			db.LogMode(true)
+		}
+	}
+
+	return nil
+}
+
+/**
+ * 获取db
+ * @return *gorm.DB, error
+ */
+func (m *MysqlBase) getDb() (*gorm.DB, error) {
+	if db == nil {
+		err := initDb()
+
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	var table string
 	prefix := GetEnvString("db", "prefix", "")
 
@@ -144,7 +82,7 @@ func (m *MysqlBase) initDb(db *gorm.DB) *gorm.DB {
 		table = m.TableName
 	}
 
-	return db.Table(table)
+	return db.Table(table), nil
 }
 
 /**
@@ -153,15 +91,11 @@ func (m *MysqlBase) initDb(db *gorm.DB) *gorm.DB {
  * @return error
  */
 func (m *MysqlBase) Insert(data interface{}) error {
-	rd, err := poolGetDbResource()
+	db, err := m.getDb()
 
 	if err != nil {
 		return err
 	}
-
-	defer mysqlPool.Put(rd)
-
-	db := m.initDb(rd.(ResourceDb).Db)
 
 	insertErr := db.Create(data).Error
 
@@ -179,15 +113,11 @@ func (m *MysqlBase) Insert(data interface{}) error {
  * @return error
  */
 func (m *MysqlBase) BatchInsert(data []interface{}) error {
-	rd, err := poolGetDbResource()
+	db, err := m.getDb()
 
 	if err != nil {
 		return err
 	}
-
-	defer mysqlPool.Put(rd)
-
-	db := m.initDb(rd.(ResourceDb).Db)
 
 	tx := db.Begin()
 
@@ -226,15 +156,11 @@ func (m *MysqlBase) BatchInsert(data []interface{}) error {
  * @return error
  */
 func (m *MysqlBase) BatchInsertWithAction(data []interface{}, action map[string]interface{}) error {
-	rd, err := poolGetDbResource()
+	db, err := m.getDb()
 
 	if err != nil {
 		return err
 	}
-
-	defer mysqlPool.Put(rd)
-
-	db := m.initDb(rd.(ResourceDb).Db)
 
 	tx := db.Begin()
 
@@ -307,15 +233,11 @@ func (m *MysqlBase) BatchInsertWithAction(data []interface{}, action map[string]
  * @return error
  */
 func (m *MysqlBase) Update(query map[string]interface{}, data map[string]interface{}) error {
-	rd, err := poolGetDbResource()
+	db, err := m.getDb()
 
 	if err != nil {
 		return err
 	}
-
-	defer mysqlPool.Put(rd)
-
-	db := m.initDb(rd.(ResourceDb).Db)
 
 	var (
 		where interface{}
@@ -352,15 +274,11 @@ func (m *MysqlBase) Update(query map[string]interface{}, data map[string]interfa
  * @return error
  */
 func (m *MysqlBase) Increment(query map[string]interface{}, column string, inc int) error {
-	rd, err := poolGetDbResource()
+	db, err := m.getDb()
 
 	if err != nil {
 		return err
 	}
-
-	defer mysqlPool.Put(rd)
-
-	db := m.initDb(rd.(ResourceDb).Db)
 
 	var (
 		where interface{}
@@ -398,15 +316,11 @@ func (m *MysqlBase) Increment(query map[string]interface{}, column string, inc i
  * @return error
  */
 func (m *MysqlBase) Decrement(query map[string]interface{}, column string, dec int) error {
-	rd, err := poolGetDbResource()
+	db, err := m.getDb()
 
 	if err != nil {
 		return err
 	}
-
-	defer mysqlPool.Put(rd)
-
-	db := m.initDb(rd.(ResourceDb).Db)
 
 	var (
 		where interface{}
@@ -445,15 +359,11 @@ func (m *MysqlBase) Decrement(query map[string]interface{}, column string, dec i
  * @return error
  */
 func (m *MysqlBase) FindOne(query map[string]interface{}, data interface{}) error {
-	rd, err := poolGetDbResource()
+	db, err := m.getDb()
 
 	if err != nil {
 		return err
 	}
-
-	defer mysqlPool.Put(rd)
-
-	db := m.initDb(rd.(ResourceDb).Db)
 
 	if sel, ok := query["select"]; ok {
 		db = db.Select(sel)
@@ -513,15 +423,11 @@ func (m *MysqlBase) FindOne(query map[string]interface{}, data interface{}) erro
  * @return error
  */
 func (m *MysqlBase) Find(query map[string]interface{}, data interface{}) error {
-	rd, err := poolGetDbResource()
+	db, err := m.getDb()
 
 	if err != nil {
 		return err
 	}
-
-	defer mysqlPool.Put(rd)
-
-	db := m.initDb(rd.(ResourceDb).Db)
 
 	if sel, ok := query["select"]; ok {
 		db = db.Select(sel)
@@ -596,15 +502,11 @@ func (m *MysqlBase) Find(query map[string]interface{}, data interface{}) error {
  * @return error
  */
 func (m *MysqlBase) Delete(query map[string]interface{}, data interface{}) error {
-	rd, err := poolGetDbResource()
+	db, err := m.getDb()
 
 	if err != nil {
 		return err
 	}
-
-	defer mysqlPool.Put(rd)
-
-	db := m.initDb(rd.(ResourceDb).Db)
 
 	var (
 		where interface{}
