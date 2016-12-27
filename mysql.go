@@ -2,6 +2,7 @@ package yiigo
 
 import (
 	"fmt"
+	"reflect"
 	"sync"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -109,10 +110,22 @@ func (m *MysqlBase) Insert(data interface{}) error {
 
 /**
  * BatchInsert 批量插入 (支持事务)
- * @param data []interface{} 插入数据 (struct指针切片)
+ * @param data interface{} 插入数据 (struct指针切片)
  * @return error
  */
-func (m *MysqlBase) BatchInsert(data []interface{}) error {
+func (m *MysqlBase) BatchInsert(data interface{}) error {
+	refVal := reflect.ValueOf(data)
+
+	if refVal.Kind() != reflect.Slice {
+		panic("data must be a pointer slice")
+	}
+
+	length := refVal.Len()
+
+	if length == 0 {
+		return nil
+	}
+
 	db, err := m.getDb()
 
 	if err != nil {
@@ -123,8 +136,8 @@ func (m *MysqlBase) BatchInsert(data []interface{}) error {
 
 	var insertErr error
 
-	for _, model := range data {
-		insertErr = tx.Create(model).Error
+	for i := 0; i < length; i++ {
+		insertErr = tx.Create(refVal.Index(i).Interface()).Error
 
 		if insertErr != nil {
 			break
@@ -145,7 +158,7 @@ func (m *MysqlBase) BatchInsert(data []interface{}) error {
 
 /**
  * BatchInsertWithAction 带操作的批量插入 (支持事务)
- * @param data []interface{} 插入数据 (struct指针切片)
+ * @param data interface{} 插入数据 (struct指针切片)
  * @param action map[string]interface{} 执行数据插入前的操作 (支持更新和删除)
  * [
  * 		type string 操作类型 (delete 或 update)
@@ -155,7 +168,19 @@ func (m *MysqlBase) BatchInsert(data []interface{}) error {
  * ]
  * @return error
  */
-func (m *MysqlBase) BatchInsertWithAction(data []interface{}, action map[string]interface{}) error {
+func (m *MysqlBase) BatchInsertWithAction(data interface{}, action map[string]interface{}) error {
+	refVal := reflect.ValueOf(data)
+
+	if refVal.Kind() != reflect.Slice {
+		panic("data must be a pointer slice")
+	}
+
+	length := refVal.Len()
+
+	if length == 0 {
+		return nil
+	}
+
 	db, err := m.getDb()
 
 	if err != nil {
@@ -202,8 +227,8 @@ func (m *MysqlBase) BatchInsertWithAction(data []interface{}, action map[string]
 		return dbErr
 	}
 
-	for _, model := range data {
-		dbErr = tx.Create(model).Error
+	for i := 0; i < length; i++ {
+		dbErr = tx.Create(refVal.Index(i).Interface()).Error
 
 		if dbErr != nil {
 			break
