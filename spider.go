@@ -213,7 +213,7 @@ func (s *SpiderBase) HttpsPost(httpUrl string, host string, v url.Values, setCoo
 		return nil, httpErr
 	}
 
-	s.setHttpCommonHeader(req, false, host, referer...)
+	s.setHttpCommonHeader(req, true, host, referer...)
 
 	if setCookie {
 		s.setHttpCookie(req)
