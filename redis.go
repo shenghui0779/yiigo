@@ -98,7 +98,7 @@ func getRedisConn() (pools.Resource, error) {
 func (r *RedisBase) getKey(key string) string {
 	prefix := GetEnvString("redis", "prefix", "yii")
 
-	if strings.Trim(key, " ") == "" {
+	if strings.TrimSpace(key) == "" {
 		return fmt.Sprintf("%s:%s", prefix, r.CacheName)
 	}
 
