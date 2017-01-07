@@ -4,36 +4,22 @@ import (
 	"fmt"
 	"path/filepath"
 	"runtime"
-	"sync"
 
 	"github.com/cihub/seelog"
-)
-
-var (
-	logger seelog.LoggerInterface
-	logMux sync.Mutex
 )
 
 /**
  * 初始化日志配置
  */
-func initLogger() {
-	logMux.Lock()
-	defer logMux.Unlock()
+func InitLogger() {
+	path, _ := filepath.Abs("log.xml")
+	logger, err := seelog.LoggerFromConfigAsFile(path)
 
-	if logger == nil {
-		var err error
-		path, _ := filepath.Abs("log.xml")
-		logger, err = seelog.LoggerFromConfigAsFile(path)
-
-		if err != nil {
-			seelog.Critical("load log file error: ", err.Error())
-			seelog.Flush()
-			return
-		}
-
-		seelog.ReplaceLogger(logger)
+	if err != nil {
+		panic(err)
 	}
+
+	seelog.ReplaceLogger(logger)
 }
 
 /**
@@ -41,10 +27,6 @@ func initLogger() {
  * @param msg ...interface{}
  */
 func LogDebug(msg ...interface{}) {
-	if logger == nil {
-		initLogger()
-	}
-
 	debugMsg := []interface{}{}
 
 	_, file, line, ok := runtime.Caller(1)
@@ -64,10 +46,6 @@ func LogDebug(msg ...interface{}) {
  * @param msg ...interface{}
  */
 func LogInfo(msg ...interface{}) {
-	if logger == nil {
-		initLogger()
-	}
-
 	infoMsg := []interface{}{}
 
 	_, file, line, ok := runtime.Caller(1)
@@ -87,10 +65,6 @@ func LogInfo(msg ...interface{}) {
  * @param msg ...interface{}
  */
 func LogWarn(msg ...interface{}) {
-	if logger == nil {
-		initLogger()
-	}
-
 	warnMsg := []interface{}{}
 
 	_, file, line, ok := runtime.Caller(1)
@@ -110,10 +84,6 @@ func LogWarn(msg ...interface{}) {
  * @param msg ...interface{}
  */
 func LogError(msg ...interface{}) {
-	if logger == nil {
-		initLogger()
-	}
-
 	errorMsg := []interface{}{}
 
 	_, file, line, ok := runtime.Caller(1)
@@ -133,10 +103,6 @@ func LogError(msg ...interface{}) {
  * @param msg ...interface{}
  */
 func LogCritical(msg ...interface{}) {
-	if logger == nil {
-		initLogger()
-	}
-
 	criticalMsg := []interface{}{}
 
 	_, file, line, ok := runtime.Caller(1)
@@ -157,10 +123,6 @@ func LogCritical(msg ...interface{}) {
  * @param params ...interface{}
  */
 func LogDebugf(format string, params ...interface{}) {
-	if logger == nil {
-		initLogger()
-	}
-
 	debugParams := []interface{}{}
 
 	_, file, line, ok := runtime.Caller(1)
@@ -182,10 +144,6 @@ func LogDebugf(format string, params ...interface{}) {
  * @param params ...interface{}
  */
 func LogInfof(format string, params ...interface{}) {
-	if logger == nil {
-		initLogger()
-	}
-
 	infoParams := []interface{}{}
 
 	_, file, line, ok := runtime.Caller(1)
@@ -207,10 +165,6 @@ func LogInfof(format string, params ...interface{}) {
  * @param params ...interface{}
  */
 func LogWarnf(format string, params ...interface{}) {
-	if logger == nil {
-		initLogger()
-	}
-
 	warnParams := []interface{}{}
 
 	_, file, line, ok := runtime.Caller(1)
@@ -232,10 +186,6 @@ func LogWarnf(format string, params ...interface{}) {
  * @param params ...interface{}
  */
 func LogErrorf(format string, params ...interface{}) {
-	if logger == nil {
-		initLogger()
-	}
-
 	errorParams := []interface{}{}
 
 	_, file, line, ok := runtime.Caller(1)
@@ -257,10 +207,6 @@ func LogErrorf(format string, params ...interface{}) {
  * @param params ...interface{}
  */
 func LogCriticalf(format string, params ...interface{}) {
-	if logger == nil {
-		initLogger()
-	}
-
 	criticalParams := []interface{}{}
 
 	_, file, line, ok := runtime.Caller(1)

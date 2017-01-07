@@ -2,7 +2,6 @@ package yiigo
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"reflect"
 	"strings"
@@ -19,14 +18,15 @@ type RedisBase struct {
 }
 
 var (
-	redisPool    *pools.ResourcePool
-	redisPoolMux sync.Mutex
+	redisPool *pools.ResourcePool
+	redisMux  sync.Mutex
 )
 
 type ResourceConn struct {
 	redis.Conn
 }
 
+// 关闭连接资源
 func (r ResourceConn) Close() {
 	err := r.Conn.Close()
 
@@ -46,8 +46,8 @@ func redisDial() (redis.Conn, error) {
 	readTimeout := GetEnvInt("redis", "readTimeout", 10000)
 	writeTimeout := GetEnvInt("redis", "writeTimeout", 10000)
 
-	address := fmt.Sprintf("%s:%d", host, port)
-	conn, err := redis.DialTimeout("tcp", address, time.Duration(connectTimeout)*time.Millisecond, time.Duration(readTimeout)*time.Millisecond, time.Duration(writeTimeout)*time.Millisecond)
+	dsn := fmt.Sprintf("%s:%d", host, port)
+	conn, err := redis.DialTimeout("tcp", dsn, time.Duration(connectTimeout)*time.Millisecond, time.Duration(readTimeout)*time.Millisecond, time.Duration(writeTimeout)*time.Millisecond)
 
 	if err != nil {
 		LogError("init redis error: ", err.Error())
@@ -60,14 +60,14 @@ func redisDial() (redis.Conn, error) {
 /**
  * 初始化Redis连接池
  */
-func initRedisPool() {
-	redisPoolMux.Lock()
-	defer redisPoolMux.Unlock()
+func InitRedis() {
+	redisMux.Lock()
+	defer redisMux.Unlock()
 
 	if redisPool == nil {
 		poolMinActive := GetEnvInt("redis", "poolMinActive", 10)
 		poolMaxActive := GetEnvInt("redis", "poolMaxActive", 20)
-		poolIdleTimeout := GetEnvInt("redis", "poolIdleTimeout", 10000)
+		poolIdleTimeout := GetEnvInt("redis", "poolIdleTimeout", 60000)
 
 		redisPool = pools.NewResourcePool(func() (pools.Resource, error) {
 			conn, err := redisDial()
@@ -80,48 +80,19 @@ func initRedisPool() {
  * 获取Redis资源
  * @return pools.Resource, error
  */
-func poolGetRedisConn() (pools.Resource, error) {
-	if redisPool == nil || redisPool.IsClosed() {
-		initRedisPool()
-	}
-
-	if redisPool == nil {
-		LogError("redis pool is null")
-		return nil, errors.New("redis pool is null")
+func getRedisConn() (pools.Resource, error) {
+	if redisPool.IsClosed() {
+		InitRedis()
 	}
 
 	ctx := context.TODO()
 	rc, err := redisPool.Get(ctx)
 
 	if err != nil {
-		return nil, err
+		LogError("get redis resourceConn error: ", err.Error())
 	}
 
-	if rc == nil {
-		LogError("redis pool resource is null")
-		return nil, errors.New("redis pool resource is null")
-	}
-
-	resourceConn := rc.(ResourceConn)
-
-	if resourceConn.Conn.Err() != nil {
-		LogError("redis resource connection err: ", resourceConn.Conn.Err().Error())
-
-		resourceConn.Close()
-		//连接断开，重新打开
-		conn, connErr := redisDial()
-
-		if connErr != nil {
-			redisPool.Put(rc)
-			LogError("redis reconnection err: ", connErr.Error())
-
-			return nil, connErr
-		} else {
-			return ResourceConn{conn}, nil
-		}
-	}
-
-	return rc, nil
+	return rc, err
 }
 
 func (r *RedisBase) getKey(key string) string {
@@ -143,7 +114,7 @@ func (r *RedisBase) getKey(key string) string {
  * @return bool
  */
 func (r *RedisBase) Set(key string, data interface{}) bool {
-	rc, err := poolGetRedisConn()
+	rc, err := getRedisConn()
 
 	if err != nil {
 		return false
@@ -151,7 +122,7 @@ func (r *RedisBase) Set(key string, data interface{}) bool {
 
 	defer redisPool.Put(rc)
 
-	redisConn := rc.(ResourceConn).Conn
+	conn := rc.(ResourceConn).Conn
 
 	cacheData, jsonErr := json.Marshal(data)
 
@@ -162,7 +133,7 @@ func (r *RedisBase) Set(key string, data interface{}) bool {
 
 	cacheKey := r.getKey(key)
 
-	_, doErr := redisConn.Do("SET", cacheKey, cacheData)
+	_, doErr := conn.Do("SET", cacheKey, cacheData)
 
 	if doErr != nil {
 		LogError("redis do SET error: ", doErr.Error())
@@ -178,7 +149,7 @@ func (r *RedisBase) Set(key string, data interface{}) bool {
  * @return bool
  */
 func (r *RedisBase) MSet(data map[string]interface{}) bool {
-	rc, err := poolGetRedisConn()
+	rc, err := getRedisConn()
 
 	if err != nil {
 		return false
@@ -186,7 +157,7 @@ func (r *RedisBase) MSet(data map[string]interface{}) bool {
 
 	defer redisPool.Put(rc)
 
-	redisConn := rc.(ResourceConn).Conn
+	conn := rc.(ResourceConn).Conn
 
 	args := []interface{}{}
 
@@ -201,7 +172,7 @@ func (r *RedisBase) MSet(data map[string]interface{}) bool {
 		args = append(args, r.getKey(k), cacheData)
 	}
 
-	_, doErr := redisConn.Do("MSET", args...)
+	_, doErr := conn.Do("MSET", args...)
 
 	if doErr != nil {
 		LogError("redis do MSET error: ", doErr.Error())
@@ -218,7 +189,7 @@ func (r *RedisBase) MSet(data map[string]interface{}) bool {
  * @return bool
  */
 func (r *RedisBase) Get(key string, data interface{}) bool {
-	rc, err := poolGetRedisConn()
+	rc, err := getRedisConn()
 
 	if err != nil {
 		return false
@@ -226,11 +197,11 @@ func (r *RedisBase) Get(key string, data interface{}) bool {
 
 	defer redisPool.Put(rc)
 
-	redisConn := rc.(ResourceConn).Conn
+	conn := rc.(ResourceConn).Conn
 
 	cacheKey := r.getKey(key)
 
-	cacheData, doErr := redisConn.Do("GET", cacheKey)
+	cacheData, doErr := conn.Do("GET", cacheKey)
 
 	if doErr != nil {
 		LogError("redis do GET error: ", doErr.Error())
@@ -258,7 +229,7 @@ func (r *RedisBase) Get(key string, data interface{}) bool {
  * @return bool
  */
 func (r *RedisBase) MGet(keys []string, data interface{}) bool {
-	rc, err := poolGetRedisConn()
+	rc, err := getRedisConn()
 
 	if err != nil {
 		return false
@@ -266,7 +237,7 @@ func (r *RedisBase) MGet(keys []string, data interface{}) bool {
 
 	defer redisPool.Put(rc)
 
-	redisConn := rc.(ResourceConn).Conn
+	conn := rc.(ResourceConn).Conn
 
 	args := []interface{}{}
 
@@ -274,7 +245,7 @@ func (r *RedisBase) MGet(keys []string, data interface{}) bool {
 		args = append(args, r.getKey(key))
 	}
 
-	cacheData, doErr := redis.ByteSlices(redisConn.Do("MGET", args...))
+	cacheData, doErr := redis.ByteSlices(conn.Do("MGET", args...))
 
 	if doErr != nil {
 		LogError("redis do MGET error: ", doErr.Error())
@@ -321,7 +292,7 @@ func (r *RedisBase) MGet(keys []string, data interface{}) bool {
  * @return bool
  */
 func (r *RedisBase) HSet(key string, field interface{}, data interface{}) bool {
-	rc, err := poolGetRedisConn()
+	rc, err := getRedisConn()
 
 	if err != nil {
 		return false
@@ -329,7 +300,7 @@ func (r *RedisBase) HSet(key string, field interface{}, data interface{}) bool {
 
 	defer redisPool.Put(rc)
 
-	redisConn := rc.(ResourceConn).Conn
+	conn := rc.(ResourceConn).Conn
 
 	cacheData, jsonErr := json.Marshal(data)
 
@@ -340,7 +311,7 @@ func (r *RedisBase) HSet(key string, field interface{}, data interface{}) bool {
 
 	cacheKey := r.getKey(key)
 
-	_, doErr := redisConn.Do("HSET", cacheKey, field, cacheData)
+	_, doErr := conn.Do("HSET", cacheKey, field, cacheData)
 
 	if doErr != nil {
 		LogError("redis do HSET error: ", doErr.Error())
@@ -357,7 +328,7 @@ func (r *RedisBase) HSet(key string, field interface{}, data interface{}) bool {
  * @return bool
  */
 func (r *RedisBase) HMSet(key string, data map[interface{}]interface{}) bool {
-	rc, err := poolGetRedisConn()
+	rc, err := getRedisConn()
 
 	if err != nil {
 		return false
@@ -365,7 +336,7 @@ func (r *RedisBase) HMSet(key string, data map[interface{}]interface{}) bool {
 
 	defer redisPool.Put(rc)
 
-	redisConn := rc.(ResourceConn).Conn
+	conn := rc.(ResourceConn).Conn
 
 	args := []interface{}{}
 	args = append(args, r.getKey(key))
@@ -381,7 +352,7 @@ func (r *RedisBase) HMSet(key string, data map[interface{}]interface{}) bool {
 		args = append(args, field, cacheData)
 	}
 
-	_, doErr := redisConn.Do("HMSet", args...)
+	_, doErr := conn.Do("HMSet", args...)
 
 	if doErr != nil {
 		LogError("redis do HMSet error: ", doErr.Error())
@@ -399,7 +370,7 @@ func (r *RedisBase) HMSet(key string, data map[interface{}]interface{}) bool {
  * @return bool
  */
 func (r *RedisBase) HGet(key string, field interface{}, data interface{}) bool {
-	rc, err := poolGetRedisConn()
+	rc, err := getRedisConn()
 
 	if err != nil {
 		return false
@@ -407,11 +378,11 @@ func (r *RedisBase) HGet(key string, field interface{}, data interface{}) bool {
 
 	defer redisPool.Put(rc)
 
-	redisConn := rc.(ResourceConn).Conn
+	conn := rc.(ResourceConn).Conn
 
 	cacheKey := r.getKey(key)
 
-	cacheData, doErr := redisConn.Do("HGET", cacheKey, field)
+	cacheData, doErr := conn.Do("HGET", cacheKey, field)
 
 	if doErr != nil {
 		LogError("redis do HGET error: ", doErr.Error())
@@ -440,7 +411,7 @@ func (r *RedisBase) HGet(key string, field interface{}, data interface{}) bool {
  * @return bool
  */
 func (r *RedisBase) HMGet(key string, fields []interface{}, data interface{}) bool {
-	rc, err := poolGetRedisConn()
+	rc, err := getRedisConn()
 
 	if err != nil {
 		return false
@@ -448,7 +419,7 @@ func (r *RedisBase) HMGet(key string, fields []interface{}, data interface{}) bo
 
 	defer redisPool.Put(rc)
 
-	redisConn := rc.(ResourceConn).Conn
+	conn := rc.(ResourceConn).Conn
 
 	args := []interface{}{}
 	args = append(args, r.getKey(key))
@@ -457,7 +428,7 @@ func (r *RedisBase) HMGet(key string, fields []interface{}, data interface{}) bo
 		args = append(args, field)
 	}
 
-	cacheData, doErr := redis.ByteSlices(redisConn.Do("HMGET", args...))
+	cacheData, doErr := redis.ByteSlices(conn.Do("HMGET", args...))
 
 	if doErr != nil {
 		LogError("redis do HMGET error: ", doErr.Error())
@@ -501,7 +472,7 @@ func (r *RedisBase) HMGet(key string, fields []interface{}, data interface{}) bo
  * @return bool
  */
 func (r *RedisBase) HDel(key string, field interface{}) bool {
-	rc, err := poolGetRedisConn()
+	rc, err := getRedisConn()
 
 	if err != nil {
 		return false
@@ -509,11 +480,11 @@ func (r *RedisBase) HDel(key string, field interface{}) bool {
 
 	defer redisPool.Put(rc)
 
-	redisConn := rc.(ResourceConn).Conn
+	conn := rc.(ResourceConn).Conn
 
 	cacheKey := r.getKey(key)
 
-	_, doErr := redisConn.Do("HDEL", cacheKey, field)
+	_, doErr := conn.Do("HDEL", cacheKey, field)
 
 	if doErr != nil {
 		LogError("redis do HDEL error: ", doErr.Error())
@@ -529,7 +500,7 @@ func (r *RedisBase) HDel(key string, field interface{}) bool {
  * @return int64, bool
  */
 func (r *RedisBase) HLen(key string) (int64, bool) {
-	rc, err := poolGetRedisConn()
+	rc, err := getRedisConn()
 
 	if err != nil {
 		return 0, false
@@ -537,11 +508,11 @@ func (r *RedisBase) HLen(key string) (int64, bool) {
 
 	defer redisPool.Put(rc)
 
-	redisConn := rc.(ResourceConn).Conn
+	conn := rc.(ResourceConn).Conn
 
 	cacheKey := r.getKey(key)
 
-	result, doErr := redisConn.Do("HLEN", cacheKey)
+	result, doErr := conn.Do("HLEN", cacheKey)
 
 	if doErr != nil {
 		LogError("redis do HLEN error: ", doErr.Error())
@@ -566,7 +537,7 @@ func (r *RedisBase) HLen(key string) (int64, bool) {
  * @return int64, bool
  */
 func (r *RedisBase) HIncrBy(key string, field interface{}, inc int) (int64, bool) {
-	rc, err := poolGetRedisConn()
+	rc, err := getRedisConn()
 
 	if err != nil {
 		return 0, false
@@ -574,11 +545,11 @@ func (r *RedisBase) HIncrBy(key string, field interface{}, inc int) (int64, bool
 
 	defer redisPool.Put(rc)
 
-	redisConn := rc.(ResourceConn).Conn
+	conn := rc.(ResourceConn).Conn
 
 	cacheKey := r.getKey(key)
 
-	result, doErr := redisConn.Do("HINCRBY", cacheKey, field, inc)
+	result, doErr := conn.Do("HINCRBY", cacheKey, field, inc)
 
 	if doErr != nil {
 		LogError("redis do HINCRBY error: ", doErr.Error())
@@ -604,7 +575,7 @@ func (r *RedisBase) HIncrBy(key string, field interface{}, inc int) (int64, bool
  * @return bool
  */
 func (r *RedisBase) LPush(key string, data interface{}) bool {
-	rc, err := poolGetRedisConn()
+	rc, err := getRedisConn()
 
 	if err != nil {
 		return false
@@ -612,7 +583,7 @@ func (r *RedisBase) LPush(key string, data interface{}) bool {
 
 	defer redisPool.Put(rc)
 
-	redisConn := rc.(ResourceConn).Conn
+	conn := rc.(ResourceConn).Conn
 
 	cacheData, jsonErr := json.Marshal(data)
 
@@ -623,7 +594,7 @@ func (r *RedisBase) LPush(key string, data interface{}) bool {
 
 	cacheKey := r.getKey(key)
 
-	_, doErr := redisConn.Do("LPUSH", cacheKey, cacheData)
+	_, doErr := conn.Do("LPUSH", cacheKey, cacheData)
 
 	if doErr != nil {
 		LogError("redis do LPUSH error: ", doErr.Error())
@@ -640,7 +611,7 @@ func (r *RedisBase) LPush(key string, data interface{}) bool {
  * @return bool
  */
 func (r *RedisBase) LPop(key string, data interface{}) bool {
-	rc, err := poolGetRedisConn()
+	rc, err := getRedisConn()
 
 	if err != nil {
 		return false
@@ -648,11 +619,11 @@ func (r *RedisBase) LPop(key string, data interface{}) bool {
 
 	defer redisPool.Put(rc)
 
-	redisConn := rc.(ResourceConn).Conn
+	conn := rc.(ResourceConn).Conn
 
 	cacheKey := r.getKey(key)
 
-	cacheData, doErr := redisConn.Do("LPOP", cacheKey)
+	cacheData, doErr := conn.Do("LPOP", cacheKey)
 
 	if doErr != nil {
 		LogError("redis do LPOP error: ", doErr.Error())
@@ -680,7 +651,7 @@ func (r *RedisBase) LPop(key string, data interface{}) bool {
  * @return bool
  */
 func (r *RedisBase) RPush(key string, data interface{}) bool {
-	rc, err := poolGetRedisConn()
+	rc, err := getRedisConn()
 
 	if err != nil {
 		return false
@@ -688,7 +659,7 @@ func (r *RedisBase) RPush(key string, data interface{}) bool {
 
 	defer redisPool.Put(rc)
 
-	redisConn := rc.(ResourceConn).Conn
+	conn := rc.(ResourceConn).Conn
 
 	cacheData, jsonErr := json.Marshal(data)
 
@@ -699,7 +670,7 @@ func (r *RedisBase) RPush(key string, data interface{}) bool {
 
 	cacheKey := r.getKey(key)
 
-	_, doErr := redisConn.Do("RPUSH", cacheKey, cacheData)
+	_, doErr := conn.Do("RPUSH", cacheKey, cacheData)
 
 	if doErr != nil {
 		LogError("redis do RPUSH error: ", doErr.Error())
@@ -716,7 +687,7 @@ func (r *RedisBase) RPush(key string, data interface{}) bool {
  * @return bool
  */
 func (r *RedisBase) RPop(key string, data interface{}) bool {
-	rc, err := poolGetRedisConn()
+	rc, err := getRedisConn()
 
 	if err != nil {
 		return false
@@ -724,11 +695,11 @@ func (r *RedisBase) RPop(key string, data interface{}) bool {
 
 	defer redisPool.Put(rc)
 
-	redisConn := rc.(ResourceConn).Conn
+	conn := rc.(ResourceConn).Conn
 
 	cacheKey := r.getKey(key)
 
-	cacheData, doErr := redisConn.Do("RPOP", cacheKey)
+	cacheData, doErr := conn.Do("RPOP", cacheKey)
 
 	if doErr != nil {
 		LogError("redis do RPOP error: ", doErr.Error())
@@ -755,7 +726,7 @@ func (r *RedisBase) RPop(key string, data interface{}) bool {
  * return int64, bool
  */
 func (r *RedisBase) LLen(key string) (int64, bool) {
-	rc, err := poolGetRedisConn()
+	rc, err := getRedisConn()
 
 	if err != nil {
 		return 0, false
@@ -763,11 +734,11 @@ func (r *RedisBase) LLen(key string) (int64, bool) {
 
 	defer redisPool.Put(rc)
 
-	redisConn := rc.(ResourceConn).Conn
+	conn := rc.(ResourceConn).Conn
 
 	cacheKey := r.getKey(key)
 
-	result, doErr := redisConn.Do("LLEN", cacheKey)
+	result, doErr := conn.Do("LLEN", cacheKey)
 
 	if doErr != nil {
 		LogError("redis do LLEN error: ", doErr.Error())
@@ -793,7 +764,7 @@ func (r *RedisBase) LLen(key string) (int64, bool) {
  * @return bool
  */
 func (r *RedisBase) LRange(key string, start int, end int, data interface{}) bool {
-	rc, err := poolGetRedisConn()
+	rc, err := getRedisConn()
 
 	if err != nil {
 		return false
@@ -801,11 +772,11 @@ func (r *RedisBase) LRange(key string, start int, end int, data interface{}) boo
 
 	defer redisPool.Put(rc)
 
-	redisConn := rc.(ResourceConn)
+	conn := rc.(ResourceConn)
 
 	cacheKey := r.getKey(key)
 
-	cacheData, doErr := redis.ByteSlices(redisConn.Do("LRANGE", cacheKey, start, end))
+	cacheData, doErr := redis.ByteSlices(conn.Do("LRANGE", cacheKey, start, end))
 
 	if doErr != nil {
 		LogError("redis do LRANGE error: ", doErr.Error())
@@ -850,7 +821,7 @@ func (r *RedisBase) LRange(key string, start int, end int, data interface{}) boo
  * @return bool
  */
 func (r *RedisBase) Del(key string) bool {
-	rc, err := poolGetRedisConn()
+	rc, err := getRedisConn()
 
 	if err != nil {
 		return false
@@ -858,11 +829,11 @@ func (r *RedisBase) Del(key string) bool {
 
 	defer redisPool.Put(rc)
 
-	redisConn := rc.(ResourceConn).Conn
+	conn := rc.(ResourceConn).Conn
 
 	cacheKey := r.getKey(key)
 
-	_, doErr := redisConn.Do("DEL", cacheKey)
+	_, doErr := conn.Do("DEL", cacheKey)
 
 	if doErr != nil {
 		LogError("redis do DEL error: ", doErr.Error())
@@ -879,7 +850,7 @@ func (r *RedisBase) Del(key string) bool {
  * @return bool
  */
 func (r *RedisBase) Expire(key string, time int) bool {
-	rc, err := poolGetRedisConn()
+	rc, err := getRedisConn()
 
 	if err != nil {
 		return false
@@ -887,11 +858,11 @@ func (r *RedisBase) Expire(key string, time int) bool {
 
 	defer redisPool.Put(rc)
 
-	redisConn := rc.(ResourceConn).Conn
+	conn := rc.(ResourceConn).Conn
 
 	cacheKey := r.getKey(key)
 
-	_, doErr := redisConn.Do("EXPIRE", cacheKey, time)
+	_, doErr := conn.Do("EXPIRE", cacheKey, time)
 
 	if doErr != nil {
 		LogError("redis do EXPIRE error: ", doErr.Error())
@@ -907,7 +878,7 @@ func (r *RedisBase) Expire(key string, time int) bool {
  * @return int64, bool
  */
 func (r *RedisBase) Incr(key string) (int64, bool) {
-	rc, err := poolGetRedisConn()
+	rc, err := getRedisConn()
 
 	if err != nil {
 		return 0, false
@@ -915,11 +886,11 @@ func (r *RedisBase) Incr(key string) (int64, bool) {
 
 	defer redisPool.Put(rc)
 
-	redisConn := rc.(ResourceConn).Conn
+	conn := rc.(ResourceConn).Conn
 
 	cacheKey := r.getKey(key)
 
-	result, doErr := redisConn.Do("INCR", cacheKey)
+	result, doErr := conn.Do("INCR", cacheKey)
 
 	if doErr != nil {
 		LogError("redis do INCR error: ", doErr.Error())
@@ -943,7 +914,7 @@ func (r *RedisBase) Incr(key string) (int64, bool) {
  * @return int64, bool
  */
 func (r *RedisBase) IncrBy(key string, inc int) (int64, bool) {
-	rc, err := poolGetRedisConn()
+	rc, err := getRedisConn()
 
 	if err != nil {
 		return 0, false
@@ -951,11 +922,11 @@ func (r *RedisBase) IncrBy(key string, inc int) (int64, bool) {
 
 	defer redisPool.Put(rc)
 
-	redisConn := rc.(ResourceConn).Conn
+	conn := rc.(ResourceConn).Conn
 
 	cacheKey := r.getKey(key)
 
-	result, doErr := redisConn.Do("INCRBY", cacheKey, inc)
+	result, doErr := conn.Do("INCRBY", cacheKey, inc)
 
 	if doErr != nil {
 		LogError("redis do INCRBY error: ", doErr.Error())
@@ -978,7 +949,7 @@ func (r *RedisBase) IncrBy(key string, inc int) (int64, bool) {
  * @return int64, bool
  */
 func (r *RedisBase) Decr(key string) (int64, bool) {
-	rc, err := poolGetRedisConn()
+	rc, err := getRedisConn()
 
 	if err != nil {
 		return 0, false
@@ -986,11 +957,11 @@ func (r *RedisBase) Decr(key string) (int64, bool) {
 
 	defer redisPool.Put(rc)
 
-	redisConn := rc.(ResourceConn).Conn
+	conn := rc.(ResourceConn).Conn
 
 	cacheKey := r.getKey(key)
 
-	result, doErr := redisConn.Do("DECR", cacheKey)
+	result, doErr := conn.Do("DECR", cacheKey)
 
 	if doErr != nil {
 		LogError("redis do DECR error: ", doErr.Error())
@@ -1014,7 +985,7 @@ func (r *RedisBase) Decr(key string) (int64, bool) {
  * @return int64, bool
  */
 func (r *RedisBase) DecrBy(key string, inc int) (int64, bool) {
-	rc, err := poolGetRedisConn()
+	rc, err := getRedisConn()
 
 	if err != nil {
 		return 0, false
@@ -1022,11 +993,11 @@ func (r *RedisBase) DecrBy(key string, inc int) (int64, bool) {
 
 	defer redisPool.Put(rc)
 
-	redisConn := rc.(ResourceConn).Conn
+	conn := rc.(ResourceConn).Conn
 
 	cacheKey := r.getKey(key)
 
-	result, doErr := redisConn.Do("DECRBY", cacheKey, inc)
+	result, doErr := conn.Do("DECRBY", cacheKey, inc)
 
 	if doErr != nil {
 		LogError("redis do DECRBY error: ", doErr.Error())

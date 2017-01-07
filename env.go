@@ -3,34 +3,25 @@ package yiigo
 import (
 	"path/filepath"
 	"strings"
-	"sync"
 
 	"github.com/Unknwon/goconfig"
 )
 
-var (
-	env    *goconfig.ConfigFile
-	envMux sync.Mutex
-)
+var env *goconfig.ConfigFile
 
 /**
- * 初始化ENV配置
+ * 加载ENV配置
  */
-func initEnv() {
-	envMux.Lock()
-	defer envMux.Unlock()
+func LoadConfig() {
+	var err error
 
-	if env == nil {
-		var err error
+	envFile, _ := filepath.Abs("env.ini")
 
-		envFile, _ := filepath.Abs("env.ini")
+	env, err = goconfig.LoadConfigFile(envFile)
 
-		env, err = goconfig.LoadConfigFile(envFile)
-
-		if err != nil {
-			LogCritical("load env file error: ", err.Error())
-			return
-		}
+	if err != nil {
+		LogCritical("load env file failed, ", err.Error())
+		panic(err)
 	}
 }
 
@@ -42,12 +33,7 @@ func initEnv() {
  * @return string
  */
 func GetEnvString(section string, option string, defaultValue string) string {
-	if env == nil {
-		initEnv()
-	}
-
 	val := env.MustValue(section, option, defaultValue)
-
 	return val
 }
 
@@ -59,12 +45,7 @@ func GetEnvString(section string, option string, defaultValue string) string {
  * @return int
  */
 func GetEnvInt(section string, option string, defaultValue int) int {
-	if env == nil {
-		initEnv()
-	}
-
 	val := env.MustInt(section, option, defaultValue)
-
 	return val
 }
 
@@ -76,12 +57,7 @@ func GetEnvInt(section string, option string, defaultValue int) int {
  * @return int64
  */
 func GetEnvInt64(section string, option string, defaultValue int64) int64 {
-	if env == nil {
-		initEnv()
-	}
-
 	val := env.MustInt64(section, option, defaultValue)
-
 	return val
 }
 
@@ -93,12 +69,7 @@ func GetEnvInt64(section string, option string, defaultValue int64) int64 {
  * @return float64
  */
 func GetEnvFloat64(section string, option string, defaultValue float64) float64 {
-	if env == nil {
-		initEnv()
-	}
-
 	val := env.MustFloat64(section, option, defaultValue)
-
 	return val
 }
 
@@ -110,12 +81,7 @@ func GetEnvFloat64(section string, option string, defaultValue float64) float64 
  * @return bool
  */
 func GetEnvBool(section string, option string, defaultValue bool) bool {
-	if env == nil {
-		initEnv()
-	}
-
 	val := env.MustBool(section, option, defaultValue)
-
 	return val
 }
 
@@ -128,10 +94,6 @@ func GetEnvBool(section string, option string, defaultValue bool) bool {
  * @return []string
  */
 func GetEnvArray(section string, option string, sep string, defaultValue string) []string {
-	if env == nil {
-		initEnv()
-	}
-
 	arr := env.MustValueArray(section, option, sep)
 
 	if len(arr) == 0 {

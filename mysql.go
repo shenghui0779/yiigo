@@ -3,84 +3,87 @@ package yiigo
 import (
 	"fmt"
 	"reflect"
-	"sync"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jinzhu/gorm"
 )
 
 type MysqlBase struct {
-	TableName string
+	DB    string
+	Table string
 }
 
-var (
-	db    *gorm.DB
-	dbMux sync.Mutex
-)
+var dbmap map[string]*gorm.DB
 
 /**
- * 初始化db
- * @return error
+ * 初始化DB(不指定配置名称，则默认为：db)
+ * @param sections ...string 数据库配置名称，如：db1,db2,db3
  */
-func initDb() error {
-	dbMux.Lock()
-	defer dbMux.Unlock()
+func InitDB(sections ...string) {
+	dbmap = make(map[string]*gorm.DB)
 
-	if db == nil {
-		var err error
+	debug := GetEnvBool("app", "debug", true)
 
-		host := GetEnvString("db", "host", "localhost")
-		port := GetEnvInt("db", "port", 3306)
-		username := GetEnvString("db", "username", "root")
-		password := GetEnvString("db", "password", "")
-		maxOpenConns := GetEnvInt("db", "maxOpenConns", 10)
-		maxIdleConns := GetEnvInt("db", "maxIdleConns", 10)
-		database := GetEnvString("db", "database", "test")
-		charset := GetEnvString("db", "charset", "utf8mb4")
-
-		address := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s&parseTime=True&loc=Local", username, password, host, port, database, charset)
-		db, err = gorm.Open("mysql", address)
-
-		if err != nil {
-			LogErrorf("connect mysql server %s:%d error: %s", host, port, err.Error())
-			return err
-		}
-
-		db.SingularTable(true)
-
-		db.DB().SetMaxOpenConns(maxOpenConns)
-		db.DB().SetMaxIdleConns(maxIdleConns)
-
-		debug := GetEnvBool("app", "debug", true)
-
-		if debug {
-			db.LogMode(true)
-		}
+	if len(sections) == 0 {
+		sections = append(sections, "db")
 	}
 
-	return nil
+	for _, section := range sections {
+		var err error
+
+		host := GetEnvString(section, "host", "localhost")
+		port := GetEnvInt(section, "port", 3306)
+		username := GetEnvString(section, "username", "root")
+		password := GetEnvString(section, "password", "")
+		maxOpenConns := GetEnvInt(section, "maxOpenConns", 20)
+		maxIdleConns := GetEnvInt(section, "maxIdleConns", 10)
+		database := GetEnvString(section, "database", "test")
+		charset := GetEnvString(section, "charset", "utf8mb4")
+
+		dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s&parseTime=True&loc=Local", username, password, host, port, database, charset)
+		dbmap[section], err = gorm.Open("mysql", dsn)
+
+		if err != nil {
+			LogError("connect mysql faild, ", err.Error())
+			panic(err)
+		}
+
+		dbmap[section].SingularTable(true)
+
+		dbmap[section].DB().SetMaxOpenConns(maxOpenConns)
+		dbmap[section].DB().SetMaxIdleConns(maxIdleConns)
+
+		if debug {
+			dbmap[section].LogMode(true)
+		}
+	}
 }
 
 /**
  * 获取db
  * @return *gorm.DB, error
  */
-func (m *MysqlBase) getDb() (*gorm.DB, error) {
-	if db == nil {
-		err := initDb()
+func (m *MysqlBase) getDB() (*gorm.DB, error) {
+	var dbsection string
+	var table string
 
-		if err != nil {
-			return nil, err
-		}
+	if m.DB == "" {
+		dbsection = "db"
 	}
 
-	var table string
-	prefix := GetEnvString("db", "prefix", "")
+	db, ok := dbmap[dbsection]
+
+	if !ok {
+		LogErrorf("mysql %s is not initialized.", dbsection)
+		panic(fmt.Sprintf("mysql %s is not initialized.", dbsection))
+	}
+
+	prefix := GetEnvString(dbsection, "prefix", "")
 
 	if prefix != "" {
-		table = prefix + m.TableName
+		table = prefix + m.Table
 	} else {
-		table = m.TableName
+		table = m.Table
 	}
 
 	return db.Table(table), nil
@@ -92,7 +95,7 @@ func (m *MysqlBase) getDb() (*gorm.DB, error) {
  * @return error
  */
 func (m *MysqlBase) Insert(data interface{}) error {
-	db, err := m.getDb()
+	db, err := m.getDB()
 
 	if err != nil {
 		return err
@@ -101,7 +104,7 @@ func (m *MysqlBase) Insert(data interface{}) error {
 	insertErr := db.Create(data).Error
 
 	if insertErr != nil {
-		LogErrorf("mysql table %s insert error: %s", m.TableName, insertErr.Error())
+		LogErrorf("mysql table %s insert error: %s", m.Table, insertErr.Error())
 		return insertErr
 	}
 
@@ -126,7 +129,7 @@ func (m *MysqlBase) BatchInsert(data interface{}) error {
 		return nil
 	}
 
-	db, err := m.getDb()
+	db, err := m.getDB()
 
 	if err != nil {
 		return err
@@ -146,7 +149,7 @@ func (m *MysqlBase) BatchInsert(data interface{}) error {
 
 	if insertErr != nil {
 		tx.Rollback()
-		LogErrorf("mysql table %s insert error: %s", m.TableName, insertErr.Error())
+		LogErrorf("mysql table %s insert error: %s", m.Table, insertErr.Error())
 
 		return insertErr
 	}
@@ -181,7 +184,7 @@ func (m *MysqlBase) BatchInsertWithAction(data interface{}, action map[string]in
 		return nil
 	}
 
-	db, err := m.getDb()
+	db, err := m.getDB()
 
 	if err != nil {
 		return err
@@ -222,7 +225,7 @@ func (m *MysqlBase) BatchInsertWithAction(data interface{}, action map[string]in
 
 	if dbErr != nil {
 		tx.Rollback()
-		LogErrorf("mysql table %s %s error: %s", m.TableName, actionType, dbErr.Error())
+		LogErrorf("mysql table %s %s error: %s", m.Table, actionType, dbErr.Error())
 
 		return dbErr
 	}
@@ -237,7 +240,7 @@ func (m *MysqlBase) BatchInsertWithAction(data interface{}, action map[string]in
 
 	if dbErr != nil {
 		tx.Rollback()
-		LogErrorf("mysql table %s insert error: %s", m.TableName, dbErr.Error())
+		LogErrorf("mysql table %s insert error: %s", m.Table, dbErr.Error())
 
 		return dbErr
 	}
@@ -258,7 +261,7 @@ func (m *MysqlBase) BatchInsertWithAction(data interface{}, action map[string]in
  * @return error
  */
 func (m *MysqlBase) Update(query map[string]interface{}, data map[string]interface{}) error {
-	db, err := m.getDb()
+	db, err := m.getDB()
 
 	if err != nil {
 		return err
@@ -280,7 +283,7 @@ func (m *MysqlBase) Update(query map[string]interface{}, data map[string]interfa
 	updateErr := db.Where(where, bind...).Updates(data).Error
 
 	if updateErr != nil {
-		LogErrorf("mysql table %s update error: %s", m.TableName, updateErr.Error())
+		LogErrorf("mysql table %s update error: %s", m.Table, updateErr.Error())
 		return updateErr
 	}
 
@@ -299,7 +302,7 @@ func (m *MysqlBase) Update(query map[string]interface{}, data map[string]interfa
  * @return error
  */
 func (m *MysqlBase) Increment(query map[string]interface{}, column string, inc int) error {
-	db, err := m.getDb()
+	db, err := m.getDB()
 
 	if err != nil {
 		return err
@@ -322,7 +325,7 @@ func (m *MysqlBase) Increment(query map[string]interface{}, column string, inc i
 	incErr := db.Where(where, bind...).Update(column, gorm.Expr(expr, inc)).Error
 
 	if incErr != nil {
-		LogErrorf("mysql table %s inc error: %s", m.TableName, incErr.Error())
+		LogErrorf("mysql table %s inc error: %s", m.Table, incErr.Error())
 		return incErr
 	}
 
@@ -341,7 +344,7 @@ func (m *MysqlBase) Increment(query map[string]interface{}, column string, inc i
  * @return error
  */
 func (m *MysqlBase) Decrement(query map[string]interface{}, column string, dec int) error {
-	db, err := m.getDb()
+	db, err := m.getDB()
 
 	if err != nil {
 		return err
@@ -364,7 +367,7 @@ func (m *MysqlBase) Decrement(query map[string]interface{}, column string, dec i
 	decErr := db.Where(where, bind...).Update(column, gorm.Expr(expr, dec)).Error
 
 	if decErr != nil {
-		LogErrorf("mysql table %s dec error: %s", m.TableName, decErr.Error())
+		LogErrorf("mysql table %s dec error: %s", m.Table, decErr.Error())
 		return decErr
 	}
 
@@ -384,7 +387,7 @@ func (m *MysqlBase) Decrement(query map[string]interface{}, column string, dec i
  * @return error
  */
 func (m *MysqlBase) FindOne(query map[string]interface{}, data interface{}) error {
-	db, err := m.getDb()
+	db, err := m.getDB()
 
 	if err != nil {
 		return err
@@ -421,7 +424,7 @@ func (m *MysqlBase) FindOne(query map[string]interface{}, data interface{}) erro
 		errMsg := findErr.Error()
 
 		if errMsg != "record not found" {
-			LogErrorf("mysql table %s findone error: %s", m.TableName, errMsg)
+			LogErrorf("mysql table %s findone error: %s", m.Table, errMsg)
 		}
 
 		return findErr
@@ -448,7 +451,7 @@ func (m *MysqlBase) FindOne(query map[string]interface{}, data interface{}) erro
  * @return error
  */
 func (m *MysqlBase) Find(query map[string]interface{}, data interface{}) error {
-	db, err := m.getDb()
+	db, err := m.getDB()
 
 	if err != nil {
 		return err
@@ -507,7 +510,7 @@ func (m *MysqlBase) Find(query map[string]interface{}, data interface{}) error {
 		errMsg := findErr.Error()
 
 		if errMsg != "record not found" {
-			LogErrorf("mysql table %s find error: %s", m.TableName, errMsg)
+			LogErrorf("mysql table %s find error: %s", m.Table, errMsg)
 		}
 
 		return findErr
@@ -527,7 +530,7 @@ func (m *MysqlBase) Find(query map[string]interface{}, data interface{}) error {
  * @return error
  */
 func (m *MysqlBase) Delete(query map[string]interface{}, data interface{}) error {
-	db, err := m.getDb()
+	db, err := m.getDB()
 
 	if err != nil {
 		return err
@@ -552,7 +555,7 @@ func (m *MysqlBase) Delete(query map[string]interface{}, data interface{}) error
 		errMsg := delErr.Error()
 
 		if errMsg != "record not found" {
-			LogErrorf("mysql table %s delete error: %s", m.TableName, errMsg)
+			LogErrorf("mysql table %s delete error: %s", m.Table, errMsg)
 		}
 
 		return delErr
