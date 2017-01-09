@@ -31,7 +31,7 @@ func (r ResourceConn) Close() {
 	err := r.Conn.Close()
 
 	if err != nil {
-		LogError("redis connection close error: ", err.Error())
+		LogError("redis connection close failed, ", err.Error())
 	}
 }
 
@@ -50,7 +50,7 @@ func redisDial() (redis.Conn, error) {
 	conn, err := redis.DialTimeout("tcp", dsn, time.Duration(connectTimeout)*time.Millisecond, time.Duration(readTimeout)*time.Millisecond, time.Duration(writeTimeout)*time.Millisecond)
 
 	if err != nil {
-		LogError("init redis error: ", err.Error())
+		LogError("init redis failed, ", err.Error())
 		return nil, err
 	}
 
@@ -89,7 +89,7 @@ func getRedisConn() (pools.Resource, error) {
 	rc, err := redisPool.Get(ctx)
 
 	if err != nil {
-		LogError("get redis resourceConn error: ", err.Error())
+		LogError("get redis resourceConn failed, ", err.Error())
 	}
 
 	return rc, err
@@ -127,7 +127,7 @@ func (r *RedisBase) Set(key string, data interface{}) bool {
 	cacheData, jsonErr := json.Marshal(data)
 
 	if jsonErr != nil {
-		LogError("redis SET marshal data error: ", jsonErr.Error())
+		LogError("redis SET marshal data failed, ", jsonErr.Error())
 		return false
 	}
 
@@ -136,7 +136,7 @@ func (r *RedisBase) Set(key string, data interface{}) bool {
 	_, doErr := conn.Do("SET", cacheKey, cacheData)
 
 	if doErr != nil {
-		LogError("redis do SET error: ", doErr.Error())
+		LogError("redis do SET failed, ", doErr.Error())
 		return false
 	}
 
@@ -165,7 +165,7 @@ func (r *RedisBase) MSet(data map[string]interface{}) bool {
 		cacheData, jsonErr := json.Marshal(v)
 
 		if jsonErr != nil {
-			LogError("redis SET marshal data error: ", jsonErr.Error())
+			LogError("redis SET marshal data failed, ", jsonErr.Error())
 			return false
 		}
 
@@ -175,7 +175,7 @@ func (r *RedisBase) MSet(data map[string]interface{}) bool {
 	_, doErr := conn.Do("MSET", args...)
 
 	if doErr != nil {
-		LogError("redis do MSET error: ", doErr.Error())
+		LogError("redis do MSET failed, ", doErr.Error())
 		return false
 	}
 
@@ -204,7 +204,7 @@ func (r *RedisBase) Get(key string, data interface{}) bool {
 	cacheData, doErr := conn.Do("GET", cacheKey)
 
 	if doErr != nil {
-		LogError("redis do GET error: ", doErr.Error())
+		LogError("redis do GET failed, ", doErr.Error())
 		return false
 	}
 
@@ -215,7 +215,7 @@ func (r *RedisBase) Get(key string, data interface{}) bool {
 	jsonErr := json.Unmarshal(cacheData.([]byte), data)
 
 	if jsonErr != nil {
-		LogError("redis GET unmarshal cacheData error: ", jsonErr.Error())
+		LogError("redis GET unmarshal cacheData failed, ", jsonErr.Error())
 		return false
 	}
 
@@ -248,7 +248,7 @@ func (r *RedisBase) MGet(keys []string, data interface{}) bool {
 	cacheData, doErr := redis.ByteSlices(conn.Do("MGET", args...))
 
 	if doErr != nil {
-		LogError("redis do MGET error: ", doErr.Error())
+		LogError("redis do MGET failed, ", doErr.Error())
 		return false
 	}
 
@@ -269,7 +269,7 @@ func (r *RedisBase) MGet(keys []string, data interface{}) bool {
 					jsonErr := json.Unmarshal(v, elem.Addr().Interface())
 
 					if jsonErr != nil {
-						LogError("redis MGET unmarshal cacheData error: ", jsonErr.Error())
+						LogError("redis MGET unmarshal cacheData failed, ", jsonErr.Error())
 						return false
 					}
 
@@ -305,7 +305,7 @@ func (r *RedisBase) HSet(key string, field interface{}, data interface{}) bool {
 	cacheData, jsonErr := json.Marshal(data)
 
 	if jsonErr != nil {
-		LogError("redis HSET marshal data error: ", jsonErr.Error())
+		LogError("redis HSET marshal data failed, ", jsonErr.Error())
 		return false
 	}
 
@@ -314,7 +314,7 @@ func (r *RedisBase) HSet(key string, field interface{}, data interface{}) bool {
 	_, doErr := conn.Do("HSET", cacheKey, field, cacheData)
 
 	if doErr != nil {
-		LogError("redis do HSET error: ", doErr.Error())
+		LogError("redis do HSET failed, ", doErr.Error())
 		return false
 	}
 
@@ -345,7 +345,7 @@ func (r *RedisBase) HMSet(key string, data map[interface{}]interface{}) bool {
 		cacheData, jsonErr := json.Marshal(v)
 
 		if jsonErr != nil {
-			LogError("redis HMSet marshal data error: ", jsonErr.Error())
+			LogError("redis HMSet marshal data failed, ", jsonErr.Error())
 			return false
 		}
 
@@ -355,7 +355,7 @@ func (r *RedisBase) HMSet(key string, data map[interface{}]interface{}) bool {
 	_, doErr := conn.Do("HMSet", args...)
 
 	if doErr != nil {
-		LogError("redis do HMSet error: ", doErr.Error())
+		LogError("redis do HMSet failed, ", doErr.Error())
 		return false
 	}
 
@@ -385,7 +385,7 @@ func (r *RedisBase) HGet(key string, field interface{}, data interface{}) bool {
 	cacheData, doErr := conn.Do("HGET", cacheKey, field)
 
 	if doErr != nil {
-		LogError("redis do HGET error: ", doErr.Error())
+		LogError("redis do HGET failed, ", doErr.Error())
 		return false
 	}
 
@@ -396,7 +396,7 @@ func (r *RedisBase) HGet(key string, field interface{}, data interface{}) bool {
 	jsonErr := json.Unmarshal(cacheData.([]byte), data)
 
 	if jsonErr != nil {
-		LogError("redis HGET unmarshal cacheData error: ", jsonErr.Error())
+		LogError("redis HGET unmarshal cacheData failed, ", jsonErr.Error())
 		return false
 	}
 
@@ -431,7 +431,7 @@ func (r *RedisBase) HMGet(key string, fields []interface{}, data interface{}) bo
 	cacheData, doErr := redis.ByteSlices(conn.Do("HMGET", args...))
 
 	if doErr != nil {
-		LogError("redis do HMGET error: ", doErr.Error())
+		LogError("redis do HMGET failed, ", doErr.Error())
 		return false
 	}
 
@@ -452,7 +452,7 @@ func (r *RedisBase) HMGet(key string, fields []interface{}, data interface{}) bo
 					jsonErr := json.Unmarshal(v, elem.Addr().Interface())
 
 					if jsonErr != nil {
-						LogError("redis HMGET unmarshal cacheData error: ", jsonErr.Error())
+						LogError("redis HMGET unmarshal cacheData failed, ", jsonErr.Error())
 						return false
 					}
 
@@ -487,7 +487,7 @@ func (r *RedisBase) HDel(key string, field interface{}) bool {
 	_, doErr := conn.Do("HDEL", cacheKey, field)
 
 	if doErr != nil {
-		LogError("redis do HDEL error: ", doErr.Error())
+		LogError("redis do HDEL failed, ", doErr.Error())
 		return false
 	}
 
@@ -515,14 +515,14 @@ func (r *RedisBase) HLen(key string) (int64, bool) {
 	result, doErr := conn.Do("HLEN", cacheKey)
 
 	if doErr != nil {
-		LogError("redis do HLEN error: ", doErr.Error())
+		LogError("redis do HLEN failed, ", doErr.Error())
 		return 0, false
 	}
 
 	count, ok := result.(int64)
 
 	if !ok {
-		LogErrorf("redis do HLEN type assertion error: result %v is %v", result, reflect.TypeOf(result))
+		LogErrorf("redis do HLEN type assertion failed, result %v is %v", result, reflect.TypeOf(result))
 		return 0, false
 	}
 
@@ -552,14 +552,14 @@ func (r *RedisBase) HIncrBy(key string, field interface{}, inc int) (int64, bool
 	result, doErr := conn.Do("HINCRBY", cacheKey, field, inc)
 
 	if doErr != nil {
-		LogError("redis do HINCRBY error: ", doErr.Error())
+		LogError("redis do HINCRBY failed, ", doErr.Error())
 		return 0, false
 	}
 
 	count, ok := result.(int64)
 
 	if !ok {
-		LogErrorf("redis do HINCRBY type assertion error: result %v is %v", result, reflect.TypeOf(result))
+		LogErrorf("redis do HINCRBY type assertion failed, result %v is %v", result, reflect.TypeOf(result))
 		return 0, false
 	}
 
@@ -588,7 +588,7 @@ func (r *RedisBase) LPush(key string, data interface{}) bool {
 	cacheData, jsonErr := json.Marshal(data)
 
 	if jsonErr != nil {
-		LogError("redis LPUSH marshal data error: ", jsonErr.Error())
+		LogError("redis LPUSH marshal data failed, ", jsonErr.Error())
 		return false
 	}
 
@@ -597,7 +597,7 @@ func (r *RedisBase) LPush(key string, data interface{}) bool {
 	_, doErr := conn.Do("LPUSH", cacheKey, cacheData)
 
 	if doErr != nil {
-		LogError("redis do LPUSH error: ", doErr.Error())
+		LogError("redis do LPUSH failed, ", doErr.Error())
 		return false
 	}
 
@@ -626,7 +626,7 @@ func (r *RedisBase) LPop(key string, data interface{}) bool {
 	cacheData, doErr := conn.Do("LPOP", cacheKey)
 
 	if doErr != nil {
-		LogError("redis do LPOP error: ", doErr.Error())
+		LogError("redis do LPOP failed, ", doErr.Error())
 		return false
 	}
 
@@ -637,7 +637,7 @@ func (r *RedisBase) LPop(key string, data interface{}) bool {
 	jsonErr := json.Unmarshal(cacheData.([]byte), data)
 
 	if jsonErr != nil {
-		LogError("redis LPOP unmarshal cacheData error: ", jsonErr.Error())
+		LogError("redis LPOP unmarshal cacheData failed, ", jsonErr.Error())
 		return false
 	}
 
@@ -664,7 +664,7 @@ func (r *RedisBase) RPush(key string, data interface{}) bool {
 	cacheData, jsonErr := json.Marshal(data)
 
 	if jsonErr != nil {
-		LogError("redis RPUSH marshal data error: ", jsonErr.Error())
+		LogError("redis RPUSH marshal data failed, ", jsonErr.Error())
 		return false
 	}
 
@@ -673,7 +673,7 @@ func (r *RedisBase) RPush(key string, data interface{}) bool {
 	_, doErr := conn.Do("RPUSH", cacheKey, cacheData)
 
 	if doErr != nil {
-		LogError("redis do RPUSH error: ", doErr.Error())
+		LogError("redis do RPUSH failed, ", doErr.Error())
 		return false
 	}
 
@@ -702,7 +702,7 @@ func (r *RedisBase) RPop(key string, data interface{}) bool {
 	cacheData, doErr := conn.Do("RPOP", cacheKey)
 
 	if doErr != nil {
-		LogError("redis do RPOP error: ", doErr.Error())
+		LogError("redis do RPOP failed, ", doErr.Error())
 		return false
 	}
 
@@ -713,7 +713,7 @@ func (r *RedisBase) RPop(key string, data interface{}) bool {
 	jsonErr := json.Unmarshal(cacheData.([]byte), data)
 
 	if jsonErr != nil {
-		LogError("redis RPOP unmarshal cacheData error: ", jsonErr.Error())
+		LogError("redis RPOP unmarshal cacheData failed, ", jsonErr.Error())
 		return false
 	}
 
@@ -741,14 +741,14 @@ func (r *RedisBase) LLen(key string) (int64, bool) {
 	result, doErr := conn.Do("LLEN", cacheKey)
 
 	if doErr != nil {
-		LogError("redis do LLEN error: ", doErr.Error())
+		LogError("redis do LLEN failed, ", doErr.Error())
 		return 0, false
 	}
 
 	count, ok := result.(int64)
 
 	if !ok {
-		LogErrorf("redis do LLEN type assertion error: result %v is %v", result, reflect.TypeOf(result))
+		LogErrorf("redis do LLEN type assertion failed, result %v is %v", result, reflect.TypeOf(result))
 		return 0, false
 	}
 
@@ -779,7 +779,7 @@ func (r *RedisBase) LRange(key string, start int, end int, data interface{}) boo
 	cacheData, doErr := redis.ByteSlices(conn.Do("LRANGE", cacheKey, start, end))
 
 	if doErr != nil {
-		LogError("redis do LRANGE error: ", doErr.Error())
+		LogError("redis do LRANGE failed, ", doErr.Error())
 		return false
 	}
 
@@ -800,7 +800,7 @@ func (r *RedisBase) LRange(key string, start int, end int, data interface{}) boo
 					jsonErr := json.Unmarshal(v, elem.Addr().Interface())
 
 					if jsonErr != nil {
-						LogError("redis LRANGE unmarshal cacheData error: ", jsonErr.Error())
+						LogError("redis LRANGE unmarshal cacheData failed, ", jsonErr.Error())
 						return false
 					}
 
@@ -836,7 +836,7 @@ func (r *RedisBase) Del(key string) bool {
 	_, doErr := conn.Do("DEL", cacheKey)
 
 	if doErr != nil {
-		LogError("redis do DEL error: ", doErr.Error())
+		LogError("redis do DEL failed, ", doErr.Error())
 		return false
 	}
 
@@ -865,7 +865,7 @@ func (r *RedisBase) Expire(key string, time int) bool {
 	_, doErr := conn.Do("EXPIRE", cacheKey, time)
 
 	if doErr != nil {
-		LogError("redis do EXPIRE error: ", doErr.Error())
+		LogError("redis do EXPIRE failed, ", doErr.Error())
 		return false
 	}
 
@@ -893,14 +893,14 @@ func (r *RedisBase) Incr(key string) (int64, bool) {
 	result, doErr := conn.Do("INCR", cacheKey)
 
 	if doErr != nil {
-		LogError("redis do INCR error: ", doErr.Error())
+		LogError("redis do INCR failed, ", doErr.Error())
 		return 0, false
 	}
 
 	count, ok := result.(int64)
 
 	if !ok {
-		LogErrorf("redis do INCR type assertion error: result %v is %v", result, reflect.TypeOf(result))
+		LogErrorf("redis do INCR type assertion failed, result %v is %v", result, reflect.TypeOf(result))
 		return 0, false
 	}
 
@@ -929,14 +929,14 @@ func (r *RedisBase) IncrBy(key string, inc int) (int64, bool) {
 	result, doErr := conn.Do("INCRBY", cacheKey, inc)
 
 	if doErr != nil {
-		LogError("redis do INCRBY error: ", doErr.Error())
+		LogError("redis do INCRBY failed, ", doErr.Error())
 		return 0, false
 	}
 
 	count, ok := result.(int64)
 
 	if !ok {
-		LogErrorf("redis do INCRBY type assertion error: result %v is %v", result, reflect.TypeOf(result))
+		LogErrorf("redis do INCRBY type assertion failed, result %v is %v", result, reflect.TypeOf(result))
 		return 0, false
 	}
 
@@ -964,14 +964,14 @@ func (r *RedisBase) Decr(key string) (int64, bool) {
 	result, doErr := conn.Do("DECR", cacheKey)
 
 	if doErr != nil {
-		LogError("redis do DECR error: ", doErr.Error())
+		LogError("redis do DECR failed, ", doErr.Error())
 		return 0, false
 	}
 
 	count, ok := result.(int64)
 
 	if !ok {
-		LogErrorf("redis do DECR type assertion error: result %v is %v", result, reflect.TypeOf(result))
+		LogErrorf("redis do DECR type assertion failed, result %v is %v", result, reflect.TypeOf(result))
 		return 0, false
 	}
 
@@ -1000,14 +1000,14 @@ func (r *RedisBase) DecrBy(key string, inc int) (int64, bool) {
 	result, doErr := conn.Do("DECRBY", cacheKey, inc)
 
 	if doErr != nil {
-		LogError("redis do DECRBY error: ", doErr.Error())
+		LogError("redis do DECRBY failed, ", doErr.Error())
 		return 0, false
 	}
 
 	count, ok := result.(int64)
 
 	if !ok {
-		LogErrorf("redis do DECRBY type assertion error: result %v is %v", result, reflect.TypeOf(result))
+		LogErrorf("redis do DECRBY type assertion failed, result %v is %v", result, reflect.TypeOf(result))
 		return 0, false
 	}
 

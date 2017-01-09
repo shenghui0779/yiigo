@@ -104,7 +104,7 @@ func (m *MysqlBase) Insert(data interface{}) error {
 	insertErr := db.Create(data).Error
 
 	if insertErr != nil {
-		LogErrorf("mysql table %s insert error: %s", m.Table, insertErr.Error())
+		LogErrorf("mysql table %s insert failed, %s", m.Table, insertErr.Error())
 		return insertErr
 	}
 
@@ -149,7 +149,7 @@ func (m *MysqlBase) BatchInsert(data interface{}) error {
 
 	if insertErr != nil {
 		tx.Rollback()
-		LogErrorf("mysql table %s insert error: %s", m.Table, insertErr.Error())
+		LogErrorf("mysql table %s insert failed, %s", m.Table, insertErr.Error())
 
 		return insertErr
 	}
@@ -164,10 +164,10 @@ func (m *MysqlBase) BatchInsert(data interface{}) error {
  * @param data interface{} 插入数据 (struct指针切片)
  * @param action map[string]interface{} 执行数据插入前的操作 (支持更新和删除)
  * [
- * 		type string 操作类型 (delete 或 update)
- * 		query string SQL查询where语句
- * 		bind []interface{} SQL语句中 "?" 的绑定值
- * 		data interface{} 删除的struct指针或更新的字段
+ *     type string 操作类型 (delete 或 update)
+ *     query string SQL查询 where 语句
+ *     bind []interface{} SQL语句中 "?" 的绑定值
+ *     data interface{} 删除的 struct 指针或更新的字段
  * ]
  * @return error
  */
@@ -225,7 +225,7 @@ func (m *MysqlBase) BatchInsertWithAction(data interface{}, action map[string]in
 
 	if dbErr != nil {
 		tx.Rollback()
-		LogErrorf("mysql table %s %s error: %s", m.Table, actionType, dbErr.Error())
+		LogErrorf("mysql table %s %s failed, %s", m.Table, actionType, dbErr.Error())
 
 		return dbErr
 	}
@@ -240,7 +240,7 @@ func (m *MysqlBase) BatchInsertWithAction(data interface{}, action map[string]in
 
 	if dbErr != nil {
 		tx.Rollback()
-		LogErrorf("mysql table %s insert error: %s", m.Table, dbErr.Error())
+		LogErrorf("mysql table %s insert failed, %s", m.Table, dbErr.Error())
 
 		return dbErr
 	}
@@ -254,8 +254,8 @@ func (m *MysqlBase) BatchInsertWithAction(data interface{}, action map[string]in
  * Update 更新
  * @param query map[string]interface{} 查询条件
  * [
- * 		where string SQL查询where语句
- * 		bind []interface{} SQL语句中 "?" 的绑定值
+ *     where string SQL查询 where 语句
+ *     bind []interface{} SQL语句中 "?" 的绑定值
  * ]
  * @param data map[string]interface{} 更新字段
  * @return error
@@ -283,7 +283,7 @@ func (m *MysqlBase) Update(query map[string]interface{}, data map[string]interfa
 	updateErr := db.Where(where, bind...).Updates(data).Error
 
 	if updateErr != nil {
-		LogErrorf("mysql table %s update error: %s", m.Table, updateErr.Error())
+		LogErrorf("mysql table %s update failed, %s", m.Table, updateErr.Error())
 		return updateErr
 	}
 
@@ -294,8 +294,8 @@ func (m *MysqlBase) Update(query map[string]interface{}, data map[string]interfa
  * Increment 自增
  * @param query map[string]interface{} 查询条件
  * [
- * 		where string SQL查询where语句
- * 		bind []interface{} SQL语句中 "?" 的绑定值
+ *     where string SQL查询 where 语句
+ *     bind []interface{} SQL语句中 "?" 的绑定值
  * ]
  * @param column string 自增字段
  * @param inc int 增量
@@ -325,7 +325,7 @@ func (m *MysqlBase) Increment(query map[string]interface{}, column string, inc i
 	incErr := db.Where(where, bind...).Update(column, gorm.Expr(expr, inc)).Error
 
 	if incErr != nil {
-		LogErrorf("mysql table %s inc error: %s", m.Table, incErr.Error())
+		LogErrorf("mysql table %s increment failed, %s", m.Table, incErr.Error())
 		return incErr
 	}
 
@@ -336,8 +336,8 @@ func (m *MysqlBase) Increment(query map[string]interface{}, column string, inc i
  * Decrement 自减
  * @param query map[string]interface{} 查询条件
  * [
- * 		where string SQL查询where语句
- * 		bind []interface{} SQL语句中 "?" 的绑定值
+ *     where string SQL查询 where 语句
+ *     bind []interface{} SQL语句中 "?" 的绑定值
  * ]
  * @param column string 自减字段
  * @param dec int 减量
@@ -367,7 +367,7 @@ func (m *MysqlBase) Decrement(query map[string]interface{}, column string, dec i
 	decErr := db.Where(where, bind...).Update(column, gorm.Expr(expr, dec)).Error
 
 	if decErr != nil {
-		LogErrorf("mysql table %s dec error: %s", m.Table, decErr.Error())
+		LogErrorf("mysql table %s decrement failed, %s", m.Table, decErr.Error())
 		return decErr
 	}
 
@@ -378,10 +378,10 @@ func (m *MysqlBase) Decrement(query map[string]interface{}, column string, dec i
  * FindOne 查询
  * @param query map[string]interface{} 查询条件
  * [
- *      select string SQL查询select语句
- *      join string SQL查询join语句
- *      where string SQL查询where语句
- *      bind []interface{} SQL语句中 "?" 的绑定值
+ *     select string SQL查询 select 语句
+ *     join string SQL查询 join 语句
+ *     where string SQL查询 where 语句
+ *     bind []interface{} SQL语句中 "?" 的绑定值
  * ]
  * @param data interface{} 查询数据 (struct指针)
  * @return error
@@ -424,7 +424,7 @@ func (m *MysqlBase) FindOne(query map[string]interface{}, data interface{}) erro
 		errMsg := findErr.Error()
 
 		if errMsg != "record not found" {
-			LogErrorf("mysql table %s findone error: %s", m.Table, errMsg)
+			LogErrorf("mysql table %s findone failed, %s", m.Table, errMsg)
 		}
 
 		return findErr
@@ -437,15 +437,15 @@ func (m *MysqlBase) FindOne(query map[string]interface{}, data interface{}) erro
  * Find 查询
  * query map[string]interface{} 查询条件
  * [
- *      select string SQL查询select语句
- *      join string SQL查询join语句
- *      where string SQL查询where语句
- *      bind []interface{} SQL语句中 "?" 的绑定值
- *      count *int
- *      group string
- *      order string
- *      offset int
- *      limit int
+ *     select string SQL查询 select 语句
+ *     join string SQL查询 join 语句
+ *     where string SQL查询 where 语句
+ *     bind []interface{} SQL语句中 "?" 的绑定值
+ *     count *int
+ *     group string
+ *     order string
+ *     offset int
+ *     limit int
  * ]
  * data interface{} 查询数据 (struct切片指针)
  * @return error
@@ -510,7 +510,7 @@ func (m *MysqlBase) Find(query map[string]interface{}, data interface{}) error {
 		errMsg := findErr.Error()
 
 		if errMsg != "record not found" {
-			LogErrorf("mysql table %s find error: %s", m.Table, errMsg)
+			LogErrorf("mysql table %s find failed, %s", m.Table, errMsg)
 		}
 
 		return findErr
@@ -523,8 +523,8 @@ func (m *MysqlBase) Find(query map[string]interface{}, data interface{}) error {
  * Delete 删除
  * @param query map[string]interface{} 查询条件
  * [
- * 		where string SQL查询where语句
- * 		bind []interface{} SQL语句中 "?" 的绑定值
+ *     where string SQL查询 where 语句
+ *     bind []interface{} SQL语句中 "?" 的绑定值
  * ]
  * @param data interface{} (struct指针)
  * @return error
@@ -555,7 +555,7 @@ func (m *MysqlBase) Delete(query map[string]interface{}, data interface{}) error
 		errMsg := delErr.Error()
 
 		if errMsg != "record not found" {
-			LogErrorf("mysql table %s delete error: %s", m.Table, errMsg)
+			LogErrorf("mysql table %s delete failed, %s", m.Table, errMsg)
 		}
 
 		return delErr

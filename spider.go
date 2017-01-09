@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"models/jsons"
 	"net/http"
 	"net/url"
 	"path/filepath"
@@ -25,6 +24,7 @@ import (
  * CookiePath {string} cookie存放路径 [默认 cookies 目录]
  * 验证码图片默认存放路径为 verifycode 目录
  */
+
 type SpiderBase struct {
 	CAPath     *CAPath
 	CookiePath string
@@ -33,6 +33,19 @@ type SpiderBase struct {
 type CAPath struct {
 	Cert           string
 	UnencryptedKey string
+}
+
+// 验证码接口返回
+type showApiRes struct {
+	ShowapiResCode  int          `json:"showapi_res_code"`
+	ShowapiResError string       `json:"showapi_res_error"`
+	ShowapiResBody  *showApiBody `json:"showapi_res_body"`
+}
+
+type showApiBody struct {
+	Result  string `json:"Result"`
+	RetCode int    `json:"ret_code"`
+	ID      string `json:"Id"`
 }
 
 /**
@@ -49,7 +62,7 @@ func (s *SpiderBase) HttpGet(httpUrl string, host string, setCookie bool, saveCo
 	req, httpErr := http.NewRequest("GET", httpUrl, nil)
 
 	if httpErr != nil {
-		LogError("new http get error: ", httpErr.Error())
+		LogError("new http get failed, ", httpErr.Error())
 		return nil, httpErr
 	}
 
@@ -71,7 +84,7 @@ func (s *SpiderBase) HttpGet(httpUrl string, host string, setCookie bool, saveCo
 	res, clientDoErr := client.Do(req)
 
 	if clientDoErr != nil {
-		LogError("client do http get error: ", clientDoErr.Error())
+		LogError("client do http get failed, ", clientDoErr.Error())
 		return nil, clientDoErr
 	}
 
@@ -98,7 +111,7 @@ func (s *SpiderBase) HttpPost(httpUrl string, host string, v url.Values, setCook
 	req, httpErr := http.NewRequest("POST", httpUrl, postParam)
 
 	if httpErr != nil {
-		LogError("new http post error: ", httpErr.Error())
+		LogError("new http post failed, ", httpErr.Error())
 		return nil, httpErr
 	}
 
@@ -120,7 +133,7 @@ func (s *SpiderBase) HttpPost(httpUrl string, host string, v url.Values, setCook
 	res, clientDoErr := client.Do(req)
 
 	if clientDoErr != nil {
-		LogError("client do post error: ", clientDoErr.Error())
+		LogError("client do post failed, ", clientDoErr.Error())
 		return nil, clientDoErr
 	}
 
@@ -145,7 +158,7 @@ func (s *SpiderBase) HttpsGet(httpUrl string, host string, setCookie bool, saveC
 	req, httpErr := http.NewRequest("GET", httpUrl, nil)
 
 	if httpErr != nil {
-		LogError("new http get error: ", httpErr.Error())
+		LogError("new http get failed, ", httpErr.Error())
 		return nil, httpErr
 	}
 
@@ -163,7 +176,7 @@ func (s *SpiderBase) HttpsGet(httpUrl string, host string, setCookie bool, saveC
 	cert, certErr := tls.LoadX509KeyPair(certFile, keyFile)
 
 	if certErr != nil {
-		LogError("load x509 keypair error: ", certErr.Error())
+		LogError("load x509 keypair failed, ", certErr.Error())
 		return nil, certErr
 	}
 
@@ -182,7 +195,7 @@ func (s *SpiderBase) HttpsGet(httpUrl string, host string, setCookie bool, saveC
 	res, clientDoErr := client.Do(req)
 
 	if clientDoErr != nil {
-		LogError("client do http get error: ", clientDoErr.Error())
+		LogError("client do http get failed, ", clientDoErr.Error())
 		return nil, clientDoErr
 	}
 
@@ -209,7 +222,7 @@ func (s *SpiderBase) HttpsPost(httpUrl string, host string, v url.Values, setCoo
 	req, httpErr := http.NewRequest("POST", httpUrl, postParam)
 
 	if httpErr != nil {
-		LogError("new http post error: ", httpErr.Error())
+		LogError("new http post failed, ", httpErr.Error())
 		return nil, httpErr
 	}
 
@@ -227,7 +240,7 @@ func (s *SpiderBase) HttpsPost(httpUrl string, host string, v url.Values, setCoo
 	cert, certErr := tls.LoadX509KeyPair(certFile, keyFile)
 
 	if certErr != nil {
-		LogError("load x509 keypair error: ", certErr.Error())
+		LogError("load x509 keypair failed, ", certErr.Error())
 		return nil, certErr
 	}
 
@@ -246,7 +259,7 @@ func (s *SpiderBase) HttpsPost(httpUrl string, host string, v url.Values, setCoo
 	res, clientDoErr := client.Do(req)
 
 	if clientDoErr != nil {
-		LogError("client do post error: ", clientDoErr.Error())
+		LogError("client do post failed, ", clientDoErr.Error())
 		return nil, clientDoErr
 	}
 
@@ -299,14 +312,14 @@ func (s *SpiderBase) setHttpCookie(req *http.Request) {
 	content, readErr := ioutil.ReadFile(path)
 
 	if readErr != nil {
-		LogError("cookies read error: ", readErr.Error())
+		LogError("cookies read failed, ", readErr.Error())
 		return
 	}
 
 	jsonErr := json.Unmarshal(content, &cookies)
 
 	if jsonErr != nil {
-		LogError("cookies json decode error: ", jsonErr.Error())
+		LogError("cookies json decode failed, ", jsonErr.Error())
 		return
 	}
 
@@ -338,14 +351,14 @@ func (s *SpiderBase) saveHttpCookie(newCookies []*http.Cookie, clearOldCookie bo
 		byteArr, jsonErr := json.Marshal(cookies)
 
 		if jsonErr != nil {
-			LogError("cookies json encode error: ", jsonErr.Error())
+			LogError("cookies json encode failed, ", jsonErr.Error())
 			return
 		}
 
 		writeErr := ioutil.WriteFile(path, byteArr, 0777)
 
 		if writeErr != nil {
-			LogError("save cookie error: ", writeErr.Error())
+			LogError("save cookie failed, ", writeErr.Error())
 		}
 	} else { //追加新的cookie
 		cookies := map[string]*http.Cookie{}
@@ -355,7 +368,7 @@ func (s *SpiderBase) saveHttpCookie(newCookies []*http.Cookie, clearOldCookie bo
 			jsonErr := json.Unmarshal(content, &cookies)
 
 			if jsonErr != nil {
-				LogError("cookies json decode error: ", jsonErr.Error())
+				LogError("cookies json decode failed, ", jsonErr.Error())
 				return
 			}
 		}
@@ -367,14 +380,14 @@ func (s *SpiderBase) saveHttpCookie(newCookies []*http.Cookie, clearOldCookie bo
 		byteArr, jsonErr := json.Marshal(cookies)
 
 		if jsonErr != nil {
-			LogError("cookies json encode error: ", jsonErr.Error())
+			LogError("cookies json encode failed, ", jsonErr.Error())
 			return
 		}
 
 		writeErr := ioutil.WriteFile(path, byteArr, 0777)
 
 		if writeErr != nil {
-			LogError("save cookie error: ", writeErr.Error())
+			LogError("save cookie failed, ", writeErr.Error())
 		}
 	}
 }
@@ -393,7 +406,7 @@ func (s *SpiderBase) getVerifyCode(httpUrl string, host string, setCookie bool, 
 	resBody, err := s.HttpGet(httpUrl, host, setCookie, saveCookie, clearOldCookie)
 
 	if err != nil {
-		LogError("get verifycode error: ", err.Error())
+		LogError("get verifycode failed, ", err.Error())
 		return "", err
 	}
 
@@ -402,7 +415,7 @@ func (s *SpiderBase) getVerifyCode(httpUrl string, host string, setCookie bool, 
 	body, readErr := ioutil.ReadAll(resBody)
 
 	if readErr != nil {
-		LogError("get verifycode error: ", readErr.Error())
+		LogError("get verifycode failed, ", readErr.Error())
 		return "", readErr
 	}
 
@@ -412,7 +425,7 @@ func (s *SpiderBase) getVerifyCode(httpUrl string, host string, setCookie bool, 
 	writeErr := ioutil.WriteFile(path, body, 0777)
 
 	if writeErr != nil {
-		LogError("save verifycode error: ", writeErr.Error())
+		LogError("save verifycode failed, ", writeErr.Error())
 		return "", writeErr
 	}
 
@@ -450,7 +463,7 @@ func (s *SpiderBase) CallShowApi(httpUrl string, host string, setCookie bool, sa
 	req, httpErr := http.NewRequest("POST", "http://ali-checkcode.showapi.com/checkcode", postParam)
 
 	if httpErr != nil {
-		LogError("call showapi error: ", httpErr.Error())
+		LogError("call showapi failed, ", httpErr.Error())
 		return "", httpErr
 	}
 
@@ -462,7 +475,7 @@ func (s *SpiderBase) CallShowApi(httpUrl string, host string, setCookie bool, sa
 	res, clientDoErr := client.Do(req)
 
 	if clientDoErr != nil {
-		LogError("call showapi error: ", clientDoErr.Error())
+		LogError("call showapi failed, ", clientDoErr.Error())
 		return "", clientDoErr
 	}
 
@@ -470,21 +483,21 @@ func (s *SpiderBase) CallShowApi(httpUrl string, host string, setCookie bool, sa
 	body, readErr := ioutil.ReadAll(res.Body)
 
 	if readErr != nil {
-		LogError("call showapi error: ", readErr.Error())
+		LogError("call showapi failed, ", readErr.Error())
 		return "", readErr
 	}
 
-	data := &jsons.ShowApiRes{}
+	data := &showApiRes{}
 
 	jsonErr := json.Unmarshal(body, &data)
 
 	if jsonErr != nil {
-		LogError("call showapi error: ", jsonErr.Error())
+		LogError("call showapi failed, ", jsonErr.Error())
 		return "", jsonErr
 	}
 
 	if data.ShowapiResCode != 0 {
-		LogError("call showapi error: ", data.ShowapiResError)
+		LogError("call showapi failed, ", data.ShowapiResError)
 		return "", errors.New(data.ShowapiResError)
 	}
 

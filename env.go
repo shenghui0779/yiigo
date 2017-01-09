@@ -12,7 +12,7 @@ var env *goconfig.ConfigFile
 /**
  * 加载ENV配置
  */
-func LoadConfig() {
+func LoadEnvConfig() {
 	var err error
 
 	envFile, _ := filepath.Abs("env.ini")

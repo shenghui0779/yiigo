@@ -13,7 +13,7 @@ package main
 import "github.com/iiinsomnia/yiigo"
 
 func main() {
-    yiigo.LoadConfig() // 加载配置
+    yiigo.LoadEnvConfig() // 加载配置
     yiigo.InitLogger() // 初始化日志
     yiigo.InitDB()     // 初始化DB，没有指定配置名称，则默认为："db"
     yiigo.InitMongo()  // 初始化MongoDB
@@ -24,7 +24,7 @@ func main() {
 yiigo.InitDB("db1", "db2", "db3") // 初始化多个DB
 ```
 ```
-注意：配置和日志一定要优先加载初始化
+注意：配置和日志一定要优先加载初始化，其余按需初始化即可
 ```
 
 ## 说明：
