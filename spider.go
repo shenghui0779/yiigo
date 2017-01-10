@@ -20,29 +20,29 @@ import (
  * 做爬虫时需用到另外两个库：
  * 1、gbk 转 utf8：gopkg.in/iconv.v1 [https://github.com/qiniu/iconv]
  * 2、页面 dom 处理：github.com/PuerkitoBio/goquery
- * CAPath {*CAPath} CA证书存放路径 [默认 certificate 目录，证书需用 openssl 转化为 pem格式]
+ * CertPath {*CertPath} CA证书存放路径 [默认 certs 目录，证书需用 openssl 转化为 pem格式]
  * CookiePath {string} cookie存放路径 [默认 cookies 目录]
- * 验证码图片默认存放路径为 verifycode 目录
+ * 验证码图片默认存放路径为 captcha 目录
  */
 
 type SpiderBase struct {
-	CAPath     *CAPath
+	CertPath   *CertPath
 	CookiePath string
 }
 
-type CAPath struct {
-	Cert           string
-	UnencryptedKey string
+type CertPath struct {
+	CertPem           string
+	KeyUnencryptedPem string
 }
 
 // 验证码接口返回
-type showApiRes struct {
+type showAPIRes struct {
 	ShowapiResCode  int          `json:"showapi_res_code"`
 	ShowapiResError string       `json:"showapi_res_error"`
-	ShowapiResBody  *showApiBody `json:"showapi_res_body"`
+	ShowapiResBody  *showAPIBody `json:"showapi_res_body"`
 }
 
-type showApiBody struct {
+type showAPIBody struct {
 	Result  string `json:"Result"`
 	RetCode int    `json:"ret_code"`
 	ID      string `json:"Id"`
@@ -51,11 +51,11 @@ type showApiBody struct {
 /**
  * HttpGet请求
  * @param httpUrl string 请求地址
- * @param host string 请求头部Host
- * @param setCookie bool 请求是否需要加cookie
- * @param saveCookie bool 是否保存返回的cookie
- * @param clearOldCookie bool 是否需要清空原来的cookie
- * @param referer string 请求头部referer
+ * @param host string 请求头部 Host
+ * @param setCookie bool 请求是否需要加 cookie
+ * @param saveCookie bool 是否保存返回的 cookie
+ * @param clearOldCookie bool 是否需要清空原来的 cookie
+ * @param referer string 请求头部 referer
  * @return io.ReadCloser
  */
 func (s *SpiderBase) HttpGet(httpUrl string, host string, setCookie bool, saveCookie bool, clearOldCookie bool, referer ...string) (io.ReadCloser, error) {
@@ -98,12 +98,12 @@ func (s *SpiderBase) HttpGet(httpUrl string, host string, setCookie bool, saveCo
 /**
  * HttpPost请求
  * @param httpUrl string 请求地址
- * @param host string 请求头部Host
+ * @param host string 请求头部 Host
  * @param v url.Values post参数
- * @param setCookie bool 请求是否需要加cookie
- * @param saveCookie bool 是否保存返回的cookie
- * @param clearOldCookie bool 是否需要清空原来的cookie
- * @param referer string 请求头部referer
+ * @param setCookie bool 请求是否需要加 cookie
+ * @param saveCookie bool 是否保存返回的 cookie
+ * @param clearOldCookie bool 是否需要清空原来的 cookie
+ * @param referer string 请求头部 referer
  * @return io.ReadCloser
  */
 func (s *SpiderBase) HttpPost(httpUrl string, host string, v url.Values, setCookie bool, saveCookie bool, clearOldCookie bool, referer ...string) (io.ReadCloser, error) {
@@ -145,13 +145,13 @@ func (s *SpiderBase) HttpPost(httpUrl string, host string, v url.Values, setCook
 }
 
 /**
- * HttpsGet请求 [https 需要CA证书，用openssl转换成pem格式：cert.pem、key.pem]
+ * HttpsGet请求 [https 需要CA证书，用 openssl 转换成 pem格式：cert.pem、key.pem]
  * @param httpUrl string 请求地址
- * @param host string 请求头部Host
- * @param setCookie bool 请求是否需要加cookie
- * @param saveCookie bool 是否保存返回的cookie
- * @param clearOldCookie bool 是否需要清空原来的cookie
- * @param referer string 请求头部referer
+ * @param host string 请求头部 Host
+ * @param setCookie bool 请求是否需要加 cookie
+ * @param saveCookie bool 是否保存返回的 cookie
+ * @param clearOldCookie bool 是否需要清空原来的 cookie
+ * @param referer string 请求头部 referer
  * @return io.ReadCloser
  */
 func (s *SpiderBase) HttpsGet(httpUrl string, host string, setCookie bool, saveCookie bool, clearOldCookie bool, referer ...string) (io.ReadCloser, error) {
@@ -168,10 +168,10 @@ func (s *SpiderBase) HttpsGet(httpUrl string, host string, setCookie bool, saveC
 		s.setHttpCookie(req)
 	}
 
-	caDir := GetEnvString("spider", "cadir", "certificate")
+	certDir := GetEnvString("spider", "certdir", "certs")
 
-	certFile, _ := filepath.Abs(fmt.Sprintf("%s/%s", caDir, s.CAPath.Cert))
-	keyFile, _ := filepath.Abs(fmt.Sprintf("%s/%s", caDir, s.CAPath.UnencryptedKey))
+	certFile, _ := filepath.Abs(fmt.Sprintf("%s/%s", certDir, s.CertPath.CertPem))
+	keyFile, _ := filepath.Abs(fmt.Sprintf("%s/%s", certDir, s.CertPath.KeyUnencryptedPem))
 
 	cert, certErr := tls.LoadX509KeyPair(certFile, keyFile)
 
@@ -232,10 +232,10 @@ func (s *SpiderBase) HttpsPost(httpUrl string, host string, v url.Values, setCoo
 		s.setHttpCookie(req)
 	}
 
-	caDir := GetEnvString("spider", "cadir", "certificate")
+	certDir := GetEnvString("spider", "certdir", "certs")
 
-	certFile, _ := filepath.Abs(fmt.Sprintf("%s/%s", caDir, s.CAPath.Cert))
-	keyFile, _ := filepath.Abs(fmt.Sprintf("%s/%s", caDir, s.CAPath.UnencryptedKey))
+	certFile, _ := filepath.Abs(fmt.Sprintf("%s/%s", certDir, s.CertPath.CertPem))
+	keyFile, _ := filepath.Abs(fmt.Sprintf("%s/%s", certDir, s.CertPath.KeyUnencryptedPem))
 
 	cert, certErr := tls.LoadX509KeyPair(certFile, keyFile)
 
@@ -402,11 +402,11 @@ func (s *SpiderBase) saveHttpCookie(newCookies []*http.Cookie, clearOldCookie bo
  * @param imgName string 验证码图片保存名称
  * @return string, error
  */
-func (s *SpiderBase) getVerifyCode(httpUrl string, host string, setCookie bool, saveCookie bool, clearOldCookie bool, imgName string) (string, error) {
+func (s *SpiderBase) getCaptcha(httpUrl string, host string, setCookie bool, saveCookie bool, clearOldCookie bool, imgName string) (string, error) {
 	resBody, err := s.HttpGet(httpUrl, host, setCookie, saveCookie, clearOldCookie)
 
 	if err != nil {
-		LogError("get verifycode failed, ", err.Error())
+		LogError("get captcha failed, ", err.Error())
 		return "", err
 	}
 
@@ -415,27 +415,27 @@ func (s *SpiderBase) getVerifyCode(httpUrl string, host string, setCookie bool, 
 	body, readErr := ioutil.ReadAll(resBody)
 
 	if readErr != nil {
-		LogError("get verifycode failed, ", readErr.Error())
+		LogError("get captcha failed, ", readErr.Error())
 		return "", readErr
 	}
 
-	verifyDir := GetEnvString("spider", "verifydir", "verifycode")
+	verifyDir := GetEnvString("spider", "captchadir", "captcha")
 
 	path, _ := filepath.Abs(fmt.Sprintf("%s/%s", verifyDir, imgName))
 	writeErr := ioutil.WriteFile(path, body, 0777)
 
 	if writeErr != nil {
-		LogError("save verifycode failed, ", writeErr.Error())
+		LogError("save captcha failed, ", writeErr.Error())
 		return "", writeErr
 	}
 
-	verifyCodeBase64 := base64.StdEncoding.EncodeToString(body)
+	captchaBase64 := base64.StdEncoding.EncodeToString(body)
 
-	return verifyCodeBase64, nil
+	return captchaBase64, nil
 }
 
 /**
- * 调用 ShowApi 识别验证码 [showApi是付费服务：https://market.aliyun.com/products/57124001/cmapi011148.html#sku=yuncode514800004]
+ * 调用 showapi 接口识别验证码 [showApi是付费服务：https://market.aliyun.com/products/57124001/cmapi011148.html#sku=yuncode514800004]
  * @param httpUrl string 请求验证码URL
  * @param host string 请求的头部Host
  * @param setCookie bool 请求是否需要加cookie
@@ -446,16 +446,16 @@ func (s *SpiderBase) getVerifyCode(httpUrl string, host string, setCookie bool, 
  * @param convertToJpg string 是否转化为jpg格式进行识别("0" 否；"1" 是)
  * @return string
  */
-func (s *SpiderBase) CallShowApi(httpUrl string, host string, setCookie bool, saveCookie bool, clearOldCookie bool, imgName string, typeId string, convertToJpg string) (string, error) {
-	verifyCodeBase64, err := s.getVerifyCode(httpUrl, host, setCookie, saveCookie, clearOldCookie, imgName)
+func (s *SpiderBase) CallShowAPI(httpUrl string, host string, setCookie bool, saveCookie bool, clearOldCookie bool, imgName string, typeId string, convertToJpg string) (string, error) {
+	captchaBase64, err := s.getCaptcha(httpUrl, host, setCookie, saveCookie, clearOldCookie, imgName)
 
 	if err != nil {
 		return "", err
 	}
-	return "", errors.New("IIInsomnia")
+
 	v := url.Values{}
 
-	v.Set("img_base64", verifyCodeBase64)
+	v.Set("img_base64", captchaBase64)
 	v.Set("typeId", typeId)
 	v.Set("convert_to_jpg", convertToJpg)
 
@@ -487,7 +487,7 @@ func (s *SpiderBase) CallShowApi(httpUrl string, host string, setCookie bool, sa
 		return "", readErr
 	}
 
-	data := &showApiRes{}
+	data := &showAPIRes{}
 
 	jsonErr := json.Unmarshal(body, &data)
 
