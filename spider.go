@@ -399,10 +399,10 @@ func (s *SpiderBase) saveHttpCookie(newCookies []*http.Cookie, clearOldCookie bo
  * @param setCookie bool 请求是否需要加cookie
  * @param saveCookie bool 是否保存返回的cookie
  * @param clearOldCookie bool 是否需要清空原来的cookie
- * @param imgName string 验证码图片保存名称
+ * @param captchaImg string 验证码图片保存名称
  * @return string, error
  */
-func (s *SpiderBase) getCaptcha(httpUrl string, host string, setCookie bool, saveCookie bool, clearOldCookie bool, imgName string) (string, error) {
+func (s *SpiderBase) getCaptchaBase64(httpUrl string, host string, setCookie bool, saveCookie bool, clearOldCookie bool, captchaImg string) (string, error) {
 	resBody, err := s.HttpGet(httpUrl, host, setCookie, saveCookie, clearOldCookie)
 
 	if err != nil {
@@ -421,7 +421,7 @@ func (s *SpiderBase) getCaptcha(httpUrl string, host string, setCookie bool, sav
 
 	verifyDir := GetEnvString("spider", "captchadir", "captcha")
 
-	path, _ := filepath.Abs(fmt.Sprintf("%s/%s", verifyDir, imgName))
+	path, _ := filepath.Abs(fmt.Sprintf("%s/%s", verifyDir, captchaImg))
 	writeErr := ioutil.WriteFile(path, body, 0777)
 
 	if writeErr != nil {
@@ -441,13 +441,13 @@ func (s *SpiderBase) getCaptcha(httpUrl string, host string, setCookie bool, sav
  * @param setCookie bool 请求是否需要加cookie
  * @param saveCookie bool 是否保存返回的cookie
  * @param clearOldCookie bool 是否需要清空原来的cookie
- * @param imgName string 验证码图片保存名称
+ * @param captchaImg string 验证码图片保存名称
  * @param typeId string 验证码类型 (具体查看showapi文档)
  * @param convertToJpg string 是否转化为jpg格式进行识别("0" 否；"1" 是)
  * @return string
  */
-func (s *SpiderBase) CallShowAPI(httpUrl string, host string, setCookie bool, saveCookie bool, clearOldCookie bool, imgName string, typeId string, convertToJpg string) (string, error) {
-	captchaBase64, err := s.getCaptcha(httpUrl, host, setCookie, saveCookie, clearOldCookie, imgName)
+func (s *SpiderBase) GetCaptchaCode(httpUrl string, host string, setCookie bool, saveCookie bool, clearOldCookie bool, captchaImg string, typeId string, convertToJpg string) (string, error) {
+	captchaBase64, err := s.getCaptchaBase64(httpUrl, host, setCookie, saveCookie, clearOldCookie, captchaImg)
 
 	if err != nil {
 		return "", err
