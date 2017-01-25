@@ -1,7 +1,7 @@
 {
 	"ImportPath": "github.com/iiinsomnia/yiigo",
 	"GoVersion": "go1.7",
-	"GodepVersion": "v74",
+	"GodepVersion": "v78",
 	"Deps": [
 		{
 			"ImportPath": "github.com/Unknwon/goconfig",
@@ -9,8 +9,28 @@
 		},
 		{
 			"ImportPath": "github.com/cihub/seelog",
-			"Comment": "v2.6-22-g752ef64",
-			"Rev": "752ef646ce438bc649b2bb565188471879185c33"
+			"Comment": "v2.6-24-g175e6e3",
+			"Rev": "175e6e3d439fe2e1cee7ab652b12eb546c145a13"
+		},
+		{
+			"ImportPath": "github.com/cihub/seelog/archive",
+			"Comment": "v2.6-24-g175e6e3",
+			"Rev": "175e6e3d439fe2e1cee7ab652b12eb546c145a13"
+		},
+		{
+			"ImportPath": "github.com/cihub/seelog/archive/gzip",
+			"Comment": "v2.6-24-g175e6e3",
+			"Rev": "175e6e3d439fe2e1cee7ab652b12eb546c145a13"
+		},
+		{
+			"ImportPath": "github.com/cihub/seelog/archive/tar",
+			"Comment": "v2.6-24-g175e6e3",
+			"Rev": "175e6e3d439fe2e1cee7ab652b12eb546c145a13"
+		},
+		{
+			"ImportPath": "github.com/cihub/seelog/archive/zip",
+			"Comment": "v2.6-24-g175e6e3",
+			"Rev": "175e6e3d439fe2e1cee7ab652b12eb546c145a13"
 		},
 		{
 			"ImportPath": "github.com/garyburd/redigo/internal",
@@ -23,6 +43,21 @@
 			"Rev": "b8dc90050f24c1a73a52f107f3f575be67b21b7c"
 		},
 		{
+			"ImportPath": "github.com/gin-gonic/gin",
+			"Comment": "v1.1.4",
+			"Rev": "e2212d40c62a98b388a5eb48ecbdcf88534688ba"
+		},
+		{
+			"ImportPath": "github.com/gin-gonic/gin/binding",
+			"Comment": "v1.1.4",
+			"Rev": "e2212d40c62a98b388a5eb48ecbdcf88534688ba"
+		},
+		{
+			"ImportPath": "github.com/gin-gonic/gin/render",
+			"Comment": "v1.1.4",
+			"Rev": "e2212d40c62a98b388a5eb48ecbdcf88534688ba"
+		},
+		{
 			"ImportPath": "github.com/go-sql-driver/mysql",
 			"Comment": "v1.2-196-g3654d25",
 			"Rev": "3654d25ec346ee8ce71a68431025458d52a38ac0"
@@ -32,6 +67,10 @@
 			"Rev": "23def4e6c14b4da8ac2ed8007337bc5eb5007998"
 		},
 		{
+			"ImportPath": "github.com/golang/protobuf/proto",
+			"Rev": "8ee79997227bf9b34611aee7946ae64735e6fd93"
+		},
+		{
 			"ImportPath": "github.com/jinzhu/gorm",
 			"Comment": "v1.0-50-ga646b13",
 			"Rev": "a646b13548ec0aa812fe805b2780f460dd2771b6"
@@ -39,6 +78,14 @@
 		{
 			"ImportPath": "github.com/jinzhu/inflection",
 			"Rev": "8f4d3a0d04ce0b7c0cf3126fb98524246d00d102"
+		},
+		{
+			"ImportPath": "github.com/manucorporat/sse",
+			"Rev": "ee05b128a739a0fb76c7ebd3ae4810c1de808d6d"
+		},
+		{
+			"ImportPath": "github.com/mattn/go-isatty",
+			"Rev": "30a891c33c7cde7b02a981314b4228ec99380cca"
 		},
 		{
 			"ImportPath": "github.com/youtube/vitess/go/acl",
@@ -65,6 +112,15 @@
 			"Rev": "fb93926129b8ec0056f2f458b1f519654814edf0"
 		},
 		{
+			"ImportPath": "golang.org/x/sys/unix",
+			"Rev": "d75a52659825e75fff6158388dddc6a5b04f9ba5"
+		},
+		{
+			"ImportPath": "gopkg.in/go-playground/validator.v8",
+			"Comment": "v8.18.1",
+			"Rev": "5f57d2222ad794d0dffb07e664ea05e2ee07d60c"
+		},
+		{
 			"ImportPath": "gopkg.in/mgo.v2",
 			"Comment": "r2016.08.01-5-g3f83fa5",
 			"Rev": "3f83fa5005286a7fe593b055f0d7771a7dce4655"
@@ -88,6 +144,10 @@
 			"ImportPath": "gopkg.in/mgo.v2/internal/scram",
 			"Comment": "r2016.08.01-5-g3f83fa5",
 			"Rev": "3f83fa5005286a7fe593b055f0d7771a7dce4655"
+		},
+		{
+			"ImportPath": "gopkg.in/yaml.v2",
+			"Rev": "a5b47d31c556af34a302ce5d659e6fea44d90de0"
 		}
 	]
 }
