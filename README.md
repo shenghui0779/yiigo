@@ -1,5 +1,5 @@
 # yiigo
-Golang常用类库整合，用于API开发和爬虫，支持多数据库连接
+Golang常用类库整合，用于API开发和网页爬虫，支持多数据库连接
 
 ## 获取：
 ```go
@@ -14,10 +14,10 @@ import "github.com/iiinsomnia/yiigo"
 
 func main() {
     yiigo.LoadEnvConfig() // 加载配置
-    yiigo.InitLogger() // 初始化日志
-    yiigo.InitDB()     // 初始化DB，没有指定配置名称，则默认为："db"
-    yiigo.InitMongo()  // 初始化MongoDB
-    yiigo.InitRedis()  // 初始化Redis
+    yiigo.InitLogger()    // 初始化日志
+    yiigo.InitDB()        // 初始化DB，没有指定配置名称，则默认为："db"
+    yiigo.InitMongo()     // 初始化MongoDB
+    yiigo.InitRedis()     // 初始化Redis
 }
 ```
 ```go
