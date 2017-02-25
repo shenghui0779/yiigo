@@ -1,12 +1,15 @@
 # yiigo
-Golang常用类库整合，用于API开发和网页爬虫，支持多数据库连接
 
-## 获取：
+Golang常用类库整合，用于API开发和爬虫，支持多数据库连接
+
+### 获取：
+
 ```go
 go get github.com/iiinsomnia/yiigo
 ```
 
-## 使用：
+### 使用：
+
 ```go
 package main
 
@@ -20,11 +23,13 @@ func main() {
     yiigo.InitRedis()     // 初始化Redis
 }
 ```
+
 ```go
 yiigo.InitDB("db1", "db2", "db3") // 初始化多个DB
 ```
+
 ```
-注意：配置和日志一定要优先加载初始化，其余按需初始化即可
+**注意：**配置和日志一定要优先加载初始化，其余按需初始化即可
 ```
 
 ## 说明：
