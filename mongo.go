@@ -28,9 +28,15 @@ func InitMongo() {
 
 	host := GetEnvString("mongo", "host", "localhost")
 	port := GetEnvInt("mongo", "port", 27017)
+	username := GetEnvString("mongo", "username", "")
+	password := GetEnvString("mongo", "password", "")
 	poolLimit := GetEnvInt("mongo", "poolLimit", 10)
 
 	dsn := fmt.Sprintf("mongodb://%s:%d", host, port)
+
+	if username != "" {
+		dsn = fmt.Sprintf("mongodb://%s:%s@%s:%d", username, password, host, port)
+	}
 
 	mongoSession, err = mgo.Dial(dsn)
 
