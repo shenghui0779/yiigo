@@ -41,7 +41,7 @@ func InitMongo() {
 	mongoSession, err = mgo.Dial(dsn)
 
 	if err != nil {
-		LogError("connect to mongo server failed, ", err.Error())
+		LogError("[Mongo] Connect Error: ", err.Error())
 		panic(err)
 	}
 
@@ -87,7 +87,7 @@ func (m *MongoBase) refreshSequence() (int64, error) {
 	_, applyErr := c.Find(condition).Apply(change, &sequence)
 
 	if applyErr != nil {
-		LogError("mongo refresh sequence failed, ", applyErr.Error())
+		LogError("[Mongo] RefreshSequence Error: ", applyErr.Error())
 		return 0, applyErr
 	}
 
@@ -112,8 +112,8 @@ func (m *MongoBase) Insert(data interface{}) error {
 	elem := refVal.Elem()
 
 	if elem.Kind() != reflect.Struct {
-		LogErrorf("cannot use (type %v) as mongo Insert param", elem.Type())
-		return fmt.Errorf("cannot use (type %v) as mongo Insert param", elem.Type())
+		LogErrorf("[Mongo] Cannot use (type %v) as insert param", elem.Type())
+		return fmt.Errorf("cannot use (type %v) as insert param", elem.Type())
 	}
 
 	id, seqErr := m.refreshSequence()
@@ -129,7 +129,7 @@ func (m *MongoBase) Insert(data interface{}) error {
 	insertErr := c.Insert(data)
 
 	if insertErr != nil {
-		LogErrorf("mongo collection %s insert failed, %s", m.Collection, insertErr.Error())
+		LogError("[Mongo] Insert Error: ", insertErr.Error())
 		return insertErr
 	}
 
@@ -157,7 +157,7 @@ func (m *MongoBase) Update(query bson.M, data bson.M) error {
 
 	if updateErr != nil {
 		if updateErr.Error() != "not found" {
-			LogErrorf("mongo collection %s update failed, %s", m.Collection, updateErr.Error())
+			LogError("[Mongo] Update Error: ", updateErr.Error())
 		}
 
 		return updateErr
@@ -167,13 +167,13 @@ func (m *MongoBase) Update(query bson.M, data bson.M) error {
 }
 
 /**
- * Increment 自增
+ * Incr 增量 (增/减)
  * @param query bson.M (map[string]interface{}) 查询条件
  * @param column string 自增字段
  * @param inc int 增量
  * @return error
  */
-func (m *MongoBase) Increment(query bson.M, column string, incr int) error {
+func (m *MongoBase) Incr(query bson.M, column string, inc int) error {
 	session, db, err := getSession()
 
 	if err != nil {
@@ -184,15 +184,15 @@ func (m *MongoBase) Increment(query bson.M, column string, incr int) error {
 
 	c := session.DB(db).C(m.Collection)
 
-	data := bson.M{column: incr}
-	updateErr := c.Update(query, bson.M{"$inc": data})
+	data := bson.M{column: inc}
+	incrErr := c.Update(query, bson.M{"$inc": data})
 
-	if updateErr != nil {
-		if updateErr.Error() != "not found" {
-			LogErrorf("mongo collection %s update failed, %s", m.Collection, updateErr.Error())
+	if incrErr != nil {
+		if incrErr.Error() != "not found" {
+			LogError("[Mongo] Incr Error: ", incrErr.Error())
 		}
 
-		return updateErr
+		return incrErr
 	}
 
 	return nil
@@ -219,7 +219,7 @@ func (m *MongoBase) FindOne(data interface{}, query bson.M) error {
 
 	if findErr != nil {
 		if findErr.Error() != "not found" {
-			LogErrorf("mongo collection %s findone failed, %s", m.Collection, findErr.Error())
+			LogError("[Mongo] FindOne Error: ", findErr.Error())
 		}
 
 		return findErr
@@ -259,7 +259,7 @@ func (m *MongoBase) Find(data interface{}, query map[string]interface{}) error {
 		total, countErr := q.Count()
 
 		if countErr != nil {
-			LogError("mongo collection %s count failed, %s", m.Collection, countErr.Error())
+			LogError("[Mongo] Count Error: ", countErr.Error())
 			elem.Set(reflect.ValueOf(0))
 		} else {
 			elem.Set(reflect.ValueOf(total))
@@ -289,7 +289,7 @@ func (m *MongoBase) Find(data interface{}, query map[string]interface{}) error {
 
 	if findErr != nil {
 		if findErr.Error() != "not found" {
-			LogErrorf("mongo collection %s find failed, %s", m.Collection, findErr.Error())
+			LogError("[Mongo] Find Error: ", findErr.Error())
 		}
 
 		return findErr
@@ -317,7 +317,7 @@ func (m *MongoBase) Delete(query bson.M) error {
 	_, delErr := c.RemoveAll(query)
 
 	if delErr != nil {
-		LogErrorf("mongo collection %s delete failed, %s", m.Collection, delErr.Error())
+		LogError("[Mongo] Delete Error: ", delErr.Error())
 		return delErr
 	}
 
@@ -351,7 +351,7 @@ func (m *MongoBase) Sum(match bson.M, field string) (int, error) {
 	pipeErr := p.One(&result)
 
 	if pipeErr != nil {
-		LogErrorf("mongo collection %s sum failed, %s", m.Collection, pipeErr.Error())
+		LogError("[Mongo] Sum Error: ", pipeErr.Error())
 		return 0, pipeErr
 	}
 
@@ -359,8 +359,8 @@ func (m *MongoBase) Sum(match bson.M, field string) (int, error) {
 	total, ok := result["total"].(int)
 
 	if !ok {
-		LogErrorf("mongo collection %s sum failed, type assertion error, result %v is %v", m.Collection, result["total"], reflect.TypeOf(result["total"]))
-		return 0, fmt.Errorf("mongo collection %s sum failed, type assertion error, result %v is %v", m.Collection, result["total"], reflect.TypeOf(result["total"]))
+		LogErrorf("[Mongo] Sum Error: type assertion error, result %v is %v", result["total"], reflect.TypeOf(result["total"]))
+		return 0, fmt.Errorf("type assertion error, result %v is %v", result["total"], reflect.TypeOf(result["total"]))
 	}
 
 	return total, nil

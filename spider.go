@@ -62,7 +62,7 @@ func (s *SpiderBase) HttpGet(httpUrl string, host string, setCookie bool, saveCo
 	req, httpErr := http.NewRequest("GET", httpUrl, nil)
 
 	if httpErr != nil {
-		LogError("new http get failed, ", httpErr.Error())
+		LogError("[Spider] HttpGet Error: ", httpErr.Error())
 		return nil, httpErr
 	}
 
@@ -84,7 +84,7 @@ func (s *SpiderBase) HttpGet(httpUrl string, host string, setCookie bool, saveCo
 	res, clientDoErr := client.Do(req)
 
 	if clientDoErr != nil {
-		LogError("client do http get failed, ", clientDoErr.Error())
+		LogError("[Spider] HttpGet Error: ", clientDoErr.Error())
 		return nil, clientDoErr
 	}
 
@@ -111,7 +111,7 @@ func (s *SpiderBase) HttpPost(httpUrl string, host string, v url.Values, setCook
 	req, httpErr := http.NewRequest("POST", httpUrl, postParam)
 
 	if httpErr != nil {
-		LogError("new http post failed, ", httpErr.Error())
+		LogError("[Spider] HttpPost Error: ", httpErr.Error())
 		return nil, httpErr
 	}
 
@@ -133,7 +133,7 @@ func (s *SpiderBase) HttpPost(httpUrl string, host string, v url.Values, setCook
 	res, clientDoErr := client.Do(req)
 
 	if clientDoErr != nil {
-		LogError("client do post failed, ", clientDoErr.Error())
+		LogError("[Spider] HttpPost Error: ", clientDoErr.Error())
 		return nil, clientDoErr
 	}
 
@@ -158,7 +158,7 @@ func (s *SpiderBase) HttpsGet(httpUrl string, host string, setCookie bool, saveC
 	req, httpErr := http.NewRequest("GET", httpUrl, nil)
 
 	if httpErr != nil {
-		LogError("new http get failed, ", httpErr.Error())
+		LogError("[Spider] HttpsGet Error: ", httpErr.Error())
 		return nil, httpErr
 	}
 
@@ -176,7 +176,7 @@ func (s *SpiderBase) HttpsGet(httpUrl string, host string, setCookie bool, saveC
 	cert, certErr := tls.LoadX509KeyPair(certFile, keyFile)
 
 	if certErr != nil {
-		LogError("load x509 keypair failed, ", certErr.Error())
+		LogError("[Spider] HttpsGet Error: ", certErr.Error())
 		return nil, certErr
 	}
 
@@ -195,7 +195,7 @@ func (s *SpiderBase) HttpsGet(httpUrl string, host string, setCookie bool, saveC
 	res, clientDoErr := client.Do(req)
 
 	if clientDoErr != nil {
-		LogError("client do http get failed, ", clientDoErr.Error())
+		LogError("[Spider] HttpsGet Error: ", clientDoErr.Error())
 		return nil, clientDoErr
 	}
 
@@ -222,7 +222,7 @@ func (s *SpiderBase) HttpsPost(httpUrl string, host string, v url.Values, setCoo
 	req, httpErr := http.NewRequest("POST", httpUrl, postParam)
 
 	if httpErr != nil {
-		LogError("new http post failed, ", httpErr.Error())
+		LogError("[Spider] HttpsPost Error: ", httpErr.Error())
 		return nil, httpErr
 	}
 
@@ -240,7 +240,7 @@ func (s *SpiderBase) HttpsPost(httpUrl string, host string, v url.Values, setCoo
 	cert, certErr := tls.LoadX509KeyPair(certFile, keyFile)
 
 	if certErr != nil {
-		LogError("load x509 keypair failed, ", certErr.Error())
+		LogError("[Spider] HttpsPost Error: ", certErr.Error())
 		return nil, certErr
 	}
 
@@ -259,7 +259,7 @@ func (s *SpiderBase) HttpsPost(httpUrl string, host string, v url.Values, setCoo
 	res, clientDoErr := client.Do(req)
 
 	if clientDoErr != nil {
-		LogError("client do post failed, ", clientDoErr.Error())
+		LogError("[Spider] HttpsPost Error: ", clientDoErr.Error())
 		return nil, clientDoErr
 	}
 
@@ -312,14 +312,14 @@ func (s *SpiderBase) setHttpCookie(req *http.Request) {
 	content, readErr := ioutil.ReadFile(path)
 
 	if readErr != nil {
-		LogError("cookies read failed, ", readErr.Error())
+		LogError("[Spider] SetHttpCookie Error: ", readErr.Error())
 		return
 	}
 
 	jsonErr := json.Unmarshal(content, &cookies)
 
 	if jsonErr != nil {
-		LogError("cookies json decode failed, ", jsonErr.Error())
+		LogError("[Spider] SetHttpCookie Error: ", jsonErr.Error())
 		return
 	}
 
@@ -351,14 +351,14 @@ func (s *SpiderBase) saveHttpCookie(newCookies []*http.Cookie, clearOldCookie bo
 		byteArr, jsonErr := json.Marshal(cookies)
 
 		if jsonErr != nil {
-			LogError("cookies json encode failed, ", jsonErr.Error())
+			LogError("[Spider] SaveHttpCookie Error: ", jsonErr.Error())
 			return
 		}
 
 		writeErr := ioutil.WriteFile(path, byteArr, 0777)
 
 		if writeErr != nil {
-			LogError("save cookie failed, ", writeErr.Error())
+			LogError("[Spider] SaveHttpCookie Error: ", writeErr.Error())
 		}
 	} else { //追加新的cookie
 		cookies := map[string]*http.Cookie{}
@@ -368,7 +368,7 @@ func (s *SpiderBase) saveHttpCookie(newCookies []*http.Cookie, clearOldCookie bo
 			jsonErr := json.Unmarshal(content, &cookies)
 
 			if jsonErr != nil {
-				LogError("cookies json decode failed, ", jsonErr.Error())
+				LogError("[Spider] SaveHttpCookie Error: ", jsonErr.Error())
 				return
 			}
 		}
@@ -380,14 +380,14 @@ func (s *SpiderBase) saveHttpCookie(newCookies []*http.Cookie, clearOldCookie bo
 		byteArr, jsonErr := json.Marshal(cookies)
 
 		if jsonErr != nil {
-			LogError("cookies json encode failed, ", jsonErr.Error())
+			LogError("[Spider] SaveHttpCookie Error: ", jsonErr.Error())
 			return
 		}
 
 		writeErr := ioutil.WriteFile(path, byteArr, 0777)
 
 		if writeErr != nil {
-			LogError("save cookie failed, ", writeErr.Error())
+			LogError("[Spider] SaveHttpCookie Error: ", writeErr.Error())
 		}
 	}
 }
@@ -406,7 +406,7 @@ func (s *SpiderBase) getCaptchaBase64(httpUrl string, host string, setCookie boo
 	resBody, err := s.HttpGet(httpUrl, host, setCookie, saveCookie, clearOldCookie)
 
 	if err != nil {
-		LogError("get captcha failed, ", err.Error())
+		LogError("[Spider] GetCaptchaBase64 Error: ", err.Error())
 		return "", err
 	}
 
@@ -415,7 +415,7 @@ func (s *SpiderBase) getCaptchaBase64(httpUrl string, host string, setCookie boo
 	body, readErr := ioutil.ReadAll(resBody)
 
 	if readErr != nil {
-		LogError("get captcha failed, ", readErr.Error())
+		LogError("[Spider] GetCaptchaBase64 Error: ", readErr.Error())
 		return "", readErr
 	}
 
@@ -425,7 +425,7 @@ func (s *SpiderBase) getCaptchaBase64(httpUrl string, host string, setCookie boo
 	writeErr := ioutil.WriteFile(path, body, 0777)
 
 	if writeErr != nil {
-		LogError("save captcha failed, ", writeErr.Error())
+		LogError("[Spider] GetCaptchaBase64 Error: ", writeErr.Error())
 		return "", writeErr
 	}
 
@@ -463,7 +463,7 @@ func (s *SpiderBase) GetCaptchaCode(httpUrl string, host string, setCookie bool,
 	req, httpErr := http.NewRequest("POST", "http://ali-checkcode.showapi.com/checkcode", postParam)
 
 	if httpErr != nil {
-		LogError("call showapi failed, ", httpErr.Error())
+		LogError("[Spider] GetCaptchaCode Error: ", httpErr.Error())
 		return "", httpErr
 	}
 
@@ -475,7 +475,7 @@ func (s *SpiderBase) GetCaptchaCode(httpUrl string, host string, setCookie bool,
 	res, clientDoErr := client.Do(req)
 
 	if clientDoErr != nil {
-		LogError("call showapi failed, ", clientDoErr.Error())
+		LogError("[Spider] GetCaptchaCode Error: ", clientDoErr.Error())
 		return "", clientDoErr
 	}
 
@@ -483,7 +483,7 @@ func (s *SpiderBase) GetCaptchaCode(httpUrl string, host string, setCookie bool,
 	body, readErr := ioutil.ReadAll(res.Body)
 
 	if readErr != nil {
-		LogError("call showapi failed, ", readErr.Error())
+		LogError("[Spider] GetCaptchaCode Error: ", readErr.Error())
 		return "", readErr
 	}
 
@@ -492,12 +492,12 @@ func (s *SpiderBase) GetCaptchaCode(httpUrl string, host string, setCookie bool,
 	jsonErr := json.Unmarshal(body, &data)
 
 	if jsonErr != nil {
-		LogError("call showapi failed, ", jsonErr.Error())
+		LogError("[Spider] GetCaptchaCode Error: ", jsonErr.Error())
 		return "", jsonErr
 	}
 
 	if data.ShowapiResCode != 0 {
-		LogError("call showapi failed, ", data.ShowapiResError)
+		LogError("[Spider] GetCaptchaCode Error: ", data.ShowapiResError)
 		return "", errors.New(data.ShowapiResError)
 	}
 
