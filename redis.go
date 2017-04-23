@@ -2,6 +2,7 @@ package yiigo
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"reflect"
 	"strings"
@@ -13,7 +14,7 @@ import (
 	"golang.org/x/net/context"
 )
 
-type RedisBase struct {
+type Redis struct {
 	CacheName string
 }
 
@@ -36,28 +37,6 @@ func (r ResourceConn) Close() {
 }
 
 /**
- * 连接Redis
- * @return redis.Conn, error
- */
-func redisDial() (redis.Conn, error) {
-	host := GetEnvString("redis", "host", "localhost")
-	port := GetEnvInt("redis", "port", 6379)
-	connectTimeout := GetEnvInt("redis", "connectTimeout", 10000)
-	readTimeout := GetEnvInt("redis", "readTimeout", 10000)
-	writeTimeout := GetEnvInt("redis", "writeTimeout", 10000)
-
-	dsn := fmt.Sprintf("%s:%d", host, port)
-	conn, err := redis.DialTimeout("tcp", dsn, time.Duration(connectTimeout)*time.Millisecond, time.Duration(readTimeout)*time.Millisecond, time.Duration(writeTimeout)*time.Millisecond)
-
-	if err != nil {
-		LogError("[Redis] Connect Error: ", err.Error())
-		return nil, err
-	}
-
-	return conn, err
-}
-
-/**
  * 初始化Redis连接池
  */
 func InitRedis() {
@@ -77,10 +56,37 @@ func InitRedis() {
 }
 
 /**
+ * 连接Redis
+ * @return redis.Conn, error
+ */
+func redisDial() (redis.Conn, error) {
+	host := GetEnvString("redis", "host", "localhost")
+	port := GetEnvInt("redis", "port", 6379)
+	connectTimeout := GetEnvInt("redis", "connectTimeout", 10000)
+	readTimeout := GetEnvInt("redis", "readTimeout", 10000)
+	writeTimeout := GetEnvInt("redis", "writeTimeout", 10000)
+
+	dsn := fmt.Sprintf("%s:%d", host, port)
+	conn, err := redis.DialTimeout("tcp", dsn, time.Duration(connectTimeout)*time.Millisecond, time.Duration(readTimeout)*time.Millisecond, time.Duration(writeTimeout)*time.Millisecond)
+
+	if err != nil {
+		LogError("[Redis] Connect Error: ", err.Error())
+		panic(err)
+	}
+
+	return conn, err
+}
+
+/**
  * 获取Redis资源
  * @return pools.Resource, error
  */
 func getRedisConn() (pools.Resource, error) {
+	if redisPool == nil {
+		LogError("[Redis] redis is not initialized")
+		panic(errors.New("redis error: redis is not initialized"))
+	}
+
 	if redisPool.IsClosed() {
 		InitRedis()
 	}
@@ -95,7 +101,7 @@ func getRedisConn() (pools.Resource, error) {
 	return rc, err
 }
 
-func (r *RedisBase) getKey(key string) string {
+func (r *Redis) getKey(key string) string {
 	prefix := GetEnvString("redis", "prefix", "yii")
 
 	if strings.TrimSpace(key) == "" {
@@ -113,7 +119,7 @@ func (r *RedisBase) getKey(key string) string {
  * @param data interface{}
  * @return bool
  */
-func (r *RedisBase) Set(key string, data interface{}) bool {
+func (r *Redis) Set(key string, data interface{}) bool {
 	rc, err := getRedisConn()
 
 	if err != nil {
@@ -148,7 +154,7 @@ func (r *RedisBase) Set(key string, data interface{}) bool {
  * @param data map[string]interface{}
  * @return bool
  */
-func (r *RedisBase) MSet(data map[string]interface{}) bool {
+func (r *Redis) MSet(data map[string]interface{}) bool {
 	rc, err := getRedisConn()
 
 	if err != nil {
@@ -188,7 +194,7 @@ func (r *RedisBase) MSet(data map[string]interface{}) bool {
  * @param data interface{} (指针)
  * @return bool
  */
-func (r *RedisBase) Get(key string, data interface{}) bool {
+func (r *Redis) Get(key string, data interface{}) bool {
 	rc, err := getRedisConn()
 
 	if err != nil {
@@ -228,7 +234,7 @@ func (r *RedisBase) Get(key string, data interface{}) bool {
  * @param data interface{} (切片指针)
  * @return bool
  */
-func (r *RedisBase) MGet(keys []string, data interface{}) bool {
+func (r *Redis) MGet(keys []string, data interface{}) bool {
 	rc, err := getRedisConn()
 
 	if err != nil {
@@ -291,7 +297,7 @@ func (r *RedisBase) MGet(keys []string, data interface{}) bool {
  * @data interface{}
  * @return bool
  */
-func (r *RedisBase) HSet(key string, field interface{}, data interface{}) bool {
+func (r *Redis) HSet(key string, field interface{}, data interface{}) bool {
 	rc, err := getRedisConn()
 
 	if err != nil {
@@ -327,7 +333,7 @@ func (r *RedisBase) HSet(key string, field interface{}, data interface{}) bool {
  * @param data map[interface{}]interface{}
  * @return bool
  */
-func (r *RedisBase) HMSet(key string, data map[interface{}]interface{}) bool {
+func (r *Redis) HMSet(key string, data map[interface{}]interface{}) bool {
 	rc, err := getRedisConn()
 
 	if err != nil {
@@ -369,7 +375,7 @@ func (r *RedisBase) HMSet(key string, data map[interface{}]interface{}) bool {
  * @param data interface{} (指针)
  * @return bool
  */
-func (r *RedisBase) HGet(key string, field interface{}, data interface{}) bool {
+func (r *Redis) HGet(key string, field interface{}, data interface{}) bool {
 	rc, err := getRedisConn()
 
 	if err != nil {
@@ -410,7 +416,7 @@ func (r *RedisBase) HGet(key string, field interface{}, data interface{}) bool {
  * @param data interface{} (切片指针)
  * @return bool
  */
-func (r *RedisBase) HMGet(key string, fields []interface{}, data interface{}) bool {
+func (r *Redis) HMGet(key string, fields []interface{}, data interface{}) bool {
 	rc, err := getRedisConn()
 
 	if err != nil {
@@ -471,7 +477,7 @@ func (r *RedisBase) HMGet(key string, fields []interface{}, data interface{}) bo
  * @param field interface{}
  * @return bool
  */
-func (r *RedisBase) HDel(key string, field interface{}) bool {
+func (r *Redis) HDel(key string, field interface{}) bool {
 	rc, err := getRedisConn()
 
 	if err != nil {
@@ -499,7 +505,7 @@ func (r *RedisBase) HDel(key string, field interface{}) bool {
  * @param key string
  * @return int64, bool
  */
-func (r *RedisBase) HLen(key string) (int64, bool) {
+func (r *Redis) HLen(key string) (int64, bool) {
 	rc, err := getRedisConn()
 
 	if err != nil {
@@ -536,7 +542,7 @@ func (r *RedisBase) HLen(key string) (int64, bool) {
  * @param inc int
  * @return int64, bool
  */
-func (r *RedisBase) HIncrBy(key string, field interface{}, inc int) (int64, bool) {
+func (r *Redis) HIncrBy(key string, field interface{}, inc int) (int64, bool) {
 	rc, err := getRedisConn()
 
 	if err != nil {
@@ -574,7 +580,7 @@ func (r *RedisBase) HIncrBy(key string, field interface{}, inc int) (int64, bool
  * @param data interface{}
  * @return bool
  */
-func (r *RedisBase) LPush(key string, data interface{}) bool {
+func (r *Redis) LPush(key string, data interface{}) bool {
 	rc, err := getRedisConn()
 
 	if err != nil {
@@ -610,7 +616,7 @@ func (r *RedisBase) LPush(key string, data interface{}) bool {
  * @param data interface{} (指针)
  * @return bool
  */
-func (r *RedisBase) LPop(key string, data interface{}) bool {
+func (r *Redis) LPop(key string, data interface{}) bool {
 	rc, err := getRedisConn()
 
 	if err != nil {
@@ -650,7 +656,7 @@ func (r *RedisBase) LPop(key string, data interface{}) bool {
  * @param data interface{}
  * @return bool
  */
-func (r *RedisBase) RPush(key string, data interface{}) bool {
+func (r *Redis) RPush(key string, data interface{}) bool {
 	rc, err := getRedisConn()
 
 	if err != nil {
@@ -686,7 +692,7 @@ func (r *RedisBase) RPush(key string, data interface{}) bool {
  * @param data interface{} (指针)
  * @return bool
  */
-func (r *RedisBase) RPop(key string, data interface{}) bool {
+func (r *Redis) RPop(key string, data interface{}) bool {
 	rc, err := getRedisConn()
 
 	if err != nil {
@@ -725,7 +731,7 @@ func (r *RedisBase) RPop(key string, data interface{}) bool {
  * @param key string
  * return int64, bool
  */
-func (r *RedisBase) LLen(key string) (int64, bool) {
+func (r *Redis) LLen(key string) (int64, bool) {
 	rc, err := getRedisConn()
 
 	if err != nil {
@@ -763,7 +769,7 @@ func (r *RedisBase) LLen(key string) (int64, bool) {
  * @param data interface{} (切片指针)
  * @return bool
  */
-func (r *RedisBase) LRange(key string, start int, end int, data interface{}) bool {
+func (r *Redis) LRange(key string, start int, end int, data interface{}) bool {
 	rc, err := getRedisConn()
 
 	if err != nil {
@@ -820,7 +826,7 @@ func (r *RedisBase) LRange(key string, start int, end int, data interface{}) boo
  * @param key string
  * @return bool
  */
-func (r *RedisBase) Del(key string) bool {
+func (r *Redis) Del(key string) bool {
 	rc, err := getRedisConn()
 
 	if err != nil {
@@ -849,7 +855,7 @@ func (r *RedisBase) Del(key string) bool {
  * @param time int
  * @return bool
  */
-func (r *RedisBase) Expire(key string, time int) bool {
+func (r *Redis) Expire(key string, time int) bool {
 	rc, err := getRedisConn()
 
 	if err != nil {
@@ -877,7 +883,7 @@ func (r *RedisBase) Expire(key string, time int) bool {
  * @param key string
  * @return int64, bool
  */
-func (r *RedisBase) Incr(key string) (int64, bool) {
+func (r *Redis) Incr(key string) (int64, bool) {
 	rc, err := getRedisConn()
 
 	if err != nil {
@@ -913,7 +919,7 @@ func (r *RedisBase) Incr(key string) (int64, bool) {
  * @param inc int
  * @return int64, bool
  */
-func (r *RedisBase) IncrBy(key string, inc int) (int64, bool) {
+func (r *Redis) IncrBy(key string, inc int) (int64, bool) {
 	rc, err := getRedisConn()
 
 	if err != nil {
@@ -948,7 +954,7 @@ func (r *RedisBase) IncrBy(key string, inc int) (int64, bool) {
  * @param key string
  * @return int64, bool
  */
-func (r *RedisBase) Decr(key string) (int64, bool) {
+func (r *Redis) Decr(key string) (int64, bool) {
 	rc, err := getRedisConn()
 
 	if err != nil {
@@ -984,7 +990,7 @@ func (r *RedisBase) Decr(key string) (int64, bool) {
  * @param inc int
  * @return int64, bool
  */
-func (r *RedisBase) DecrBy(key string, inc int) (int64, bool) {
+func (r *Redis) DecrBy(key string, inc int) (int64, bool) {
 	rc, err := getRedisConn()
 
 	if err != nil {

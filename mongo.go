@@ -9,13 +9,14 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
-type MongoBase struct {
+type Mongo struct {
+	DB         string
 	Collection string
 }
 
 type Sequence struct {
 	Id  string `bson:"_id"`
-	Seq int64  `bson:"seq"`
+	Seq int    `bson:"seq"`
 }
 
 var mongoSession *mgo.Session
@@ -50,45 +51,41 @@ func InitMongo() {
 
 /**
  * 获取连接资源
- * @return *mgo.Session, string, error
+ * @return *mgo.Session
  */
-func getSession() (*mgo.Session, string, error) {
+func (m *Mongo) getSession() *mgo.Session {
 	session := mongoSession.Clone()
-	db := GetEnvString("mongo", "database", "test")
-
-	return session, db, nil
+	return session
 }
 
 /**
  * 刷新当前主键(_id)的自增值
- * @return int64, error
+ * @param seqs ...int 自增值，默认是：1
+ * @return int, error
  */
-func (m *MongoBase) refreshSequence() (int64, error) {
-	session, db, err := getSession()
-
-	if err != nil {
-		return 0, err
-	}
-
+func (m *Mongo) refreshSequence(seqs ...int) (int, error) {
+	session := m.getSession()
 	defer session.Close()
 
-	c := session.DB(db).C("sequence")
+	if len(seqs) == 0 {
+		seqs = append(seqs, 1)
+	}
 
 	condition := bson.M{"_id": m.Collection}
 
 	change := mgo.Change{
-		Update:    bson.M{"$inc": bson.M{"seq": 1}},
+		Update:    bson.M{"$inc": bson.M{"seq": seqs[0]}},
 		Upsert:    true,
 		ReturnNew: true,
 	}
 
 	sequence := Sequence{}
 
-	_, applyErr := c.Find(condition).Apply(change, &sequence)
+	_, err := session.DB(m.DB).C("sequence").Find(condition).Apply(change, &sequence)
 
-	if applyErr != nil {
-		LogError("[Mongo] RefreshSequence Error: ", applyErr.Error())
-		return 0, applyErr
+	if err != nil {
+		LogError("[Mongo] RefreshSequence Error: ", err.Error())
+		return 0, err
 	}
 
 	return sequence.Seq, nil
@@ -96,44 +93,31 @@ func (m *MongoBase) refreshSequence() (int64, error) {
 
 /**
  * Insert 新增记录
- * @param data interface{} 插入数据 (struct指针)
- * @return error
+ * @param data bson.M 插入数据
+ * @return int, error 新增记录ID
  */
-func (m *MongoBase) Insert(data interface{}) error {
-	session, db, err := getSession()
-
-	if err != nil {
-		return err
-	}
-
+func (m *Mongo) Insert(data bson.M) (int, error) {
+	session := m.getSession()
 	defer session.Close()
 
-	refVal := reflect.ValueOf(data)
-	elem := refVal.Elem()
+	id, err := m.refreshSequence()
 
-	if elem.Kind() != reflect.Struct {
-		LogErrorf("[Mongo] Cannot use (type %v) as insert param", elem.Type())
-		return fmt.Errorf("cannot use (type %v) as insert param", elem.Type())
+	if err != nil {
+		return 0, err
 	}
 
-	id, seqErr := m.refreshSequence()
+	data["_id"] = id
 
-	if seqErr != nil {
-		return seqErr
+	err = session.DB(m.DB).C(m.Collection).Insert(data)
+
+	if err != nil {
+		m.refreshSequence(-1)
+		LogError("[Mongo] Insert Error: ", err.Error())
+
+		return 0, err
 	}
 
-	elem.Field(0).SetInt(id)
-
-	c := session.DB(db).C(m.Collection)
-
-	insertErr := c.Insert(data)
-
-	if insertErr != nil {
-		LogError("[Mongo] Insert Error: ", insertErr.Error())
-		return insertErr
-	}
-
-	return nil
+	return id, nil
 }
 
 /**
@@ -142,25 +126,18 @@ func (m *MongoBase) Insert(data interface{}) error {
  * @param data bson.M (map[string]interface{}) 更新字段
  * @return error
  */
-func (m *MongoBase) Update(query bson.M, data bson.M) error {
-	session, db, err := getSession()
-
-	if err != nil {
-		return err
-	}
-
+func (m *Mongo) Update(query bson.M, data bson.M) error {
+	session := m.getSession()
 	defer session.Close()
 
-	c := session.DB(db).C(m.Collection)
+	err := session.DB(m.DB).C(m.Collection).Update(query, bson.M{"$set": data})
 
-	updateErr := c.Update(query, bson.M{"$set": data})
-
-	if updateErr != nil {
-		if updateErr.Error() != "not found" {
-			LogError("[Mongo] Update Error: ", updateErr.Error())
+	if err != nil {
+		if err.Error() != "not found" {
+			LogError("[Mongo] Update Error: ", err.Error())
 		}
 
-		return updateErr
+		return err
 	}
 
 	return nil
@@ -173,65 +150,50 @@ func (m *MongoBase) Update(query bson.M, data bson.M) error {
  * @param inc int 增量
  * @return error
  */
-func (m *MongoBase) Incr(query bson.M, column string, inc int) error {
-	session, db, err := getSession()
-
-	if err != nil {
-		return err
-	}
-
+func (m *Mongo) Incr(query bson.M, column string, inc int) error {
+	session := m.getSession()
 	defer session.Close()
-
-	c := session.DB(db).C(m.Collection)
 
 	data := bson.M{column: inc}
-	incrErr := c.Update(query, bson.M{"$inc": data})
-
-	if incrErr != nil {
-		if incrErr.Error() != "not found" {
-			LogError("[Mongo] Incr Error: ", incrErr.Error())
-		}
-
-		return incrErr
-	}
-
-	return nil
-}
-
-/**
- * FindOne 查询
- * @param data interface{} (指针) 查询数据
- * @param query bson.M (map[string]interface{}) 查询条件
- * @return error
- */
-func (m *MongoBase) FindOne(data interface{}, query bson.M) error {
-	session, db, err := getSession()
+	err := session.DB(m.DB).C(m.Collection).Update(query, bson.M{"$inc": data})
 
 	if err != nil {
+		if err.Error() != "not found" {
+			LogError("[Mongo] Incr Error: ", err.Error())
+		}
+
 		return err
 	}
 
+	return nil
+}
+
+/**
+ * FindOne 查询单条记录
+ * @param query bson.M 查询条件
+ * @param data interface{} (指针) 查询数据
+ * @return error
+ */
+func (m *Mongo) FindOne(query bson.M, data interface{}) error {
+	session := m.getSession()
 	defer session.Close()
 
-	c := session.DB(db).C(m.Collection)
+	err := session.DB(m.DB).C(m.Collection).Find(query).One(data)
 
-	findErr := c.Find(query).One(data)
-
-	if findErr != nil {
-		if findErr.Error() != "not found" {
-			LogError("[Mongo] FindOne Error: ", findErr.Error())
+	if err != nil {
+		if err.Error() != "not found" {
+			LogError("[Mongo] FindOne Error: ", err.Error())
 		}
 
-		return findErr
+		return err
 	}
 
 	return nil
 }
 
 /**
- * Find 查询
- * @param data interface{} (切片指针) 查询数据
- * @param query map[string]interface{} 查询条件
+ * Find 查询多条记录
+ * @param query bson.M 查询条件
  * [
  *     condition bson.M
  *     count *int
@@ -239,60 +201,72 @@ func (m *MongoBase) FindOne(data interface{}, query bson.M) error {
  *     skip int
  *     limit int
  * ]
+ * @param data interface{} (切片指针) 查询数据
  * @return error
  */
-func (m *MongoBase) Find(data interface{}, query map[string]interface{}) error {
-	session, db, err := getSession()
-
-	if err != nil {
-		return err
-	}
-
+func (m *Mongo) Find(query bson.M, data interface{}) error {
+	session := m.getSession()
 	defer session.Close()
 
-	q := session.DB(db).C(m.Collection).Find(query["condition"].(bson.M))
+	q := session.DB(m.DB).C(m.Collection).Find(query["condition"].(bson.M))
 
 	if count, ok := query["count"]; ok {
 		refVal := reflect.ValueOf(count)
 		elem := refVal.Elem()
 
-		total, countErr := q.Count()
+		total, err := q.Count()
 
-		if countErr != nil {
-			LogError("[Mongo] Count Error: ", countErr.Error())
+		if err != nil {
+			LogError("[Mongo] Count Error: ", err.Error())
 			elem.Set(reflect.ValueOf(0))
 		} else {
 			elem.Set(reflect.ValueOf(total))
 		}
 	}
 
-	if order, ok := query["order"]; ok {
-		if ordStr, ok := order.(string); ok {
-			ordArr := strings.Split(ordStr, ",")
-			q = q.Sort(ordArr...)
-		}
+	if v, ok := query["order"]; ok {
+		order := strings.Split(v.(string), ",")
+		q = q.Sort(order...)
 	}
 
-	if skip, ok := query["skip"]; ok {
-		if skp, ok := skip.(int); ok {
-			q = q.Skip(skp)
-		}
+	if v, ok := query["skip"]; ok {
+		q = q.Skip(v.(int))
 	}
 
-	if limit, ok := query["limit"]; ok {
-		if lmt, ok := limit.(int); ok {
-			q = q.Limit(lmt)
-		}
+	if v, ok := query["limit"]; ok {
+		q = q.Limit(v.(int))
 	}
 
-	findErr := q.All(data)
+	err := q.All(data)
 
-	if findErr != nil {
-		if findErr.Error() != "not found" {
-			LogError("[Mongo] Find Error: ", findErr.Error())
+	if err != nil {
+		if err.Error() != "not found" {
+			LogError("[Mongo] Find Error: ", err.Error())
 		}
 
-		return findErr
+		return err
+	}
+
+	return nil
+}
+
+/**
+ * FindAll 查询所有记录
+ * @param data interface{} (切片指针) 查询数据
+ * @return error
+ */
+func (m *Mongo) FindAll(data interface{}) error {
+	session := m.getSession()
+	defer session.Close()
+
+	err := session.DB(m.DB).C(m.Collection).Find(bson.M{}).All(data)
+
+	if err != nil {
+		if err.Error() != "not found" {
+			LogError("[Mongo] FindAll Error: ", err.Error())
+		}
+
+		return err
 	}
 
 	return nil
@@ -303,22 +277,15 @@ func (m *MongoBase) Find(data interface{}, query map[string]interface{}) error {
  * @param query bson.M (map[string]interface{}) 查询条件
  * @return error
  */
-func (m *MongoBase) Delete(query bson.M) error {
-	session, db, err := getSession()
-
-	if err != nil {
-		return err
-	}
-
+func (m *Mongo) Delete(query bson.M) error {
+	session := m.getSession()
 	defer session.Close()
 
-	c := session.DB(db).C(m.Collection)
+	_, err := session.DB(m.DB).C(m.Collection).RemoveAll(query)
 
-	_, delErr := c.RemoveAll(query)
-
-	if delErr != nil {
-		LogError("[Mongo] Delete Error: ", delErr.Error())
-		return delErr
+	if err != nil {
+		LogError("[Mongo] Delete Error: ", err.Error())
+		return err
 	}
 
 	return nil
@@ -330,32 +297,24 @@ func (m *MongoBase) Delete(query bson.M) error {
  * @param field string 聚合字段 (如："$count")
  * @return int, error
  */
-func (m *MongoBase) Sum(match bson.M, field string) (int, error) {
-	session, db, err := getSession()
-
-	if err != nil {
-		return 0, err
-	}
-
+func (m *Mongo) Sum(match bson.M, field string) (int, error) {
+	session := m.getSession()
 	defer session.Close()
 
-	c := session.DB(db).C(m.Collection)
-
-	p := c.Pipe([]bson.M{
+	p := session.DB(m.DB).C(m.Collection).Pipe([]bson.M{
 		{"$match": match},
 		{"$group": bson.M{"_id": 1, "total": bson.M{"$sum": field}}},
 	})
 
 	result := bson.M{}
 
-	pipeErr := p.One(&result)
+	err := p.One(&result)
 
-	if pipeErr != nil {
-		LogError("[Mongo] Sum Error: ", pipeErr.Error())
-		return 0, pipeErr
+	if err != nil {
+		LogError("[Mongo] Sum Error: ", err.Error())
+		return 0, err
 	}
 
-	fmt.Println(result)
 	total, ok := result["total"].(int)
 
 	if !ok {
