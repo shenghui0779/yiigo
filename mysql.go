@@ -542,7 +542,7 @@ func (m *MySQL) buildUpdate(query X, data X) (string, []interface{}) {
 	table := m.Table
 	prefix := m.getPrefix()
 
-	condition := []string{}
+	clauses := []string{}
 	set := []string{}
 	binds := []interface{}{}
 
@@ -550,7 +550,7 @@ func (m *MySQL) buildUpdate(query X, data X) (string, []interface{}) {
 		table = v.(string)
 	}
 
-	condition = append(condition, fmt.Sprintf("UPDATE %s%s", prefix, table))
+	clauses = append(clauses, fmt.Sprintf("UPDATE %s%s", prefix, table))
 
 	for k, v := range data {
 		if expr, ok := v.(*expr); ok {
@@ -562,17 +562,17 @@ func (m *MySQL) buildUpdate(query X, data X) (string, []interface{}) {
 		}
 	}
 
-	condition = append(condition, fmt.Sprintf("SET %s", strings.Join(set, ",")))
+	clauses = append(clauses, fmt.Sprintf("SET %s", strings.Join(set, ",")))
 
 	if v, ok := query["where"]; ok {
-		condition = append(condition, fmt.Sprintf("WHERE %s", v.(string)))
+		clauses = append(clauses, fmt.Sprintf("WHERE %s", v.(string)))
 	}
 
 	if v, ok := query["binds"]; ok {
 		binds = append(binds, v.([]interface{})...)
 	}
 
-	sql := strings.Join(condition, " ")
+	sql := strings.Join(clauses, " ")
 	fmt.Println("[sql]", sql)
 	fmt.Println("[binds]", binds)
 	return sql, binds
@@ -587,13 +587,13 @@ func (m *MySQL) buildQuery(query X) (string, []interface{}) {
 	table := m.Table
 	prefix := m.getPrefix()
 
-	condition := []string{}
+	clauses := []string{}
 	binds := []interface{}{}
 
 	if v, ok := query["select"]; ok {
-		condition = append(condition, fmt.Sprintf("SELECT %s", v.(string)))
+		clauses = append(clauses, fmt.Sprintf("SELECT %s", v.(string)))
 	} else {
-		condition = append(condition, "SELECT *")
+		clauses = append(clauses, "SELECT *")
 	}
 
 	if v, ok := query["table"]; ok {
@@ -601,40 +601,40 @@ func (m *MySQL) buildQuery(query X) (string, []interface{}) {
 	}
 
 	if v, ok := query["join"]; ok {
-		condition = append(condition, fmt.Sprintf("FROM %s%s AS a", prefix, table))
+		clauses = append(clauses, fmt.Sprintf("FROM %s%s AS a", prefix, table))
 
 		for _, join := range v.([]string) {
-			condition = append(condition, join)
+			clauses = append(clauses, join)
 		}
 	} else {
-		condition = append(condition, fmt.Sprintf("FROM %s%s", prefix, table))
+		clauses = append(clauses, fmt.Sprintf("FROM %s%s", prefix, table))
 	}
 
 	if v, ok := query["where"]; ok {
-		condition = append(condition, fmt.Sprintf("WHERE %s", v.(string)))
+		clauses = append(clauses, fmt.Sprintf("WHERE %s", v.(string)))
 	}
 
 	if v, ok := query["group"]; ok {
-		condition = append(condition, fmt.Sprintf("GROUP BY %s", v.(string)))
+		clauses = append(clauses, fmt.Sprintf("GROUP BY %s", v.(string)))
 	}
 
 	if v, ok := query["order"]; ok {
-		condition = append(condition, fmt.Sprintf("ORDER BY %s", v.(string)))
+		clauses = append(clauses, fmt.Sprintf("ORDER BY %s", v.(string)))
 	}
 
 	if v, ok := query["offset"]; ok {
-		condition = append(condition, fmt.Sprintf("OFFSET %d", v.(int)))
+		clauses = append(clauses, fmt.Sprintf("OFFSET %d", v.(int)))
 	}
 
 	if v, ok := query["limit"]; ok {
-		condition = append(condition, fmt.Sprintf("LIMIT %d", v.(int)))
+		clauses = append(clauses, fmt.Sprintf("LIMIT %d", v.(int)))
 	}
 
 	if v, ok := query["binds"]; ok {
 		binds = append(binds, v.([]interface{})...)
 	}
 
-	sql := strings.Join(condition, " ")
+	sql := strings.Join(clauses, " ")
 
 	return sql, binds
 }
@@ -648,24 +648,24 @@ func (m *MySQL) buildDelete(query X) (string, []interface{}) {
 	table := m.Table
 	prefix := m.getPrefix()
 
-	condition := []string{}
+	clauses := []string{}
 	binds := []interface{}{}
 
 	if v, ok := query["table"]; ok {
 		table = v.(string)
 	}
 
-	condition = append(condition, fmt.Sprintf("DELETE FROM %s%s", prefix, table))
+	clauses = append(clauses, fmt.Sprintf("DELETE FROM %s%s", prefix, table))
 
 	if v, ok := query["where"]; ok {
-		condition = append(condition, fmt.Sprintf("WHERE %s", v.(string)))
+		clauses = append(clauses, fmt.Sprintf("WHERE %s", v.(string)))
 	}
 
 	if v, ok := query["binds"]; ok {
 		binds = append(binds, v.([]interface{})...)
 	}
 
-	sql := strings.Join(condition, " ")
+	sql := strings.Join(clauses, " ")
 
 	return sql, binds
 }
