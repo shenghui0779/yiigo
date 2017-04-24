@@ -543,7 +543,7 @@ func (m *MySQL) buildUpdate(query X, data X) (string, []interface{}) {
 	prefix := m.getPrefix()
 
 	clauses := []string{}
-	set := []string{}
+	sets := []string{}
 	binds := []interface{}{}
 
 	if v, ok := query["table"]; ok {
@@ -554,15 +554,15 @@ func (m *MySQL) buildUpdate(query X, data X) (string, []interface{}) {
 
 	for k, v := range data {
 		if expr, ok := v.(*expr); ok {
-			set = append(set, fmt.Sprintf("%s = %s", k, expr.expr))
+			sets = append(sets, fmt.Sprintf("%s = %s", k, expr.expr))
 			binds = append(binds, expr.args...)
 		} else {
-			set = append(set, fmt.Sprintf("%s = ?", k))
+			sets = append(sets, fmt.Sprintf("%s = ?", k))
 			binds = append(binds, v)
 		}
 	}
 
-	clauses = append(clauses, fmt.Sprintf("SET %s", strings.Join(set, ",")))
+	clauses = append(clauses, fmt.Sprintf("SET %s", strings.Join(sets, ",")))
 
 	if v, ok := query["where"]; ok {
 		clauses = append(clauses, fmt.Sprintf("WHERE %s", v.(string)))
