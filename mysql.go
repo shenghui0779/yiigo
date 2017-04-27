@@ -330,33 +330,39 @@ func (m *MySQL) Delete(query X) (int64, error) {
 /**
  * DoTransactions 事务处理
  * @param operations X 操作集合
- * yiigo.X{
- *     "insert": yiigo.X{
- *	 		"table": string,
- *			"data": yiigo.X,
- *     }
- *     "batchInsert": yiigo.X{
- *	 		"table": string,
- *			"columns": []string
- *			"data": []yiigo.X,
- *     }
- *     "update": yiigo.X{
- *	 		"query": yiigo.X{
- *	 			"table": string,
- * 				"where": string,
- *				"binds": []interface{},
- *          },
- *			"data": yiigo.X,
- *     }
- *	   "delete": yiigo.X{
- *	 		"table": string,
- * 			"where": string,
- *			"binds": []interface{},
- *     }
- * }
+ * [
+ *     yiigo.X{
+ *		   "type": "insert"
+ *	 	   "table": string,
+ *		   "data": yiigo.X,
+ *     },
+ *     yiigo.X{
+ *		   "type": "batchInsert"
+ *	 	   "table": string,
+ *		   "columns": []string
+ *		   "data": []yiigo.X,
+ *     },
+ *     yiigo.X{
+ *	       "type": "update"
+ *	       "query": yiigo.X{
+ *	           "table": string,
+ * 			   "where": string,
+ *			   "binds": []interface{},
+ *         },
+ *		   "data": yiigo.X,
+ *     },
+ *	   yiigo.X{
+ *		   "type": "delete"
+ *	 	   "query": yiigo.X{
+ *	 	   	   "table": string,
+ * 			   "where": string,
+ *			   "binds": []interface{},
+ *         },
+ *     },
+ * ]
  * @return error
  */
-func (m *MySQL) DoTransactions(operations X) error {
+func (m *MySQL) DoTransactions(operations []X) error {
 	db := m.getDB()
 	tx, err := db.Begin()
 
@@ -365,10 +371,16 @@ func (m *MySQL) DoTransactions(operations X) error {
 		return err
 	}
 
-	for key, value := range operations {
-		opt := value.(X)
+	for _, opt := range operations {
+		optType := ""
 
-		switch key {
+		if v, ok := opt["type"]; ok {
+			optType = v.(string)
+		} else {
+			continue
+		}
+
+		switch optType {
 		case "insert":
 			table := []string{}
 			data := X{}
@@ -415,7 +427,6 @@ func (m *MySQL) DoTransactions(operations X) error {
 				break
 			}
 		case "update":
-			fmt.Println("执行更新")
 			query := X{}
 			data := X{}
 
@@ -435,7 +446,13 @@ func (m *MySQL) DoTransactions(operations X) error {
 				break
 			}
 		case "delete":
-			sql, binds := m.buildDelete(opt)
+			query := X{}
+
+			if v, ok := opt["query"]; ok {
+				query = v.(X)
+			}
+
+			sql, binds := m.buildDelete(query)
 			_sql, args, _ := sqlx.In(sql, binds...)
 			_, err = tx.Exec(_sql, args...)
 
@@ -573,8 +590,7 @@ func (m *MySQL) buildUpdate(query X, data X) (string, []interface{}) {
 	}
 
 	sql := strings.Join(clauses, " ")
-	fmt.Println("[sql]", sql)
-	fmt.Println("[binds]", binds)
+
 	return sql, binds
 }
 
