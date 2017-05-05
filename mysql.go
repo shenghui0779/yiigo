@@ -243,8 +243,8 @@ func (m *MySQL) FindOne(query X, data interface{}) error {
  *     where string WHERE语句
  *     group string GROUP BY语句
  *     order string ORDER BY语句
- *     offset int OFFSET语句
  *     limit int LIMIT语句
+ *     offset int OFFSET语句
  *     binds []interface{} WHERE语句中 "?" 的绑定值
  * }
  * @param data interface{} 查询数据 (struct切片指针)
@@ -638,12 +638,12 @@ func (m *MySQL) buildQuery(query X) (string, []interface{}) {
 		clauses = append(clauses, fmt.Sprintf("ORDER BY %s", v.(string)))
 	}
 
-	if v, ok := query["offset"]; ok {
-		clauses = append(clauses, fmt.Sprintf("OFFSET %d", v.(int)))
-	}
-
 	if v, ok := query["limit"]; ok {
 		clauses = append(clauses, fmt.Sprintf("LIMIT %d", v.(int)))
+	}
+
+	if v, ok := query["offset"]; ok {
+		clauses = append(clauses, fmt.Sprintf("OFFSET %d", v.(int)))
 	}
 
 	if v, ok := query["binds"]; ok {
