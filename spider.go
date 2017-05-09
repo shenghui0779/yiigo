@@ -505,12 +505,13 @@ func (s *SpiderBase) GetCaptchaCode(httpUrl string, host string, setCookie bool,
 }
 
 /**
- * 处理字符串,去除页面数据中的 &nbsp; 和 空格字符
+ * 处理字符串,去除页面数据中的 "\n" 、"&nbsp;" 和 空格字符
  * @param str string
  * @return string
  */
-func (s *SpiderBase) TrimString(str string) string {
-	text := strings.Trim(str, "&nbsp;")
+func TrimString(str string) string {
+	text := strings.Trim(str, "\n")
+	text = strings.Trim(str, "&nbsp;")
 	text = strings.TrimSpace(text)
 
 	return text
