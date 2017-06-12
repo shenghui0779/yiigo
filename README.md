@@ -1,5 +1,5 @@
 # yiigo
-Golang常用类库封装，用于API开发和爬虫，支持多数据库连接
+Golang集成常用类库并封装，用于API开发和爬虫，支持多数据库连接
 
 ## 获取：
 
@@ -32,6 +32,7 @@ yiigo.InitDB("db1", "db2", "db3") // 初始化多个DB
 ```
 
 ## 说明：
+* 目前数据库仅针对MySQL封装
 * 由于 code.google.com 被墙，导致一些托管在 code.google.com 上面的包 go get 不下来，可以到这里自行下载：[下载和使用](http://www.golangtc.com/download/package)
-* 如果爬虫不需要登录，则只需要使用 [goquery](https://github.com/PuerkitoBio/goquery) 即可
-* 具体使用方法可以[参考这里](https://github.com/IIInsomnia/yiigo-example)
+* 如果爬虫不需要模拟登录，则只需要使用 [goquery](https://github.com/PuerkitoBio/goquery) 即可
+* API开发的具体使用方法可以[参考这里](https://github.com/IIInsomnia/yiigo-example)
