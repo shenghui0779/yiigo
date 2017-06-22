@@ -25,6 +25,12 @@ func main() {
 ```go
 // 设置多个连接配置，默认配置为mysql
 yiigo.SetMySQL("mysql1", "mysql2", "mysql3")
+
+// 修改配置文件，默认为env.ini，具体配置参考env.ini.example
+yiigo.SetEnv("myenv.ini")
+
+// 修改日志配置文件，默认为log.xml，具体配置参考log.xml.example
+yiigo.SetLog("mylog.xml")
 ```
 
 ```
