@@ -15,16 +15,16 @@ package main
 import "github.com/iiinsomnia/yiigo"
 
 func main() {
-    yiigo.LoadEnvConfig() // 加载配置
-    yiigo.InitLogger()    // 初始化日志
-    yiigo.InitDB()        // 初始化DB (env配置名称，默认为：db)
-    yiigo.InitMongo()     // 初始化MongoDB
-    yiigo.InitRedis()     // 初始化Redis
+    b := yiigo.New()
+	b.EnableMongo() // 启用mongo
+	b.EnableRedis() // 启用redis
+	b.Run()
 }
 ```
 
 ```go
-yiigo.InitDB("db1", "db2", "db3") // 初始化多个DB
+// 设置多个连接配置，默认配置为mysql
+yiigo.SetMySQL("mysql1", "mysql2", "mysql3")
 ```
 
 ```

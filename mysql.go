@@ -23,29 +23,25 @@ type expr struct {
 
 /**
  * 初始化DB
- * @param dbnames ...string 数据库配置名称
+ * @param sections ...string 数据库配置名称
  */
-func InitDB(dbnames ...string) {
-	if len(dbnames) == 0 {
-		dbnames = append(dbnames, "db")
-	}
-
+func initMySQL(sections ...string) {
 	dbmap = make(map[string]*sqlx.DB)
 
-	for _, v := range dbnames {
+	for _, v := range sections {
 		host := GetEnvString(v, "host", "localhost")
 		port := GetEnvInt(v, "port", 3306)
 		username := GetEnvString(v, "username", "root")
 		password := GetEnvString(v, "password", "")
 		database := GetEnvString(v, "database", "test")
 		charset := GetEnvString(v, "charset", "utf8mb4")
-		collection := GetEnvString(v, "collection", "utf8_general_ci")
+		collection := GetEnvString(v, "collection", "utf8mb4_general_ci")
 
 		dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s&collation=%s&parseTime=True&loc=Local", username, password, host, port, database, charset, collection)
 		db, err := sqlx.Open("mysql", dsn)
 
 		if err != nil {
-			LogError("[MySQL] Connect Error: ", err.Error())
+			LogError("[MySQL] ", err.Error())
 			panic(err)
 		}
 
@@ -55,6 +51,7 @@ func InitDB(dbnames ...string) {
 		err = db.Ping()
 
 		if err != nil {
+			LogError("[MySQL] ", err.Error())
 			db.Close()
 		}
 
@@ -70,14 +67,14 @@ func (m *MySQL) getDB() *sqlx.DB {
 	dbname := m.DB
 
 	if dbname == "" {
-		dbname = "db"
+		dbname = "mysql"
 	}
 
 	db, ok := dbmap[dbname]
 
 	if !ok {
-		LogErrorf("[MySQL] Database Error: %s is not initialized", m.DB)
-		panic(fmt.Sprintf("mysql error: database %s is not initialized", m.DB))
+		LogErrorf("[MySQL] %s is not initialized", dbname)
+		panic(fmt.Sprintf("mysql error: database %s is not initialized", dbname))
 	}
 
 	return db
@@ -91,7 +88,7 @@ func (m *MySQL) getPrefix() string {
 	dbname := m.DB
 
 	if dbname == "" {
-		dbname = "db"
+		dbname = "mysql"
 	}
 
 	prefix := GetEnvString(dbname, "prefix", "")
@@ -111,7 +108,7 @@ func (m *MySQL) Insert(data X) (int64, error) {
 	result, err := db.Exec(sql, binds...)
 
 	if err != nil {
-		LogError("[MySQL] Insert Error: ", err.Error())
+		LogError("[MySQL] [Insert] %s, sql: %s, args: %v", err.Error(), sql, binds)
 		return 0, err
 	}
 
@@ -133,7 +130,7 @@ func (m *MySQL) BatchInsert(columns []string, data []X) (int64, error) {
 	result, err := db.Exec(sql, binds...)
 
 	if err != nil {
-		LogError("[MySQL] BatchInsert Error: ", err.Error())
+		LogErrorf("[MySQL] [BatchInsert] %s, sql: %s, args: %v", err.Error(), sql, binds)
 		return 0, err
 	}
 
@@ -160,7 +157,7 @@ func (m *MySQL) Update(query X, data X) (int64, error) {
 	result, err := db.Exec(_sql, args...)
 
 	if err != nil {
-		LogError("[MySQL] Update Error: ", err.Error())
+		LogErrorf("[MySQL] [Update] %s, sql: %s, args: %v", err.Error(), _sql, args)
 		return 0, err
 	}
 
@@ -197,6 +194,14 @@ func (m *MySQL) Count(query X, data *int, columns ...string) error {
 
 	*data = count
 
+	if err != nil {
+		msg := err.Error()
+
+		if msg != "sql: no rows in result set" {
+			LogErrorf("[MySQL] [Count] %s, sql: %s, args: %v", msg, _sql, args)
+		}
+	}
+
 	return err
 }
 
@@ -225,13 +230,11 @@ func (m *MySQL) FindOne(query X, data interface{}) error {
 		msg := err.Error()
 
 		if msg != "sql: no rows in result set" {
-			LogError("[MySQL] FindOne Error: ", msg)
+			LogErrorf("[MySQL] [FindOne] %s, sql: %s, args: %v", msg, _sql, args)
 		}
-
-		return err
 	}
 
-	return nil
+	return err
 }
 
 /**
@@ -261,13 +264,11 @@ func (m *MySQL) Find(query X, data interface{}) error {
 		msg := err.Error()
 
 		if msg != "sql: no rows in result set" {
-			LogError("[MySQL] Find Error: ", msg)
+			LogErrorf("[MySQL] [Find] %s, sql: %s, args: %v", msg, _sql, args)
 		}
-
-		return err
 	}
 
-	return nil
+	return err
 }
 
 /**
@@ -292,13 +293,11 @@ func (m *MySQL) FindAll(data interface{}, columns ...string) error {
 		msg := err.Error()
 
 		if msg != "sql: no rows in result set" {
-			LogError("[MySQL] FindAll Error: ", msg)
+			LogErrorf("[MySQL] [FindAll] %s, sql: %s, args: %v", msg, sql, binds)
 		}
-
-		return err
 	}
 
-	return nil
+	return err
 }
 
 /**
@@ -318,7 +317,7 @@ func (m *MySQL) Delete(query X) (int64, error) {
 	result, err := db.Exec(_sql, args...)
 
 	if err != nil {
-		LogError("[MySQL] Delete Error: ", err.Error())
+		LogError("[MySQL] [Delete] %s, sql: %s, args: %v", err.Error(), _sql, args)
 		return 0, err
 	}
 
@@ -367,9 +366,12 @@ func (m *MySQL) DoTransactions(operations []X) error {
 	tx, err := db.Begin()
 
 	if err != nil {
-		LogError("[MySQL] DoTransactions Error: ", err.Error())
+		LogError("[MySQL] [DoTransactions] ", err.Error())
 		return err
 	}
+
+	errSQL := ""
+	errArgs := []interface{}{}
 
 	for _, opt := range operations {
 		optType := ""
@@ -397,6 +399,9 @@ func (m *MySQL) DoTransactions(operations []X) error {
 			_, err = tx.Exec(sql, binds...)
 
 			if err != nil {
+				errSQL = sql
+				errArgs = binds
+
 				break
 			}
 		case "batchInsert":
@@ -420,10 +425,9 @@ func (m *MySQL) DoTransactions(operations []X) error {
 			_, err = tx.Exec(sql, binds...)
 
 			if err != nil {
-				break
-			}
+				errSQL = sql
+				errArgs = binds
 
-			if err != nil {
 				break
 			}
 		case "update":
@@ -443,6 +447,9 @@ func (m *MySQL) DoTransactions(operations []X) error {
 			_, err = tx.Exec(_sql, args...)
 
 			if err != nil {
+				errSQL = _sql
+				errArgs = args
+
 				break
 			}
 		case "delete":
@@ -457,6 +464,9 @@ func (m *MySQL) DoTransactions(operations []X) error {
 			_, err = tx.Exec(_sql, args...)
 
 			if err != nil {
+				errSQL = _sql
+				errArgs = args
+
 				break
 			}
 		}
@@ -468,7 +478,7 @@ func (m *MySQL) DoTransactions(operations []X) error {
 
 	if err != nil {
 		tx.Rollback()
-		LogError("[MySQL] DoTransactions Error: ", err.Error())
+		LogError("[MySQL] [DoTransactions] %s, sql: %s, args: %v", err.Error(), errSQL, errArgs)
 
 		return err
 	}

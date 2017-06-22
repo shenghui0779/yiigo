@@ -1,0 +1,25 @@
+<seelog>
+    <outputs formatid="main">
+        <filter levels="debug,info,warn,error,critical">
+            <console />
+        </filter>
+        <filter levels="info">
+            <rollingfile type="date" filename="logs/infos/info.log" datepattern="2006-01-02" namemode="prefix" archivetype="none"/>
+        </filter>
+        <filter levels="warn">
+            <rollingfile type="date" filename="logs/warns/warn.log" datepattern="2006-01-02" namemode="prefix" archivetype="none"/>
+        </filter>
+        <filter levels="error">
+            <rollingfile type="date" filename="logs/errors/error.log" datepattern="2006-01-02" namemode="prefix" archivetype="none"/>
+        </filter>
+        <filter levels="critical">
+            <rollingfile type="date" filename="logs/criticals/critical.log" datepattern="2006-01-02" namemode="prefix" archivetype="none"/>
+        </filter>
+        <!--<smtp senderaddress="yiigo@example.com" sendername="yiigo" hostname="smtp.example.com" hostport="587" username="yiigo@example.com" password="xxxxxxxxx">
+            <recipient address="demo@example.com"/>
+        </smtp>-->
+    </outputs>
+    <formats>
+        <format id="main" format="[%Date %Time] [%LEV] %Msg%n"/>
+    </formats>
+</seelog>

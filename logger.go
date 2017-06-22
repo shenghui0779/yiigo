@@ -11,9 +11,9 @@ import (
 /**
  * 初始化日志配置
  */
-func InitLogger() {
-	path, _ := filepath.Abs("log.xml")
-	logger, err := seelog.LoggerFromConfigAsFile(path)
+func initLogger(path string) {
+	abs, _ := filepath.Abs(path)
+	logger, err := seelog.LoggerFromConfigAsFile(abs)
 
 	if err != nil {
 		panic(err)

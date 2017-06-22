@@ -24,7 +24,7 @@ var mongoSession *mgo.Session
 /**
  * 初始化mongodb连接
  */
-func InitMongo() {
+func initMongo() {
 	var err error
 
 	host := GetEnvString("mongo", "host", "localhost")
@@ -42,7 +42,7 @@ func InitMongo() {
 	mongoSession, err = mgo.Dial(dsn)
 
 	if err != nil {
-		LogError("[Mongo] Connect Error: ", err.Error())
+		LogError("[Mongo] ", err.Error())
 		panic(err)
 	}
 
@@ -84,7 +84,7 @@ func (m *Mongo) refreshSequence(seqs ...int) (int, error) {
 	_, err := session.DB(m.DB).C("sequence").Find(condition).Apply(change, &sequence)
 
 	if err != nil {
-		LogError("[Mongo] RefreshSequence Error: ", err.Error())
+		LogError("[Mongo] [RefreshSequence] ", err.Error())
 		return 0, err
 	}
 
@@ -112,7 +112,7 @@ func (m *Mongo) Insert(data bson.M) (int, error) {
 
 	if err != nil {
 		m.refreshSequence(-1)
-		LogError("[Mongo] Insert Error: ", err.Error())
+		LogError("[Mongo] [Insert] ", err.Error())
 
 		return 0, err
 	}
@@ -134,7 +134,7 @@ func (m *Mongo) Update(query bson.M, data bson.M) error {
 
 	if err != nil {
 		if err.Error() != "not found" {
-			LogError("[Mongo] Update Error: ", err.Error())
+			LogError("[Mongo] [Update] ", err.Error())
 		}
 
 		return err
@@ -159,7 +159,7 @@ func (m *Mongo) Incr(query bson.M, column string, inc int) error {
 
 	if err != nil {
 		if err.Error() != "not found" {
-			LogError("[Mongo] Incr Error: ", err.Error())
+			LogError("[Mongo] [Incr] ", err.Error())
 		}
 
 		return err
@@ -182,7 +182,7 @@ func (m *Mongo) FindOne(query bson.M, data interface{}) error {
 
 	if err != nil {
 		if err.Error() != "not found" {
-			LogError("[Mongo] FindOne Error: ", err.Error())
+			LogError("[Mongo] [FindOne] ", err.Error())
 		}
 
 		return err
@@ -217,7 +217,7 @@ func (m *Mongo) Find(query bson.M, data interface{}) error {
 		total, err := q.Count()
 
 		if err != nil {
-			LogError("[Mongo] Count Error: ", err.Error())
+			LogError("[Mongo] [Count] ", err.Error())
 			elem.Set(reflect.ValueOf(0))
 		} else {
 			elem.Set(reflect.ValueOf(total))
@@ -241,7 +241,7 @@ func (m *Mongo) Find(query bson.M, data interface{}) error {
 
 	if err != nil {
 		if err.Error() != "not found" {
-			LogError("[Mongo] Find Error: ", err.Error())
+			LogError("[Mongo] [Find] ", err.Error())
 		}
 
 		return err
@@ -263,7 +263,7 @@ func (m *Mongo) FindAll(data interface{}) error {
 
 	if err != nil {
 		if err.Error() != "not found" {
-			LogError("[Mongo] FindAll Error: ", err.Error())
+			LogError("[Mongo] [FindAll] ", err.Error())
 		}
 
 		return err
@@ -284,7 +284,7 @@ func (m *Mongo) Delete(query bson.M) error {
 	_, err := session.DB(m.DB).C(m.Collection).RemoveAll(query)
 
 	if err != nil {
-		LogError("[Mongo] Delete Error: ", err.Error())
+		LogError("[Mongo] [Delete] ", err.Error())
 		return err
 	}
 
@@ -311,14 +311,14 @@ func (m *Mongo) Sum(match bson.M, field string) (int, error) {
 	err := p.One(&result)
 
 	if err != nil {
-		LogError("[Mongo] Sum Error: ", err.Error())
+		LogError("[Mongo] [Sum] ", err.Error())
 		return 0, err
 	}
 
 	total, ok := result["total"].(int)
 
 	if !ok {
-		LogErrorf("[Mongo] Sum Error: type assertion error, result %v is %v", result["total"], reflect.TypeOf(result["total"]))
+		LogErrorf("[Mongo] [Sum] type assertion error, result %v is %v", result["total"], reflect.TypeOf(result["total"]))
 		return 0, fmt.Errorf("type assertion error, result %v is %v", result["total"], reflect.TypeOf(result["total"]))
 	}
 
