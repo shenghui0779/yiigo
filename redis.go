@@ -78,7 +78,7 @@ func dialRedis() (redis.Conn, error) {
  */
 func getRedisConn() (pools.Resource, error) {
 	if redisPool == nil {
-		return nil, errors.New("[Redis] redis is not initialized")
+		return nil, errors.New("[Redis] redis pool is empty")
 	}
 
 	if redisPool.IsClosed() {

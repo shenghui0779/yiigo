@@ -77,7 +77,7 @@ func (m *MySQL) getDB() (*sqlx.DB, error) {
 	db, ok := dbmap[dbname]
 
 	if !ok {
-		return nil, fmt.Errorf("[MySQL] database %s is not initialized", dbname)
+		return nil, fmt.Errorf("[MySQL] database %s connected failed", dbname)
 	}
 
 	return db, nil
