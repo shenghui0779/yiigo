@@ -1,6 +1,10 @@
 package yiigo
 
-import "gopkg.in/gomail.v2"
+import (
+	"fmt"
+
+	"gopkg.in/gomail.v2"
+)
 
 type Mailer struct {
 	Title    string
@@ -55,7 +59,11 @@ func (m *Mailer) Send() error {
 	// Send the email
 	err := d.DialAndSend(msg)
 
-	return err
+	if err != nil {
+		return fmt.Errorf("[Mailer] %v", err)
+	}
+
+	return nil
 }
 
 func (m *Mailer) dialer() *gomail.Dialer {

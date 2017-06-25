@@ -45,16 +45,26 @@ func (b *Bootstrap) EnableRedis() {
 }
 
 // Run 启动yiigo组件
-func (b *Bootstrap) Run() {
+func (b *Bootstrap) Run() error {
 	initLogger(b.Log)
-	loadEnv(b.Env)
-	initMySQL(b.MySQL...)
+
+	if err := loadEnv(b.Env); err != nil {
+		return err
+	}
+
+	if err := initMySQL(b.MySQL...); err != nil {
+		return err
+	}
 
 	if b.Mongo {
-		initMongo()
+		if err := initMongo(); err != nil {
+			return err
+		}
 	}
 
 	if b.Redis {
 		initRedis()
 	}
+
+	return nil
 }

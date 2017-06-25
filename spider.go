@@ -4,7 +4,6 @@ import (
 	"crypto/tls"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -59,17 +58,20 @@ type showAPIBody struct {
  * @return io.ReadCloser
  */
 func (s *SpiderBase) HttpGet(httpUrl string, host string, setCookie bool, saveCookie bool, clearOldCookie bool, referer ...string) (io.ReadCloser, error) {
-	req, httpErr := http.NewRequest("GET", httpUrl, nil)
+	req, err := http.NewRequest("GET", httpUrl, nil)
 
-	if httpErr != nil {
-		LogError("[Spider] HttpGet Error: ", httpErr.Error())
-		return nil, httpErr
+	if err != nil {
+		return nil, fmt.Errorf("[Spider] %v", err)
 	}
 
 	s.setHttpCommonHeader(req, false, host, referer...)
 
 	if setCookie {
-		s.setHttpCookie(req)
+		err := s.setHttpCookie(req)
+
+		if err != nil {
+			return nil, fmt.Errorf("[Spider] %v", err)
+		}
 	}
 
 	//忽略对服务端传过来的数字证书进行校验
@@ -81,18 +83,21 @@ func (s *SpiderBase) HttpGet(httpUrl string, host string, setCookie bool, saveCo
 		Transport: tr,
 		Timeout:   20 * time.Second,
 	}
-	res, clientDoErr := client.Do(req)
+	resp, err := client.Do(req)
 
-	if clientDoErr != nil {
-		LogError("[Spider] HttpGet Error: ", clientDoErr.Error())
-		return nil, clientDoErr
+	if err != nil {
+		return nil, fmt.Errorf("[Spider] %v", err)
 	}
 
 	if saveCookie {
-		s.saveHttpCookie(res.Cookies(), clearOldCookie)
+		err := s.saveHttpCookie(resp.Cookies(), clearOldCookie)
+
+		if err != nil {
+			return nil, fmt.Errorf("[Spider] %v", err)
+		}
 	}
 
-	return res.Body, nil
+	return resp.Body, nil
 }
 
 /**
@@ -108,17 +113,20 @@ func (s *SpiderBase) HttpGet(httpUrl string, host string, setCookie bool, saveCo
  */
 func (s *SpiderBase) HttpPost(httpUrl string, host string, v url.Values, setCookie bool, saveCookie bool, clearOldCookie bool, referer ...string) (io.ReadCloser, error) {
 	postParam := strings.NewReader(v.Encode())
-	req, httpErr := http.NewRequest("POST", httpUrl, postParam)
+	req, err := http.NewRequest("POST", httpUrl, postParam)
 
-	if httpErr != nil {
-		LogError("[Spider] HttpPost Error: ", httpErr.Error())
-		return nil, httpErr
+	if err != nil {
+		return nil, fmt.Errorf("[Spider] %v", err)
 	}
 
 	s.setHttpCommonHeader(req, true, host, referer...)
 
 	if setCookie {
-		s.setHttpCookie(req)
+		err := s.setHttpCookie(req)
+
+		if err != nil {
+			return nil, fmt.Errorf("[Spider] %v", err)
+		}
 	}
 
 	//忽略对服务端传过来的数字证书进行校验
@@ -130,18 +138,21 @@ func (s *SpiderBase) HttpPost(httpUrl string, host string, v url.Values, setCook
 		Transport: tr,
 		Timeout:   20 * time.Second,
 	}
-	res, clientDoErr := client.Do(req)
+	resp, err := client.Do(req)
 
-	if clientDoErr != nil {
-		LogError("[Spider] HttpPost Error: ", clientDoErr.Error())
-		return nil, clientDoErr
+	if err != nil {
+		return nil, fmt.Errorf("[Spider] %v", err)
 	}
 
 	if saveCookie {
-		s.saveHttpCookie(res.Cookies(), clearOldCookie)
+		err := s.saveHttpCookie(resp.Cookies(), clearOldCookie)
+
+		if err != nil {
+			return nil, fmt.Errorf("[Spider] %v", err)
+		}
 	}
 
-	return res.Body, nil
+	return resp.Body, nil
 }
 
 /**
@@ -155,17 +166,20 @@ func (s *SpiderBase) HttpPost(httpUrl string, host string, v url.Values, setCook
  * @return io.ReadCloser
  */
 func (s *SpiderBase) HttpsGet(httpUrl string, host string, setCookie bool, saveCookie bool, clearOldCookie bool, referer ...string) (io.ReadCloser, error) {
-	req, httpErr := http.NewRequest("GET", httpUrl, nil)
+	req, err := http.NewRequest("GET", httpUrl, nil)
 
-	if httpErr != nil {
-		LogError("[Spider] HttpsGet Error: ", httpErr.Error())
-		return nil, httpErr
+	if err != nil {
+		return nil, fmt.Errorf("[Spider] %v", err)
 	}
 
 	s.setHttpCommonHeader(req, false, host, referer...)
 
 	if setCookie {
-		s.setHttpCookie(req)
+		err := s.setHttpCookie(req)
+
+		if err != nil {
+			return nil, fmt.Errorf("[Spider] %v", err)
+		}
 	}
 
 	certDir := GetEnvString("spider", "certdir", "certs")
@@ -173,11 +187,10 @@ func (s *SpiderBase) HttpsGet(httpUrl string, host string, setCookie bool, saveC
 	certFile, _ := filepath.Abs(fmt.Sprintf("%s/%s", certDir, s.CertPath.CertPem))
 	keyFile, _ := filepath.Abs(fmt.Sprintf("%s/%s", certDir, s.CertPath.KeyUnencryptedPem))
 
-	cert, certErr := tls.LoadX509KeyPair(certFile, keyFile)
+	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
 
-	if certErr != nil {
-		LogError("[Spider] HttpsGet Error: ", certErr.Error())
-		return nil, certErr
+	if err != nil {
+		return nil, fmt.Errorf("[Spider] %v", err)
 	}
 
 	tr := &http.Transport{
@@ -192,18 +205,21 @@ func (s *SpiderBase) HttpsGet(httpUrl string, host string, setCookie bool, saveC
 		Transport: tr,
 		Timeout:   20 * time.Second,
 	}
-	res, clientDoErr := client.Do(req)
+	resp, err := client.Do(req)
 
-	if clientDoErr != nil {
-		LogError("[Spider] HttpsGet Error: ", clientDoErr.Error())
-		return nil, clientDoErr
+	if err != nil {
+		return nil, fmt.Errorf("[Spider] %v", err)
 	}
 
 	if saveCookie {
-		s.saveHttpCookie(res.Cookies(), clearOldCookie)
+		err := s.saveHttpCookie(resp.Cookies(), clearOldCookie)
+
+		if err != nil {
+			return nil, fmt.Errorf("[Spider] %v", err)
+		}
 	}
 
-	return res.Body, nil
+	return resp.Body, nil
 }
 
 /**
@@ -219,17 +235,20 @@ func (s *SpiderBase) HttpsGet(httpUrl string, host string, setCookie bool, saveC
  */
 func (s *SpiderBase) HttpsPost(httpUrl string, host string, v url.Values, setCookie bool, saveCookie bool, clearOldCookie bool, referer ...string) (io.ReadCloser, error) {
 	postParam := strings.NewReader(v.Encode())
-	req, httpErr := http.NewRequest("POST", httpUrl, postParam)
+	req, err := http.NewRequest("POST", httpUrl, postParam)
 
-	if httpErr != nil {
-		LogError("[Spider] HttpsPost Error: ", httpErr.Error())
-		return nil, httpErr
+	if err != nil {
+		return nil, fmt.Errorf("[Spider] %v", err)
 	}
 
 	s.setHttpCommonHeader(req, true, host, referer...)
 
 	if setCookie {
-		s.setHttpCookie(req)
+		err := s.setHttpCookie(req)
+
+		if err != nil {
+			return nil, fmt.Errorf("[Spider] %v", err)
+		}
 	}
 
 	certDir := GetEnvString("spider", "certdir", "certs")
@@ -237,11 +256,10 @@ func (s *SpiderBase) HttpsPost(httpUrl string, host string, v url.Values, setCoo
 	certFile, _ := filepath.Abs(fmt.Sprintf("%s/%s", certDir, s.CertPath.CertPem))
 	keyFile, _ := filepath.Abs(fmt.Sprintf("%s/%s", certDir, s.CertPath.KeyUnencryptedPem))
 
-	cert, certErr := tls.LoadX509KeyPair(certFile, keyFile)
+	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
 
-	if certErr != nil {
-		LogError("[Spider] HttpsPost Error: ", certErr.Error())
-		return nil, certErr
+	if err != nil {
+		return nil, fmt.Errorf("[Spider] %v", err)
 	}
 
 	tr := &http.Transport{
@@ -256,18 +274,21 @@ func (s *SpiderBase) HttpsPost(httpUrl string, host string, v url.Values, setCoo
 		Transport: tr,
 		Timeout:   20 * time.Second,
 	}
-	res, clientDoErr := client.Do(req)
+	resp, err := client.Do(req)
 
-	if clientDoErr != nil {
-		LogError("[Spider] HttpsPost Error: ", clientDoErr.Error())
-		return nil, clientDoErr
+	if err != nil {
+		return nil, fmt.Errorf("[Spider] %v", err)
 	}
 
 	if saveCookie {
-		s.saveHttpCookie(res.Cookies(), clearOldCookie)
+		err := s.saveHttpCookie(resp.Cookies(), clearOldCookie)
+
+		if err != nil {
+			return nil, fmt.Errorf("[Spider] %v", err)
+		}
 	}
 
-	return res.Body, nil
+	return resp.Body, nil
 }
 
 /**
@@ -303,42 +324,44 @@ func (s *SpiderBase) setHttpCommonHeader(req *http.Request, isPost bool, host st
 /**
  * 设置http请求cookie
  * @param req *http.Request http请求对象指针
+ * @return error
  */
-func (s *SpiderBase) setHttpCookie(req *http.Request) {
+func (s *SpiderBase) setHttpCookie(req *http.Request) error {
 	cookieDir := GetEnvString("spider", "cookiedir", "cookies")
 	path, _ := filepath.Abs(fmt.Sprintf("%s/%s", cookieDir, s.CookiePath))
 
 	cookies := map[string]*http.Cookie{}
-	content, readErr := ioutil.ReadFile(path)
+	content, err := ioutil.ReadFile(path)
 
-	if readErr != nil {
-		LogError("[Spider] SetHttpCookie Error: ", readErr.Error())
-		return
+	if err != nil {
+		return fmt.Errorf("[Spider] %v", err)
 	}
 
-	jsonErr := json.Unmarshal(content, &cookies)
+	err = json.Unmarshal(content, &cookies)
 
-	if jsonErr != nil {
-		LogError("[Spider] SetHttpCookie Error: ", jsonErr.Error())
-		return
+	if err != nil {
+		return fmt.Errorf("[Spider] %v", err)
 	}
 
 	for _, cookie := range cookies {
 		req.AddCookie(cookie)
 	}
+
+	return nil
 }
 
 /**
  * 保存http请求返回的cookie
  * @param newCookies []*http.Cookie Cookie实例指针
  * @param clearOldCookie bool 是否需要清空原来的cookie
+ * @param error
  */
-func (s *SpiderBase) saveHttpCookie(newCookies []*http.Cookie, clearOldCookie bool) {
+func (s *SpiderBase) saveHttpCookie(newCookies []*http.Cookie, clearOldCookie bool) error {
 	cookieDir := GetEnvString("spider", "cookiedir", "cookies")
 	path, _ := filepath.Abs(fmt.Sprintf("%s/%s", cookieDir, s.CookiePath))
 
 	if len(newCookies) == 0 {
-		return
+		return nil
 	}
 
 	if clearOldCookie { //清空原cookie，保存新的cookie
@@ -348,48 +371,49 @@ func (s *SpiderBase) saveHttpCookie(newCookies []*http.Cookie, clearOldCookie bo
 			cookies[cookie.Name] = cookie
 		}
 
-		byteArr, jsonErr := json.Marshal(cookies)
+		byteArr, err := json.Marshal(cookies)
 
-		if jsonErr != nil {
-			LogError("[Spider] SaveHttpCookie Error: ", jsonErr.Error())
-			return
+		if err != nil {
+			return fmt.Errorf("[Spider] %v", err)
 		}
 
-		writeErr := ioutil.WriteFile(path, byteArr, 0777)
+		err = ioutil.WriteFile(path, byteArr, 0777)
 
-		if writeErr != nil {
-			LogError("[Spider] SaveHttpCookie Error: ", writeErr.Error())
+		if err != nil {
+			return fmt.Errorf("[Spider] %v", err)
 		}
 	} else { //追加新的cookie
 		cookies := map[string]*http.Cookie{}
-		content, readErr := ioutil.ReadFile(path)
+		content, err := ioutil.ReadFile(path)
 
-		if readErr == nil {
-			jsonErr := json.Unmarshal(content, &cookies)
+		if err != nil {
+			return fmt.Errorf("[Spider] %v", err)
+		}
 
-			if jsonErr != nil {
-				LogError("[Spider] SaveHttpCookie Error: ", jsonErr.Error())
-				return
-			}
+		err = json.Unmarshal(content, &cookies)
+
+		if err != nil {
+			return fmt.Errorf("[Spider] %v", err)
 		}
 
 		for _, cookie := range newCookies {
 			cookies[cookie.Name] = cookie
 		}
 
-		byteArr, jsonErr := json.Marshal(cookies)
+		byteArr, err := json.Marshal(cookies)
 
-		if jsonErr != nil {
-			LogError("[Spider] SaveHttpCookie Error: ", jsonErr.Error())
-			return
+		if err != nil {
+			return fmt.Errorf("[Spider] %v", err)
 		}
 
-		writeErr := ioutil.WriteFile(path, byteArr, 0777)
+		err = ioutil.WriteFile(path, byteArr, 0777)
 
-		if writeErr != nil {
-			LogError("[Spider] SaveHttpCookie Error: ", writeErr.Error())
+		if err != nil {
+			return fmt.Errorf("[Spider] %v", err)
 		}
 	}
+
+	return nil
 }
 
 /**
@@ -406,27 +430,24 @@ func (s *SpiderBase) getCaptchaBase64(httpUrl string, host string, setCookie boo
 	resBody, err := s.HttpGet(httpUrl, host, setCookie, saveCookie, clearOldCookie)
 
 	if err != nil {
-		LogError("[Spider] GetCaptchaBase64 Error: ", err.Error())
-		return "", err
+		return "", fmt.Errorf("[Spider] %v", err)
 	}
 
 	defer resBody.Close()
 
-	body, readErr := ioutil.ReadAll(resBody)
+	body, err := ioutil.ReadAll(resBody)
 
-	if readErr != nil {
-		LogError("[Spider] GetCaptchaBase64 Error: ", readErr.Error())
-		return "", readErr
+	if err != nil {
+		return "", fmt.Errorf("[Spider] %v", err)
 	}
 
 	verifyDir := GetEnvString("spider", "captchadir", "captcha")
 
 	path, _ := filepath.Abs(fmt.Sprintf("%s/%s", verifyDir, captchaImg))
-	writeErr := ioutil.WriteFile(path, body, 0777)
+	err = ioutil.WriteFile(path, body, 0777)
 
-	if writeErr != nil {
-		LogError("[Spider] GetCaptchaBase64 Error: ", writeErr.Error())
-		return "", writeErr
+	if err != nil {
+		return "", fmt.Errorf("[Spider] %v", err)
 	}
 
 	captchaBase64 := base64.StdEncoding.EncodeToString(body)
@@ -460,11 +481,10 @@ func (s *SpiderBase) GetCaptchaCode(httpUrl string, host string, setCookie bool,
 	v.Set("convert_to_jpg", convertToJpg)
 
 	postParam := strings.NewReader(v.Encode())
-	req, httpErr := http.NewRequest("POST", "http://ali-checkcode.showapi.com/checkcode", postParam)
+	req, err := http.NewRequest("POST", "http://ali-checkcode.showapi.com/checkcode", postParam)
 
-	if httpErr != nil {
-		LogError("[Spider] GetCaptchaCode Error: ", httpErr.Error())
-		return "", httpErr
+	if err != nil {
+		return "", fmt.Errorf("[Spider] %v", err)
 	}
 
 	appCode := GetEnvString("spider", "appcode", "794434d1937e4f438223b37fd7951d54")
@@ -472,33 +492,29 @@ func (s *SpiderBase) GetCaptchaCode(httpUrl string, host string, setCookie bool,
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	client := &http.Client{}
-	res, clientDoErr := client.Do(req)
+	resp, err := client.Do(req)
 
-	if clientDoErr != nil {
-		LogError("[Spider] GetCaptchaCode Error: ", clientDoErr.Error())
-		return "", clientDoErr
+	if err != nil {
+		return "", fmt.Errorf("[Spider] %v", err)
 	}
 
-	defer res.Body.Close()
-	body, readErr := ioutil.ReadAll(res.Body)
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
 
-	if readErr != nil {
-		LogError("[Spider] GetCaptchaCode Error: ", readErr.Error())
-		return "", readErr
+	if err != nil {
+		return "", fmt.Errorf("[Spider] %v", err)
 	}
 
 	data := &showAPIRes{}
 
-	jsonErr := json.Unmarshal(body, &data)
+	err = json.Unmarshal(body, &data)
 
-	if jsonErr != nil {
-		LogError("[Spider] GetCaptchaCode Error: ", jsonErr.Error())
-		return "", jsonErr
+	if err != nil {
+		return "", fmt.Errorf("[Spider] %v", err)
 	}
 
 	if data.ShowapiResCode != 0 {
-		LogError("[Spider] GetCaptchaCode Error: ", data.ShowapiResError)
-		return "", errors.New(data.ShowapiResError)
+		return "", fmt.Errorf("[Spider] %v", data.ShowapiResError)
 	}
 
 	return data.ShowapiResBody.Result, nil

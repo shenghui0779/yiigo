@@ -29,11 +29,7 @@ type ResourceConn struct {
 
 // 关闭连接资源
 func (r ResourceConn) Close() {
-	err := r.Conn.Close()
-
-	if err != nil {
-		LogError("[Redis] Close ", err.Error())
-	}
+	r.Conn.Close()
 }
 
 /**
@@ -70,11 +66,10 @@ func dialRedis() (redis.Conn, error) {
 	conn, err := redis.DialTimeout("tcp", dsn, time.Duration(connectTimeout)*time.Millisecond, time.Duration(readTimeout)*time.Millisecond, time.Duration(writeTimeout)*time.Millisecond)
 
 	if err != nil {
-		LogError("[Redis] ", err.Error())
-		panic(err)
+		return nil, fmt.Errorf("[Redis] %v", err)
 	}
 
-	return conn, err
+	return conn, nil
 }
 
 /**
@@ -83,8 +78,7 @@ func dialRedis() (redis.Conn, error) {
  */
 func getRedisConn() (pools.Resource, error) {
 	if redisPool == nil {
-		LogError("[Redis] redis is not initialized")
-		panic(errors.New("redis error: redis is not initialized"))
+		return nil, errors.New("[Redis] redis is not initialized")
 	}
 
 	if redisPool.IsClosed() {
@@ -95,7 +89,7 @@ func getRedisConn() (pools.Resource, error) {
 	rc, err := redisPool.Get(ctx)
 
 	if err != nil {
-		LogError("[Redis] ", err.Error())
+		return nil, fmt.Errorf("[Redis] %v", err)
 	}
 
 	return rc, err
@@ -117,48 +111,46 @@ func (r *Redis) getKey(key string) string {
  * SET
  * @param key string
  * @param data interface{}
- * @return bool
+ * @return error
  */
-func (r *Redis) Set(key string, data interface{}) bool {
+func (r *Redis) Set(key string, data interface{}) error {
 	rc, err := getRedisConn()
 
 	if err != nil {
-		return false
+		return err
 	}
 
 	defer redisPool.Put(rc)
 
 	conn := rc.(ResourceConn).Conn
 
-	cacheData, jsonErr := json.Marshal(data)
+	cacheData, err := json.Marshal(data)
 
-	if jsonErr != nil {
-		LogError("[Redis] [SET] ", jsonErr.Error())
-		return false
+	if err != nil {
+		return fmt.Errorf("[Redis] %v", err)
 	}
 
 	cacheKey := r.getKey(key)
 
-	_, doErr := conn.Do("SET", cacheKey, cacheData)
+	_, err = conn.Do("SET", cacheKey, cacheData)
 
-	if doErr != nil {
-		LogError("[Redis] [SET] ", doErr.Error())
-		return false
+	if err != nil {
+		return fmt.Errorf("[Redis] %v", err)
 	}
 
-	return true
+	return nil
 }
 
 /**
  * MSET
  * @param data map[string]interface{}
- * @return bool
+ * @return error
  */
-func (r *Redis) MSet(data map[string]interface{}) bool {
+func (r *Redis) MSet(data map[string]interface{}) error {
 	rc, err := getRedisConn()
 
 	if err != nil {
-		return false
+		return err
 	}
 
 	defer redisPool.Put(rc)
@@ -168,37 +160,35 @@ func (r *Redis) MSet(data map[string]interface{}) bool {
 	args := []interface{}{}
 
 	for k, v := range data {
-		cacheData, jsonErr := json.Marshal(v)
+		cacheData, err := json.Marshal(v)
 
-		if jsonErr != nil {
-			LogError("[Redis] [SET] ", jsonErr.Error())
-			return false
+		if err != nil {
+			return fmt.Errorf("[Redis] %v", err)
 		}
 
 		args = append(args, r.getKey(k), cacheData)
 	}
 
-	_, doErr := conn.Do("MSET", args...)
+	_, err = conn.Do("MSET", args...)
 
-	if doErr != nil {
-		LogError("[Redis] [MSET] ", doErr.Error())
-		return false
+	if err != nil {
+		return fmt.Errorf("[Redis] %v", err)
 	}
 
-	return true
+	return nil
 }
 
 /**
  * GET
  * @param key string
  * @param data interface{} (指针)
- * @return bool
+ * @return error
  */
-func (r *Redis) Get(key string, data interface{}) bool {
+func (r *Redis) Get(key string, data interface{}) error {
 	rc, err := getRedisConn()
 
 	if err != nil {
-		return false
+		return err
 	}
 
 	defer redisPool.Put(rc)
@@ -207,38 +197,36 @@ func (r *Redis) Get(key string, data interface{}) bool {
 
 	cacheKey := r.getKey(key)
 
-	cacheData, doErr := conn.Do("GET", cacheKey)
+	cacheData, err := conn.Do("GET", cacheKey)
 
-	if doErr != nil {
-		LogError("[Redis] [GET] ", doErr.Error())
-		return false
+	if err != nil {
+		return fmt.Errorf("[Redis] %v", err)
 	}
 
 	if cacheData == nil {
-		return false
+		return errors.New("[Redis] not found")
 	}
 
-	jsonErr := json.Unmarshal(cacheData.([]byte), data)
+	err = json.Unmarshal(cacheData.([]byte), data)
 
-	if jsonErr != nil {
-		LogError("[Redis] [GET] ", jsonErr.Error())
-		return false
+	if err != nil {
+		return fmt.Errorf("[Redis] %v", err)
 	}
 
-	return true
+	return nil
 }
 
 /**
  * MGET
  * @param keys []string
  * @param data interface{} (切片指针)
- * @return bool
+ * @return error
  */
-func (r *Redis) MGet(keys []string, data interface{}) bool {
+func (r *Redis) MGet(keys []string, data interface{}) error {
 	rc, err := getRedisConn()
 
 	if err != nil {
-		return false
+		return err
 	}
 
 	defer redisPool.Put(rc)
@@ -251,15 +239,14 @@ func (r *Redis) MGet(keys []string, data interface{}) bool {
 		args = append(args, r.getKey(key))
 	}
 
-	cacheData, doErr := redis.ByteSlices(conn.Do("MGET", args...))
+	cacheData, err := redis.ByteSlices(conn.Do("MGET", args...))
 
-	if doErr != nil {
-		LogError("[Redis] [MGET] ", doErr.Error())
-		return false
+	if err != nil {
+		return fmt.Errorf("[Redis] %v", err)
 	}
 
 	if cacheData == nil {
-		return false
+		return errors.New("[Redis] not found")
 	}
 
 	if len(cacheData) > 0 {
@@ -272,11 +259,10 @@ func (r *Redis) MGet(keys []string, data interface{}) bool {
 			for _, v := range cacheData {
 				if v != nil {
 					elem := reflect.New(refValType).Elem()
-					jsonErr := json.Unmarshal(v, elem.Addr().Interface())
+					err := json.Unmarshal(v, elem.Addr().Interface())
 
-					if jsonErr != nil {
-						LogError("[Redis] [MGET] ", jsonErr.Error())
-						return false
+					if err != nil {
+						return fmt.Errorf("[Redis] %v", err)
 					}
 
 					refVal.Set(reflect.Append(refVal, elem))
@@ -285,7 +271,7 @@ func (r *Redis) MGet(keys []string, data interface{}) bool {
 		}
 	}
 
-	return true
+	return nil
 }
 
 // hash cmd
@@ -295,49 +281,47 @@ func (r *Redis) MGet(keys []string, data interface{}) bool {
  * @param key string
  * @param field interface{}
  * @data interface{}
- * @return bool
+ * @return error
  */
-func (r *Redis) HSet(key string, field interface{}, data interface{}) bool {
+func (r *Redis) HSet(key string, field interface{}, data interface{}) error {
 	rc, err := getRedisConn()
 
 	if err != nil {
-		return false
+		return err
 	}
 
 	defer redisPool.Put(rc)
 
 	conn := rc.(ResourceConn).Conn
 
-	cacheData, jsonErr := json.Marshal(data)
+	cacheData, err := json.Marshal(data)
 
-	if jsonErr != nil {
-		LogError("[Redis] [HSET] ", jsonErr.Error())
-		return false
+	if err != nil {
+		return fmt.Errorf("[Redis] %v", err)
 	}
 
 	cacheKey := r.getKey(key)
 
-	_, doErr := conn.Do("HSET", cacheKey, field, cacheData)
+	_, err = conn.Do("HSET", cacheKey, field, cacheData)
 
-	if doErr != nil {
-		LogError("[Redis] [HSET] ", doErr.Error())
-		return false
+	if err != nil {
+		return fmt.Errorf("[Redis] %v", err)
 	}
 
-	return true
+	return nil
 }
 
 /**
  * HMSET
  * @param key string
  * @param data map[interface{}]interface{}
- * @return bool
+ * @return error
  */
-func (r *Redis) HMSet(key string, data map[interface{}]interface{}) bool {
+func (r *Redis) HMSet(key string, data map[interface{}]interface{}) error {
 	rc, err := getRedisConn()
 
 	if err != nil {
-		return false
+		return err
 	}
 
 	defer redisPool.Put(rc)
@@ -348,24 +332,22 @@ func (r *Redis) HMSet(key string, data map[interface{}]interface{}) bool {
 	args = append(args, r.getKey(key))
 
 	for field, v := range data {
-		cacheData, jsonErr := json.Marshal(v)
+		cacheData, err := json.Marshal(v)
 
-		if jsonErr != nil {
-			LogError("[Redis] [HMSET] ", jsonErr.Error())
-			return false
+		if err != nil {
+			return fmt.Errorf("[Redis] %v", err)
 		}
 
 		args = append(args, field, cacheData)
 	}
 
-	_, doErr := conn.Do("HMSet", args...)
+	_, err = conn.Do("HMSet", args...)
 
-	if doErr != nil {
-		LogError("[Redis] [HMSET] ", doErr.Error())
-		return false
+	if err != nil {
+		return fmt.Errorf("[Redis] %v", err)
 	}
 
-	return true
+	return nil
 }
 
 /**
@@ -373,13 +355,13 @@ func (r *Redis) HMSet(key string, data map[interface{}]interface{}) bool {
  * @param key string
  * @param field interface{}
  * @param data interface{} (指针)
- * @return bool
+ * @return error
  */
-func (r *Redis) HGet(key string, field interface{}, data interface{}) bool {
+func (r *Redis) HGet(key string, field interface{}, data interface{}) error {
 	rc, err := getRedisConn()
 
 	if err != nil {
-		return false
+		return err
 	}
 
 	defer redisPool.Put(rc)
@@ -388,25 +370,23 @@ func (r *Redis) HGet(key string, field interface{}, data interface{}) bool {
 
 	cacheKey := r.getKey(key)
 
-	cacheData, doErr := conn.Do("HGET", cacheKey, field)
+	cacheData, err := conn.Do("HGET", cacheKey, field)
 
-	if doErr != nil {
-		LogError("[Redis] [HGET] ", doErr.Error())
-		return false
+	if err != nil {
+		return fmt.Errorf("[Redis] %v", err)
 	}
 
 	if cacheData == nil {
-		return false
+		return errors.New("[Redis] not found")
 	}
 
-	jsonErr := json.Unmarshal(cacheData.([]byte), data)
+	err = json.Unmarshal(cacheData.([]byte), data)
 
-	if jsonErr != nil {
-		LogError("[Redis] [HGET] ", jsonErr.Error())
-		return false
+	if err != nil {
+		return fmt.Errorf("[Redis] %v", err)
 	}
 
-	return true
+	return nil
 }
 
 /**
@@ -414,13 +394,13 @@ func (r *Redis) HGet(key string, field interface{}, data interface{}) bool {
  * @param key string
  * @param fields []interface{}
  * @param data interface{} (切片指针)
- * @return bool
+ * @return error
  */
-func (r *Redis) HMGet(key string, fields []interface{}, data interface{}) bool {
+func (r *Redis) HMGet(key string, fields []interface{}, data interface{}) error {
 	rc, err := getRedisConn()
 
 	if err != nil {
-		return false
+		return err
 	}
 
 	defer redisPool.Put(rc)
@@ -434,15 +414,14 @@ func (r *Redis) HMGet(key string, fields []interface{}, data interface{}) bool {
 		args = append(args, field)
 	}
 
-	cacheData, doErr := redis.ByteSlices(conn.Do("HMGET", args...))
+	cacheData, err := redis.ByteSlices(conn.Do("HMGET", args...))
 
-	if doErr != nil {
-		LogError("[Redis] [HMGET] ", doErr.Error())
-		return false
+	if err != nil {
+		return fmt.Errorf("[Redis] %v", err)
 	}
 
 	if cacheData == nil {
-		return false
+		return errors.New("[Redis] not found")
 	}
 
 	if len(cacheData) > 0 {
@@ -455,11 +434,10 @@ func (r *Redis) HMGet(key string, fields []interface{}, data interface{}) bool {
 			for _, v := range cacheData {
 				if v != nil {
 					elem := reflect.New(refValType).Elem()
-					jsonErr := json.Unmarshal(v, elem.Addr().Interface())
+					err := json.Unmarshal(v, elem.Addr().Interface())
 
-					if jsonErr != nil {
-						LogError("[Redis] [HMGET] ", jsonErr.Error())
-						return false
+					if err != nil {
+						return fmt.Errorf("[Redis] %v", err)
 					}
 
 					refVal.Set(reflect.Append(refVal, elem))
@@ -468,20 +446,20 @@ func (r *Redis) HMGet(key string, fields []interface{}, data interface{}) bool {
 		}
 	}
 
-	return true
+	return nil
 }
 
 /**
  * HDEL
  * @param key
  * @param field interface{}
- * @return bool
+ * @return error
  */
-func (r *Redis) HDel(key string, field interface{}) bool {
+func (r *Redis) HDel(key string, field interface{}) error {
 	rc, err := getRedisConn()
 
 	if err != nil {
-		return false
+		return err
 	}
 
 	defer redisPool.Put(rc)
@@ -490,26 +468,25 @@ func (r *Redis) HDel(key string, field interface{}) bool {
 
 	cacheKey := r.getKey(key)
 
-	_, doErr := conn.Do("HDEL", cacheKey, field)
+	_, err = conn.Do("HDEL", cacheKey, field)
 
-	if doErr != nil {
-		LogError("[Redis] [HDEL] ", doErr.Error())
-		return false
+	if err != nil {
+		return fmt.Errorf("[Redis] %v", err)
 	}
 
-	return true
+	return nil
 }
 
 /**
  * HLEN
  * @param key string
- * @return int64, bool
+ * @return int64, error
  */
-func (r *Redis) HLen(key string) (int64, bool) {
+func (r *Redis) HLen(key string) (int64, error) {
 	rc, err := getRedisConn()
 
 	if err != nil {
-		return 0, false
+		return 0, err
 	}
 
 	defer redisPool.Put(rc)
@@ -518,21 +495,19 @@ func (r *Redis) HLen(key string) (int64, bool) {
 
 	cacheKey := r.getKey(key)
 
-	result, doErr := conn.Do("HLEN", cacheKey)
+	result, err := conn.Do("HLEN", cacheKey)
 
-	if doErr != nil {
-		LogError("[Redis] [HLEN] ", doErr.Error())
-		return 0, false
+	if err != nil {
+		return 0, fmt.Errorf("[Redis] %v", err)
 	}
 
 	count, ok := result.(int64)
 
 	if !ok {
-		LogErrorf("[Redis] [HLEN] invalid type assertion, result %v is %v", result, reflect.TypeOf(result))
-		return 0, false
+		return 0, fmt.Errorf("[Redis] invalid type assertion, result %v is %v", result, reflect.TypeOf(result))
 	}
 
-	return count, true
+	return count, nil
 }
 
 /**
@@ -540,13 +515,13 @@ func (r *Redis) HLen(key string) (int64, bool) {
  * @param key string
  * @param field interface{}
  * @param inc int
- * @return int64, bool
+ * @return int64, error
  */
-func (r *Redis) HIncrBy(key string, field interface{}, inc int) (int64, bool) {
+func (r *Redis) HIncrBy(key string, field interface{}, inc int) (int64, error) {
 	rc, err := getRedisConn()
 
 	if err != nil {
-		return 0, false
+		return 0, err
 	}
 
 	defer redisPool.Put(rc)
@@ -555,21 +530,19 @@ func (r *Redis) HIncrBy(key string, field interface{}, inc int) (int64, bool) {
 
 	cacheKey := r.getKey(key)
 
-	result, doErr := conn.Do("HINCRBY", cacheKey, field, inc)
+	result, err := conn.Do("HINCRBY", cacheKey, field, inc)
 
-	if doErr != nil {
-		LogError("[Redis] [HINCRBY] ", doErr.Error())
-		return 0, false
+	if err != nil {
+		return 0, fmt.Errorf("[Redis] %v", err)
 	}
 
 	count, ok := result.(int64)
 
 	if !ok {
-		LogErrorf("[Redis] [HINCRBY] invalid type assertion, result %v is %v", result, reflect.TypeOf(result))
-		return 0, false
+		return 0, fmt.Errorf("[Redis] invalid type assertion, result %v is %v", result, reflect.TypeOf(result))
 	}
 
-	return count, true
+	return count, nil
 }
 
 // list cmd
@@ -578,49 +551,47 @@ func (r *Redis) HIncrBy(key string, field interface{}, inc int) (int64, bool) {
  * LPUSH
  * @param key string
  * @param data interface{}
- * @return bool
+ * @return error
  */
-func (r *Redis) LPush(key string, data interface{}) bool {
+func (r *Redis) LPush(key string, data interface{}) error {
 	rc, err := getRedisConn()
 
 	if err != nil {
-		return false
+		return err
 	}
 
 	defer redisPool.Put(rc)
 
 	conn := rc.(ResourceConn).Conn
 
-	cacheData, jsonErr := json.Marshal(data)
+	cacheData, err := json.Marshal(data)
 
-	if jsonErr != nil {
-		LogError("[Redis] [LPUSH] ", jsonErr.Error())
-		return false
+	if err != nil {
+		return fmt.Errorf("[Redis] %v", err)
 	}
 
 	cacheKey := r.getKey(key)
 
-	_, doErr := conn.Do("LPUSH", cacheKey, cacheData)
+	_, err = conn.Do("LPUSH", cacheKey, cacheData)
 
-	if doErr != nil {
-		LogError("[Redis] [LPUSH] ", doErr.Error())
-		return false
+	if err != nil {
+		return fmt.Errorf("[Redis] %v", err)
 	}
 
-	return true
+	return nil
 }
 
 /**
  * LPOP
  * @param key string
  * @param data interface{} (指针)
- * @return bool
+ * @return error
  */
-func (r *Redis) LPop(key string, data interface{}) bool {
+func (r *Redis) LPop(key string, data interface{}) error {
 	rc, err := getRedisConn()
 
 	if err != nil {
-		return false
+		return err
 	}
 
 	defer redisPool.Put(rc)
@@ -629,74 +600,70 @@ func (r *Redis) LPop(key string, data interface{}) bool {
 
 	cacheKey := r.getKey(key)
 
-	cacheData, doErr := conn.Do("LPOP", cacheKey)
+	cacheData, err := conn.Do("LPOP", cacheKey)
 
-	if doErr != nil {
-		LogError("[Redis] [LPOP] ", doErr.Error())
-		return false
+	if err != nil {
+		return fmt.Errorf("[Redis] %v", err)
 	}
 
 	if cacheData == nil {
-		return false
+		return errors.New("[Redis] not found")
 	}
 
-	jsonErr := json.Unmarshal(cacheData.([]byte), data)
+	err = json.Unmarshal(cacheData.([]byte), data)
 
-	if jsonErr != nil {
-		LogError("[Redis] [LPOP] ", jsonErr.Error())
-		return false
+	if err != nil {
+		return fmt.Errorf("[Redis] %v", err)
 	}
 
-	return true
+	return nil
 }
 
 /**
  * RPUSH
  * @param key string
  * @param data interface{}
- * @return bool
+ * @return error
  */
-func (r *Redis) RPush(key string, data interface{}) bool {
+func (r *Redis) RPush(key string, data interface{}) error {
 	rc, err := getRedisConn()
 
 	if err != nil {
-		return false
+		return err
 	}
 
 	defer redisPool.Put(rc)
 
 	conn := rc.(ResourceConn).Conn
 
-	cacheData, jsonErr := json.Marshal(data)
+	cacheData, err := json.Marshal(data)
 
-	if jsonErr != nil {
-		LogError("[Redis] [RPUSH] ", jsonErr.Error())
-		return false
+	if err != nil {
+		return fmt.Errorf("[Redis] %v", err)
 	}
 
 	cacheKey := r.getKey(key)
 
-	_, doErr := conn.Do("RPUSH", cacheKey, cacheData)
+	_, err = conn.Do("RPUSH", cacheKey, cacheData)
 
-	if doErr != nil {
-		LogError("[Redis] [RPUSH] ", doErr.Error())
-		return false
+	if err != nil {
+		return fmt.Errorf("[Redis] %v", err)
 	}
 
-	return true
+	return nil
 }
 
 /**
  * RPOP
  * @param key string
  * @param data interface{} (指针)
- * @return bool
+ * @return error
  */
-func (r *Redis) RPop(key string, data interface{}) bool {
+func (r *Redis) RPop(key string, data interface{}) error {
 	rc, err := getRedisConn()
 
 	if err != nil {
-		return false
+		return err
 	}
 
 	defer redisPool.Put(rc)
@@ -705,37 +672,35 @@ func (r *Redis) RPop(key string, data interface{}) bool {
 
 	cacheKey := r.getKey(key)
 
-	cacheData, doErr := conn.Do("RPOP", cacheKey)
+	cacheData, err := conn.Do("RPOP", cacheKey)
 
-	if doErr != nil {
-		LogError("[Redis] [RPOP] ", doErr.Error())
-		return false
+	if err != nil {
+		return fmt.Errorf("[Redis] %v", err)
 	}
 
 	if cacheData == nil {
-		return false
+		return errors.New("[Redis] not found")
 	}
 
-	jsonErr := json.Unmarshal(cacheData.([]byte), data)
+	err = json.Unmarshal(cacheData.([]byte), data)
 
-	if jsonErr != nil {
-		LogError("[Redis] [RPOP] ", jsonErr.Error())
-		return false
+	if err != nil {
+		return fmt.Errorf("[Redis] %v", err)
 	}
 
-	return true
+	return nil
 }
 
 /**
  * LLEN
  * @param key string
- * return int64, bool
+ * return int64, error
  */
-func (r *Redis) LLen(key string) (int64, bool) {
+func (r *Redis) LLen(key string) (int64, error) {
 	rc, err := getRedisConn()
 
 	if err != nil {
-		return 0, false
+		return 0, err
 	}
 
 	defer redisPool.Put(rc)
@@ -744,21 +709,19 @@ func (r *Redis) LLen(key string) (int64, bool) {
 
 	cacheKey := r.getKey(key)
 
-	result, doErr := conn.Do("LLEN", cacheKey)
+	result, err := conn.Do("LLEN", cacheKey)
 
-	if doErr != nil {
-		LogError("[Redis] [LLEN] ", doErr.Error())
-		return 0, false
+	if err != nil {
+		return 0, fmt.Errorf("[Redis] %v", err)
 	}
 
 	count, ok := result.(int64)
 
 	if !ok {
-		LogErrorf("[Redis] [LLEN] invalid type assertion, result %v is %v", result, reflect.TypeOf(result))
-		return 0, false
+		return 0, fmt.Errorf("[Redis] invalid type assertion, result %v is %v", result, reflect.TypeOf(result))
 	}
 
-	return count, true
+	return count, nil
 }
 
 /**
@@ -767,13 +730,13 @@ func (r *Redis) LLen(key string) (int64, bool) {
  * @param start int
  * @param end int
  * @param data interface{} (切片指针)
- * @return bool
+ * @return error
  */
-func (r *Redis) LRange(key string, start int, end int, data interface{}) bool {
+func (r *Redis) LRange(key string, start int, end int, data interface{}) error {
 	rc, err := getRedisConn()
 
 	if err != nil {
-		return false
+		return err
 	}
 
 	defer redisPool.Put(rc)
@@ -782,15 +745,14 @@ func (r *Redis) LRange(key string, start int, end int, data interface{}) bool {
 
 	cacheKey := r.getKey(key)
 
-	cacheData, doErr := redis.ByteSlices(conn.Do("LRANGE", cacheKey, start, end))
+	cacheData, err := redis.ByteSlices(conn.Do("LRANGE", cacheKey, start, end))
 
-	if doErr != nil {
-		LogError("[Redis] [LRANGE] ", doErr.Error())
-		return false
+	if err != nil {
+		return fmt.Errorf("[Redis] %v", err)
 	}
 
 	if cacheData == nil {
-		return false
+		return errors.New("[Redis] not found")
 	}
 
 	if len(cacheData) > 0 {
@@ -803,11 +765,10 @@ func (r *Redis) LRange(key string, start int, end int, data interface{}) bool {
 			for _, v := range cacheData {
 				if v != nil {
 					elem := reflect.New(refValType).Elem()
-					jsonErr := json.Unmarshal(v, elem.Addr().Interface())
+					err := json.Unmarshal(v, elem.Addr().Interface())
 
-					if jsonErr != nil {
-						LogError("[Redis] [LRANGE] ", jsonErr.Error())
-						return false
+					if err != nil {
+						return fmt.Errorf("[Redis] %v", err)
 					}
 
 					refVal.Set(reflect.Append(refVal, elem))
@@ -816,7 +777,7 @@ func (r *Redis) LRange(key string, start int, end int, data interface{}) bool {
 		}
 	}
 
-	return true
+	return nil
 }
 
 // key cmd
@@ -824,13 +785,13 @@ func (r *Redis) LRange(key string, start int, end int, data interface{}) bool {
 /**
  * HMSET
  * @param key string
- * @return bool
+ * @return error
  */
-func (r *Redis) Del(key string) bool {
+func (r *Redis) Del(key string) error {
 	rc, err := getRedisConn()
 
 	if err != nil {
-		return false
+		return err
 	}
 
 	defer redisPool.Put(rc)
@@ -839,27 +800,26 @@ func (r *Redis) Del(key string) bool {
 
 	cacheKey := r.getKey(key)
 
-	_, doErr := conn.Do("DEL", cacheKey)
+	_, err = conn.Do("DEL", cacheKey)
 
-	if doErr != nil {
-		LogError("[Redis] [DEL] ", doErr.Error())
-		return false
+	if err != nil {
+		return fmt.Errorf("[Redis] %v", err)
 	}
 
-	return true
+	return nil
 }
 
 /**
  * EXPIRE
  * @param key string
  * @param time int
- * @return bool
+ * @return error
  */
-func (r *Redis) Expire(key string, time int) bool {
+func (r *Redis) Expire(key string, time int) error {
 	rc, err := getRedisConn()
 
 	if err != nil {
-		return false
+		return err
 	}
 
 	defer redisPool.Put(rc)
@@ -868,26 +828,25 @@ func (r *Redis) Expire(key string, time int) bool {
 
 	cacheKey := r.getKey(key)
 
-	_, doErr := conn.Do("EXPIRE", cacheKey, time)
+	_, err = conn.Do("EXPIRE", cacheKey, time)
 
-	if doErr != nil {
-		LogError("[Redis] [EXPIRE] ", doErr.Error())
-		return false
+	if err != nil {
+		return fmt.Errorf("[Redis] %v", err)
 	}
 
-	return true
+	return nil
 }
 
 /**
  * INCR
  * @param key string
- * @return int64, bool
+ * @return int64, error
  */
-func (r *Redis) Incr(key string) (int64, bool) {
+func (r *Redis) Incr(key string) (int64, error) {
 	rc, err := getRedisConn()
 
 	if err != nil {
-		return 0, false
+		return 0, err
 	}
 
 	defer redisPool.Put(rc)
@@ -896,34 +855,32 @@ func (r *Redis) Incr(key string) (int64, bool) {
 
 	cacheKey := r.getKey(key)
 
-	result, doErr := conn.Do("INCR", cacheKey)
+	result, err := conn.Do("INCR", cacheKey)
 
-	if doErr != nil {
-		LogError("[Redis] [INCR] ", doErr.Error())
-		return 0, false
+	if err != nil {
+		return 0, fmt.Errorf("[Redis] %v", err)
 	}
 
 	count, ok := result.(int64)
 
 	if !ok {
-		LogErrorf("[Redis] [INCR] invalid type assertion, result %v is %v", result, reflect.TypeOf(result))
-		return 0, false
+		return 0, fmt.Errorf("[Redis] invalid type assertion, result %v is %v", result, reflect.TypeOf(result))
 	}
 
-	return count, true
+	return count, nil
 }
 
 /**
  * INCRBY
  * @param key string
  * @param inc int
- * @return int64, bool
+ * @return int64, error
  */
-func (r *Redis) IncrBy(key string, inc int) (int64, bool) {
+func (r *Redis) IncrBy(key string, inc int) (int64, error) {
 	rc, err := getRedisConn()
 
 	if err != nil {
-		return 0, false
+		return 0, err
 	}
 
 	defer redisPool.Put(rc)
@@ -932,33 +889,31 @@ func (r *Redis) IncrBy(key string, inc int) (int64, bool) {
 
 	cacheKey := r.getKey(key)
 
-	result, doErr := conn.Do("INCRBY", cacheKey, inc)
+	result, err := conn.Do("INCRBY", cacheKey, inc)
 
-	if doErr != nil {
-		LogError("[Redis] [INCRBY] ", doErr.Error())
-		return 0, false
+	if err != nil {
+		return 0, fmt.Errorf("[Redis] %v", err)
 	}
 
 	count, ok := result.(int64)
 
 	if !ok {
-		LogErrorf("[Redis] [INCRBY] invalid type assertion, result %v is %v", result, reflect.TypeOf(result))
-		return 0, false
+		return 0, fmt.Errorf("[Redis] invalid type assertion, result %v is %v", result, reflect.TypeOf(result))
 	}
 
-	return count, true
+	return count, nil
 }
 
 /**
  * DECR
  * @param key string
- * @return int64, bool
+ * @return int64, error
  */
-func (r *Redis) Decr(key string) (int64, bool) {
+func (r *Redis) Decr(key string) (int64, error) {
 	rc, err := getRedisConn()
 
 	if err != nil {
-		return 0, false
+		return 0, err
 	}
 
 	defer redisPool.Put(rc)
@@ -967,34 +922,32 @@ func (r *Redis) Decr(key string) (int64, bool) {
 
 	cacheKey := r.getKey(key)
 
-	result, doErr := conn.Do("DECR", cacheKey)
+	result, err := conn.Do("DECR", cacheKey)
 
-	if doErr != nil {
-		LogError("[Redis] [DECR] ", doErr.Error())
-		return 0, false
+	if err != nil {
+		return 0, fmt.Errorf("[Redis] %v", err)
 	}
 
 	count, ok := result.(int64)
 
 	if !ok {
-		LogErrorf("[Redis] [DECR] invalid type assertion, result %v is %v", result, reflect.TypeOf(result))
-		return 0, false
+		return 0, fmt.Errorf("[Redis] invalid type assertion, result %v is %v", result, reflect.TypeOf(result))
 	}
 
-	return count, true
+	return count, nil
 }
 
 /**
  * DECRBY
  * @param key string
  * @param inc int
- * @return int64, bool
+ * @return int64, error
  */
-func (r *Redis) DecrBy(key string, inc int) (int64, bool) {
+func (r *Redis) DecrBy(key string, inc int) (int64, error) {
 	rc, err := getRedisConn()
 
 	if err != nil {
-		return 0, false
+		return 0, err
 	}
 
 	defer redisPool.Put(rc)
@@ -1003,19 +956,17 @@ func (r *Redis) DecrBy(key string, inc int) (int64, bool) {
 
 	cacheKey := r.getKey(key)
 
-	result, doErr := conn.Do("DECRBY", cacheKey, inc)
+	result, err := conn.Do("DECRBY", cacheKey, inc)
 
-	if doErr != nil {
-		LogError("[Redis] [DECRBY] ", doErr.Error())
-		return 0, false
+	if err != nil {
+		return 0, fmt.Errorf("[Redis] %v", err)
 	}
 
 	count, ok := result.(int64)
 
 	if !ok {
-		LogErrorf("[Redis] [DECRBY] invalid type assertion, result %v is %v", result, reflect.TypeOf(result))
-		return 0, false
+		return 0, fmt.Errorf("[Redis] invalid type assertion, result %v is %v", result, reflect.TypeOf(result))
 	}
 
-	return count, true
+	return count, nil
 }

@@ -11,7 +11,7 @@ var env *ini.File
 /**
  * 加载ENV配置
  */
-func loadEnv(path string) {
+func loadEnv(path string) error {
 	var err error
 
 	abs, _ := filepath.Abs(path)
@@ -19,11 +19,12 @@ func loadEnv(path string) {
 	env, err = ini.Load(abs)
 
 	if err != nil {
-		LogCritical(err.Error())
-		panic(err)
+		return err
 	}
 
 	env.BlockMode = false
+
+	return nil
 }
 
 /**

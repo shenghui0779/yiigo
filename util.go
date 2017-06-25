@@ -6,7 +6,7 @@ import "github.com/gin-gonic/gin"
 type X map[string]interface{}
 
 /**
- * API返回成功
+ * ReturnSuccess API返回成功
  * @param data ...interface{} 返回的数据
  */
 func ReturnSuccess(c *gin.Context, data ...interface{}) {
@@ -23,7 +23,7 @@ func ReturnSuccess(c *gin.Context, data ...interface{}) {
 }
 
 /**
- * API返回失败
+ * ReturnFailed API返回失败
  * @param data ...interface{} 返回的数据
  */
 func ReturnFailed(c *gin.Context, data ...interface{}) {
@@ -40,7 +40,7 @@ func ReturnFailed(c *gin.Context, data ...interface{}) {
 }
 
 /**
- * API返回JSON数据
+ * ReturnJson API返回JSON数据
  * @param c *gin.Context
  * @param code int 返回的 Code
  * @param msg string 返回的 Message
