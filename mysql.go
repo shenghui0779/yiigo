@@ -1,6 +1,7 @@
 package yiigo
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -43,7 +44,7 @@ func initMySQL(sections ...string) error {
 		if err != nil {
 			db.Close()
 
-			return fmt.Errorf("[MySQL] %v", err)
+			return err
 		}
 
 		db.SetMaxOpenConns(GetEnvInt("db", "maxOpenConns", 20))
@@ -54,7 +55,7 @@ func initMySQL(sections ...string) error {
 		if err != nil {
 			db.Close()
 
-			return fmt.Errorf("[MySQL] %v", err)
+			return err
 		}
 
 		dbmap[v] = db
@@ -77,7 +78,7 @@ func (m *MySQL) getDB() (*sqlx.DB, error) {
 	db, ok := dbmap[dbname]
 
 	if !ok {
-		return nil, fmt.Errorf("[MySQL] database %s connected failed", dbname)
+		return nil, fmt.Errorf("database %s is not initialized", dbname)
 	}
 
 	return db, nil
@@ -115,13 +116,13 @@ func (m *MySQL) Insert(data X) (int64, error) {
 	result, err := db.Exec(sql, binds...)
 
 	if err != nil {
-		return 0, fmt.Errorf("[MySQL] %v, %s, args: %v", err, sql, binds)
+		return 0, fmt.Errorf("%v, %s, args: %v", err, sql, binds)
 	}
 
 	id, err := result.LastInsertId()
 
 	if err != nil {
-		return 0, fmt.Errorf("[MySQL] %v, %s, args: %v", err, sql, binds)
+		return 0, fmt.Errorf("%v, %s, args: %v", err, sql, binds)
 	}
 
 	return id, nil
@@ -144,13 +145,13 @@ func (m *MySQL) BatchInsert(columns []string, data []X) (int64, error) {
 	result, err := db.Exec(sql, binds...)
 
 	if err != nil {
-		return 0, fmt.Errorf("[MySQL] %v, %s, args: %v", err, sql, binds)
+		return 0, fmt.Errorf("%v, %s, args: %v", err, sql, binds)
 	}
 
 	rows, err := result.RowsAffected()
 
 	if err != nil {
-		return 0, fmt.Errorf("[MySQL] %v, %s, args: %v", err, sql, binds)
+		return 0, fmt.Errorf("%v, %s, args: %v", err, sql, binds)
 	}
 
 	return rows, nil
@@ -177,19 +178,19 @@ func (m *MySQL) Update(query X, data X) (int64, error) {
 	_sql, args, err := sqlx.In(sql, binds...)
 
 	if err != nil {
-		return 0, fmt.Errorf("[MySQL] %v, %s, args: %v", err, sql, binds)
+		return 0, fmt.Errorf("%v, %s, args: %v", err, sql, binds)
 	}
 
 	result, err := db.Exec(_sql, args...)
 
 	if err != nil {
-		return 0, fmt.Errorf("[MySQL] %v, %s, args: %v", err, _sql, args)
+		return 0, fmt.Errorf("%v, %s, args: %v", err, _sql, args)
 	}
 
 	rows, err := result.RowsAffected()
 
 	if err != nil {
-		return 0, fmt.Errorf("[MySQL] %v, %s, args: %v", err, _sql, args)
+		return 0, fmt.Errorf("%v, %s, args: %v", err, _sql, args)
 	}
 
 	return rows, nil
@@ -222,14 +223,14 @@ func (m *MySQL) Count(query X, columns ...string) (int, error) {
 	_sql, args, err := sqlx.In(sql, binds...)
 
 	if err != nil {
-		return 0, fmt.Errorf("[MySQL] %v, %s, args: %v", err, sql, binds)
+		return 0, fmt.Errorf("%v, %s, args: %v", err, sql, binds)
 	}
 
 	count := 0
 	err = db.Get(&count, _sql, args...)
 
-	if err != nil && err.Error() != "sql: no rows in result set" {
-		return 0, fmt.Errorf("[MySQL] %v, %s, args: %v", err, sql, binds)
+	if err != nil {
+		return 0, fmt.Errorf("%v, %s, args: %v", err, sql, binds)
 	}
 
 	return count, nil
@@ -260,13 +261,17 @@ func (m *MySQL) FindOne(query X, data interface{}) error {
 	_sql, args, err := sqlx.In(sql, binds...)
 
 	if err != nil {
-		return fmt.Errorf("[MySQL] %v, %s, args: %v", err, sql, binds)
+		return fmt.Errorf("%v, %s, args: %v", err, sql, binds)
 	}
 
 	err = db.Get(data, _sql, args...)
 
-	if err != nil && err.Error() != "sql: no rows in result set" {
-		return fmt.Errorf("[MySQL] %v, %s, args: %v", err, _sql, args)
+	if err != nil {
+		if err.Error() == "sql: no rows in result set" {
+			return errors.New("not found")
+		}
+
+		return fmt.Errorf("%v, %s, args: %v", err, _sql, args)
 	}
 
 	return nil
@@ -299,13 +304,13 @@ func (m *MySQL) Find(query X, data interface{}) error {
 	_sql, args, err := sqlx.In(sql, binds...)
 
 	if err != nil {
-		return fmt.Errorf("[MySQL] %v, %s, args: %v", err, sql, binds)
+		return fmt.Errorf("%v, %s, args: %v", err, sql, binds)
 	}
 
 	err = db.Select(data, _sql, args...)
 
-	if err != nil && err.Error() != "sql: no rows in result set" {
-		return fmt.Errorf("[MySQL] %v, %s, args: %v", err, _sql, args)
+	if err != nil {
+		return fmt.Errorf("%v, %s, args: %v", err, _sql, args)
 	}
 
 	return nil
@@ -333,8 +338,8 @@ func (m *MySQL) FindAll(data interface{}, columns ...string) error {
 	sql, binds := m.buildQuery(query)
 	err = db.Select(data, sql, binds...)
 
-	if err != nil && err.Error() != "sql: no rows in result set" {
-		return fmt.Errorf("[MySQL] %v, %s, args: %v", err, sql, binds)
+	if err != nil {
+		return fmt.Errorf("%v, %s, args: %v", err, sql, binds)
 	}
 
 	return nil
@@ -360,19 +365,19 @@ func (m *MySQL) Delete(query X) (int64, error) {
 	_sql, args, err := sqlx.In(sql, binds...)
 
 	if err != nil {
-		return 0, fmt.Errorf("[MySQL] %v, %s, args: %v", err, sql, binds)
+		return 0, fmt.Errorf("%v, %s, args: %v", err, sql, binds)
 	}
 
 	result, err := db.Exec(_sql, args...)
 
 	if err != nil {
-		return 0, fmt.Errorf("[MySQL] %v, %s, args: %v", err, _sql, args)
+		return 0, fmt.Errorf("%v, %s, args: %v", err, _sql, args)
 	}
 
 	rows, err := result.RowsAffected()
 
 	if err != nil {
-		return 0, fmt.Errorf("[MySQL] %v, %s, args: %v", err, _sql, args)
+		return 0, fmt.Errorf("%v, %s, args: %v", err, _sql, args)
 	}
 
 	return rows, nil
@@ -423,7 +428,7 @@ func (m *MySQL) DoTransactions(operations []X) error {
 	tx, err := db.Begin()
 
 	if err != nil {
-		return fmt.Errorf("[MySQL] %v", err.Error)
+		return err
 	}
 
 	errSQL := ""
@@ -535,7 +540,7 @@ func (m *MySQL) DoTransactions(operations []X) error {
 	if err != nil {
 		tx.Rollback()
 
-		return fmt.Errorf("[MySQL] %v, %s, args: %v", err, errSQL, errArgs)
+		return fmt.Errorf("%v, %s, args: %v", err, errSQL, errArgs)
 	}
 
 	tx.Commit()

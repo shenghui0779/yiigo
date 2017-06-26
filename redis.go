@@ -66,7 +66,7 @@ func dialRedis() (redis.Conn, error) {
 	conn, err := redis.DialTimeout("tcp", dsn, time.Duration(connectTimeout)*time.Millisecond, time.Duration(readTimeout)*time.Millisecond, time.Duration(writeTimeout)*time.Millisecond)
 
 	if err != nil {
-		return nil, fmt.Errorf("[Redis] %v", err)
+		return nil, err
 	}
 
 	return conn, nil
@@ -78,7 +78,7 @@ func dialRedis() (redis.Conn, error) {
  */
 func getRedisConn() (pools.Resource, error) {
 	if redisPool == nil {
-		return nil, errors.New("[Redis] redis pool is empty")
+		return nil, errors.New("redis pool is empty")
 	}
 
 	if redisPool.IsClosed() {
@@ -89,7 +89,7 @@ func getRedisConn() (pools.Resource, error) {
 	rc, err := redisPool.Get(ctx)
 
 	if err != nil {
-		return nil, fmt.Errorf("[Redis] %v", err)
+		return nil, err
 	}
 
 	return rc, err
@@ -127,7 +127,7 @@ func (r *Redis) Set(key string, data interface{}) error {
 	cacheData, err := json.Marshal(data)
 
 	if err != nil {
-		return fmt.Errorf("[Redis] %v", err)
+		return err
 	}
 
 	cacheKey := r.getKey(key)
@@ -135,7 +135,7 @@ func (r *Redis) Set(key string, data interface{}) error {
 	_, err = conn.Do("SET", cacheKey, cacheData)
 
 	if err != nil {
-		return fmt.Errorf("[Redis] %v", err)
+		return err
 	}
 
 	return nil
@@ -163,7 +163,7 @@ func (r *Redis) MSet(data map[string]interface{}) error {
 		cacheData, err := json.Marshal(v)
 
 		if err != nil {
-			return fmt.Errorf("[Redis] %v", err)
+			return err
 		}
 
 		args = append(args, r.getKey(k), cacheData)
@@ -172,7 +172,7 @@ func (r *Redis) MSet(data map[string]interface{}) error {
 	_, err = conn.Do("MSET", args...)
 
 	if err != nil {
-		return fmt.Errorf("[Redis] %v", err)
+		return err
 	}
 
 	return nil
@@ -200,17 +200,17 @@ func (r *Redis) Get(key string, data interface{}) error {
 	cacheData, err := conn.Do("GET", cacheKey)
 
 	if err != nil {
-		return fmt.Errorf("[Redis] %v", err)
+		return err
 	}
 
 	if cacheData == nil {
-		return errors.New("[Redis] not found")
+		return errors.New("not found")
 	}
 
 	err = json.Unmarshal(cacheData.([]byte), data)
 
 	if err != nil {
-		return fmt.Errorf("[Redis] %v", err)
+		return err
 	}
 
 	return nil
@@ -242,11 +242,11 @@ func (r *Redis) MGet(keys []string, data interface{}) error {
 	cacheData, err := redis.ByteSlices(conn.Do("MGET", args...))
 
 	if err != nil {
-		return fmt.Errorf("[Redis] %v", err)
+		return err
 	}
 
 	if cacheData == nil {
-		return errors.New("[Redis] not found")
+		return errors.New("not found")
 	}
 
 	if len(cacheData) > 0 {
@@ -262,7 +262,7 @@ func (r *Redis) MGet(keys []string, data interface{}) error {
 					err := json.Unmarshal(v, elem.Addr().Interface())
 
 					if err != nil {
-						return fmt.Errorf("[Redis] %v", err)
+						return err
 					}
 
 					refVal.Set(reflect.Append(refVal, elem))
@@ -297,7 +297,7 @@ func (r *Redis) HSet(key string, field interface{}, data interface{}) error {
 	cacheData, err := json.Marshal(data)
 
 	if err != nil {
-		return fmt.Errorf("[Redis] %v", err)
+		return err
 	}
 
 	cacheKey := r.getKey(key)
@@ -305,7 +305,7 @@ func (r *Redis) HSet(key string, field interface{}, data interface{}) error {
 	_, err = conn.Do("HSET", cacheKey, field, cacheData)
 
 	if err != nil {
-		return fmt.Errorf("[Redis] %v", err)
+		return err
 	}
 
 	return nil
@@ -335,7 +335,7 @@ func (r *Redis) HMSet(key string, data map[interface{}]interface{}) error {
 		cacheData, err := json.Marshal(v)
 
 		if err != nil {
-			return fmt.Errorf("[Redis] %v", err)
+			return err
 		}
 
 		args = append(args, field, cacheData)
@@ -344,7 +344,7 @@ func (r *Redis) HMSet(key string, data map[interface{}]interface{}) error {
 	_, err = conn.Do("HMSet", args...)
 
 	if err != nil {
-		return fmt.Errorf("[Redis] %v", err)
+		return err
 	}
 
 	return nil
@@ -373,17 +373,17 @@ func (r *Redis) HGet(key string, field interface{}, data interface{}) error {
 	cacheData, err := conn.Do("HGET", cacheKey, field)
 
 	if err != nil {
-		return fmt.Errorf("[Redis] %v", err)
+		return err
 	}
 
 	if cacheData == nil {
-		return errors.New("[Redis] not found")
+		return errors.New("not found")
 	}
 
 	err = json.Unmarshal(cacheData.([]byte), data)
 
 	if err != nil {
-		return fmt.Errorf("[Redis] %v", err)
+		return err
 	}
 
 	return nil
@@ -417,11 +417,11 @@ func (r *Redis) HMGet(key string, fields []interface{}, data interface{}) error 
 	cacheData, err := redis.ByteSlices(conn.Do("HMGET", args...))
 
 	if err != nil {
-		return fmt.Errorf("[Redis] %v", err)
+		return err
 	}
 
 	if cacheData == nil {
-		return errors.New("[Redis] not found")
+		return errors.New("not found")
 	}
 
 	if len(cacheData) > 0 {
@@ -437,7 +437,7 @@ func (r *Redis) HMGet(key string, fields []interface{}, data interface{}) error 
 					err := json.Unmarshal(v, elem.Addr().Interface())
 
 					if err != nil {
-						return fmt.Errorf("[Redis] %v", err)
+						return err
 					}
 
 					refVal.Set(reflect.Append(refVal, elem))
@@ -471,7 +471,7 @@ func (r *Redis) HDel(key string, field interface{}) error {
 	_, err = conn.Do("HDEL", cacheKey, field)
 
 	if err != nil {
-		return fmt.Errorf("[Redis] %v", err)
+		return err
 	}
 
 	return nil
@@ -498,13 +498,13 @@ func (r *Redis) HLen(key string) (int64, error) {
 	result, err := conn.Do("HLEN", cacheKey)
 
 	if err != nil {
-		return 0, fmt.Errorf("[Redis] %v", err)
+		return 0, err
 	}
 
 	count, ok := result.(int64)
 
 	if !ok {
-		return 0, fmt.Errorf("[Redis] invalid type assertion, result %v is %v", result, reflect.TypeOf(result))
+		return 0, fmt.Errorf("invalid type assertion, result %v is %v", result, reflect.TypeOf(result))
 	}
 
 	return count, nil
@@ -533,13 +533,13 @@ func (r *Redis) HIncrBy(key string, field interface{}, inc int) (int64, error) {
 	result, err := conn.Do("HINCRBY", cacheKey, field, inc)
 
 	if err != nil {
-		return 0, fmt.Errorf("[Redis] %v", err)
+		return 0, err
 	}
 
 	count, ok := result.(int64)
 
 	if !ok {
-		return 0, fmt.Errorf("[Redis] invalid type assertion, result %v is %v", result, reflect.TypeOf(result))
+		return 0, fmt.Errorf("invalid type assertion, result %v is %v", result, reflect.TypeOf(result))
 	}
 
 	return count, nil
@@ -567,7 +567,7 @@ func (r *Redis) LPush(key string, data interface{}) error {
 	cacheData, err := json.Marshal(data)
 
 	if err != nil {
-		return fmt.Errorf("[Redis] %v", err)
+		return err
 	}
 
 	cacheKey := r.getKey(key)
@@ -575,7 +575,7 @@ func (r *Redis) LPush(key string, data interface{}) error {
 	_, err = conn.Do("LPUSH", cacheKey, cacheData)
 
 	if err != nil {
-		return fmt.Errorf("[Redis] %v", err)
+		return err
 	}
 
 	return nil
@@ -603,17 +603,17 @@ func (r *Redis) LPop(key string, data interface{}) error {
 	cacheData, err := conn.Do("LPOP", cacheKey)
 
 	if err != nil {
-		return fmt.Errorf("[Redis] %v", err)
+		return err
 	}
 
 	if cacheData == nil {
-		return errors.New("[Redis] not found")
+		return errors.New("not found")
 	}
 
 	err = json.Unmarshal(cacheData.([]byte), data)
 
 	if err != nil {
-		return fmt.Errorf("[Redis] %v", err)
+		return err
 	}
 
 	return nil
@@ -639,7 +639,7 @@ func (r *Redis) RPush(key string, data interface{}) error {
 	cacheData, err := json.Marshal(data)
 
 	if err != nil {
-		return fmt.Errorf("[Redis] %v", err)
+		return err
 	}
 
 	cacheKey := r.getKey(key)
@@ -647,7 +647,7 @@ func (r *Redis) RPush(key string, data interface{}) error {
 	_, err = conn.Do("RPUSH", cacheKey, cacheData)
 
 	if err != nil {
-		return fmt.Errorf("[Redis] %v", err)
+		return err
 	}
 
 	return nil
@@ -675,17 +675,17 @@ func (r *Redis) RPop(key string, data interface{}) error {
 	cacheData, err := conn.Do("RPOP", cacheKey)
 
 	if err != nil {
-		return fmt.Errorf("[Redis] %v", err)
+		return err
 	}
 
 	if cacheData == nil {
-		return errors.New("[Redis] not found")
+		return errors.New("not found")
 	}
 
 	err = json.Unmarshal(cacheData.([]byte), data)
 
 	if err != nil {
-		return fmt.Errorf("[Redis] %v", err)
+		return err
 	}
 
 	return nil
@@ -712,13 +712,13 @@ func (r *Redis) LLen(key string) (int64, error) {
 	result, err := conn.Do("LLEN", cacheKey)
 
 	if err != nil {
-		return 0, fmt.Errorf("[Redis] %v", err)
+		return 0, err
 	}
 
 	count, ok := result.(int64)
 
 	if !ok {
-		return 0, fmt.Errorf("[Redis] invalid type assertion, result %v is %v", result, reflect.TypeOf(result))
+		return 0, fmt.Errorf("invalid type assertion, result %v is %v", result, reflect.TypeOf(result))
 	}
 
 	return count, nil
@@ -748,11 +748,11 @@ func (r *Redis) LRange(key string, start int, end int, data interface{}) error {
 	cacheData, err := redis.ByteSlices(conn.Do("LRANGE", cacheKey, start, end))
 
 	if err != nil {
-		return fmt.Errorf("[Redis] %v", err)
+		return err
 	}
 
 	if cacheData == nil {
-		return errors.New("[Redis] not found")
+		return errors.New("not found")
 	}
 
 	if len(cacheData) > 0 {
@@ -768,7 +768,7 @@ func (r *Redis) LRange(key string, start int, end int, data interface{}) error {
 					err := json.Unmarshal(v, elem.Addr().Interface())
 
 					if err != nil {
-						return fmt.Errorf("[Redis] %v", err)
+						return err
 					}
 
 					refVal.Set(reflect.Append(refVal, elem))
@@ -803,7 +803,7 @@ func (r *Redis) Del(key string) error {
 	_, err = conn.Do("DEL", cacheKey)
 
 	if err != nil {
-		return fmt.Errorf("[Redis] %v", err)
+		return err
 	}
 
 	return nil
@@ -831,7 +831,7 @@ func (r *Redis) Expire(key string, time int) error {
 	_, err = conn.Do("EXPIRE", cacheKey, time)
 
 	if err != nil {
-		return fmt.Errorf("[Redis] %v", err)
+		return err
 	}
 
 	return nil
@@ -858,13 +858,13 @@ func (r *Redis) Incr(key string) (int64, error) {
 	result, err := conn.Do("INCR", cacheKey)
 
 	if err != nil {
-		return 0, fmt.Errorf("[Redis] %v", err)
+		return 0, err
 	}
 
 	count, ok := result.(int64)
 
 	if !ok {
-		return 0, fmt.Errorf("[Redis] invalid type assertion, result %v is %v", result, reflect.TypeOf(result))
+		return 0, fmt.Errorf("invalid type assertion, result %v is %v", result, reflect.TypeOf(result))
 	}
 
 	return count, nil
@@ -892,13 +892,13 @@ func (r *Redis) IncrBy(key string, inc int) (int64, error) {
 	result, err := conn.Do("INCRBY", cacheKey, inc)
 
 	if err != nil {
-		return 0, fmt.Errorf("[Redis] %v", err)
+		return 0, err
 	}
 
 	count, ok := result.(int64)
 
 	if !ok {
-		return 0, fmt.Errorf("[Redis] invalid type assertion, result %v is %v", result, reflect.TypeOf(result))
+		return 0, fmt.Errorf("invalid type assertion, result %v is %v", result, reflect.TypeOf(result))
 	}
 
 	return count, nil
@@ -925,13 +925,13 @@ func (r *Redis) Decr(key string) (int64, error) {
 	result, err := conn.Do("DECR", cacheKey)
 
 	if err != nil {
-		return 0, fmt.Errorf("[Redis] %v", err)
+		return 0, err
 	}
 
 	count, ok := result.(int64)
 
 	if !ok {
-		return 0, fmt.Errorf("[Redis] invalid type assertion, result %v is %v", result, reflect.TypeOf(result))
+		return 0, fmt.Errorf("invalid type assertion, result %v is %v", result, reflect.TypeOf(result))
 	}
 
 	return count, nil
@@ -959,13 +959,13 @@ func (r *Redis) DecrBy(key string, inc int) (int64, error) {
 	result, err := conn.Do("DECRBY", cacheKey, inc)
 
 	if err != nil {
-		return 0, fmt.Errorf("[Redis] %v", err)
+		return 0, err
 	}
 
 	count, ok := result.(int64)
 
 	if !ok {
-		return 0, fmt.Errorf("[Redis] invalid type assertion, result %v is %v", result, reflect.TypeOf(result))
+		return 0, fmt.Errorf("invalid type assertion, result %v is %v", result, reflect.TypeOf(result))
 	}
 
 	return count, nil
