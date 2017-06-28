@@ -3,7 +3,6 @@ package yiigo
 type Bootstrap struct {
 	Env   string
 	Log   string
-	MySQL []string
 	Mongo bool
 	Redis bool
 }
@@ -13,7 +12,6 @@ func New() *Bootstrap {
 	return &Bootstrap{
 		Env:   "env.ini",
 		Log:   "log.xml",
-		MySQL: []string{"mysql"},
 		Mongo: false,
 		Redis: false,
 	}
@@ -27,11 +25,6 @@ func (b *Bootstrap) SetEnv(path string) {
 // SetLog 设置log配置文件
 func (b *Bootstrap) SetLog(path string) {
 	b.Log = path
-}
-
-// SetMySQL 设置mysql配置
-func (b *Bootstrap) SetMySQL(sections ...string) {
-	b.MySQL = append(b.MySQL, sections...)
 }
 
 // EnableMongo 启用mongo
@@ -52,7 +45,7 @@ func (b *Bootstrap) Run() error {
 		return err
 	}
 
-	if err := initMySQL(b.MySQL...); err != nil {
+	if err := initMySQL(); err != nil {
 		return err
 	}
 

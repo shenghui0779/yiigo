@@ -10,8 +10,8 @@ import (
 )
 
 type MySQL struct {
-	DB    string
-	Table string
+	Connection string
+	Table      string
 }
 
 var dbmap map[string]*sqlx.DB
@@ -24,12 +24,12 @@ type expr struct {
 
 /**
  * 初始化DB
- * @param sections ...string 数据库配置名称
  */
-func initMySQL(sections ...string) error {
+func initMySQL() error {
 	dbmap = make(map[string]*sqlx.DB)
+	sections := getChildSections("mysql")
 
-	for _, v := range sections {
+	for k, v := range sections {
 		host := GetEnvString(v, "host", "localhost")
 		port := GetEnvInt(v, "port", 3306)
 		username := GetEnvString(v, "username", "root")
@@ -47,8 +47,8 @@ func initMySQL(sections ...string) error {
 			return err
 		}
 
-		db.SetMaxOpenConns(GetEnvInt("db", "maxOpenConns", 20))
-		db.SetMaxIdleConns(GetEnvInt("db", "maxIdleConns", 10))
+		db.SetMaxOpenConns(GetEnvInt(v, "maxOpenConns", 20))
+		db.SetMaxIdleConns(GetEnvInt(v, "maxIdleConns", 10))
 
 		err = db.Ping()
 
@@ -58,7 +58,7 @@ func initMySQL(sections ...string) error {
 			return err
 		}
 
-		dbmap[v] = db
+		dbmap[k] = db
 	}
 
 	return nil
@@ -69,16 +69,16 @@ func initMySQL(sections ...string) error {
  * @return *sqlx.DB
  */
 func (m *MySQL) getDB() (*sqlx.DB, error) {
-	dbname := m.DB
+	connection := m.Connection
 
-	if dbname == "" {
-		dbname = "mysql"
+	if connection == "" {
+		connection = "default"
 	}
 
-	db, ok := dbmap[dbname]
+	db, ok := dbmap[connection]
 
 	if !ok {
-		return nil, fmt.Errorf("database %s is not initialized", dbname)
+		return nil, fmt.Errorf("database %s is not connected", connection)
 	}
 
 	return db, nil
@@ -89,13 +89,13 @@ func (m *MySQL) getDB() (*sqlx.DB, error) {
  * @return string
  */
 func (m *MySQL) getPrefix() string {
-	dbname := m.DB
+	connection := m.Connection
 
-	if dbname == "" {
-		dbname = "mysql"
+	if connection == "" {
+		connection = "default"
 	}
 
-	prefix := GetEnvString(dbname, "prefix", "")
+	prefix := GetEnvString(fmt.Sprintf("mysql.%s", connection), "prefix", "")
 
 	return prefix
 }
