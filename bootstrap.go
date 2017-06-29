@@ -38,7 +38,7 @@ func (b *Bootstrap) EnableRedis() {
 }
 
 // Run 启动yiigo组件
-func (b *Bootstrap) Run() error {
+func (b *Bootstrap) Bootstrap() error {
 	initLogger(b.Log)
 
 	if err := loadEnv(b.Env); err != nil {
