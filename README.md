@@ -16,9 +16,10 @@ import "github.com/iiinsomnia/yiigo"
 
 func main() {
     b := yiigo.New()
+
 	b.EnableMongo() // 启用mongo
 	b.EnableRedis() // 启用redis
-	b.Run()
+	b.Bootstrap()
 }
 ```
 
