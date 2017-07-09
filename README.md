@@ -1,13 +1,13 @@
 # yiigo
 Golang集成常用类库并封装，用于API开发和爬虫，支持多数据库连接
 
-## 获取：
+## 获取
 
 ```go
 go get github.com/iiinsomnia/yiigo
 ```
 
-## 使用：
+## 使用
 
 ```go
 package main
@@ -31,7 +31,10 @@ yiigo.SetEnv("myenv.ini")
 yiigo.SetLog("mylog.xml")
 ```
 
-## 说明：
+## 说明
+* 在 `main.go` 所在目录创建环境和日志配置文件
+	- yiigo/env.ini.example -> env.ini
+	- yiigo/log.xml.example -> log.xml
 * 目前数据库仅针对MySQL封装，多数据库连接只需在`ini`文件中配置多个即可
 * code.google.com 上 go get 不下来的库，可以在这里[获取](https://github.com/golang)
 * 如爬虫不需要模拟登录，则只需要使用 [goquery](https://github.com/PuerkitoBio/goquery) 即可
