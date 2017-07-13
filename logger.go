@@ -1,9 +1,8 @@
 package yiigo
 
 import (
-	"fmt"
 	"path/filepath"
-	"runtime"
+	"runtime/debug"
 
 	"github.com/cihub/seelog"
 )
@@ -27,17 +26,7 @@ func initLogger(path string) {
  * @param msg ...interface{}
  */
 func LogDebug(msg ...interface{}) {
-	debugMsg := []interface{}{}
-
-	_, file, line, ok := runtime.Caller(1)
-
-	if ok {
-		debugMsg = append(debugMsg, fmt.Sprintf("[%s:%d] ", file, line))
-	}
-
-	debugMsg = append(debugMsg, msg...)
-
-	seelog.Debug(debugMsg...)
+	seelog.Debug(msg...)
 	seelog.Flush()
 }
 
@@ -46,17 +35,7 @@ func LogDebug(msg ...interface{}) {
  * @param msg ...interface{}
  */
 func LogInfo(msg ...interface{}) {
-	infoMsg := []interface{}{}
-
-	_, file, line, ok := runtime.Caller(1)
-
-	if ok {
-		infoMsg = append(infoMsg, fmt.Sprintf("[%s:%d] ", file, line))
-	}
-
-	infoMsg = append(infoMsg, msg...)
-
-	seelog.Info(infoMsg...)
+	seelog.Info(msg...)
 	seelog.Flush()
 }
 
@@ -65,17 +44,7 @@ func LogInfo(msg ...interface{}) {
  * @param msg ...interface{}
  */
 func LogWarn(msg ...interface{}) {
-	warnMsg := []interface{}{}
-
-	_, file, line, ok := runtime.Caller(1)
-
-	if ok {
-		warnMsg = append(warnMsg, fmt.Sprintf("[%s:%d] ", file, line))
-	}
-
-	warnMsg = append(warnMsg, msg...)
-
-	seelog.Warn(warnMsg...)
+	seelog.Warn(msg...)
 	seelog.Flush()
 }
 
@@ -84,17 +53,9 @@ func LogWarn(msg ...interface{}) {
  * @param msg ...interface{}
  */
 func LogError(msg ...interface{}) {
-	errorMsg := []interface{}{}
+	msg = append(msg, "\n", string(debug.Stack()))
 
-	_, file, line, ok := runtime.Caller(1)
-
-	if ok {
-		errorMsg = append(errorMsg, fmt.Sprintf("[%s:%d] ", file, line))
-	}
-
-	errorMsg = append(errorMsg, msg...)
-
-	seelog.Error(errorMsg...)
+	seelog.Error(msg...)
 	seelog.Flush()
 }
 
@@ -103,17 +64,9 @@ func LogError(msg ...interface{}) {
  * @param msg ...interface{}
  */
 func LogCritical(msg ...interface{}) {
-	criticalMsg := []interface{}{}
+	msg = append(msg, "\n", string(debug.Stack()))
 
-	_, file, line, ok := runtime.Caller(1)
-
-	if ok {
-		criticalMsg = append(criticalMsg, fmt.Sprintf("[%s:%d] ", file, line))
-	}
-
-	criticalMsg = append(criticalMsg, msg...)
-
-	seelog.Critical(criticalMsg...)
+	seelog.Critical(msg...)
 	seelog.Flush()
 }
 
@@ -123,18 +76,7 @@ func LogCritical(msg ...interface{}) {
  * @param params ...interface{}
  */
 func LogDebugf(format string, params ...interface{}) {
-	debugParams := []interface{}{}
-
-	_, file, line, ok := runtime.Caller(1)
-
-	if ok {
-		debugParams = append(debugParams, file, line)
-	}
-
-	debugParams = append(debugParams, params...)
-	format = "[%s:%d] " + format
-
-	seelog.Debugf(format, debugParams...)
+	seelog.Debugf(format, params...)
 	seelog.Flush()
 }
 
@@ -144,18 +86,7 @@ func LogDebugf(format string, params ...interface{}) {
  * @param params ...interface{}
  */
 func LogInfof(format string, params ...interface{}) {
-	infoParams := []interface{}{}
-
-	_, file, line, ok := runtime.Caller(1)
-
-	if ok {
-		infoParams = append(infoParams, file, line)
-	}
-
-	infoParams = append(infoParams, params...)
-	format = "[%s:%d] " + format
-
-	seelog.Infof(format, infoParams...)
+	seelog.Infof(format, params...)
 	seelog.Flush()
 }
 
@@ -165,18 +96,7 @@ func LogInfof(format string, params ...interface{}) {
  * @param params ...interface{}
  */
 func LogWarnf(format string, params ...interface{}) {
-	warnParams := []interface{}{}
-
-	_, file, line, ok := runtime.Caller(1)
-
-	if ok {
-		warnParams = append(warnParams, file, line)
-	}
-
-	warnParams = append(warnParams, params...)
-	format = "[%s:%d] " + format
-
-	seelog.Warnf(format, warnParams...)
+	seelog.Warnf(format, params...)
 	seelog.Flush()
 }
 
@@ -186,18 +106,10 @@ func LogWarnf(format string, params ...interface{}) {
  * @param params ...interface{}
  */
 func LogErrorf(format string, params ...interface{}) {
-	errorParams := []interface{}{}
+	format += "\n%s"
+	params = append(params, string(debug.Stack()))
 
-	_, file, line, ok := runtime.Caller(1)
-
-	if ok {
-		errorParams = append(errorParams, file, line)
-	}
-
-	errorParams = append(errorParams, params...)
-	format = "[%s:%d] " + format
-
-	seelog.Errorf(format, errorParams...)
+	seelog.Errorf(format, params...)
 	seelog.Flush()
 }
 
@@ -207,17 +119,9 @@ func LogErrorf(format string, params ...interface{}) {
  * @param params ...interface{}
  */
 func LogCriticalf(format string, params ...interface{}) {
-	criticalParams := []interface{}{}
+	format += "\n%s"
+	params = append(params, string(debug.Stack()))
 
-	_, file, line, ok := runtime.Caller(1)
-
-	if ok {
-		criticalParams = append(criticalParams, file, line)
-	}
-
-	criticalParams = append(criticalParams, params...)
-	format = "[%s:%d] " + format
-
-	seelog.Criticalf(format, criticalParams...)
+	seelog.Criticalf(format, params...)
 	seelog.Flush()
 }

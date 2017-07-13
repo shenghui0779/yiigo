@@ -15,9 +15,11 @@
         <filter levels="critical">
             <rollingfile type="date" filename="logs/critical.log" datepattern="2006-01-02" namemode="prefix" archivetype="none"/>
         </filter>
-        <!--<smtp senderaddress="yiigo@example.com" sendername="yiigo" hostname="smtp.example.com" hostport="587" username="yiigo@example.com" password="xxxxxxxxx">
-            <recipient address="demo@example.com"/>
-        </smtp>-->
+        <!-- <filter levels="error,critical">
+            <smtp senderaddress="yiigo@example.com" sendername="yiigo" hostname="smtp.example.com" hostport="25" username="yiigo@example.com" password="xxxxxxxxx">
+                <recipient address="demo@example.com"/>
+            </smtp>
+        </filter> -->
     </outputs>
     <formats>
         <format id="main" format="[%Date %Time] [%LEV] %Msg%n"/>
