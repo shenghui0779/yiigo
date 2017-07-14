@@ -1,6 +1,10 @@
 package yiigo
 
-import "github.com/gin-gonic/gin"
+import (
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+)
 
 // X is a convenient alias for a map[string]interface{} map
 type X map[string]interface{}
@@ -19,7 +23,7 @@ func ReturnSuccess(c *gin.Context, data ...interface{}) {
 		obj["data"] = data[0]
 	}
 
-	c.JSON(200, obj)
+	c.JSON(http.StatusOK, obj)
 }
 
 /**
@@ -36,7 +40,7 @@ func ReturnFailed(c *gin.Context, data ...interface{}) {
 		obj["data"] = data[0]
 	}
 
-	c.JSON(200, obj)
+	c.JSON(http.StatusOK, obj)
 }
 
 /**
@@ -56,5 +60,5 @@ func ReturnJson(c *gin.Context, code int, msg string, data ...interface{}) {
 		obj["data"] = data[0]
 	}
 
-	c.JSON(200, obj)
+	c.JSON(http.StatusOK, obj)
 }
