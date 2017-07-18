@@ -116,13 +116,13 @@ func (m *MySQL) Insert(data X) (int64, error) {
 	result, err := db.Exec(sql, binds...)
 
 	if err != nil {
-		return 0, fmt.Errorf("%v, sql: %s, args: %v", err, sql, binds)
+		return 0, fmt.Errorf("%v, SQL: %s, args: %v", err, sql, binds)
 	}
 
 	id, err := result.LastInsertId()
 
 	if err != nil {
-		return 0, fmt.Errorf("%v, sql: %s, args: %v", err, sql, binds)
+		return 0, fmt.Errorf("%v, SQL: %s, args: %v", err, sql, binds)
 	}
 
 	return id, nil
@@ -145,13 +145,13 @@ func (m *MySQL) BatchInsert(columns []string, data []X) (int64, error) {
 	result, err := db.Exec(sql, binds...)
 
 	if err != nil {
-		return 0, fmt.Errorf("%v, sql: %s, args: %v", err, sql, binds)
+		return 0, fmt.Errorf("%v, SQL: %s, args: %v", err, sql, binds)
 	}
 
 	rows, err := result.RowsAffected()
 
 	if err != nil {
-		return 0, fmt.Errorf("%v, sql: %s, args: %v", err, sql, binds)
+		return 0, fmt.Errorf("%v, SQL: %s, args: %v", err, sql, binds)
 	}
 
 	return rows, nil
@@ -178,19 +178,19 @@ func (m *MySQL) Update(query X, data X) (int64, error) {
 	_sql, args, err := sqlx.In(sql, binds...)
 
 	if err != nil {
-		return 0, fmt.Errorf("%v, sql: %s, args: %v", err, sql, binds)
+		return 0, fmt.Errorf("%v, SQL: %s, args: %v", err, sql, binds)
 	}
 
 	result, err := db.Exec(_sql, args...)
 
 	if err != nil {
-		return 0, fmt.Errorf("%v, sql: %s, args: %v", err, _sql, args)
+		return 0, fmt.Errorf("%v, SQL: %s, args: %v", err, _sql, args)
 	}
 
 	rows, err := result.RowsAffected()
 
 	if err != nil {
-		return 0, fmt.Errorf("%v, sql: %s, args: %v", err, _sql, args)
+		return 0, fmt.Errorf("%v, SQL: %s, args: %v", err, _sql, args)
 	}
 
 	return rows, nil
@@ -223,14 +223,14 @@ func (m *MySQL) Count(query X, columns ...string) (int, error) {
 	_sql, args, err := sqlx.In(sql, binds...)
 
 	if err != nil {
-		return 0, fmt.Errorf("%v, sql: %s, args: %v", err, sql, binds)
+		return 0, fmt.Errorf("%v, SQL: %s, args: %v", err, sql, binds)
 	}
 
 	count := 0
 	err = db.Get(&count, _sql, args...)
 
 	if err != nil {
-		return 0, fmt.Errorf("%v, sql: %s, args: %v", err, sql, binds)
+		return 0, fmt.Errorf("%v, SQL: %s, args: %v", err, sql, binds)
 	}
 
 	return count, nil
@@ -261,7 +261,7 @@ func (m *MySQL) FindOne(query X, data interface{}) error {
 	_sql, args, err := sqlx.In(sql, binds...)
 
 	if err != nil {
-		return fmt.Errorf("%v, sql: %s, args: %v", err, sql, binds)
+		return fmt.Errorf("%v, SQL: %s, args: %v", err, sql, binds)
 	}
 
 	err = db.Get(data, _sql, args...)
@@ -271,7 +271,7 @@ func (m *MySQL) FindOne(query X, data interface{}) error {
 			return errors.New("not found")
 		}
 
-		return fmt.Errorf("%v, sql: %s, args: %v", err, _sql, args)
+		return fmt.Errorf("%v, SQL: %s, args: %v", err, _sql, args)
 	}
 
 	return nil
@@ -304,13 +304,13 @@ func (m *MySQL) Find(query X, data interface{}) error {
 	_sql, args, err := sqlx.In(sql, binds...)
 
 	if err != nil {
-		return fmt.Errorf("%v, sql: %s, args: %v", err, sql, binds)
+		return fmt.Errorf("%v, SQL: %s, args: %v", err, sql, binds)
 	}
 
 	err = db.Select(data, _sql, args...)
 
 	if err != nil {
-		return fmt.Errorf("%v, sql: %s, args: %v", err, _sql, args)
+		return fmt.Errorf("%v, SQL: %s, args: %v", err, _sql, args)
 	}
 
 	return nil
@@ -339,7 +339,7 @@ func (m *MySQL) FindAll(data interface{}, columns ...string) error {
 	err = db.Select(data, sql, binds...)
 
 	if err != nil {
-		return fmt.Errorf("%v, sql: %s, args: %v", err, sql, binds)
+		return fmt.Errorf("%v, SQL: %s, args: %v", err, sql, binds)
 	}
 
 	return nil
@@ -365,19 +365,19 @@ func (m *MySQL) Delete(query X) (int64, error) {
 	_sql, args, err := sqlx.In(sql, binds...)
 
 	if err != nil {
-		return 0, fmt.Errorf("%v, sql: %s, args: %v", err, sql, binds)
+		return 0, fmt.Errorf("%v, SQL: %s, args: %v", err, sql, binds)
 	}
 
 	result, err := db.Exec(_sql, args...)
 
 	if err != nil {
-		return 0, fmt.Errorf("%v, sql: %s, args: %v", err, _sql, args)
+		return 0, fmt.Errorf("%v, SQL: %s, args: %v", err, _sql, args)
 	}
 
 	rows, err := result.RowsAffected()
 
 	if err != nil {
-		return 0, fmt.Errorf("%v, sql: %s, args: %v", err, _sql, args)
+		return 0, fmt.Errorf("%v, SQL: %s, args: %v", err, _sql, args)
 	}
 
 	return rows, nil
@@ -540,7 +540,7 @@ func (m *MySQL) DoTransactions(operations []X) error {
 	if err != nil {
 		tx.Rollback()
 
-		return fmt.Errorf("%v, sql: %s, args: %v", err, errSQL, errArgs)
+		return fmt.Errorf("%v, SQL: %s, args: %v", err, errSQL, errArgs)
 	}
 
 	tx.Commit()
