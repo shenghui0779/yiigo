@@ -3,6 +3,7 @@ package yiigo
 import (
 	"errors"
 	"fmt"
+	"reflect"
 	"strings"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -340,6 +341,45 @@ func (m *MySQL) FindAll(data interface{}, columns ...string) error {
 
 	if err != nil {
 		return fmt.Errorf("%v, SQL: %s, args: %v", err, sql, binds)
+	}
+
+	return nil
+}
+
+/**
+ * FindBySQL SQL查询
+ * @param sql string SQL查询语句
+ * @parms binds []interface{} SQL绑定值
+ * @param data interface{} 查询数据 (struct指针或struct切片指针)
+ * @return error
+ */
+func (m *MySQL) FindBySQL(sql string, binds []interface{}, data interface{}) error {
+	db, err := m.getDB()
+
+	if err != nil {
+		return err
+	}
+
+	_sql, args, err := sqlx.In(sql, binds...)
+
+	if err != nil {
+		return fmt.Errorf("%v, SQL: %s, args: %v", err, sql, binds)
+	}
+
+	v := reflect.Indirect(reflect.ValueOf(data))
+
+	if v.Kind() == reflect.Slice {
+		err = db.Select(data, _sql, args...)
+	} else {
+		err = db.Get(data, _sql, args...)
+	}
+
+	if err != nil {
+		if err.Error() == "sql: no rows in result set" {
+			return errors.New("not found")
+		}
+
+		return fmt.Errorf("%v, SQL: %s, args: %v", err, _sql, args)
 	}
 
 	return nil
