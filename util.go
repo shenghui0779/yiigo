@@ -2,6 +2,7 @@ package yiigo
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -13,7 +14,7 @@ type X map[string]interface{}
 func IsXhr(c *gin.Context) bool {
 	x := c.Request.Header.Get("X-Requested-With")
 
-	if x == "XMLHttpRequest" {
+	if strings.ToLower(x) == "xmlhttprequest" {
 		return true
 	}
 
