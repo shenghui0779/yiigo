@@ -153,22 +153,22 @@ func (r *Redis) ScanJSONSlice(reply interface{}, dest interface{}) error {
 	}
 
 	if len(bytes) > 0 {
-		refVal := reflect.Indirect(reflect.ValueOf(dest))
+		rv := reflect.Indirect(reflect.ValueOf(dest))
 
-		if refVal.Kind() == reflect.Slice {
-			refValType := refVal.Type().Elem()
-			refVal.Set(reflect.MakeSlice(refVal.Type(), 0, 0))
+		if rv.Kind() == reflect.Slice {
+			rt := rv.Type().Elem()
+			rv.Set(reflect.MakeSlice(rv.Type(), 0, 0))
 
 			for _, v := range bytes {
 				if v != nil {
-					elem := reflect.New(refValType).Elem()
+					elem := reflect.New(rt).Elem()
 					err := json.Unmarshal(v, elem.Addr().Interface())
 
 					if err != nil {
 						return err
 					}
 
-					refVal.Set(reflect.Append(refVal, elem))
+					rv.Set(reflect.Append(rv, elem))
 				}
 			}
 		}
