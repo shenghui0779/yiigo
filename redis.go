@@ -1,8 +1,10 @@
 package yiigo
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"reflect"
 	"sync"
 	"time"
 
@@ -135,4 +137,42 @@ func (r *Redis) Pipeline(cmds map[string][]interface{}) (interface{}, error) {
 	reply, err := conn.Do("EXEC")
 
 	return reply, err
+}
+
+/**
+ * ScanJSONSlice 获取json切片缓存值
+ * @param reply interface{}
+ * @param dest interface{} (切片指针)
+ * @return error
+ */
+func (r *Redis) ScanJSONSlice(reply interface{}, dest interface{}) error {
+	bytes, err := redis.ByteSlices(reply, nil)
+
+	if err != nil {
+		return err
+	}
+
+	if len(bytes) > 0 {
+		refVal := reflect.Indirect(reflect.ValueOf(dest))
+
+		if refVal.Kind() == reflect.Slice {
+			refValType := refVal.Type().Elem()
+			refVal.Set(reflect.MakeSlice(refVal.Type(), 0, 0))
+
+			for _, v := range bytes {
+				if v != nil {
+					elem := reflect.New(refValType).Elem()
+					err := json.Unmarshal(v, elem.Addr().Interface())
+
+					if err != nil {
+						return err
+					}
+
+					refVal.Set(reflect.Append(refVal, elem))
+				}
+			}
+		}
+	}
+
+	return nil
 }
