@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/garyburd/redigo/redis"
-	"github.com/iiinsomnia/yiigo"
 	"github.com/youtube/vitess/go/pools"
 	"golang.org/x/net/context"
 )
@@ -188,14 +187,12 @@ func (r *Redis) ScanJSON(reply interface{}, dest interface{}) error {
 	bytes, err := redis.Bytes(reply, nil)
 
 	if err != nil {
-		yiigo.LogError(err.Error())
 		return err
 	}
 
 	err = json.Unmarshal(bytes, dest)
 
 	if err != nil {
-		yiigo.LogError(err.Error())
 		return err
 	}
 
