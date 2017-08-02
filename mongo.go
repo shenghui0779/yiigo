@@ -162,14 +162,14 @@ func (m *Mongo) Incr(query bson.M, column string, inc int) error {
 /**
  * FindOne 查询单条记录
  * @param query bson.M 查询条件
- * @param data interface{} (指针) 查询数据
+ * @param dest interface{} (指针) 查询数据
  * @return error
  */
-func (m *Mongo) FindOne(query bson.M, data interface{}) error {
+func (m *Mongo) FindOne(query bson.M, dest interface{}) error {
 	session := m.getSession()
 	defer session.Close()
 
-	err := session.DB(m.DB).C(m.Collection).Find(query).One(data)
+	err := session.DB(m.DB).C(m.Collection).Find(query).One(dest)
 
 	if err != nil {
 		return err
@@ -188,10 +188,10 @@ func (m *Mongo) FindOne(query bson.M, data interface{}) error {
  *     skip int
  *     limit int
  * ]
- * @param data interface{} (切片指针) 查询数据
+ * @param dest interface{} (切片指针) 查询数据
  * @return error
  */
-func (m *Mongo) Find(query bson.M, data interface{}) error {
+func (m *Mongo) Find(query bson.M, dest interface{}) error {
 	session := m.getSession()
 	defer session.Close()
 
@@ -223,7 +223,7 @@ func (m *Mongo) Find(query bson.M, data interface{}) error {
 		q = q.Limit(v.(int))
 	}
 
-	err := q.All(data)
+	err := q.All(dest)
 
 	if err != nil {
 		return err
@@ -234,14 +234,14 @@ func (m *Mongo) Find(query bson.M, data interface{}) error {
 
 /**
  * FindAll 查询所有记录
- * @param data interface{} (切片指针) 查询数据
+ * @param dest interface{} (切片指针) 查询数据
  * @return error
  */
-func (m *Mongo) FindAll(data interface{}) error {
+func (m *Mongo) FindAll(dest interface{}) error {
 	session := m.getSession()
 	defer session.Close()
 
-	err := session.DB(m.DB).C(m.Collection).Find(bson.M{}).All(data)
+	err := session.DB(m.DB).C(m.Collection).Find(bson.M{}).All(dest)
 
 	if err != nil {
 		return err

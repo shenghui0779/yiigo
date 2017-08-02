@@ -246,10 +246,10 @@ func (m *MySQL) Count(query X, columns ...string) (int, error) {
  *     where string WHERE语句
  *     binds []interface{} WHERE语句中 "?" 的绑定值
  * }
- * @param data interface{} 查询数据 (struct指针)
+ * @param dest interface{} 查询数据 (struct指针)
  * @return error
  */
-func (m *MySQL) FindOne(query X, data interface{}) error {
+func (m *MySQL) FindOne(query X, dest interface{}) error {
 	db, err := m.getDB()
 
 	if err != nil {
@@ -265,7 +265,7 @@ func (m *MySQL) FindOne(query X, data interface{}) error {
 		return fmt.Errorf("%v, SQL: %s, args: %v", err, sql, binds)
 	}
 
-	err = db.Get(data, _sql, args...)
+	err = db.Get(dest, _sql, args...)
 
 	if err != nil {
 		if err.Error() == "sql: no rows in result set" {
@@ -291,10 +291,10 @@ func (m *MySQL) FindOne(query X, data interface{}) error {
  *     offset int OFFSET语句
  *     binds []interface{} WHERE语句中 "?" 的绑定值
  * }
- * @param data interface{} 查询数据 (struct切片指针)
+ * @param dest interface{} 查询数据 (struct切片指针)
  * @return error
  */
-func (m *MySQL) Find(query X, data interface{}) error {
+func (m *MySQL) Find(query X, dest interface{}) error {
 	db, err := m.getDB()
 
 	if err != nil {
@@ -308,7 +308,7 @@ func (m *MySQL) Find(query X, data interface{}) error {
 		return fmt.Errorf("%v, SQL: %s, args: %v", err, sql, binds)
 	}
 
-	err = db.Select(data, _sql, args...)
+	err = db.Select(dest, _sql, args...)
 
 	if err != nil {
 		return fmt.Errorf("%v, SQL: %s, args: %v", err, _sql, args)
@@ -319,11 +319,11 @@ func (m *MySQL) Find(query X, data interface{}) error {
 
 /**
  * FindAll 查询所有记录
- * @param data interface{} 查询数据 (struct切片指针)
+ * @param dest interface{} 查询数据 (struct切片指针)
  * @param columns ...string 查询字段
  * @return error
  */
-func (m *MySQL) FindAll(data interface{}, columns ...string) error {
+func (m *MySQL) FindAll(dest interface{}, columns ...string) error {
 	db, err := m.getDB()
 
 	if err != nil {
@@ -337,7 +337,7 @@ func (m *MySQL) FindAll(data interface{}, columns ...string) error {
 	}
 
 	sql, binds := m.buildQuery(query)
-	err = db.Select(data, sql, binds...)
+	err = db.Select(dest, sql, binds...)
 
 	if err != nil {
 		return fmt.Errorf("%v, SQL: %s, args: %v", err, sql, binds)
@@ -350,10 +350,10 @@ func (m *MySQL) FindAll(data interface{}, columns ...string) error {
  * FindBySQL SQL查询
  * @param sql string SQL查询语句
  * @parms binds []interface{} SQL绑定值
- * @param data interface{} 查询数据 (struct指针或struct切片指针)
+ * @param dest interface{} 查询数据 (struct指针或struct切片指针)
  * @return error
  */
-func (m *MySQL) FindBySQL(sql string, binds []interface{}, data interface{}) error {
+func (m *MySQL) FindBySQL(sql string, binds []interface{}, dest interface{}) error {
 	db, err := m.getDB()
 
 	if err != nil {
@@ -366,12 +366,12 @@ func (m *MySQL) FindBySQL(sql string, binds []interface{}, data interface{}) err
 		return fmt.Errorf("%v, SQL: %s, args: %v", err, sql, binds)
 	}
 
-	v := reflect.Indirect(reflect.ValueOf(data))
+	v := reflect.Indirect(reflect.ValueOf(dest))
 
 	if v.Kind() == reflect.Slice {
-		err = db.Select(data, _sql, args...)
+		err = db.Select(dest, _sql, args...)
 	} else {
-		err = db.Get(data, _sql, args...)
+		err = db.Get(dest, _sql, args...)
 	}
 
 	if err != nil {
