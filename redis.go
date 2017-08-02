@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/garyburd/redigo/redis"
+	"github.com/iiinsomnia/yiigo"
 	"github.com/youtube/vitess/go/pools"
 	"golang.org/x/net/context"
 )
@@ -172,6 +173,30 @@ func (r *Redis) ScanJSONSlice(reply interface{}, dest interface{}) error {
 				}
 			}
 		}
+	}
+
+	return nil
+}
+
+/**
+ * ScanJSON 获取json缓存值
+ * @param reply interface{}
+ * @param dest interface{} (指针)
+ * @return error
+ */
+func (r *Redis) ScanJSON(reply interface{}, dest interface{}) error {
+	bytes, err := redis.Bytes(reply, nil)
+
+	if err != nil {
+		yiigo.LogError(err.Error())
+		return err
+	}
+
+	err = json.Unmarshal(bytes, dest)
+
+	if err != nil {
+		yiigo.LogError(err.Error())
+		return err
 	}
 
 	return nil
