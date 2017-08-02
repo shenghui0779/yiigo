@@ -115,7 +115,7 @@ func (r *Redis) Do(cmd string, args ...interface{}) (interface{}, error) {
 }
 
 /**
- * Pipeline redis管道 执行一组redis命令
+ * Pipeline redis管道，执行一组redis命令
  * @param cmds map[string][]interface{}
  * @return interface{}, error
  */
