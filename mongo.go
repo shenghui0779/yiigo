@@ -112,7 +112,6 @@ func (m *Mongo) Insert(data bson.M) (int, error) {
 
 	if err != nil {
 		m.refreshSequence(-1)
-
 		return 0, err
 	}
 
@@ -269,33 +268,43 @@ func (m *Mongo) Delete(query bson.M) error {
 }
 
 /**
- * Sum 字段求和
- * @param match bson.M (map[string]interface{}) 匹配条件
- * @param field string 聚合字段 (如："$count")
- * @return int, error
+ * PipeOne 管道聚合操作
+ * @param pipeline interface{} 管道条件，如：字段求和
+ * []bson.M{
+ *     {"$match": match},
+ *     {"$group": bson.M{"_id": 1, "total": bson.M{"$sum": field}}},
+ * }
+ * @param dest interface{} (切片指针) 管道聚合数据
+ * @return error
  */
-func (m *Mongo) Sum(match bson.M, field string) (int, error) {
+func (m *Mongo) PipeOne(pipeline interface{}, dest interface{}) error {
 	session := m.getSession()
 	defer session.Close()
 
-	p := session.DB(m.DB).C(m.Collection).Pipe([]bson.M{
-		{"$match": match},
-		{"$group": bson.M{"_id": 1, "total": bson.M{"$sum": field}}},
-	})
-
-	result := bson.M{}
-
-	err := p.One(&result)
+	err := session.DB(m.DB).C(m.Collection).Pipe(pipeline).One(dest)
 
 	if err != nil {
-		return 0, err
+		return err
 	}
 
-	total, ok := result["total"].(int)
+	return nil
+}
 
-	if !ok {
-		return 0, fmt.Errorf("type assertion error, result %v is %v", result["total"], reflect.TypeOf(result["total"]))
+/**
+ * Pipe 管道聚合操作
+ * @param pipeline interface{} 管道条件
+ * @param dest interface{} (切片指针) 管道聚合数据
+ * @return error
+ */
+func (m *Mongo) Pipe(pipeline interface{}, dest interface{}) error {
+	session := m.getSession()
+	defer session.Close()
+
+	err := session.DB(m.DB).C(m.Collection).Pipe(pipeline).All(dest)
+
+	if err != nil {
+		return err
 	}
 
-	return total, nil
+	return nil
 }
