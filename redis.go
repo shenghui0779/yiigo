@@ -140,6 +140,28 @@ func (r *Redis) Pipeline(cmds map[string][]interface{}) (interface{}, error) {
 }
 
 /**
+ * ScanJSON 获取json缓存值
+ * @param reply interface{}
+ * @param dest interface{} (指针)
+ * @return error
+ */
+func (r *Redis) ScanJSON(reply interface{}, dest interface{}) error {
+	bytes, err := redis.Bytes(reply, nil)
+
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(bytes, dest)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+/**
  * ScanJSONSlice 获取json切片缓存值
  * @param reply interface{}
  * @param dest interface{} (切片指针)
@@ -172,28 +194,6 @@ func (r *Redis) ScanJSONSlice(reply interface{}, dest interface{}) error {
 				}
 			}
 		}
-	}
-
-	return nil
-}
-
-/**
- * ScanJSON 获取json缓存值
- * @param reply interface{}
- * @param dest interface{} (指针)
- * @return error
- */
-func (r *Redis) ScanJSON(reply interface{}, dest interface{}) error {
-	bytes, err := redis.Bytes(reply, nil)
-
-	if err != nil {
-		return err
-	}
-
-	err = json.Unmarshal(bytes, dest)
-
-	if err != nil {
-		return err
 	}
 
 	return nil

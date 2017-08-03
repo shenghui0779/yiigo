@@ -119,6 +119,41 @@ func (m *Mongo) Insert(data bson.M) (int, error) {
 }
 
 /**
+ * BatchInsert 批量新增记录
+ * @param data ...bson.M 插入数据
+ * @return error
+ */
+func (m *Mongo) BatchInsert(data ...bson.M) error {
+	session := m.getSession()
+	defer session.Close()
+
+	docs := []interface{}{}
+
+	for _, v := range data {
+		id, err := m.refreshSequence()
+
+		if err != nil {
+			return err
+		}
+
+		v["_id"] = id
+
+		docs = append(docs, reflect.ValueOf(v).Interface())
+	}
+
+	err := session.DB(m.DB).C(m.Collection).Insert(docs...)
+
+	if err != nil {
+		count := len(docs)
+		m.refreshSequence(-count)
+
+		return err
+	}
+
+	return nil
+}
+
+/**
  * Update 更新记录
  * @param query bson.M (map[string]interface{}) 查询条件
  * @param data bson.M (map[string]interface{}) 更新字段
