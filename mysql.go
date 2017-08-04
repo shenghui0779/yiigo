@@ -39,6 +39,7 @@ func initMySQL() error {
 		maxOpenConns := v.Key("maxOpenConns").MustInt(20)
 		maxIdleConns := v.Key("maxIdleConns").MustInt(10)
 
+		// 是否配置主从
 		childs := v.ChildSections()
 
 		if len(childs) == 0 {
