@@ -2,7 +2,6 @@ package yiigo
 
 import (
 	"path/filepath"
-	"strings"
 
 	"gopkg.in/ini.v1"
 )
@@ -113,15 +112,10 @@ func GetEnvBool(section string, key string, defaultValue bool) bool {
 	return v
 }
 
-func getChildSections(section string) map[string]string {
-	sections := map[string]string{}
-	childs := env.Section(section).ChildSections()
-
-	for _, v := range childs {
-		name := v.Name()
-		spt := strings.Split(name, ".")
-		sections[spt[1]] = name
+func childSections(section string) []*ini.Section {
+	if env == nil {
+		return []*ini.Section{}
 	}
 
-	return sections
+	return env.Section(section).ChildSections()
 }

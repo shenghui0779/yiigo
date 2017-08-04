@@ -11,8 +11,9 @@ import (
 )
 
 type MySQL struct {
-	Connection string
-	Table      string
+	Connection  string
+	MasterSlave bool
+	Table       string
 }
 
 var dbmap map[string]*sqlx.DB
@@ -28,38 +29,71 @@ type expr struct {
  */
 func initMySQL() error {
 	dbmap = make(map[string]*sqlx.DB)
-	sections := getChildSections("mysql")
+	sections := childSections("mysql")
 
-	for k, v := range sections {
-		host := GetEnvString(v, "host", "localhost")
-		port := GetEnvInt(v, "port", 3306)
-		username := GetEnvString(v, "username", "root")
-		password := GetEnvString(v, "password", "")
-		database := GetEnvString(v, "database", "test")
-		charset := GetEnvString(v, "charset", "utf8mb4")
-		collection := GetEnvString(v, "collection", "utf8mb4_general_ci")
+	for _, v := range sections {
+		database := v.Key("database").MustString("test")
+		charset := v.Key("charset").MustString("utf8mb4")
+		collection := v.Key("collection").MustString("utf8mb4_general_ci")
 
-		dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s&collation=%s&parseTime=True&loc=Local", username, password, host, port, database, charset, collection)
-		db, err := sqlx.Open("mysql", dsn)
+		maxOpenConns := v.Key("maxOpenConns").MustInt(20)
+		maxIdleConns := v.Key("maxIdleConns").MustInt(10)
 
-		if err != nil {
-			db.Close()
+		childs := v.ChildSections()
 
-			return err
+		if len(childs) == 0 {
+			host := v.Key("host").MustString("localhost")
+			port := v.Key("post").MustInt(3306)
+			username := v.Key("username").MustString("root")
+			password := v.Key("password").MustString("")
+
+			dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s&collation=%s&parseTime=True&loc=Local", username, password, host, port, database, charset, collection)
+			db, err := sqlx.Open("mysql", dsn)
+
+			if err != nil {
+				db.Close()
+				return err
+			}
+
+			db.SetMaxOpenConns(maxOpenConns)
+			db.SetMaxIdleConns(maxIdleConns)
+
+			err = db.Ping()
+
+			if err != nil {
+				db.Close()
+				return err
+			}
+
+			dbmap[v.Name()] = db
+		} else {
+			for _, c := range childs {
+				host := c.Key("host").MustString("localhost")
+				port := c.Key("post").MustInt(3306)
+				username := c.Key("username").MustString("root")
+				password := c.Key("password").MustString("")
+
+				dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s&collation=%s&parseTime=True&loc=Local", username, password, host, port, database, charset, collection)
+				db, err := sqlx.Open("mysql", dsn)
+
+				if err != nil {
+					db.Close()
+					return err
+				}
+
+				db.SetMaxOpenConns(maxOpenConns)
+				db.SetMaxIdleConns(maxIdleConns)
+
+				err = db.Ping()
+
+				if err != nil {
+					db.Close()
+					return err
+				}
+
+				dbmap[c.Name()] = db
+			}
 		}
-
-		db.SetMaxOpenConns(GetEnvInt(v, "maxOpenConns", 20))
-		db.SetMaxIdleConns(GetEnvInt(v, "maxIdleConns", 10))
-
-		err = db.Ping()
-
-		if err != nil {
-			db.Close()
-
-			return err
-		}
-
-		dbmap[k] = db
 	}
 
 	return nil
@@ -69,14 +103,24 @@ func initMySQL() error {
  * 获取db
  * @return *sqlx.DB
  */
-func (m *MySQL) getDB() (*sqlx.DB, error) {
+func (m *MySQL) getDB(read bool) (*sqlx.DB, error) {
 	connection := m.Connection
 
 	if connection == "" {
 		connection = "default"
 	}
 
-	db, ok := dbmap[connection]
+	schema := fmt.Sprintf("mysql.%s", connection)
+
+	if m.MasterSlave {
+		if read {
+			schema = fmt.Sprintf("mysql.%s.read", connection)
+		} else {
+			schema = fmt.Sprintf("mysql.%s.write", connection)
+		}
+	}
+
+	db, ok := dbmap[schema]
 
 	if !ok {
 		return nil, fmt.Errorf("database %s is not connected", connection)
