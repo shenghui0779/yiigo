@@ -105,10 +105,10 @@ func initMySQL() error {
  * @return *sqlx.DB
  */
 func (m *MySQL) getDB(read bool) (*sqlx.DB, error) {
-	connection := m.Connection
+	connection := "default"
 
-	if connection == "" {
-		connection = "default"
+	if m.Connection != "" {
+		connection = m.Connection
 	}
 
 	schema := fmt.Sprintf("mysql.%s", connection)
@@ -135,10 +135,10 @@ func (m *MySQL) getDB(read bool) (*sqlx.DB, error) {
  * @return string
  */
 func (m *MySQL) getPrefix() string {
-	connection := m.Connection
+	connection := "default"
 
-	if connection == "" {
-		connection = "default"
+	if m.Connection != "" {
+		connection = m.Connection
 	}
 
 	prefix := GetEnvString(fmt.Sprintf("mysql.%s", connection), "prefix", "")
@@ -152,7 +152,7 @@ func (m *MySQL) getPrefix() string {
  * @return int64, error 新增记录ID
  */
 func (m *MySQL) Insert(data X) (int64, error) {
-	db, err := m.getDB()
+	db, err := m.getDB(false)
 
 	if err != nil {
 		return 0, err
@@ -181,7 +181,7 @@ func (m *MySQL) Insert(data X) (int64, error) {
  * @return int64, error 影响的行数
  */
 func (m *MySQL) BatchInsert(columns []string, data []X) (int64, error) {
-	db, err := m.getDB()
+	db, err := m.getDB(false)
 
 	if err != nil {
 		return 0, err
@@ -214,7 +214,7 @@ func (m *MySQL) BatchInsert(columns []string, data []X) (int64, error) {
  * @return int64, error 影响的行数
  */
 func (m *MySQL) Update(query X, data X) (int64, error) {
-	db, err := m.getDB()
+	db, err := m.getDB(false)
 
 	if err != nil {
 		return 0, err
@@ -253,7 +253,7 @@ func (m *MySQL) Update(query X, data X) (int64, error) {
  * @return error
  */
 func (m *MySQL) Count(query X, columns ...string) (int, error) {
-	db, err := m.getDB()
+	db, err := m.getDB(true)
 
 	if err != nil {
 		return 0, err
@@ -295,7 +295,7 @@ func (m *MySQL) Count(query X, columns ...string) (int, error) {
  * @return error
  */
 func (m *MySQL) FindOne(query X, dest interface{}) error {
-	db, err := m.getDB()
+	db, err := m.getDB(true)
 
 	if err != nil {
 		return err
@@ -340,7 +340,7 @@ func (m *MySQL) FindOne(query X, dest interface{}) error {
  * @return error
  */
 func (m *MySQL) Find(query X, dest interface{}) error {
-	db, err := m.getDB()
+	db, err := m.getDB(true)
 
 	if err != nil {
 		return err
@@ -369,7 +369,7 @@ func (m *MySQL) Find(query X, dest interface{}) error {
  * @return error
  */
 func (m *MySQL) FindAll(dest interface{}, columns ...string) error {
-	db, err := m.getDB()
+	db, err := m.getDB(true)
 
 	if err != nil {
 		return err
@@ -399,7 +399,7 @@ func (m *MySQL) FindAll(dest interface{}, columns ...string) error {
  * @return error
  */
 func (m *MySQL) FindBySQL(sql string, binds []interface{}, dest interface{}) error {
-	db, err := m.getDB()
+	db, err := m.getDB(true)
 
 	if err != nil {
 		return err
@@ -440,7 +440,7 @@ func (m *MySQL) FindBySQL(sql string, binds []interface{}, dest interface{}) err
  * @return int64, error 影响的行数
  */
 func (m *MySQL) Delete(query X) (int64, error) {
-	db, err := m.getDB()
+	db, err := m.getDB(false)
 
 	if err != nil {
 		return 0, err
@@ -504,7 +504,7 @@ func (m *MySQL) Delete(query X) (int64, error) {
  * @return error
  */
 func (m *MySQL) DoTransactions(operations []X) error {
-	db, err := m.getDB()
+	db, err := m.getDB(false)
 
 	if err != nil {
 		return err
