@@ -115,16 +115,16 @@ func (m *MySQL) getDB(read bool) (*sqlx.DB, error) {
 
 	if m.MasterSlave {
 		if read {
-			schema = fmt.Sprintf("mysql.%s.read", connection)
+			schema = fmt.Sprintf("mysql.%s.read", schema)
 		} else {
-			schema = fmt.Sprintf("mysql.%s.write", connection)
+			schema = fmt.Sprintf("mysql.%s.write", schema)
 		}
 	}
 
 	db, ok := dbmap[schema]
 
 	if !ok {
-		return nil, fmt.Errorf("database %s is not connected", connection)
+		return nil, fmt.Errorf("database %s is not connected", schema)
 	}
 
 	return db, nil
