@@ -115,9 +115,9 @@ func (m *MySQL) getDB(read bool) (*sqlx.DB, error) {
 
 	if m.MasterSlave {
 		if read {
-			schema = fmt.Sprintf("mysql.%s.read", schema)
+			schema = fmt.Sprintf("mysql.%s.read", connection)
 		} else {
-			schema = fmt.Sprintf("mysql.%s.write", schema)
+			schema = fmt.Sprintf("mysql.%s.write", connection)
 		}
 	}
 
