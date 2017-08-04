@@ -29,15 +29,14 @@ type expr struct {
  */
 func initMySQL() error {
 	dbmap = make(map[string]*sqlx.DB)
+
 	sections := childSections("mysql")
+	dsnmap := map[string]string{}
 
 	for _, v := range sections {
 		database := v.Key("database").MustString("test")
 		charset := v.Key("charset").MustString("utf8mb4")
 		collection := v.Key("collection").MustString("utf8mb4_general_ci")
-
-		maxOpenConns := v.Key("maxOpenConns").MustInt(20)
-		maxIdleConns := v.Key("maxIdleConns").MustInt(10)
 
 		// 是否配置主从
 		childs := v.ChildSections()
@@ -48,25 +47,7 @@ func initMySQL() error {
 			username := v.Key("username").MustString("root")
 			password := v.Key("password").MustString("")
 
-			dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s&collation=%s&parseTime=True&loc=Local", username, password, host, port, database, charset, collection)
-			db, err := sqlx.Open("mysql", dsn)
-
-			if err != nil {
-				db.Close()
-				return err
-			}
-
-			db.SetMaxOpenConns(maxOpenConns)
-			db.SetMaxIdleConns(maxIdleConns)
-
-			err = db.Ping()
-
-			if err != nil {
-				db.Close()
-				return err
-			}
-
-			dbmap[v.Name()] = db
+			dsnmap[v.Name()] = fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s&collation=%s&parseTime=True&loc=Local", username, password, host, port, database, charset, collection)
 		} else {
 			for _, c := range childs {
 				host := c.Key("host").MustString("localhost")
@@ -74,27 +55,30 @@ func initMySQL() error {
 				username := c.Key("username").MustString("root")
 				password := c.Key("password").MustString("")
 
-				dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s&collation=%s&parseTime=True&loc=Local", username, password, host, port, database, charset, collection)
-				db, err := sqlx.Open("mysql", dsn)
-
-				if err != nil {
-					db.Close()
-					return err
-				}
-
-				db.SetMaxOpenConns(maxOpenConns)
-				db.SetMaxIdleConns(maxIdleConns)
-
-				err = db.Ping()
-
-				if err != nil {
-					db.Close()
-					return err
-				}
-
-				dbmap[c.Name()] = db
+				dsnmap[c.Name()] = fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s&collation=%s&parseTime=True&loc=Local", username, password, host, port, database, charset, collection)
 			}
 		}
+	}
+
+	for k, dsn := range dsnmap {
+		db, err := sqlx.Open("mysql", dsn)
+
+		if err != nil {
+			db.Close()
+			return err
+		}
+
+		db.SetMaxOpenConns(GetEnvInt(k, "maxOpenConns", 20))
+		db.SetMaxIdleConns(GetEnvInt(k, "maxIdleConns", 10))
+
+		err = db.Ping()
+
+		if err != nil {
+			db.Close()
+			return err
+		}
+
+		dbmap[k] = db
 	}
 
 	return nil
