@@ -1,127 +1,107 @@
 package yiigo
 
 import (
-	"path/filepath"
+	"fmt"
 	"runtime/debug"
 
-	"github.com/cihub/seelog"
+	log "github.com/go-ozzo/ozzo-log"
 )
+
+var logger *log.Logger
 
 /**
  * 初始化日志配置
  */
-func initLogger(path string) {
-	abs, _ := filepath.Abs(path)
-	logger, err := seelog.LoggerFromConfigAsFile(abs)
+func initLogger() {
+	logger = log.NewLogger()
+	logger = logger.GetLogger("app", func(l *log.Logger, e *log.Entry) string {
+		return fmt.Sprintf("%s [%v] %s", e.Time.Format("2006-01-02 15:04:05"), e.Level, e.Message)
+	})
 
-	if err != nil {
-		panic(err)
+	if EnvBool("app", "debug", true) {
+		t := log.NewConsoleTarget()
+		logger.Targets = append(logger.Targets, t)
+	} else {
+		t := log.NewFileTarget()
+		t.FileName = EnvString("log", "path", "app.log")
 	}
+}
 
-	seelog.ReplaceLogger(logger)
+// LogOpen 打开日志
+func LogOpen() {
+	logger.Open()
+}
+
+// LogClose 关闭日志
+func LogClose() {
+	logger.Close()
 }
 
 /**
- * 记录 Debug 日志
- * @param msg ...interface{}
- */
-func LogDebug(msg ...interface{}) {
-	seelog.Debug(msg...)
-	seelog.Flush()
-}
-
-/**
- * 记录 Info 日志
- * @param msg ...interface{}
- */
-func LogInfo(msg ...interface{}) {
-	seelog.Info(msg...)
-	seelog.Flush()
-}
-
-/**
- * 记录 Warn 日志
- * @param msg ...interface{}
- */
-func LogWarn(msg ...interface{}) {
-	seelog.Warn(msg...)
-	seelog.Flush()
-}
-
-/**
- * 记录 Error 日志
- * @param msg ...interface{}
- */
-func LogError(msg ...interface{}) {
-	msg = append(msg, "\n", string(debug.Stack()))
-
-	seelog.Error(msg...)
-	seelog.Flush()
-}
-
-/**
- * 记录 Critical 日志
- * @param msg ...interface{}
- */
-func LogCritical(msg ...interface{}) {
-	msg = append(msg, "\n", string(debug.Stack()))
-
-	seelog.Critical(msg...)
-	seelog.Flush()
-}
-
-/**
- * 记录 Debug 格式化日志
+ * LogDebug 记录 Debug 日志
  * @param format string
  * @param params ...interface{}
  */
-func LogDebugf(format string, params ...interface{}) {
-	seelog.Debugf(format, params...)
-	seelog.Flush()
+func LogDebug(format string, params ...interface{}) {
+	logger.Debug(format, params...)
 }
 
 /**
- * 记录 Info 格式化日志
+ * LogInfo 记录 Info 日志
  * @param format string
  * @param params ...interface{}
  */
-func LogInfof(format string, params ...interface{}) {
-	seelog.Infof(format, params...)
-	seelog.Flush()
+func LogInfo(format string, params ...interface{}) {
+	logger.Info(format, params...)
 }
 
 /**
- * 记录 Warn 格式化日志
+ * LogWarn 记录 Warn 日志
  * @param format string
  * @param params ...interface{}
  */
-func LogWarnf(format string, params ...interface{}) {
-	seelog.Warnf(format, params...)
-	seelog.Flush()
+func LogWarn(format string, params ...interface{}) {
+	logger.Warning(format, params...)
 }
 
 /**
- * 记录 Error 格式化日志
+ * LogError 记录 Error 日志
  * @param format string
  * @param params ...interface{}
  */
-func LogErrorf(format string, params ...interface{}) {
+func LogError(format string, params ...interface{}) {
 	format += "\n%s"
 	params = append(params, string(debug.Stack()))
 
-	seelog.Errorf(format, params...)
-	seelog.Flush()
+	logger.Error(format, params...)
 }
 
 /**
- * 记录 Critical 格式化日志
+ * LogCritical 记录 Critical 日志
  * @param format string
  * @param params ...interface{}
  */
-func LogCriticalf(format string, params ...interface{}) {
+func LogCritical(format string, params ...interface{}) {
 	format += "\n%s"
 	params = append(params, string(debug.Stack()))
 
-	seelog.Criticalf(format, params...)
-	seelog.Flush()
+	logger.Critical(format, params...)
+}
+
+/**
+ * LogAlert 记录 Warn 日志
+ * @param format string
+ * @param params ...interface{}
+ */
+func LogAlert(format string, params ...interface{}) {
+	logger.Alert(format, params...)
+}
+
+/**
+ * LogEmergency 记录 Warn 日志
+ * @param format string
+ * @param params ...interface{}
+ */
+func LogEmergency(format string, params ...interface{}) {
+	logger.Emergency(format, params...)
 }

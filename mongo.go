@@ -27,11 +27,11 @@ var mongoSession *mgo.Session
 func initMongo() error {
 	var err error
 
-	host := GetEnvString("mongo", "host", "localhost")
-	port := GetEnvInt("mongo", "port", 27017)
-	username := GetEnvString("mongo", "username", "")
-	password := GetEnvString("mongo", "password", "")
-	poolLimit := GetEnvInt("mongo", "poolLimit", 10)
+	host := EnvString("mongo", "host", "localhost")
+	port := EnvInt("mongo", "port", 27017)
+	username := EnvString("mongo", "username", "")
+	password := EnvString("mongo", "password", "")
+	poolLimit := EnvInt("mongo", "poolLimit", 10)
 
 	dsn := fmt.Sprintf("mongodb://%s:%d", host, port)
 

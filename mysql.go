@@ -68,8 +68,8 @@ func initMySQL() error {
 			return err
 		}
 
-		db.SetMaxOpenConns(GetEnvInt(k, "maxOpenConns", 20))
-		db.SetMaxIdleConns(GetEnvInt(k, "maxIdleConns", 10))
+		db.SetMaxOpenConns(EnvInt(k, "maxOpenConns", 20))
+		db.SetMaxIdleConns(EnvInt(k, "maxIdleConns", 10))
 
 		err = db.Ping()
 
@@ -125,7 +125,7 @@ func (m *MySQL) getPrefix() string {
 		connection = m.Connection
 	}
 
-	prefix := GetEnvString(fmt.Sprintf("mysql.%s", connection), "prefix", "")
+	prefix := EnvString(fmt.Sprintf("mysql.%s", connection), "prefix", "")
 
 	return prefix
 }

@@ -37,9 +37,9 @@ func initRedis() {
 	defer redisMux.Unlock()
 
 	if redisPool == nil {
-		poolMinActive := GetEnvInt("redis", "poolMinActive", 10)
-		poolMaxActive := GetEnvInt("redis", "poolMaxActive", 20)
-		poolIdleTimeout := GetEnvInt("redis", "poolIdleTimeout", 60000)
+		poolMinActive := EnvInt("redis", "poolMinActive", 10)
+		poolMaxActive := EnvInt("redis", "poolMaxActive", 20)
+		poolIdleTimeout := EnvInt("redis", "poolIdleTimeout", 60000)
 
 		redisPool = pools.NewResourcePool(func() (pools.Resource, error) {
 			conn, err := dialRedis()
@@ -53,11 +53,11 @@ func initRedis() {
  * @return redis.Conn, error
  */
 func dialRedis() (redis.Conn, error) {
-	host := GetEnvString("redis", "host", "localhost")
-	port := GetEnvInt("redis", "port", 6379)
-	connectTimeout := GetEnvInt("redis", "connectTimeout", 10000)
-	readTimeout := GetEnvInt("redis", "readTimeout", 10000)
-	writeTimeout := GetEnvInt("redis", "writeTimeout", 10000)
+	host := EnvString("redis", "host", "localhost")
+	port := EnvInt("redis", "port", 6379)
+	connectTimeout := EnvInt("redis", "connectTimeout", 10000)
+	readTimeout := EnvInt("redis", "readTimeout", 10000)
+	writeTimeout := EnvInt("redis", "writeTimeout", 10000)
 
 	dsn := fmt.Sprintf("%s:%d", host, port)
 	conn, err := redis.DialTimeout("tcp", dsn, time.Duration(connectTimeout)*time.Millisecond, time.Duration(readTimeout)*time.Millisecond, time.Duration(writeTimeout)*time.Millisecond)

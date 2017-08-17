@@ -2,6 +2,7 @@ package yiigo
 
 import (
 	"path/filepath"
+	"time"
 
 	"gopkg.in/ini.v1"
 )
@@ -34,7 +35,7 @@ func loadEnv(path string) error {
  * @param defaultValue string
  * @return string
  */
-func GetEnvString(section string, key string, defaultValue string) string {
+func EnvString(section string, key string, defaultValue string) string {
 	if env == nil {
 		return defaultValue
 	}
@@ -51,7 +52,7 @@ func GetEnvString(section string, key string, defaultValue string) string {
  * @param defaultValue int
  * @return int
  */
-func GetEnvInt(section string, key string, defaultValue int) int {
+func EnvInt(section string, key string, defaultValue int) int {
 	if env == nil {
 		return defaultValue
 	}
@@ -68,7 +69,7 @@ func GetEnvInt(section string, key string, defaultValue int) int {
  * @param defaultValue int64
  * @return int64
  */
-func GetEnvInt64(section string, key string, defaultValue int64) int64 {
+func EnvInt64(section string, key string, defaultValue int64) int64 {
 	if env == nil {
 		return defaultValue
 	}
@@ -85,7 +86,7 @@ func GetEnvInt64(section string, key string, defaultValue int64) int64 {
  * @param defaultValue float64
  * @return float64
  */
-func GetEnvFloat64(section string, key string, defaultValue float64) float64 {
+func EnvFloat64(section string, key string, defaultValue float64) float64 {
 	if env == nil {
 		return defaultValue
 	}
@@ -102,12 +103,29 @@ func GetEnvFloat64(section string, key string, defaultValue float64) float64 {
  * @param defaultValue bool
  * @return bool
  */
-func GetEnvBool(section string, key string, defaultValue bool) bool {
+func EnvBool(section string, key string, defaultValue bool) bool {
 	if env == nil {
 		return defaultValue
 	}
 
 	v := env.Section(section).Key(key).MustBool(defaultValue)
+
+	return v
+}
+
+/**
+ * 获取 duration 配置
+ * @param section string
+ * @param key string
+ * @param defaultValue bool
+ * @return bool
+ */
+func EnvDuration(section string, key string, defaultValue time.Duration) time.Duration {
+	if env == nil {
+		return defaultValue
+	}
+
+	v := env.Section(section).Key(key).MustDuration(defaultValue)
 
 	return v
 }
