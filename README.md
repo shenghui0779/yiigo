@@ -44,7 +44,6 @@ yiigo.SetEnv("myenv.ini")
 * code.google.com 上 go get 不下来的库，可以在这里[获取](https://github.com/golang)
 * 如爬虫不需要模拟登录，则只需要使用 [goquery](https://github.com/PuerkitoBio/goquery) 即可
 * 具体使用可以参考 [yiigo-example](https://github.com/IIInsomnia/yiigo-example)
-
 * [DB文档](http://jmoiron.github.io/sqlx/)
 * [Mongo文档](http://labix.org/mgo)
 * [Redis文档](http://godoc.org/github.com/garyburd/redigo/redis)
