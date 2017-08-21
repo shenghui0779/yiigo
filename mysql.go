@@ -24,10 +24,6 @@ type grammar struct {
 }
 
 type MySQL struct {
-	Error        error
-	LastInsertId int64
-	RowsAffected int64
-
 	db      *sqlx.DB
 	tx      *sqlx.Tx
 	grammar *grammar
@@ -88,7 +84,10 @@ func DB(connection ...string) (*MySQL, error) {
 		return nil, fmt.Errorf("database %s is not connected", conn)
 	}
 
-	return &MySQL{db: db}, nil
+	return &MySQL{
+		db:      db,
+		grammar: &grammar{},
+	}, nil
 }
 
 // Expr build sql expression, eg: yiigo.Expr("price * ? + ?", 2, 100)
@@ -170,7 +169,7 @@ func (m *MySQL) Offset(offset int) *MySQL {
 }
 
 func (m *MySQL) Insert(data X) {
-	defer m.grammar = nil
+	defer m.reset(false)
 
 	columns := []string{}
 	placeholders := []string{}
@@ -271,4 +270,13 @@ func BuildUpdate(table string, data X, condition ...interface{}) (string, []inte
 	sql := strings.Join(clauses, " ")
 
 	return sql, binds
+}
+
+func (m *MySQL) reset(tx bool) {
+	if tx {
+		m.tx = nil
+	}
+
+	m.grammar = &grammar{}
+	m.sql = ""
 }
