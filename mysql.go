@@ -1,6 +1,7 @@
 package yiigo
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -168,7 +169,13 @@ func (m *MySQL) Offset(offset int) *MySQL {
 	return m
 }
 
-func (m *MySQL) Insert(data X) {
+func (m *MySQL) Binds(binds ...interface{}) {
+	m.grammar.binds = binds
+
+	return m
+}
+
+func (m *MySQL) Insert(data X) (int64, error) {
 	defer m.reset(false)
 
 	columns := []string{}
@@ -181,43 +188,26 @@ func (m *MySQL) Insert(data X) {
 		binds = append(binds, v)
 	}
 
-	sql := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)", m.table, strings.Join(columns, ","), strings.Join(placeholders, ","))
+	sql := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)", m.grammar.table, strings.Join(columns, ", "), strings.Join(placeholders, ","))
 
 	result, err := m.db.Exec(sql, binds...)
 
 	if err != nil {
-		m.Error = fmt.Errorf("%v, SQL: %s, Args: %v", err, sql, binds)
-		return
+		return 0, fmt.Errorf("%v, SQL: %s, Args: %v", err, sql, binds)
 	}
 
 	id, err := result.LastInsertId()
 
 	if err != nil {
-		return 0, fmt.Errorf("%v, SQL: %s, args: %v", err, sql, binds)
+		return 0, fmt.Errorf("%v, SQL: %s, Args: %v", err, sql, binds)
 	}
 
 	return id, nil
 }
 
-// BuildInsert build insert sql
-func BuildInsert(table string, data X) (string, []interface{}) {
-	columns := []string{}
-	placeholders := []string{}
-	binds := []interface{}{}
+func (m *MySQL) BatchInsert(columns []string, data []X) (int64, error) {
+	defer m.reset(false)
 
-	for k, v := range data {
-		columns = append(columns, k)
-		placeholders = append(placeholders, "?")
-		binds = append(binds, v)
-	}
-
-	sql := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)", table, strings.Join(columns, ","), strings.Join(placeholders, ","))
-
-	return sql, binds
-}
-
-// BuildBatchInsert build batch insert sql
-func BuildBatchInsert(table string, columns []string, data X) (string, []interface{}) {
 	placeholders := []string{}
 	binds := []interface{}{}
 
@@ -232,18 +222,28 @@ func BuildBatchInsert(table string, columns []string, data X) (string, []interfa
 		placeholders = append(placeholders, fmt.Sprintf("(%s)", strings.Join(bindvars, ",")))
 	}
 
-	sql := fmt.Sprintf("INSERT INTO %s (%s) VALUES %s", table, strings.Join(columns, ","), strings.Join(placeholders, ","))
+	sql := fmt.Sprintf("INSERT INTO %s (%s) VALUES %s", m.grammar.table, strings.Join(columns, ", "), strings.Join(placeholders, ","))
 
-	return sql, binds
+	result, err := m.db.Exec(sql, binds...)
+
+	if err != nil {
+		return 0, fmt.Errorf("%v, SQL: %s, Args: %v", err, sql, binds)
+	}
+
+	rows, err := result.RowsAffected()
+
+	if err != nil {
+		return 0, fmt.Errorf("%v, SQL: %s, Args: %v", err, sql, binds)
+	}
+
+	return rows, nil
 }
 
-// BuildUpdate build update sql
-func BuildUpdate(table string, data X, condition ...interface{}) (string, []interface{}) {
-	clauses := []string{}
+func (m *MySQL) Update(data X) (int64, error) {
+	defer m.reset(false)
+
 	sets := []string{}
 	binds := []interface{}{}
-
-	clauses = append(clauses, fmt.Sprintf("UPDATE %s", table))
 
 	for k, v := range data {
 		if expr, ok := v.(*expr); ok {
@@ -255,21 +255,87 @@ func BuildUpdate(table string, data X, condition ...interface{}) (string, []inte
 		}
 	}
 
-	clauses = append(clauses, fmt.Sprintf("SET %s", strings.Join(sets, ",")))
+	binds = append(binds, m.grammar.binds...)
 
-	length := len(condition)
+	sql := strings.TrimSpace(fmt.Sprintf("UPDATE %s SET %s %s", m.grammar.table, strings.Join(sets, ", "), strings.Join(m.grammar.clauses, " ")))
 
-	if length > 0 {
-		clauses = append(clauses, fmt.Sprintf("WHERE %s", condition[0].(string)))
+	_sql, args, err := sqlx.In(sql, binds...)
+
+	if err != nil {
+		return 0, fmt.Errorf("%v, SQL: %s, Args: %v", err, sql, binds)
 	}
 
-	if length > 1 {
-		binds = append(binds, condition[1:]...)
+	result, err := m.db.Exec(_sql, args...)
+
+	if err != nil {
+		return 0, fmt.Errorf("%v, SQL: %s, Args: %v", err, _sql, args)
 	}
 
-	sql := strings.Join(clauses, " ")
+	rows, err := result.RowsAffected()
 
-	return sql, binds
+	if err != nil {
+		return 0, fmt.Errorf("%v, SQL: %s, Args: %v", err, _sql, args)
+	}
+
+	return rows, nil
+}
+
+func (m *MySQL) One(dest interface{}) error {
+	columns := "*"
+
+	if len(m.grammar.columns) > 0 {
+		columns = strings.Join(m.grammar.columns, ", ")
+	}
+
+	sql := strings.TrimSpace(fmt.Sprintf("SELECT %s FROM %s %s", columns, m.grammar.table, strings.Join(m.grammar.clauses, " ")))
+	_sql, args, err := sqlx.In(sql, m.grammar.binds...)
+
+	if err != nil {
+		return fmt.Errorf("%v, SQL: %s, Args: %v", err, sql, binds)
+	}
+
+	err = m.db.Get(dest, _sql, args...)
+
+	if err != nil {
+		if err.Error() == "sql: no rows in result set" {
+			return errors.New("not found")
+		}
+
+		return fmt.Errorf("%v, SQL: %s, Args: %v", err, _sql, args)
+	}
+
+	return nil
+}
+
+func (m *MySQL) All(dest interface{}) error {
+	columns := "*"
+
+	if len(m.grammar.columns) > 0 {
+		columns = strings.Join(m.grammar.columns, ", ")
+	}
+
+	sql := strings.TrimSpace(fmt.Sprintf("SELECT %s FROM %s %s", columns, m.grammar.table, strings.Join(m.grammar.clauses, " ")))
+	_sql, args, err := sqlx.In(sql, m.grammar.binds...)
+
+	if err != nil {
+		return fmt.Errorf("%v, SQL: %s, Args: %v", err, sql, binds)
+	}
+
+	err = db.Get(dest, _sql, args...)
+
+	if err != nil {
+		if err.Error() == "sql: no rows in result set" {
+			return errors.New("not found")
+		}
+
+		return fmt.Errorf("%v, SQL: %s, Args: %v", err, _sql, args)
+	}
+
+	return nil
+}
+
+func (m *MySQL) Delete() (int64, error) {
+
 }
 
 func (m *MySQL) reset(tx bool) {
