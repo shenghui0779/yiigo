@@ -16,6 +16,24 @@ type expr struct {
 	args []interface{}
 }
 
+type grammar struct {
+	table   string
+	columns []string
+	clauses []string
+	binds   []interface{}
+}
+
+type MySQL struct {
+	Error        error
+	LastInsertId int64
+	RowsAffected int64
+
+	db      *sqlx.DB
+	tx      *sqlx.Tx
+	grammar *grammar
+	sql     string
+}
+
 // initMySQL init db connections
 func initMySQL() error {
 	dbmap = make(map[string]*sqlx.DB)
@@ -57,7 +75,7 @@ func initMySQL() error {
 }
 
 // DB get a db connection
-func DB(connection ...string) (*sqlx.DB, error) {
+func DB(connection ...string) (*MySQL, error) {
 	conn := "default"
 
 	if len(connection) > 0 {
@@ -70,12 +88,116 @@ func DB(connection ...string) (*sqlx.DB, error) {
 		return nil, fmt.Errorf("database %s is not connected", conn)
 	}
 
-	return db, nil
+	return &MySQL{db: db}, nil
 }
 
 // Expr build sql expression, eg: yiigo.Expr("price * ? + ?", 2, 100)
 func Expr(expression string, args ...interface{}) *expr {
 	return &expr{expr: expression, args: args}
+}
+
+func (m *MySQL) Table(table string) *MySQL {
+	m.grammar.table = table
+	return m
+}
+
+func (m *MySQL) Select(columns ...string) *MySQL {
+	m.grammar.columns = columns
+	return m
+}
+
+func (m *MySQL) InnerJoin(table string, on string) *MySQL {
+	clause := fmt.Sprintf("INNER JOIN %s ON %s", table, on)
+	m.grammar.clauses = append(m.grammar.clauses, clause)
+
+	return m
+}
+
+func (m *MySQL) LeftJoin(table string, on string) *MySQL {
+	clause := fmt.Sprintf("LEFT JOIN %s ON %s", table, on)
+	m.grammar.clauses = append(m.grammar.clauses, clause)
+
+	return m
+}
+
+func (m *MySQL) RightJoin(table string, on string) *MySQL {
+	clause := fmt.Sprintf("RIGHT JOIN %s ON %s", table, on)
+	m.grammar.clauses = append(m.grammar.clauses, clause)
+
+	return m
+}
+
+func (m *MySQL) Where(where string) *MySQL {
+	clause := fmt.Sprintf("WHERE %s", where)
+	m.grammar.clauses = append(m.grammar.clauses, clause)
+
+	return m
+}
+
+func (m *MySQL) GroupBy(group string) *MySQL {
+	clause := fmt.Sprintf("GROUP BY %s", group)
+	m.grammar.clauses = append(m.grammar.clauses, clause)
+
+	return m
+}
+
+func (m *MySQL) Having(having string) *MySQL {
+	clause := fmt.Sprintf("HAVING %s", having)
+	m.grammar.clauses = append(m.grammar.clauses, clause)
+
+	return m
+}
+
+func (m *MySQL) OrderBy(order string) *MySQL {
+	clause := fmt.Sprintf("ORDER BY %s", order)
+	m.grammar.clauses = append(m.grammar.clauses, clause)
+
+	return m
+}
+
+func (m *MySQL) Limit(limit int) *MySQL {
+	clause := fmt.Sprintf("LIMIT %d", limit)
+	m.grammar.clauses = append(m.grammar.clauses, clause)
+
+	return m
+}
+
+func (m *MySQL) Offset(offset int) *MySQL {
+	join := fmt.Sprintf("OFFSET %d", offset)
+	m.grammar.clauses = append(m.grammar.clauses, join)
+
+	return m
+}
+
+func (m *MySQL) Insert(data X) {
+	defer m.grammar = nil
+
+	columns := []string{}
+	placeholders := []string{}
+	binds := []interface{}{}
+
+	for k, v := range data {
+		columns = append(columns, k)
+		placeholders = append(placeholders, "?")
+		binds = append(binds, v)
+	}
+
+	sql := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)", m.table, strings.Join(columns, ","), strings.Join(placeholders, ","))
+
+	result, err := m.db.Exec(sql, binds...)
+
+	if err != nil {
+		m.Error = fmt.Errorf("%v, SQL: %s, Args: %v", err, sql, binds)
+		return
+	}
+
+	id, err := result.LastInsertId()
+
+	if err != nil {
+		return 0, fmt.Errorf("%v, SQL: %s, args: %v", err, sql, binds)
+	}
+
+	return id, nil
 }
 
 // BuildInsert build insert sql
