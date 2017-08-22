@@ -9,6 +9,11 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
+const (
+	optSel = iota
+	optDel
+)
+
 var dbmap map[string]*sqlx.DB
 
 // SQL expression
@@ -169,6 +174,12 @@ func (m *MySQL) Offset(offset int) *MySQL {
 	return m
 }
 
+func (m *MySQL) SQL(sql string) *MySQL {
+	m.sql = sql
+
+	return m
+}
+
 func (m *MySQL) Binds(binds ...interface{}) {
 	m.grammar.binds = binds
 
@@ -281,47 +292,39 @@ func (m *MySQL) Update(data X) (int64, error) {
 }
 
 func (m *MySQL) One(dest interface{}) error {
-	columns := "*"
+	defer m.reset(false)
 
-	if len(m.grammar.columns) > 0 {
-		columns = strings.Join(m.grammar.columns, ", ")
-	}
-
-	sql := strings.TrimSpace(fmt.Sprintf("SELECT %s FROM %s %s", columns, m.grammar.table, strings.Join(m.grammar.clauses, " ")))
-	_sql, args, err := sqlx.In(sql, m.grammar.binds...)
+	sql, args, err := m.sql(optSel)
 
 	if err != nil {
-		return fmt.Errorf("%v, SQL: %s, Args: %v", err, sql, binds)
+		return fmt.Errorf("%v, SQL: %s, Args: %v", err, sql, args)
 	}
 
-	err = m.db.Get(dest, _sql, args...)
+	sql = fmt.Sprintf("%s LIMIT 1", sql)
+
+	err = m.db.Get(dest, sql, args...)
 
 	if err != nil {
 		if err.Error() == "sql: no rows in result set" {
 			return errors.New("not found")
 		}
 
-		return fmt.Errorf("%v, SQL: %s, Args: %v", err, _sql, args)
+		return fmt.Errorf("%v, SQL: %s, Args: %v", err, sql, args)
 	}
 
 	return nil
 }
 
 func (m *MySQL) All(dest interface{}) error {
-	columns := "*"
+	defer m.reset(false)
 
-	if len(m.grammar.columns) > 0 {
-		columns = strings.Join(m.grammar.columns, ", ")
-	}
-
-	sql := strings.TrimSpace(fmt.Sprintf("SELECT %s FROM %s %s", columns, m.grammar.table, strings.Join(m.grammar.clauses, " ")))
-	_sql, args, err := sqlx.In(sql, m.grammar.binds...)
+	sql, args, err := m.sql(optSel)
 
 	if err != nil {
-		return fmt.Errorf("%v, SQL: %s, Args: %v", err, sql, binds)
+		return fmt.Errorf("%v, SQL: %s, Args: %v", err, sql, args)
 	}
 
-	err = db.Get(dest, _sql, args...)
+	err = db.Select(dest, _sql, args...)
 
 	if err != nil {
 		if err.Error() == "sql: no rows in result set" {
@@ -335,7 +338,76 @@ func (m *MySQL) All(dest interface{}) error {
 }
 
 func (m *MySQL) Delete() (int64, error) {
+	defer m.reset(false)
 
+	sql, args, err := m.sql(optDel)
+
+	if err != nil {
+		return fmt.Errorf("%v, SQL: %s, Args: %v", err, sql, args)
+	}
+
+	result, err := db.Exec(sql, args...)
+
+	if err != nil {
+		return 0, fmt.Errorf("%v, SQL: %s, Args: %v", err, sql, args)
+	}
+
+	rows, err := result.RowsAffected()
+
+	if err != nil {
+		return 0, fmt.Errorf("%v, SQL: %s, Args: %v", err, sql, args)
+	}
+
+	return rows, nil
+}
+
+func (m *MySQL) BeginTransaction() error {
+	m.tx, err = m.db.Begin()
+
+	return err
+}
+
+func (m *MySQL) Commit() error {
+	defer m.reset(true)
+
+	err := m.tx.Commit()
+
+	return err
+}
+
+func (m *MySQL) Rollback() error {
+	defer m.reset(true)
+
+	err := m.tx.Rollback()
+
+	return err
+}
+
+func (m *MySQL) sql(opt int) (string, []interface{}, error) {
+	sql := m.sql
+
+	if sql == "" {
+		switch opt {
+		case optSel:
+			columns := "*"
+
+			if len(m.grammar.columns) > 0 {
+				columns = strings.Join(m.grammar.columns, ", ")
+			}
+
+			sql = fmt.Sprintf("SELECT %s FROM %s", columns, m.grammar.table)
+		case optDel:
+			sql = fmt.Sprintf("DELETE FROM %s", m.grammar.table)
+		}
+
+		if len(m.grammar.clauses) > 0 {
+			sql = fmt.Sprintf("%s %s", sql, strings.Join(m.grammar.clauses, " "))
+		}
+	}
+
+	_sql, args, err := sqlx.In(sql, m.grammar.binds...)
+
+	return _sql, args, err
 }
 
 func (m *MySQL) reset(tx bool) {
