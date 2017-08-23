@@ -101,16 +101,19 @@ func Expr(expression string, args ...interface{}) *expr {
 	return &expr{expr: expression, args: args}
 }
 
+// Table set query table
 func (m *MySQL) Table(table string) *MySQL {
 	m.grammar.table = table
 	return m
 }
 
+// Select set query columns
 func (m *MySQL) Select(columns ...string) *MySQL {
 	m.grammar.columns = columns
 	return m
 }
 
+// InnerJoin set query inner join clause
 func (m *MySQL) InnerJoin(table string, on string) *MySQL {
 	clause := fmt.Sprintf("INNER JOIN %s ON %s", table, on)
 	m.grammar.clauses = append(m.grammar.clauses, clause)
@@ -118,6 +121,7 @@ func (m *MySQL) InnerJoin(table string, on string) *MySQL {
 	return m
 }
 
+// LeftJoin set query left join clause
 func (m *MySQL) LeftJoin(table string, on string) *MySQL {
 	clause := fmt.Sprintf("LEFT JOIN %s ON %s", table, on)
 	m.grammar.clauses = append(m.grammar.clauses, clause)
@@ -125,6 +129,7 @@ func (m *MySQL) LeftJoin(table string, on string) *MySQL {
 	return m
 }
 
+// RightJoin set query right join clause
 func (m *MySQL) RightJoin(table string, on string) *MySQL {
 	clause := fmt.Sprintf("RIGHT JOIN %s ON %s", table, on)
 	m.grammar.clauses = append(m.grammar.clauses, clause)
@@ -132,6 +137,7 @@ func (m *MySQL) RightJoin(table string, on string) *MySQL {
 	return m
 }
 
+// Where set query where clause
 func (m *MySQL) Where(where string) *MySQL {
 	clause := fmt.Sprintf("WHERE %s", where)
 	m.grammar.clauses = append(m.grammar.clauses, clause)
@@ -139,6 +145,7 @@ func (m *MySQL) Where(where string) *MySQL {
 	return m
 }
 
+// GroupBy set query group by clause
 func (m *MySQL) GroupBy(group string) *MySQL {
 	clause := fmt.Sprintf("GROUP BY %s", group)
 	m.grammar.clauses = append(m.grammar.clauses, clause)
@@ -146,6 +153,7 @@ func (m *MySQL) GroupBy(group string) *MySQL {
 	return m
 }
 
+// Having set query having clause
 func (m *MySQL) Having(having string) *MySQL {
 	clause := fmt.Sprintf("HAVING %s", having)
 	m.grammar.clauses = append(m.grammar.clauses, clause)
@@ -153,6 +161,7 @@ func (m *MySQL) Having(having string) *MySQL {
 	return m
 }
 
+// OrderBy set query order by clause
 func (m *MySQL) OrderBy(order string) *MySQL {
 	clause := fmt.Sprintf("ORDER BY %s", order)
 	m.grammar.clauses = append(m.grammar.clauses, clause)
@@ -160,6 +169,7 @@ func (m *MySQL) OrderBy(order string) *MySQL {
 	return m
 }
 
+// Limit set query limit clause
 func (m *MySQL) Limit(limit int) *MySQL {
 	clause := fmt.Sprintf("LIMIT %d", limit)
 	m.grammar.clauses = append(m.grammar.clauses, clause)
@@ -167,6 +177,7 @@ func (m *MySQL) Limit(limit int) *MySQL {
 	return m
 }
 
+// Offset set query offset clause
 func (m *MySQL) Offset(offset int) *MySQL {
 	join := fmt.Sprintf("OFFSET %d", offset)
 	m.grammar.clauses = append(m.grammar.clauses, join)
@@ -174,18 +185,21 @@ func (m *MySQL) Offset(offset int) *MySQL {
 	return m
 }
 
+// SQL set query sql
 func (m *MySQL) SQL(sql string) *MySQL {
 	m.sql = sql
 
 	return m
 }
 
+// Binds set query bindvars
 func (m *MySQL) Binds(binds ...interface{}) {
 	m.grammar.binds = binds
 
 	return m
 }
 
+// Insert insert a record
 func (m *MySQL) Insert(data X) (int64, error) {
 	defer m.reset(false)
 
@@ -216,6 +230,7 @@ func (m *MySQL) Insert(data X) (int64, error) {
 	return id, nil
 }
 
+// BatchInsert insert records
 func (m *MySQL) BatchInsert(columns []string, data []X) (int64, error) {
 	defer m.reset(false)
 
@@ -250,6 +265,7 @@ func (m *MySQL) BatchInsert(columns []string, data []X) (int64, error) {
 	return rows, nil
 }
 
+// Update update records
 func (m *MySQL) Update(data X) (int64, error) {
 	defer m.reset(false)
 
@@ -291,6 +307,7 @@ func (m *MySQL) Update(data X) (int64, error) {
 	return rows, nil
 }
 
+// One get a record
 func (m *MySQL) One(dest interface{}) error {
 	defer m.reset(false)
 
@@ -315,6 +332,7 @@ func (m *MySQL) One(dest interface{}) error {
 	return nil
 }
 
+// All get records
 func (m *MySQL) All(dest interface{}) error {
 	defer m.reset(false)
 
@@ -337,6 +355,7 @@ func (m *MySQL) All(dest interface{}) error {
 	return nil
 }
 
+// Delete delete records
 func (m *MySQL) Delete() (int64, error) {
 	defer m.reset(false)
 
@@ -361,12 +380,14 @@ func (m *MySQL) Delete() (int64, error) {
 	return rows, nil
 }
 
+// BeginTransaction start a transactiion
 func (m *MySQL) BeginTransaction() error {
 	m.tx, err = m.db.Begin()
 
 	return err
 }
 
+// Commit commit a transactiion
 func (m *MySQL) Commit() error {
 	defer m.reset(true)
 
@@ -375,6 +396,7 @@ func (m *MySQL) Commit() error {
 	return err
 }
 
+// Rollback rollback a transactiion
 func (m *MySQL) Rollback() error {
 	defer m.reset(true)
 
