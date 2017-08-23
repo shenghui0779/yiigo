@@ -26,6 +26,7 @@ type grammar struct {
 	table   string
 	columns []string
 	clauses []string
+	sql     string
 	binds   []interface{}
 }
 
@@ -33,7 +34,6 @@ type MySQL struct {
 	db      *sqlx.DB
 	tx      *sqlx.Tx
 	grammar *grammar
-	sql     string
 }
 
 // initMySQL init db connections
@@ -94,11 +94,6 @@ func DB(connection ...string) (*MySQL, error) {
 		db:      db,
 		grammar: &grammar{},
 	}, nil
-}
-
-// Expr build sql expression, eg: yiigo.Expr("price * ? + ?", 2, 100)
-func Expr(expression string, args ...interface{}) *expr {
-	return &expr{expr: expression, args: args}
 }
 
 // Table set query table
@@ -187,7 +182,7 @@ func (m *MySQL) Offset(offset int) *MySQL {
 
 // SQL set query sql
 func (m *MySQL) SQL(sql string) *MySQL {
-	m.sql = sql
+	m.grammar.sql = sql
 
 	return m
 }
@@ -284,7 +279,11 @@ func (m *MySQL) Update(data X) (int64, error) {
 
 	binds = append(binds, m.grammar.binds...)
 
-	sql := strings.TrimSpace(fmt.Sprintf("UPDATE %s SET %s %s", m.grammar.table, strings.Join(sets, ", "), strings.Join(m.grammar.clauses, " ")))
+	sql := fmt.Sprintf("UPDATE %s SET %s", m.grammar.table, strings.Join(sets, ", "))
+
+	if len(m.grammar.clauses) > 0 {
+		sql = fmt.Sprintf("%s %s", sql, strings.Join(m.grammar.clauses, " "))
+	}
 
 	_sql, args, err := sqlx.In(sql, binds...)
 
@@ -355,6 +354,33 @@ func (m *MySQL) All(dest interface{}) error {
 	return nil
 }
 
+func (m *MySQL) Count(columns ...string) (int64, error) {
+	defer m.reset(false)
+
+	col := "*"
+
+	if len(columns) > 0 {
+		col = columns[0]
+	}
+
+	m.grammar.columns = []string{fmt.Sprintf("COUNT(%s)", col)}
+
+	sql, args, err := m.sql(optSel)
+
+	if err != nil {
+		return 0, fmt.Errorf("%v, SQL: %s, Args: %v", err, sql, binds)
+	}
+
+	count := 0
+	err = db.Get(&count, _sql, args...)
+
+	if err != nil {
+		return 0, fmt.Errorf("%v, SQL: %s, Args: %v", err, sql, binds)
+	}
+
+	return count, nil
+}
+
 // Delete delete records
 func (m *MySQL) Delete() (int64, error) {
 	defer m.reset(false)
@@ -405,19 +431,24 @@ func (m *MySQL) Rollback() error {
 	return err
 }
 
+// Expr build sql expression, eg: yiigo.Expr("price * ? + ?", 2, 100)
+func Expr(expression string, args ...interface{}) *expr {
+	return &expr{expr: expression, args: args}
+}
+
 func (m *MySQL) sql(opt int) (string, []interface{}, error) {
-	sql := m.sql
+	sql := m.grammar.sql
 
 	if sql == "" {
 		switch opt {
 		case optSel:
-			columns := "*"
+			columns := []string{"*"}
 
 			if len(m.grammar.columns) > 0 {
-				columns = strings.Join(m.grammar.columns, ", ")
+				columns = m.grammar.columns
 			}
 
-			sql = fmt.Sprintf("SELECT %s FROM %s", columns, m.grammar.table)
+			sql = fmt.Sprintf("SELECT %s FROM %s", strings.Join(columns, ", "), m.grammar.table)
 		case optDel:
 			sql = fmt.Sprintf("DELETE FROM %s", m.grammar.table)
 		}
@@ -438,5 +469,4 @@ func (m *MySQL) reset(tx bool) {
 	}
 
 	m.grammar = &grammar{}
-	m.sql = ""
 }
