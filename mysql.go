@@ -43,7 +43,7 @@ func initMySQL() error {
 
 		if len(childs) == 0 {
 			host := v.Key("host").MustString("localhost")
-			port := v.Key("post").MustInt(3306)
+			port := v.Key("port").MustInt(3306)
 			username := v.Key("username").MustString("root")
 			password := v.Key("password").MustString("")
 
@@ -51,7 +51,7 @@ func initMySQL() error {
 		} else {
 			for _, c := range childs {
 				host := c.Key("host").MustString("localhost")
-				port := c.Key("post").MustInt(3306)
+				port := c.Key("port").MustInt(3306)
 				username := c.Key("username").MustString("root")
 				password := c.Key("password").MustString("")
 
