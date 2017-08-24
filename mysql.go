@@ -11,8 +11,9 @@ import (
 )
 
 type MySQL struct {
-	Connection string
-	Table      string
+	Connection  string
+	MasterSlave bool
+	Table       string
 }
 
 var dbmap map[string]*sqlx.DB
@@ -28,34 +29,52 @@ type expr struct {
  */
 func initMySQL() error {
 	dbmap = make(map[string]*sqlx.DB)
-	sections := getChildSections("mysql")
 
-	for k, v := range sections {
-		host := GetEnvString(v, "host", "localhost")
-		port := GetEnvInt(v, "port", 3306)
-		username := GetEnvString(v, "username", "root")
-		password := GetEnvString(v, "password", "")
-		database := GetEnvString(v, "database", "test")
-		charset := GetEnvString(v, "charset", "utf8mb4")
-		collection := GetEnvString(v, "collection", "utf8mb4_general_ci")
+	sections := childSections("mysql")
+	dsnmap := map[string]string{}
 
-		dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s&collation=%s&parseTime=True&loc=Local", username, password, host, port, database, charset, collection)
+	for _, v := range sections {
+		database := v.Key("database").MustString("test")
+		charset := v.Key("charset").MustString("utf8mb4")
+		collection := v.Key("collection").MustString("utf8mb4_general_ci")
+
+		// 是否配置主从
+		childs := v.ChildSections()
+
+		if len(childs) == 0 {
+			host := v.Key("host").MustString("localhost")
+			port := v.Key("post").MustInt(3306)
+			username := v.Key("username").MustString("root")
+			password := v.Key("password").MustString("")
+
+			dsnmap[v.Name()] = fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s&collation=%s&parseTime=True&loc=Local", username, password, host, port, database, charset, collection)
+		} else {
+			for _, c := range childs {
+				host := c.Key("host").MustString("localhost")
+				port := c.Key("post").MustInt(3306)
+				username := c.Key("username").MustString("root")
+				password := c.Key("password").MustString("")
+
+				dsnmap[c.Name()] = fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s&collation=%s&parseTime=True&loc=Local", username, password, host, port, database, charset, collection)
+			}
+		}
+	}
+
+	for k, dsn := range dsnmap {
 		db, err := sqlx.Open("mysql", dsn)
 
 		if err != nil {
 			db.Close()
-
 			return err
 		}
 
-		db.SetMaxOpenConns(GetEnvInt(v, "maxOpenConns", 20))
-		db.SetMaxIdleConns(GetEnvInt(v, "maxIdleConns", 10))
+		db.SetMaxOpenConns(EnvInt(k, "maxOpenConns", 20))
+		db.SetMaxIdleConns(EnvInt(k, "maxIdleConns", 10))
 
 		err = db.Ping()
 
 		if err != nil {
 			db.Close()
-
 			return err
 		}
 
@@ -69,17 +88,27 @@ func initMySQL() error {
  * 获取db
  * @return *sqlx.DB
  */
-func (m *MySQL) getDB() (*sqlx.DB, error) {
-	connection := m.Connection
+func (m *MySQL) getDB(read bool) (*sqlx.DB, error) {
+	connection := "default"
 
-	if connection == "" {
-		connection = "default"
+	if m.Connection != "" {
+		connection = m.Connection
 	}
 
-	db, ok := dbmap[connection]
+	schema := fmt.Sprintf("mysql.%s", connection)
+
+	if m.MasterSlave {
+		if read {
+			schema = fmt.Sprintf("mysql.%s.read", connection)
+		} else {
+			schema = fmt.Sprintf("mysql.%s.write", connection)
+		}
+	}
+
+	db, ok := dbmap[schema]
 
 	if !ok {
-		return nil, fmt.Errorf("database %s is not connected", connection)
+		return nil, fmt.Errorf("database %s is not connected", schema)
 	}
 
 	return db, nil
@@ -90,13 +119,13 @@ func (m *MySQL) getDB() (*sqlx.DB, error) {
  * @return string
  */
 func (m *MySQL) getPrefix() string {
-	connection := m.Connection
+	connection := "default"
 
-	if connection == "" {
-		connection = "default"
+	if m.Connection != "" {
+		connection = m.Connection
 	}
 
-	prefix := GetEnvString(fmt.Sprintf("mysql.%s", connection), "prefix", "")
+	prefix := EnvString(fmt.Sprintf("mysql.%s", connection), "prefix", "")
 
 	return prefix
 }
@@ -107,7 +136,7 @@ func (m *MySQL) getPrefix() string {
  * @return int64, error 新增记录ID
  */
 func (m *MySQL) Insert(data X) (int64, error) {
-	db, err := m.getDB()
+	db, err := m.getDB(false)
 
 	if err != nil {
 		return 0, err
@@ -136,7 +165,7 @@ func (m *MySQL) Insert(data X) (int64, error) {
  * @return int64, error 影响的行数
  */
 func (m *MySQL) BatchInsert(columns []string, data []X) (int64, error) {
-	db, err := m.getDB()
+	db, err := m.getDB(false)
 
 	if err != nil {
 		return 0, err
@@ -169,7 +198,7 @@ func (m *MySQL) BatchInsert(columns []string, data []X) (int64, error) {
  * @return int64, error 影响的行数
  */
 func (m *MySQL) Update(query X, data X) (int64, error) {
-	db, err := m.getDB()
+	db, err := m.getDB(false)
 
 	if err != nil {
 		return 0, err
@@ -208,7 +237,7 @@ func (m *MySQL) Update(query X, data X) (int64, error) {
  * @return error
  */
 func (m *MySQL) Count(query X, columns ...string) (int, error) {
-	db, err := m.getDB()
+	db, err := m.getDB(true)
 
 	if err != nil {
 		return 0, err
@@ -246,11 +275,11 @@ func (m *MySQL) Count(query X, columns ...string) (int, error) {
  *     where string WHERE语句
  *     binds []interface{} WHERE语句中 "?" 的绑定值
  * }
- * @param data interface{} 查询数据 (struct指针)
+ * @param dest interface{} 查询数据 (struct指针)
  * @return error
  */
-func (m *MySQL) FindOne(query X, data interface{}) error {
-	db, err := m.getDB()
+func (m *MySQL) FindOne(query X, dest interface{}) error {
+	db, err := m.getDB(true)
 
 	if err != nil {
 		return err
@@ -265,7 +294,7 @@ func (m *MySQL) FindOne(query X, data interface{}) error {
 		return fmt.Errorf("%v, SQL: %s, args: %v", err, sql, binds)
 	}
 
-	err = db.Get(data, _sql, args...)
+	err = db.Get(dest, _sql, args...)
 
 	if err != nil {
 		if err.Error() == "sql: no rows in result set" {
@@ -291,11 +320,11 @@ func (m *MySQL) FindOne(query X, data interface{}) error {
  *     offset int OFFSET语句
  *     binds []interface{} WHERE语句中 "?" 的绑定值
  * }
- * @param data interface{} 查询数据 (struct切片指针)
+ * @param dest interface{} 查询数据 (struct切片指针)
  * @return error
  */
-func (m *MySQL) Find(query X, data interface{}) error {
-	db, err := m.getDB()
+func (m *MySQL) Find(query X, dest interface{}) error {
+	db, err := m.getDB(true)
 
 	if err != nil {
 		return err
@@ -308,7 +337,7 @@ func (m *MySQL) Find(query X, data interface{}) error {
 		return fmt.Errorf("%v, SQL: %s, args: %v", err, sql, binds)
 	}
 
-	err = db.Select(data, _sql, args...)
+	err = db.Select(dest, _sql, args...)
 
 	if err != nil {
 		return fmt.Errorf("%v, SQL: %s, args: %v", err, _sql, args)
@@ -319,12 +348,12 @@ func (m *MySQL) Find(query X, data interface{}) error {
 
 /**
  * FindAll 查询所有记录
- * @param data interface{} 查询数据 (struct切片指针)
+ * @param dest interface{} 查询数据 (struct切片指针)
  * @param columns ...string 查询字段
  * @return error
  */
-func (m *MySQL) FindAll(data interface{}, columns ...string) error {
-	db, err := m.getDB()
+func (m *MySQL) FindAll(dest interface{}, columns ...string) error {
+	db, err := m.getDB(true)
 
 	if err != nil {
 		return err
@@ -337,7 +366,7 @@ func (m *MySQL) FindAll(data interface{}, columns ...string) error {
 	}
 
 	sql, binds := m.buildQuery(query)
-	err = db.Select(data, sql, binds...)
+	err = db.Select(dest, sql, binds...)
 
 	if err != nil {
 		return fmt.Errorf("%v, SQL: %s, args: %v", err, sql, binds)
@@ -350,11 +379,11 @@ func (m *MySQL) FindAll(data interface{}, columns ...string) error {
  * FindBySQL SQL查询
  * @param sql string SQL查询语句
  * @parms binds []interface{} SQL绑定值
- * @param data interface{} 查询数据 (struct指针或struct切片指针)
+ * @param dest interface{} 查询数据 (struct指针或struct切片指针)
  * @return error
  */
-func (m *MySQL) FindBySQL(sql string, binds []interface{}, data interface{}) error {
-	db, err := m.getDB()
+func (m *MySQL) FindBySQL(sql string, binds []interface{}, dest interface{}) error {
+	db, err := m.getDB(true)
 
 	if err != nil {
 		return err
@@ -366,12 +395,12 @@ func (m *MySQL) FindBySQL(sql string, binds []interface{}, data interface{}) err
 		return fmt.Errorf("%v, SQL: %s, args: %v", err, sql, binds)
 	}
 
-	v := reflect.Indirect(reflect.ValueOf(data))
+	v := reflect.Indirect(reflect.ValueOf(dest))
 
 	if v.Kind() == reflect.Slice {
-		err = db.Select(data, _sql, args...)
+		err = db.Select(dest, _sql, args...)
 	} else {
-		err = db.Get(data, _sql, args...)
+		err = db.Get(dest, _sql, args...)
 	}
 
 	if err != nil {
@@ -395,7 +424,7 @@ func (m *MySQL) FindBySQL(sql string, binds []interface{}, data interface{}) err
  * @return int64, error 影响的行数
  */
 func (m *MySQL) Delete(query X) (int64, error) {
-	db, err := m.getDB()
+	db, err := m.getDB(false)
 
 	if err != nil {
 		return 0, err
@@ -459,7 +488,7 @@ func (m *MySQL) Delete(query X) (int64, error) {
  * @return error
  */
 func (m *MySQL) DoTransactions(operations []X) error {
-	db, err := m.getDB()
+	db, err := m.getDB(false)
 
 	if err != nil {
 		return err
