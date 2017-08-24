@@ -24,6 +24,7 @@ func initLogger() {
 	} else {
 		t := log.NewFileTarget()
 		t.FileName = EnvString("log", "path", "app.log")
+		logger.Targets = append(logger.Targets, t)
 	}
 }
 
