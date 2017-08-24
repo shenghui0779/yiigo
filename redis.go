@@ -64,11 +64,6 @@ func dialRedis() (redis.Conn, error) {
 	return conn, nil
 }
 
-// Redis get redis
-func Redis() *Redis {
-	return &Redis{}
-}
-
 // getConn get a redis connection
 func (r *Redis) getConn() (pools.Resource, error) {
 	if redisPool == nil {
