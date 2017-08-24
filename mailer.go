@@ -67,10 +67,10 @@ func (m *Mailer) Send() error {
 }
 
 func (m *Mailer) dialer() *gomail.Dialer {
-	host := GetEnvString("email", "host", "smtp.example.com")
-	port := GetEnvInt("email", "port", 587)
-	username := GetEnvString("email", "username", "yiigo@example.com")
-	password := GetEnvString("email", "password", "xxxxxxxxx")
+	host := EnvString("email", "host", "smtp.example.com")
+	port := EnvInt("email", "port", 587)
+	username := EnvString("email", "username", "yiigo@example.com")
+	password := EnvString("email", "password", "xxxxxxxxx")
 
 	d := gomail.NewDialer(host, port, username, password)
 

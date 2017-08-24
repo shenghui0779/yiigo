@@ -24,22 +24,20 @@ type ResourceConn struct {
 	redis.Conn
 }
 
-// 关闭连接资源
+// Close close connection resorce
 func (r ResourceConn) Close() {
 	r.Conn.Close()
 }
 
-/**
- * 初始化 Redis 连接池
- */
+// initRedis init redis pool
 func initRedis() {
 	redisMux.Lock()
 	defer redisMux.Unlock()
 
 	if redisPool == nil {
-		poolMinActive := GetEnvInt("redis", "poolMinActive", 10)
-		poolMaxActive := GetEnvInt("redis", "poolMaxActive", 20)
-		poolIdleTimeout := GetEnvInt("redis", "poolIdleTimeout", 60000)
+		poolMinActive := EnvInt("redis", "poolMinActive", 10)
+		poolMaxActive := EnvInt("redis", "poolMaxActive", 20)
+		poolIdleTimeout := EnvInt("redis", "poolIdleTimeout", 60000)
 
 		redisPool = pools.NewResourcePool(func() (pools.Resource, error) {
 			conn, err := dialRedis()
@@ -48,16 +46,13 @@ func initRedis() {
 	}
 }
 
-/**
- * 连接 Redis
- * @return redis.Conn, error
- */
+// dialRedis dial redis
 func dialRedis() (redis.Conn, error) {
-	host := GetEnvString("redis", "host", "localhost")
-	port := GetEnvInt("redis", "port", 6379)
-	connectTimeout := GetEnvInt("redis", "connectTimeout", 10000)
-	readTimeout := GetEnvInt("redis", "readTimeout", 10000)
-	writeTimeout := GetEnvInt("redis", "writeTimeout", 10000)
+	host := EnvString("redis", "host", "localhost")
+	port := EnvInt("redis", "port", 6379)
+	connectTimeout := EnvInt("redis", "connectTimeout", 10000)
+	readTimeout := EnvInt("redis", "readTimeout", 10000)
+	writeTimeout := EnvInt("redis", "writeTimeout", 10000)
 
 	dsn := fmt.Sprintf("%s:%d", host, port)
 	conn, err := redis.DialTimeout("tcp", dsn, time.Duration(connectTimeout)*time.Millisecond, time.Duration(readTimeout)*time.Millisecond, time.Duration(writeTimeout)*time.Millisecond)
@@ -69,10 +64,12 @@ func dialRedis() (redis.Conn, error) {
 	return conn, nil
 }
 
-/**
- * 获取 Redis 连接资源
- * @return pools.Resource, error
- */
+// Redis get redis
+func Redis() *Redis {
+	return &Redis{}
+}
+
+// getConn get a redis connection
 func (r *Redis) getConn() (pools.Resource, error) {
 	if redisPool == nil {
 		return nil, errors.New("redis pool is empty")
@@ -92,12 +89,7 @@ func (r *Redis) getConn() (pools.Resource, error) {
 	return rc, err
 }
 
-/**
- * Do 执行一条redis命令
- * @param cmd string
- * @param args ...interface{}
- * @return interface{}, error
- */
+// Do sends a command to the server and returns the received reply.
 func (r *Redis) Do(cmd string, args ...interface{}) (interface{}, error) {
 	rc, err := r.getConn()
 
@@ -114,11 +106,7 @@ func (r *Redis) Do(cmd string, args ...interface{}) (interface{}, error) {
 	return reply, err
 }
 
-/**
- * Pipeline redis管道 执行一组redis命令
- * @param cmds map[string][]interface{}
- * @return interface{}, error
- */
+// Pipeline sends commands to the server and returns the received reply
 func (r *Redis) Pipeline(cmds map[string][]interface{}) (interface{}, error) {
 	rc, err := r.getConn()
 
@@ -139,13 +127,25 @@ func (r *Redis) Pipeline(cmds map[string][]interface{}) (interface{}, error) {
 	return reply, err
 }
 
-/**
- * ScanJSONSlice 获取json切片缓存值
- * @param reply interface{}
- * @param dest interface{} (切片指针)
- * @return error
- */
-func (r *Redis) ScanJSONSlice(reply interface{}, dest interface{}) error {
+// ScanRedisJSON scans json to a struct
+func ScanRedisJSON(reply interface{}, dest interface{}) error {
+	bytes, err := redis.Bytes(reply, nil)
+
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(bytes, dest)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// ScanRedisJSONSlice scans json slice to a struct slice
+func ScanRedisJSONSlice(reply interface{}, dest interface{}) error {
 	bytes, err := redis.ByteSlices(reply, nil)
 
 	if err != nil {
@@ -172,28 +172,6 @@ func (r *Redis) ScanJSONSlice(reply interface{}, dest interface{}) error {
 				}
 			}
 		}
-	}
-
-	return nil
-}
-
-/**
- * ScanJSON 获取json缓存值
- * @param reply interface{}
- * @param dest interface{} (指针)
- * @return error
- */
-func (r *Redis) ScanJSON(reply interface{}, dest interface{}) error {
-	bytes, err := redis.Bytes(reply, nil)
-
-	if err != nil {
-		return err
-	}
-
-	err = json.Unmarshal(bytes, dest)
-
-	if err != nil {
-		return err
 	}
 
 	return nil

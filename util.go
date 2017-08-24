@@ -2,24 +2,12 @@ package yiigo
 
 import (
 	"net/http"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 )
 
 // X is a convenient alias for a map[string]interface{} map
 type X map[string]interface{}
-
-// IsXhr 判断是否为Ajax请求
-func IsXhr(c *gin.Context) bool {
-	x := c.Request.Header.Get("X-Requested-With")
-
-	if strings.ToLower(x) == "xmlhttprequest" {
-		return true
-	}
-
-	return false
-}
 
 // ReturnSuccess API返回成功
 func ReturnSuccess(c *gin.Context, data ...interface{}) {

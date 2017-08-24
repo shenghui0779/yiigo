@@ -182,7 +182,7 @@ func (s *SpiderBase) HttpsGet(httpUrl string, host string, setCookie bool, saveC
 		}
 	}
 
-	certDir := GetEnvString("spider", "certdir", "certs")
+	certDir := EnvString("spider", "certdir", "certs")
 
 	certFile, _ := filepath.Abs(fmt.Sprintf("%s/%s", certDir, s.CertPath.CertPem))
 	keyFile, _ := filepath.Abs(fmt.Sprintf("%s/%s", certDir, s.CertPath.KeyUnencryptedPem))
@@ -251,7 +251,7 @@ func (s *SpiderBase) HttpsPost(httpUrl string, host string, v url.Values, setCoo
 		}
 	}
 
-	certDir := GetEnvString("spider", "certdir", "certs")
+	certDir := EnvString("spider", "certdir", "certs")
 
 	certFile, _ := filepath.Abs(fmt.Sprintf("%s/%s", certDir, s.CertPath.CertPem))
 	keyFile, _ := filepath.Abs(fmt.Sprintf("%s/%s", certDir, s.CertPath.KeyUnencryptedPem))
@@ -327,7 +327,7 @@ func (s *SpiderBase) setHttpCommonHeader(req *http.Request, isPost bool, host st
  * @return error
  */
 func (s *SpiderBase) setHttpCookie(req *http.Request) error {
-	cookieDir := GetEnvString("spider", "cookiedir", "cookies")
+	cookieDir := EnvString("spider", "cookiedir", "cookies")
 	path, _ := filepath.Abs(fmt.Sprintf("%s/%s", cookieDir, s.CookiePath))
 
 	cookies := map[string]*http.Cookie{}
@@ -357,7 +357,7 @@ func (s *SpiderBase) setHttpCookie(req *http.Request) error {
  * @param error
  */
 func (s *SpiderBase) saveHttpCookie(newCookies []*http.Cookie, clearOldCookie bool) error {
-	cookieDir := GetEnvString("spider", "cookiedir", "cookies")
+	cookieDir := EnvString("spider", "cookiedir", "cookies")
 	path, _ := filepath.Abs(fmt.Sprintf("%s/%s", cookieDir, s.CookiePath))
 
 	if len(newCookies) == 0 {
@@ -441,7 +441,7 @@ func (s *SpiderBase) getCaptchaBase64(httpUrl string, host string, setCookie boo
 		return "", fmt.Errorf("[Spider] %v", err)
 	}
 
-	verifyDir := GetEnvString("spider", "captchadir", "captcha")
+	verifyDir := EnvString("spider", "captchadir", "captcha")
 
 	path, _ := filepath.Abs(fmt.Sprintf("%s/%s", verifyDir, captchaImg))
 	err = ioutil.WriteFile(path, body, 0777)
@@ -487,7 +487,7 @@ func (s *SpiderBase) GetCaptchaCode(httpUrl string, host string, setCookie bool,
 		return "", fmt.Errorf("[Spider] %v", err)
 	}
 
-	appCode := GetEnvString("spider", "appcode", "794434d1937e4f438223b37fd7951d54")
+	appCode := EnvString("spider", "appcode", "794434d1937e4f438223b37fd7951d54")
 	req.Header.Set("Authorization", fmt.Sprintf("APPCODE %s", appCode))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 

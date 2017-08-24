@@ -27,11 +27,11 @@ var mongoSession *mgo.Session
 func initMongo() error {
 	var err error
 
-	host := GetEnvString("mongo", "host", "localhost")
-	port := GetEnvInt("mongo", "port", 27017)
-	username := GetEnvString("mongo", "username", "")
-	password := GetEnvString("mongo", "password", "")
-	poolLimit := GetEnvInt("mongo", "poolLimit", 10)
+	host := EnvString("mongo", "host", "localhost")
+	port := EnvInt("mongo", "port", 27017)
+	username := EnvString("mongo", "username", "")
+	password := EnvString("mongo", "password", "")
+	poolLimit := EnvInt("mongo", "poolLimit", 10)
 
 	dsn := fmt.Sprintf("mongodb://%s:%d", host, port)
 
@@ -112,11 +112,45 @@ func (m *Mongo) Insert(data bson.M) (int, error) {
 
 	if err != nil {
 		m.refreshSequence(-1)
-
 		return 0, err
 	}
 
 	return id, nil
+}
+
+/**
+ * BatchInsert 批量新增记录
+ * @param data ...bson.M 插入数据
+ * @return error
+ */
+func (m *Mongo) BatchInsert(data ...bson.M) error {
+	session := m.getSession()
+	defer session.Close()
+
+	docs := []interface{}{}
+
+	for _, v := range data {
+		id, err := m.refreshSequence()
+
+		if err != nil {
+			return err
+		}
+
+		v["_id"] = id
+
+		docs = append(docs, reflect.ValueOf(v).Interface())
+	}
+
+	err := session.DB(m.DB).C(m.Collection).Insert(docs...)
+
+	if err != nil {
+		count := len(docs)
+		m.refreshSequence(-count)
+
+		return err
+	}
+
+	return nil
 }
 
 /**
@@ -162,14 +196,14 @@ func (m *Mongo) Incr(query bson.M, column string, inc int) error {
 /**
  * FindOne 查询单条记录
  * @param query bson.M 查询条件
- * @param data interface{} (指针) 查询数据
+ * @param dest interface{} (指针) 查询数据
  * @return error
  */
-func (m *Mongo) FindOne(query bson.M, data interface{}) error {
+func (m *Mongo) FindOne(query bson.M, dest interface{}) error {
 	session := m.getSession()
 	defer session.Close()
 
-	err := session.DB(m.DB).C(m.Collection).Find(query).One(data)
+	err := session.DB(m.DB).C(m.Collection).Find(query).One(dest)
 
 	if err != nil {
 		return err
@@ -188,10 +222,10 @@ func (m *Mongo) FindOne(query bson.M, data interface{}) error {
  *     skip int
  *     limit int
  * ]
- * @param data interface{} (切片指针) 查询数据
+ * @param dest interface{} (切片指针) 查询数据
  * @return error
  */
-func (m *Mongo) Find(query bson.M, data interface{}) error {
+func (m *Mongo) Find(query bson.M, dest interface{}) error {
 	session := m.getSession()
 	defer session.Close()
 
@@ -223,7 +257,7 @@ func (m *Mongo) Find(query bson.M, data interface{}) error {
 		q = q.Limit(v.(int))
 	}
 
-	err := q.All(data)
+	err := q.All(dest)
 
 	if err != nil {
 		return err
@@ -234,14 +268,14 @@ func (m *Mongo) Find(query bson.M, data interface{}) error {
 
 /**
  * FindAll 查询所有记录
- * @param data interface{} (切片指针) 查询数据
+ * @param dest interface{} (切片指针) 查询数据
  * @return error
  */
-func (m *Mongo) FindAll(data interface{}) error {
+func (m *Mongo) FindAll(dest interface{}) error {
 	session := m.getSession()
 	defer session.Close()
 
-	err := session.DB(m.DB).C(m.Collection).Find(bson.M{}).All(data)
+	err := session.DB(m.DB).C(m.Collection).Find(bson.M{}).All(dest)
 
 	if err != nil {
 		return err
@@ -269,33 +303,43 @@ func (m *Mongo) Delete(query bson.M) error {
 }
 
 /**
- * Sum 字段求和
- * @param match bson.M (map[string]interface{}) 匹配条件
- * @param field string 聚合字段 (如："$count")
- * @return int, error
+ * PipeOne 管道聚合操作
+ * @param pipeline interface{} 管道条件，如：字段求和
+ * []bson.M{
+ *     {"$match": match},
+ *     {"$group": bson.M{"_id": 1, "total": bson.M{"$sum": field}}},
+ * }
+ * @param dest interface{} (切片指针) 管道聚合数据
+ * @return error
  */
-func (m *Mongo) Sum(match bson.M, field string) (int, error) {
+func (m *Mongo) PipeOne(pipeline interface{}, dest interface{}) error {
 	session := m.getSession()
 	defer session.Close()
 
-	p := session.DB(m.DB).C(m.Collection).Pipe([]bson.M{
-		{"$match": match},
-		{"$group": bson.M{"_id": 1, "total": bson.M{"$sum": field}}},
-	})
-
-	result := bson.M{}
-
-	err := p.One(&result)
+	err := session.DB(m.DB).C(m.Collection).Pipe(pipeline).One(dest)
 
 	if err != nil {
-		return 0, err
+		return err
 	}
 
-	total, ok := result["total"].(int)
+	return nil
+}
 
-	if !ok {
-		return 0, fmt.Errorf("type assertion error, result %v is %v", result["total"], reflect.TypeOf(result["total"]))
+/**
+ * Pipe 管道聚合操作
+ * @param pipeline interface{} 管道条件
+ * @param dest interface{} (切片指针) 管道聚合数据
+ * @return error
+ */
+func (m *Mongo) Pipe(pipeline interface{}, dest interface{}) error {
+	session := m.getSession()
+	defer session.Close()
+
+	err := session.DB(m.DB).C(m.Collection).Pipe(pipeline).All(dest)
+
+	if err != nil {
+		return err
 	}
 
-	return total, nil
+	return nil
 }
