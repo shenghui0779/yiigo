@@ -11,7 +11,6 @@ type Bootstrap struct {
 func New() *Bootstrap {
 	return &Bootstrap{
 		Env:   "env.ini",
-		Log:   "log.xml",
 		Mongo: false,
 		Redis: false,
 	}
@@ -20,11 +19,6 @@ func New() *Bootstrap {
 // SetEnv 设置env配置文件
 func (b *Bootstrap) SetEnv(path string) {
 	b.Env = path
-}
-
-// SetLog 设置log配置文件
-func (b *Bootstrap) SetLog(path string) {
-	b.Log = path
 }
 
 // EnableMongo 启用mongo
@@ -37,11 +31,12 @@ func (b *Bootstrap) EnableRedis() {
 	b.Redis = true
 }
 
-// Run 启动yiigo组件
+// Bootstrap 启动yiigo组件
 func (b *Bootstrap) Bootstrap() error {
-	initLogger(b.Log)
+	err := loadEnv(b.Env)
+	initLogger()
 
-	if err := loadEnv(b.Env); err != nil {
+	if err != nil {
 		return err
 	}
 
