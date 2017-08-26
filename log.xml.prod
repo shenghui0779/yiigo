@@ -1,0 +1,22 @@
+<seelog>
+    <outputs>
+        <filter levels="debug">
+            <rollingfile formatid="main" type="size" filename="logs/debug.log" maxsize="100" maxrolls="5"/>
+        </filter>
+        <filter levels="info">
+            <rollingfile formatid="main" type="size" filename="logs/info.log" maxsize="100" maxrolls="5"/>
+        </filter>
+        <filter levels="warn">
+            <rollingfile formatid="main" type="size" filename="logs/warn.log" maxsize="100" maxrolls="5"/>
+        </filter>
+        <filter levels="error">
+            <rollingfile formatid="main" type="size" filename="logs/error.log" maxsize="100" maxrolls="5"/>
+        </filter>
+        <filter levels="critical">
+            <rollingfile formatid="main" type="size" filename="logs/critical.log" maxsize="100" maxrolls="5"/>
+        </filter>
+    </outputs>
+    <formats>
+        <format id="main" format="[%Date %Time] [%LEV] %Msg%n"/>
+    </formats>
+</seelog>

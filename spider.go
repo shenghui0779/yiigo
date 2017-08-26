@@ -14,18 +14,16 @@ import (
 	"time"
 )
 
-/**
- * 爬虫基础类 [包括：http、https(CA证书)、cookie、验证码处理]
- * 做爬虫时需用到另外两个库：
- * 1、gbk 转 utf8：gopkg.in/iconv.v1 [https://github.com/qiniu/iconv]
- * 2、页面 dom 处理：github.com/PuerkitoBio/goquery
- * CertPath {*CertPath} CA证书存放路径 [默认 certs 目录，证书需用 openssl 转化为 pem格式]
- * CookiePath {string} cookie存放路径 [默认 cookies 目录]
- * 验证码图片默认存放路径为 captcha 目录
- */
+// 爬虫基础类 [包括：http、https(CA证书)、cookie、验证码处理]
+// 做爬虫时需用到另外两个库：
+//     1、gbk 转 utf8：gopkg.in/iconv.v1 [https://github.com/qiniu/iconv]
+//     2、页面 dom 处理：github.com/PuerkitoBio/goquery
+// CertPath {CertPath} CA证书存放路径 [默认 certs 目录，证书需用 openssl 转化为 pem格式]
+// CookiePath {string} cookie存放路径 [默认 cookies 目录]
+// 验证码图片默认存放路径为 captcha 目录
 
-type SpiderBase struct {
-	CertPath   *CertPath
+type Spider struct {
+	CertPath   CertPath
 	CookiePath string
 }
 
@@ -47,27 +45,25 @@ type showAPIBody struct {
 	ID      string `json:"Id"`
 }
 
-/**
- * HttpGet请求
- * @param httpUrl string 请求地址
- * @param host string 请求头部 Host
- * @param setCookie bool 请求是否需要加 cookie
- * @param saveCookie bool 是否保存返回的 cookie
- * @param clearOldCookie bool 是否需要清空原来的 cookie
- * @param referer string 请求头部 referer
- * @return io.ReadCloser
- */
-func (s *SpiderBase) HttpGet(httpUrl string, host string, setCookie bool, saveCookie bool, clearOldCookie bool, referer ...string) (io.ReadCloser, error) {
-	req, err := http.NewRequest("GET", httpUrl, nil)
+// HTTPGet http get请求
+// @param httpURL string 请求地址
+// @param host string 请求头部 Host
+// @param setCookie bool 请求是否需要加 cookie
+// @param saveCookie bool 是否保存返回的 cookie
+// @param clearOldCookie bool 是否需要清空原来的 cookie
+// @param referer string 请求头部 referer
+// @return io.ReadCloser
+func (s *Spider) HTTPGet(httpURL string, host string, setCookie bool, saveCookie bool, clearOldCookie bool, referer ...string) (io.ReadCloser, error) {
+	req, err := http.NewRequest("GET", httpURL, nil)
 
 	if err != nil {
 		return nil, fmt.Errorf("[Spider] %v", err)
 	}
 
-	s.setHttpCommonHeader(req, false, host, referer...)
+	s.setHTTPCommonHeader(req, false, host, referer...)
 
 	if setCookie {
-		err := s.setHttpCookie(req)
+		err := s.setHTTPCookie(req)
 
 		if err != nil {
 			return nil, fmt.Errorf("[Spider] %v", err)
@@ -90,7 +86,7 @@ func (s *SpiderBase) HttpGet(httpUrl string, host string, setCookie bool, saveCo
 	}
 
 	if saveCookie {
-		err := s.saveHttpCookie(resp.Cookies(), clearOldCookie)
+		err := s.saveHTTPCookie(resp.Cookies(), clearOldCookie)
 
 		if err != nil {
 			return nil, fmt.Errorf("[Spider] %v", err)
@@ -100,29 +96,27 @@ func (s *SpiderBase) HttpGet(httpUrl string, host string, setCookie bool, saveCo
 	return resp.Body, nil
 }
 
-/**
- * HttpPost请求
- * @param httpUrl string 请求地址
- * @param host string 请求头部 Host
- * @param v url.Values post参数
- * @param setCookie bool 请求是否需要加 cookie
- * @param saveCookie bool 是否保存返回的 cookie
- * @param clearOldCookie bool 是否需要清空原来的 cookie
- * @param referer string 请求头部 referer
- * @return io.ReadCloser
- */
-func (s *SpiderBase) HttpPost(httpUrl string, host string, v url.Values, setCookie bool, saveCookie bool, clearOldCookie bool, referer ...string) (io.ReadCloser, error) {
+// HTTPPost http post请求
+// @param httpURL string 请求地址
+// @param host string 请求头部 Host
+// @param v url.Values post参数
+// @param setCookie bool 请求是否需要加 cookie
+// @param saveCookie bool 是否保存返回的 cookie
+// @param clearOldCookie bool 是否需要清空原来的 cookie
+// @param referer string 请求头部 referer
+// @return io.ReadCloser
+func (s *Spider) HTTPPost(httpURL string, host string, v url.Values, setCookie bool, saveCookie bool, clearOldCookie bool, referer ...string) (io.ReadCloser, error) {
 	postParam := strings.NewReader(v.Encode())
-	req, err := http.NewRequest("POST", httpUrl, postParam)
+	req, err := http.NewRequest("POST", httpURL, postParam)
 
 	if err != nil {
 		return nil, fmt.Errorf("[Spider] %v", err)
 	}
 
-	s.setHttpCommonHeader(req, true, host, referer...)
+	s.setHTTPCommonHeader(req, true, host, referer...)
 
 	if setCookie {
-		err := s.setHttpCookie(req)
+		err := s.setHTTPCookie(req)
 
 		if err != nil {
 			return nil, fmt.Errorf("[Spider] %v", err)
@@ -145,7 +139,7 @@ func (s *SpiderBase) HttpPost(httpUrl string, host string, v url.Values, setCook
 	}
 
 	if saveCookie {
-		err := s.saveHttpCookie(resp.Cookies(), clearOldCookie)
+		err := s.saveHTTPCookie(resp.Cookies(), clearOldCookie)
 
 		if err != nil {
 			return nil, fmt.Errorf("[Spider] %v", err)
@@ -155,27 +149,25 @@ func (s *SpiderBase) HttpPost(httpUrl string, host string, v url.Values, setCook
 	return resp.Body, nil
 }
 
-/**
- * HttpsGet请求 [https 需要CA证书，用 openssl 转换成 pem格式：cert.pem、key.pem]
- * @param httpUrl string 请求地址
- * @param host string 请求头部 Host
- * @param setCookie bool 请求是否需要加 cookie
- * @param saveCookie bool 是否保存返回的 cookie
- * @param clearOldCookie bool 是否需要清空原来的 cookie
- * @param referer string 请求头部 referer
- * @return io.ReadCloser
- */
-func (s *SpiderBase) HttpsGet(httpUrl string, host string, setCookie bool, saveCookie bool, clearOldCookie bool, referer ...string) (io.ReadCloser, error) {
-	req, err := http.NewRequest("GET", httpUrl, nil)
+// HTTPSGet https get请求 [https 需要CA证书，用 openssl 转换成 pem格式：cert.pem、key.pem]
+// @param httpURL string 请求地址
+// @param host string 请求头部 Host
+// @param setCookie bool 请求是否需要加 cookie
+// @param saveCookie bool 是否保存返回的 cookie
+// @param clearOldCookie bool 是否需要清空原来的 cookie
+// @param referer string 请求头部 referer
+// @return io.ReadCloser
+func (s *Spider) HTTPSGet(httpURL string, host string, setCookie bool, saveCookie bool, clearOldCookie bool, referer ...string) (io.ReadCloser, error) {
+	req, err := http.NewRequest("GET", httpURL, nil)
 
 	if err != nil {
 		return nil, fmt.Errorf("[Spider] %v", err)
 	}
 
-	s.setHttpCommonHeader(req, false, host, referer...)
+	s.setHTTPCommonHeader(req, false, host, referer...)
 
 	if setCookie {
-		err := s.setHttpCookie(req)
+		err := s.setHTTPCookie(req)
 
 		if err != nil {
 			return nil, fmt.Errorf("[Spider] %v", err)
@@ -212,7 +204,7 @@ func (s *SpiderBase) HttpsGet(httpUrl string, host string, setCookie bool, saveC
 	}
 
 	if saveCookie {
-		err := s.saveHttpCookie(resp.Cookies(), clearOldCookie)
+		err := s.saveHTTPCookie(resp.Cookies(), clearOldCookie)
 
 		if err != nil {
 			return nil, fmt.Errorf("[Spider] %v", err)
@@ -222,29 +214,27 @@ func (s *SpiderBase) HttpsGet(httpUrl string, host string, setCookie bool, saveC
 	return resp.Body, nil
 }
 
-/**
- * post请求 [https 需要CA证书，用openssl转换成pem格式：cert.pem、key.pem]
- * @param httpUrl string 请求地址
- * @param host string 请求头部Host
- * @param v url.Values post参数
- * @param setCookie bool 请求是否需要加cookie
- * @param saveCookie bool 是否保存返回的cookie
- * @param clearOldCookie bool 是否需要清空原来的cookie
- * @param referer string 请求头部referer
- * @return io.ReadCloser
- */
-func (s *SpiderBase) HttpsPost(httpUrl string, host string, v url.Values, setCookie bool, saveCookie bool, clearOldCookie bool, referer ...string) (io.ReadCloser, error) {
+// HTTPSPost https post请求 [https 需要CA证书，用openssl转换成pem格式：cert.pem、key.pem]
+// @param httpURL string 请求地址
+// @param host string 请求头部Host
+// @param v url.Values post参数
+// @param setCookie bool 请求是否需要加cookie
+// @param saveCookie bool 是否保存返回的cookie
+// @param clearOldCookie bool 是否需要清空原来的cookie
+// @param referer string 请求头部referer
+// @return io.ReadCloser
+func (s *Spider) HTTPSPost(httpURL string, host string, v url.Values, setCookie bool, saveCookie bool, clearOldCookie bool, referer ...string) (io.ReadCloser, error) {
 	postParam := strings.NewReader(v.Encode())
-	req, err := http.NewRequest("POST", httpUrl, postParam)
+	req, err := http.NewRequest("POST", httpURL, postParam)
 
 	if err != nil {
 		return nil, fmt.Errorf("[Spider] %v", err)
 	}
 
-	s.setHttpCommonHeader(req, true, host, referer...)
+	s.setHTTPCommonHeader(req, true, host, referer...)
 
 	if setCookie {
-		err := s.setHttpCookie(req)
+		err := s.setHTTPCookie(req)
 
 		if err != nil {
 			return nil, fmt.Errorf("[Spider] %v", err)
@@ -281,7 +271,7 @@ func (s *SpiderBase) HttpsPost(httpUrl string, host string, v url.Values, setCoo
 	}
 
 	if saveCookie {
-		err := s.saveHttpCookie(resp.Cookies(), clearOldCookie)
+		err := s.saveHTTPCookie(resp.Cookies(), clearOldCookie)
 
 		if err != nil {
 			return nil, fmt.Errorf("[Spider] %v", err)
@@ -291,15 +281,13 @@ func (s *SpiderBase) HttpsPost(httpUrl string, host string, v url.Values, setCoo
 	return resp.Body, nil
 }
 
-/**
- * 设置Http请求公共头部
- * @param req *http.Request http请求对象指针
- * @param isPost bool 是否为post请求
- * @param host string 请求头部Host
- * @param referer string 请求头部referer
- */
-func (s *SpiderBase) setHttpCommonHeader(req *http.Request, isPost bool, host string, referer ...string) {
-	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/*,*/*;q=0.8")
+// setHTTPCommonHeader 设置HTTP请求公共头部
+// @param req http.Request http请求对象指针
+// @param isPost bool 是否为post请求
+// @param host string 请求头部Host
+// @param referer string 请求头部referer
+func (s *Spider) setHTTPCommonHeader(req *http.Request, isPost bool, host string, referer ...string) {
+	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/,;q=0.8")
 	req.Header.Set("Accept-Encoding", "gzip, deflate")
 	req.Header.Set("Accept-Language", "zh-CN,zh;q=0.8")
 
@@ -321,12 +309,10 @@ func (s *SpiderBase) setHttpCommonHeader(req *http.Request, isPost bool, host st
 	req.Header.Set("User-Agent", "Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; WOW64; Trident/5.0)")
 }
 
-/**
- * 设置http请求cookie
- * @param req *http.Request http请求对象指针
- * @return error
- */
-func (s *SpiderBase) setHttpCookie(req *http.Request) error {
+// setHTTPCookie 设置http请求cookie
+// @param req http.Request http请求对象指针
+// @return error
+func (s *Spider) setHTTPCookie(req *http.Request) error {
 	cookieDir := EnvString("spider", "cookiedir", "cookies")
 	path, _ := filepath.Abs(fmt.Sprintf("%s/%s", cookieDir, s.CookiePath))
 
@@ -350,13 +336,11 @@ func (s *SpiderBase) setHttpCookie(req *http.Request) error {
 	return nil
 }
 
-/**
- * 保存http请求返回的cookie
- * @param newCookies []*http.Cookie Cookie实例指针
- * @param clearOldCookie bool 是否需要清空原来的cookie
- * @param error
- */
-func (s *SpiderBase) saveHttpCookie(newCookies []*http.Cookie, clearOldCookie bool) error {
+// saveHTTPCookie 保存http请求返回的cookie
+// @param newCookies []http.Cookie Cookie实例指针
+// @param clearOldCookie bool 是否需要清空原来的cookie
+// @param error
+func (s *Spider) saveHTTPCookie(newCookies []*http.Cookie, clearOldCookie bool) error {
 	cookieDir := EnvString("spider", "cookiedir", "cookies")
 	path, _ := filepath.Abs(fmt.Sprintf("%s/%s", cookieDir, s.CookiePath))
 
@@ -416,18 +400,16 @@ func (s *SpiderBase) saveHttpCookie(newCookies []*http.Cookie, clearOldCookie bo
 	return nil
 }
 
-/**
- * 获取验证码图片 (base64字符串)
- * @param httpUrl string 获取验证码URL
- * @param host string 请求头部Host
- * @param setCookie bool 请求是否需要加cookie
- * @param saveCookie bool 是否保存返回的cookie
- * @param clearOldCookie bool 是否需要清空原来的cookie
- * @param captchaImg string 验证码图片保存名称
- * @return string, error
- */
-func (s *SpiderBase) getCaptchaBase64(httpUrl string, host string, setCookie bool, saveCookie bool, clearOldCookie bool, captchaImg string) (string, error) {
-	resBody, err := s.HttpGet(httpUrl, host, setCookie, saveCookie, clearOldCookie)
+// getCaptchaBase64 获取验证码图片 (base64字符串)
+// @param httpURL string 获取验证码URL
+// @param host string 请求头部Host
+// @param setCookie bool 请求是否需要加cookie
+// @param saveCookie bool 是否保存返回的cookie
+// @param clearOldCookie bool 是否需要清空原来的cookie
+// @param captchaImg string 验证码图片保存名称
+// @return string, error
+func (s *Spider) getCaptchaBase64(httpURL string, host string, setCookie bool, saveCookie bool, clearOldCookie bool, captchaImg string) (string, error) {
+	resBody, err := s.HTTPGet(httpURL, host, setCookie, saveCookie, clearOldCookie)
 
 	if err != nil {
 		return "", fmt.Errorf("[Spider] %v", err)
@@ -455,20 +437,18 @@ func (s *SpiderBase) getCaptchaBase64(httpUrl string, host string, setCookie boo
 	return captchaBase64, nil
 }
 
-/**
- * 调用 showapi 接口识别验证码 [showApi是付费服务：https://market.aliyun.com/products/57124001/cmapi011148.html#sku=yuncode514800004]
- * @param httpUrl string 请求验证码URL
- * @param host string 请求的头部Host
- * @param setCookie bool 请求是否需要加cookie
- * @param saveCookie bool 是否保存返回的cookie
- * @param clearOldCookie bool 是否需要清空原来的cookie
- * @param captchaImg string 验证码图片保存名称
- * @param typeId string 验证码类型 (具体查看showapi文档)
- * @param convertToJpg string 是否转化为jpg格式进行识别("0" 否；"1" 是)
- * @return string
- */
-func (s *SpiderBase) GetCaptchaCode(httpUrl string, host string, setCookie bool, saveCookie bool, clearOldCookie bool, captchaImg string, typeId string, convertToJpg string) (string, error) {
-	captchaBase64, err := s.getCaptchaBase64(httpUrl, host, setCookie, saveCookie, clearOldCookie, captchaImg)
+// GetCaptchaCode 调用 showapi 接口识别验证码 [showApi是付费服务：https://market.aliyun.com/products/57124001/cmapi011148.html#sku=yuncode514800004]
+// @param httpURL string 请求验证码URL
+// @param host string 请求的头部Host
+// @param setCookie bool 请求是否需要加cookie
+// @param saveCookie bool 是否保存返回的cookie
+// @param clearOldCookie bool 是否需要清空原来的cookie
+// @param captchaImg string 验证码图片保存名称
+// @param typeID string 验证码类型 (具体查看showapi文档)
+// @param convertToJpg string 是否转化为jpg格式进行识别("0" 否；"1" 是)
+// @return string
+func (s *Spider) GetCaptchaCode(httpURL string, host string, setCookie bool, saveCookie bool, clearOldCookie bool, captchaImg string, typeID string, convertToJpg string) (string, error) {
+	captchaBase64, err := s.getCaptchaBase64(httpURL, host, setCookie, saveCookie, clearOldCookie, captchaImg)
 
 	if err != nil {
 		return "", err
@@ -477,7 +457,7 @@ func (s *SpiderBase) GetCaptchaCode(httpUrl string, host string, setCookie bool,
 	v := url.Values{}
 
 	v.Set("img_base64", captchaBase64)
-	v.Set("typeId", typeId)
+	v.Set("typeID", typeID)
 	v.Set("convert_to_jpg", convertToJpg)
 
 	postParam := strings.NewReader(v.Encode())
@@ -520,11 +500,9 @@ func (s *SpiderBase) GetCaptchaCode(httpUrl string, host string, setCookie bool,
 	return data.ShowapiResBody.Result, nil
 }
 
-/**
- * 处理字符串,去除页面数据中的 "\n" 、"&nbsp;" 和 空格字符
- * @param str string
- * @return string
- */
+// TrimString 处理字符串,去除页面数据中的 "\n" 、"&nbsp;" 和 空格字符
+// @param str string
+// @return string
 func TrimString(str string) string {
 	text := strings.Trim(str, "\n")
 	text = strings.Trim(str, "&nbsp;")

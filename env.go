@@ -9,32 +9,14 @@ import (
 
 var env *ini.File
 
-/**
- * 加载ENV配置
- */
-func loadEnv(path string) error {
-	var err error
-
+// loadEnv load env file
+func loadEnv(path string) {
 	abs, _ := filepath.Abs(path)
-
-	env, err = ini.Load(abs)
-
-	if err != nil {
-		return err
-	}
-
+	env, _ = ini.Load(abs)
 	env.BlockMode = false
-
-	return nil
 }
 
-/**
- * 获取 string 配置
- * @param section string
- * @param key string
- * @param defaultValue string
- * @return string
- */
+// EnvString get string config
 func EnvString(section string, key string, defaultValue string) string {
 	if env == nil {
 		return defaultValue
@@ -45,13 +27,7 @@ func EnvString(section string, key string, defaultValue string) string {
 	return v
 }
 
-/**
- * 获取 int 配置
- * @param section string
- * @param key string
- * @param defaultValue int
- * @return int
- */
+// EnvInt get int config
 func EnvInt(section string, key string, defaultValue int) int {
 	if env == nil {
 		return defaultValue
@@ -62,13 +38,7 @@ func EnvInt(section string, key string, defaultValue int) int {
 	return v
 }
 
-/**
- * 获取 int64 配置
- * @param section string
- * @param key string
- * @param defaultValue int64
- * @return int64
- */
+// EnvInt64 get int64 config
 func EnvInt64(section string, key string, defaultValue int64) int64 {
 	if env == nil {
 		return defaultValue
@@ -79,13 +49,7 @@ func EnvInt64(section string, key string, defaultValue int64) int64 {
 	return v
 }
 
-/**
- * 获取 float64 配置
- * @param section string
- * @param key string
- * @param defaultValue float64
- * @return float64
- */
+// EnvFloat64 get float64 config
 func EnvFloat64(section string, key string, defaultValue float64) float64 {
 	if env == nil {
 		return defaultValue
@@ -96,13 +60,7 @@ func EnvFloat64(section string, key string, defaultValue float64) float64 {
 	return v
 }
 
-/**
- * 获取 bool 配置
- * @param section string
- * @param key string
- * @param defaultValue bool
- * @return bool
- */
+// EnvBool get bool config
 func EnvBool(section string, key string, defaultValue bool) bool {
 	if env == nil {
 		return defaultValue
@@ -113,13 +71,7 @@ func EnvBool(section string, key string, defaultValue bool) bool {
 	return v
 }
 
-/**
- * 获取 duration 配置
- * @param section string
- * @param key string
- * @param defaultValue bool
- * @return bool
- */
+// EnvDuration get duration config
 func EnvDuration(section string, key string, defaultValue time.Duration) time.Duration {
 	if env == nil {
 		return defaultValue

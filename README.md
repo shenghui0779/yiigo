@@ -15,7 +15,7 @@ Golang集成常用类库并封装，用于WEB、API和爬虫开发
 ## 获取
 
 ```go
-go get github.com/iiinsomnia/yiigo
+go get -u github.com/iiinsomnia/yiigo
 ```
 
 ## 使用
@@ -26,21 +26,14 @@ package main
 import "github.com/iiinsomnia/yiigo"
 
 func main() {
-    b := yiigo.New()
-
-	b.EnableMongo() // 启用mongo
-	b.EnableRedis() // 启用redis
-	b.Bootstrap()
+    //mysql、mongo、redis
+	yiigo.Bootstrap(true, true, true)
 }
 ```
 
-```go
-// 设置配置文件路径，默认为env.ini，具体配置参考env.ini.example
-yiigo.SetEnv("myenv.ini")
-```
-
 ## 说明
-* 在 `main.go` 所在目录创建 `env.ini` 配置文件，具体配置可以参考 `env.ini.example`
+* 在 `main.go` 所在目录创建 `env.ini` ENV配置文件，具体配置可以参考 `env.ini.dev`
+* 在 `main.go` 所在目录创建 `log.xml` 日志配置文件，具体配置可以参考 `log.xml.dev` 和 `log.xml.prod`
 * 目前数据库仅针对MySQL封装，多数据库连接只需在`ini`文件中配置多个即可
 * code.google.com 上 go get 不下来的库，可以在这里[获取](https://github.com/golang)
 * 如爬虫不需要模拟登录，则只需要使用 [goquery](https://github.com/PuerkitoBio/goquery) 即可

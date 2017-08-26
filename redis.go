@@ -2,7 +2,6 @@ package yiigo
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"reflect"
 	"sync"
@@ -12,8 +11,6 @@ import (
 	"github.com/youtube/vitess/go/pools"
 	"golang.org/x/net/context"
 )
-
-type Redis struct{}
 
 var (
 	redisPool *pools.ResourcePool
@@ -34,28 +31,33 @@ func initRedis() {
 	redisMux.Lock()
 	defer redisMux.Unlock()
 
-	if redisPool == nil {
-		poolMinActive := EnvInt("redis", "poolMinActive", 10)
-		poolMaxActive := EnvInt("redis", "poolMaxActive", 20)
-		poolIdleTimeout := EnvInt("redis", "poolIdleTimeout", 60000)
-
-		redisPool = pools.NewResourcePool(func() (pools.Resource, error) {
-			conn, err := dialRedis()
-			return ResourceConn{conn}, err
-		}, poolMinActive, poolMaxActive, time.Duration(poolIdleTimeout)*time.Millisecond)
+	if redisPool != nil {
+		return
 	}
+
+	poolMinActive := EnvInt("redis", "poolMinActive", 10)
+	poolMaxActive := EnvInt("redis", "poolMaxActive", 20)
+	poolIdleTimeout := EnvDuration("redis", "poolIdleTimeout", time.Duration(60000)*time.Millisecond)
+
+	redisPool = pools.NewResourcePool(func() (pools.Resource, error) {
+		conn, err := dialRedis()
+		return ResourceConn{conn}, err
+	}, poolMinActive, poolMaxActive, poolIdleTimeout*time.Millisecond)
 }
 
 // dialRedis dial redis
 func dialRedis() (redis.Conn, error) {
-	host := EnvString("redis", "host", "localhost")
-	port := EnvInt("redis", "port", 6379)
-	connectTimeout := EnvInt("redis", "connectTimeout", 10000)
-	readTimeout := EnvInt("redis", "readTimeout", 10000)
-	writeTimeout := EnvInt("redis", "writeTimeout", 10000)
+	dsn := fmt.Sprintf("%s:%d", EnvString("redis", "host", "localhost"), EnvInt("redis", "port", 6379))
 
-	dsn := fmt.Sprintf("%s:%d", host, port)
-	conn, err := redis.DialTimeout("tcp", dsn, time.Duration(connectTimeout)*time.Millisecond, time.Duration(readTimeout)*time.Millisecond, time.Duration(writeTimeout)*time.Millisecond)
+	dialOptions := []redis.DialOption{
+		redis.DialPassword(EnvString("redis", "password", "")),
+		redis.DialDatabase(EnvInt("redis", "database", 0)),
+		redis.DialConnectTimeout(EnvDuration("redis", "connectTimeout", time.Duration(10000)*time.Millisecond)),
+		redis.DialReadTimeout(EnvDuration("redis", "readTimeout", time.Duration(10000)*time.Millisecond)),
+		redis.DialWriteTimeout(EnvDuration("redis", "writeTimeout", time.Duration(10000)*time.Millisecond)),
+	}
+
+	conn, err := redis.Dial("tcp", dsn, dialOptions...)
 
 	if err != nil {
 		return nil, err
@@ -64,62 +66,22 @@ func dialRedis() (redis.Conn, error) {
 	return conn, nil
 }
 
-// getConn get a redis connection
-func (r *Redis) getConn() (pools.Resource, error) {
-	if redisPool == nil {
-		return nil, errors.New("redis pool is empty")
-	}
-
-	if redisPool.IsClosed() {
+// RedisConn get a redis connection
+func RedisConn() (redis.Conn, error) {
+	if redisPool == nil || redisPool.IsClosed() {
 		initRedis()
 	}
 
 	ctx := context.TODO()
-	rc, err := redisPool.Get(ctx)
+	r, err := redisPool.Get(ctx)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return rc, err
-}
+	defer redisPool.Put(r)
 
-// Do sends a command to the server and returns the received reply.
-func (r *Redis) Do(cmd string, args ...interface{}) (interface{}, error) {
-	rc, err := r.getConn()
-
-	if err != nil {
-		return nil, err
-	}
-
-	defer redisPool.Put(rc)
-
-	conn := rc.(ResourceConn).Conn
-
-	reply, err := conn.Do(cmd, args...)
-
-	return reply, err
-}
-
-// Pipeline sends commands to the server and returns the received reply
-func (r *Redis) Pipeline(cmds map[string][]interface{}) (interface{}, error) {
-	rc, err := r.getConn()
-
-	if err != nil {
-		return nil, err
-	}
-
-	defer redisPool.Put(rc)
-
-	conn := rc.(ResourceConn).Conn
-
-	for k, v := range cmds {
-		conn.Send(k, v...)
-	}
-
-	reply, err := conn.Do("EXEC")
-
-	return reply, err
+	return r.(ResourceConn).Conn, nil
 }
 
 // ScanRedisJSON scans json to a struct

@@ -1,0 +1,26 @@
+<seelog>
+    <outputs>
+        <filter levels="debug">
+            <console formatid="debug"/>
+        </filter>
+        <filter levels="info">
+            <console formatid="info"/>
+        </filter>
+        <filter levels="warn">
+            <console formatid="warn"/>
+        </filter>
+        <filter levels="error">
+            <console formatid="error"/>
+        </filter>
+        <filter levels="critical">
+            <console formatid="critical"/>
+        </filter>
+    </outputs>
+    <formats>
+        <format id="debug" format="%EscM(36)[%Date %Time] [%LEV] %Msg%n%EscM(36)"/>
+        <format id="info" format="%EscM(32)[%Date %Time] [%LEV] %Msg%n%EscM(32)"/>
+        <format id="warn" format="%EscM(33)[%Date %Time] [%LEV] %Msg%n%EscM(33)"/>
+        <format id="error" format="%EscM(31)[%Date %Time] [%LEV] %Msg%n%EscM(31)"/>
+        <format id="critical" format="%EscM(35)[%Date %Time] [%LEV] %Msg%n%EscM(35)"/>
+    </formats>
+</seelog>

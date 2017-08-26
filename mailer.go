@@ -18,13 +18,7 @@ type Mailer struct {
 	Encoding gomail.Encoding
 }
 
-/**
- * 发送邮件
- * subject string 邮件主题
- * content string 邮件主题
- * to []string 邮件接收人
- * cc ...string 邮件抄送
- */
+// Send send a mail
 func (m *Mailer) Send() error {
 	msgSettings := []gomail.MessageSetting{}
 
