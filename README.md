@@ -15,7 +15,7 @@ Golang集成常用类库并封装，用于WEB、API和爬虫开发
 ## 获取
 
 ```go
-go get -u github.com/iiinsomnia/yiigo
+go get github.com/iiinsomnia/yiigo
 ```
 
 ## 使用
