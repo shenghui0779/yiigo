@@ -27,7 +27,11 @@ import "github.com/iiinsomnia/yiigo"
 
 func main() {
     //mysql、mongo、redis
-    yiigo.Bootstrap(true, true, true)
+    err := yiigo.Bootstrap(true, true, true)
+
+    if err != nil {
+        panic(err)
+    }
 }
 ```
 
