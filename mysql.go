@@ -103,6 +103,10 @@ func initMultiDB(sections []*ini.Section) error {
 		dbmap[v.Name()] = db
 	}
 
+	if db, ok := dbmap["mysql.default"]; ok {
+		DB = db
+	}
+
 	return nil
 }
 
