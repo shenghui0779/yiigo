@@ -11,8 +11,15 @@ var env *ini.File
 
 // loadEnv load env file
 func loadEnv(path string) {
+	var err error
+
 	abs, _ := filepath.Abs(path)
-	env, _ = ini.Load(abs)
+	env, err = ini.Load(abs)
+
+	if err != nil {
+		panic(err)
+	}
+
 	env.BlockMode = false
 }
 

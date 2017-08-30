@@ -8,7 +8,12 @@ import (
 
 // initLogger open a log
 func initLogger(path string) {
-	logger, _ := seelog.LoggerFromConfigAsFile(path)
+	logger, err := seelog.LoggerFromConfigAsFile(path)
+
+	if err != nil {
+		panic(err)
+	}
+
 	seelog.ReplaceLogger(logger)
 }
 
