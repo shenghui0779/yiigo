@@ -60,14 +60,14 @@ func Success(c *gin.Context, data ...interface{}) {
 }
 
 // Failed API返回失败
-func Failed(c *gin.Context, data ...interface{}) {
+func Failed(c *gin.Context, msg ...string) {
 	obj := gin.H{
 		"code": -1,
 		"msg":  "failed",
 	}
 
-	if len(data) > 0 {
-		obj["data"] = data[0]
+	if len(msg) > 0 {
+		obj["msg"] = msg[0]
 	}
 
 	c.JSON(http.StatusOK, obj)
