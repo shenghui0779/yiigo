@@ -48,7 +48,7 @@ func initSingleDB() error {
 
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s&collation=%s&parseTime=True&loc=Local", username, password, host, port, database, charset, collection)
 
-	DB, err = sqlx.Open("mysql", dsn)
+	DB, err = sqlx.Connect("mysql", dsn)
 
 	if err != nil {
 		DB.Close()
@@ -57,13 +57,6 @@ func initSingleDB() error {
 
 	DB.SetMaxOpenConns(EnvInt("mysql", "maxOpenConns", 20))
 	DB.SetMaxIdleConns(EnvInt("mysql", "maxIdleConns", 10))
-
-	err = DB.Ping()
-
-	if err != nil {
-		DB.Close()
-		return err
-	}
 
 	return nil
 }
@@ -83,7 +76,7 @@ func initMultiDB(sections []*ini.Section) error {
 
 		dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s&collation=%s&parseTime=True&loc=Local", username, password, host, port, database, charset, collection)
 
-		db, err := sqlx.Open("mysql", dsn)
+		db, err := sqlx.Connect("mysql", dsn)
 
 		if err != nil {
 			db.Close()
@@ -92,13 +85,6 @@ func initMultiDB(sections []*ini.Section) error {
 
 		db.SetMaxOpenConns(v.Key("maxOpenConns").MustInt(20))
 		db.SetMaxIdleConns(v.Key("maxIdleConns").MustInt(10))
-
-		err = db.Ping()
-
-		if err != nil {
-			db.Close()
-			return err
-		}
 
 		dbmap[v.Name()] = db
 	}
