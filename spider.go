@@ -2,7 +2,6 @@ package yiigo
 
 import (
 	"crypto/tls"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -20,7 +19,6 @@ import (
 //     2、页面 dom 处理：github.com/PuerkitoBio/goquery
 // CertPath {CertPath} CA证书存放路径 [默认 certs 目录，证书需用 openssl 转化为 pem格式]
 // CookiePath {string} cookie存放路径 [默认 cookies 目录]
-// 验证码图片默认存放路径为 captcha 目录
 
 type Spider struct {
 	CertPath   CertPath
@@ -30,19 +28,6 @@ type Spider struct {
 type CertPath struct {
 	CertPem           string
 	KeyUnencryptedPem string
-}
-
-// 验证码接口返回
-type showAPIRes struct {
-	ShowapiResCode  int          `json:"showapi_res_code"`
-	ShowapiResError string       `json:"showapi_res_error"`
-	ShowapiResBody  *showAPIBody `json:"showapi_res_body"`
-}
-
-type showAPIBody struct {
-	Result  string `json:"Result"`
-	RetCode int    `json:"ret_code"`
-	ID      string `json:"Id"`
 }
 
 // HTTPGet http get请求
@@ -398,106 +383,6 @@ func (s *Spider) saveHTTPCookie(newCookies []*http.Cookie, clearOldCookie bool) 
 	}
 
 	return nil
-}
-
-// getCaptchaBase64 获取验证码图片 (base64字符串)
-// @param httpURL string 获取验证码URL
-// @param host string 请求头部Host
-// @param setCookie bool 请求是否需要加cookie
-// @param saveCookie bool 是否保存返回的cookie
-// @param clearOldCookie bool 是否需要清空原来的cookie
-// @param captchaImg string 验证码图片保存名称
-// @return string, error
-func (s *Spider) getCaptchaBase64(httpURL string, host string, setCookie bool, saveCookie bool, clearOldCookie bool, captchaImg string) (string, error) {
-	resBody, err := s.HTTPGet(httpURL, host, setCookie, saveCookie, clearOldCookie)
-
-	if err != nil {
-		return "", fmt.Errorf("[Spider] %v", err)
-	}
-
-	defer resBody.Close()
-
-	body, err := ioutil.ReadAll(resBody)
-
-	if err != nil {
-		return "", fmt.Errorf("[Spider] %v", err)
-	}
-
-	verifyDir := EnvString("spider", "captchadir", "captcha")
-
-	path, _ := filepath.Abs(fmt.Sprintf("%s/%s", verifyDir, captchaImg))
-	err = ioutil.WriteFile(path, body, 0777)
-
-	if err != nil {
-		return "", fmt.Errorf("[Spider] %v", err)
-	}
-
-	captchaBase64 := base64.StdEncoding.EncodeToString(body)
-
-	return captchaBase64, nil
-}
-
-// GetCaptchaCode 调用 showapi 接口识别验证码 [showApi是付费服务：https://market.aliyun.com/products/57124001/cmapi011148.html#sku=yuncode514800004]
-// @param httpURL string 请求验证码URL
-// @param host string 请求的头部Host
-// @param setCookie bool 请求是否需要加cookie
-// @param saveCookie bool 是否保存返回的cookie
-// @param clearOldCookie bool 是否需要清空原来的cookie
-// @param captchaImg string 验证码图片保存名称
-// @param typeID string 验证码类型 (具体查看showapi文档)
-// @param convertToJpg string 是否转化为jpg格式进行识别("0" 否；"1" 是)
-// @return string
-func (s *Spider) GetCaptchaCode(httpURL string, host string, setCookie bool, saveCookie bool, clearOldCookie bool, captchaImg string, typeID string, convertToJpg string) (string, error) {
-	captchaBase64, err := s.getCaptchaBase64(httpURL, host, setCookie, saveCookie, clearOldCookie, captchaImg)
-
-	if err != nil {
-		return "", err
-	}
-
-	v := url.Values{}
-
-	v.Set("img_base64", captchaBase64)
-	v.Set("typeID", typeID)
-	v.Set("convert_to_jpg", convertToJpg)
-
-	postParam := strings.NewReader(v.Encode())
-	req, err := http.NewRequest("POST", "http://ali-checkcode.showapi.com/checkcode", postParam)
-
-	if err != nil {
-		return "", fmt.Errorf("[Spider] %v", err)
-	}
-
-	appCode := EnvString("spider", "appcode", "794434d1937e4f438223b37fd7951d54")
-	req.Header.Set("Authorization", fmt.Sprintf("APPCODE %s", appCode))
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-
-	if err != nil {
-		return "", fmt.Errorf("[Spider] %v", err)
-	}
-
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-
-	if err != nil {
-		return "", fmt.Errorf("[Spider] %v", err)
-	}
-
-	data := &showAPIRes{}
-
-	err = json.Unmarshal(body, &data)
-
-	if err != nil {
-		return "", fmt.Errorf("[Spider] %v", err)
-	}
-
-	if data.ShowapiResCode != 0 {
-		return "", fmt.Errorf("[Spider] %v", data.ShowapiResError)
-	}
-
-	return data.ShowapiResBody.Result, nil
 }
 
 // TrimString 处理字符串,去除页面数据中的 "\n" 、"&nbsp;" 和 空格字符
