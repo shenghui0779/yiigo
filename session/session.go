@@ -8,7 +8,12 @@ import (
 
 const gosessid = "GOSESSID"
 
-var store = sessions.NewCookieStore([]byte(yiigo.EnvString("session", "secret", "N0awmAuS2OziVFu^9!*0LY7MeCRgQ&z0")))
+var store *sessions.CookieStore
+
+// Start start session
+func Start() {
+	store = sessions.NewCookieStore([]byte(yiigo.EnvString("session", "secret", "N0awmAuS2OziVFu^9!*0LY7MeCRgQ&z0")))
+}
 
 // Get get session key - value
 func Get(c *gin.Context, key string, defaultValule ...interface{}) (interface{}, error) {
