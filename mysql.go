@@ -64,7 +64,7 @@ func initSingleDB() error {
 
 // initMultiDB init multi db connections
 func initMultiDB(sections []*ini.Section) error {
-	dbmap = make(map[string]*sqlx.DB)
+	dbmap = make(map[string]*sqlx.DB, len(sections))
 
 	for _, v := range sections {
 		host := v.Key("host").MustString("localhost")
@@ -123,36 +123,36 @@ func DBConn(conn ...string) (*sqlx.DB, error) {
 func InsertSQL(table string, data interface{}) (string, []interface{}) {
 	v := reflect.Indirect(reflect.ValueOf(data))
 
-	if v.Kind() == reflect.Slice {
-		if v.Len() == 0 {
-			return "", nil
-		}
+	sql := ""
+	binds := []interface{}{}
 
-		return batchInsert(table, v)
+	switch v.Kind() {
+	case reflect.Struct:
+		sql, binds = singleInsert(table, v)
+	case reflect.Slice:
+		sql, binds = batchInsert(table, v)
 	}
 
-	return singleInsert(table, v)
+	return sql, binds
 }
 
 // UpdateSQL returns update sql and binds
-func UpdateSQL(sql string, data X, args ...interface{}) (string, []interface{}) {
-	sets := []string{}
+func UpdateSQL(sql string, data interface{}, args ...interface{}) (string, []interface{}) {
+	v := reflect.Indirect(reflect.ValueOf(data))
+
+	_sql := ""
 	binds := []interface{}{}
 
-	for k, v := range data {
-		if expr, ok := v.(*expr); ok {
-			sets = append(sets, fmt.Sprintf("%s = %s", k, expr.expr))
-			binds = append(binds, expr.args...)
-		} else {
-			sets = append(sets, fmt.Sprintf("%s = ?", k))
-			binds = append(binds, v)
+	switch v.Kind() {
+	case reflect.Map:
+		if x, ok := data.(X); ok {
+			_sql, binds = updateByMap(sql, x, args...)
 		}
+	case reflect.Struct:
+		_sql, binds = updateByStruct(sql, v, args...)
 	}
 
-	sql = strings.Replace(sql, "?", strings.Join(sets, ", "), 1)
-	binds = append(binds, args...)
-
-	return sql, binds
+	return _sql, binds
 }
 
 // Expr returns expression, eg: yiigo.Expr("price * ? + ?", 2, 100)
@@ -161,12 +161,13 @@ func Expr(expression string, args ...interface{}) *expr {
 }
 
 func singleInsert(table string, v reflect.Value) (string, []interface{}) {
-	t := v.Type()
 	fieldNum := v.NumField()
 
 	columns := make([]string, 0, fieldNum)
 	placeholders := make([]string, 0, fieldNum)
 	binds := make([]interface{}, 0, fieldNum)
+
+	t := v.Type()
 
 	for i := 0; i < fieldNum; i++ {
 		columns = append(columns, t.Field(i).Tag.Get("db"))
@@ -181,15 +182,16 @@ func singleInsert(table string, v reflect.Value) (string, []interface{}) {
 
 func batchInsert(table string, v reflect.Value) (string, []interface{}) {
 	count := v.Len()
-	fieldNum := v.Index(0).NumField()
-	t := v.Index(0).Type()
+	fieldNum := reflect.Indirect(v.Index(0)).NumField()
 
 	columns := make([]string, 0, fieldNum)
 	placeholders := make([]string, 0, fieldNum)
 	binds := make([]interface{}, 0, fieldNum*count)
 
+	t := reflect.Indirect(v.Index(0)).Type()
+
 	for i := 0; i < fieldNum; i++ {
-		columns[i] = t.Field(i).Tag.Get("db")
+		columns = append(columns, t.Field(i).Tag.Get("db"))
 	}
 
 	for i := 0; i < count; i++ {
@@ -197,13 +199,52 @@ func batchInsert(table string, v reflect.Value) (string, []interface{}) {
 
 		for j := 0; j < fieldNum; j++ {
 			phrs = append(phrs, "?")
-			binds = append(binds, v.Index(i).Field(j))
+			binds = append(binds, reflect.Indirect(v.Index(i)).Field(j))
 		}
 
 		placeholders = append(placeholders, fmt.Sprintf("(%s)", strings.Join(phrs, ",")))
 	}
 
 	sql := fmt.Sprintf("INSERT INTO %s (%s) VALUES %s", table, strings.Join(columns, ","), strings.Join(placeholders, ","))
+
+	return sql, binds
+}
+
+func updateByMap(sql string, data X, args ...interface{}) (string, []interface{}) {
+	sets := []string{}
+	binds := []interface{}{}
+
+	for k, v := range data {
+		if e, ok := v.(*expr); ok {
+			sets = append(sets, fmt.Sprintf("%s = %s", k, e.expr))
+			binds = append(binds, e.args...)
+		} else {
+			sets = append(sets, fmt.Sprintf("%s = ?", k))
+			binds = append(binds, v)
+		}
+	}
+
+	sql = strings.Replace(sql, "?", strings.Join(sets, ", "), 1)
+	binds = append(binds, args...)
+
+	return sql, binds
+}
+
+func updateByStruct(sql string, v reflect.Value, args ...interface{}) (string, []interface{}) {
+	fieldNum := v.NumField()
+
+	sets := make([]string, 0, fieldNum)
+	binds := make([]interface{}, 0, fieldNum+len(args))
+
+	t := v.Type()
+
+	for i := 0; i < fieldNum; i++ {
+		sets = append(sets, fmt.Sprintf("%s = ?", t.Field(i).Tag.Get("db")))
+		binds = append(binds, v.Field(i))
+	}
+
+	sql = strings.Replace(sql, "?", strings.Join(sets, ", "), 1)
+	binds = append(binds, args...)
 
 	return sql, binds
 }
