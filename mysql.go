@@ -2,7 +2,6 @@ package yiigo
 
 import (
 	"fmt"
-	"reflect"
 	"strings"
 	"sync"
 
@@ -119,27 +118,82 @@ func DBConn(conn ...string) (*sqlx.DB, error) {
 	return db, nil
 }
 
-// InsertSQL returns insert sql and binds, the first field of data is defaulted as the primary key
-func InsertSQL(table string, data interface{}) (string, []interface{}) {
-	v := reflect.Indirect(reflect.ValueOf(data))
+// InsertSQL returns insert sql and binds
+func InsertSQL(table string, data X) (string, []interface{}) {
+	length := len(data)
 
-	if v.Kind() == reflect.Slice {
-		if v.Len() == 0 {
-			return "", nil
-		}
+	columns := make([]string, length)
+	placeholders := make([]string, length)
+	binds := make([]interface{}, length)
 
-		return batchInsert(table, v)
+	i := 0
+
+	for k, v := range data {
+		columns[i] = k
+		placeholders[i] = "?"
+		binds[i] = v
+
+		i++
 	}
 
-	return singleInsert(table, v)
+	sql := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)", table, strings.Join(columns[1:], ","), strings.Join(placeholders[1:], ","))
+
+	return sql, binds
+}
+
+// BatchInsertSQL returns batch insert sql and binds
+func BatchInsertSQL(table string, data []X) (string, []interface{}) {
+	length := len(data)
+
+	if length == 0 {
+		return "", nil
+	}
+
+	keyNum := len(data[0])
+
+	columns := make([]string, keyNum)
+	placeholders := []string{}
+	binds := []interface{}{}
+
+	i := 0
+	phrs := make([]string, keyNum)
+	args := make([]interface{}, keyNum)
+
+	for k, v := range data[0] {
+		columns[i] = k
+		phrs[i] = "?"
+		args[i] = v
+
+		i++
+	}
+
+	placeholders = append(placeholders, fmt.Sprintf("(%s)", strings.Join(phrs, ",")))
+	binds = append(binds, args...)
+
+	for i := 1; i < length; i++ {
+		phrs := make([]string, keyNum)
+		args := make([]interface{}, keyNum)
+
+		for j, v := range columns {
+			phrs[j] = "?"
+			args[j] = data[i][v]
+		}
+
+		placeholders = append(placeholders, fmt.Sprintf("(%s)", strings.Join(phrs, ",")))
+		binds = append(binds, args...)
+	}
+
+	sql := fmt.Sprintf("INSERT INTO %s (%s) VALUES %s", table, strings.Join(columns, ","), strings.Join(placeholders, ","))
+
+	return sql, binds
 }
 
 // UpdateSQL returns update sql and binds
-func UpdateSQL(sql string, args ...interface{}) (string, []interface{}) {
+func UpdateSQL(sql string, data X, args ...interface{}) (string, []interface{}) {
 	sets := []string{}
 	binds := []interface{}{}
 
-	for k, v := range args[0].(X) {
+	for k, v := range data {
 		if expr, ok := v.(*expr); ok {
 			sets = append(sets, fmt.Sprintf("%s = %s", k, expr.expr))
 			binds = append(binds, expr.args...)
@@ -150,7 +204,7 @@ func UpdateSQL(sql string, args ...interface{}) (string, []interface{}) {
 	}
 
 	sql = strings.Replace(sql, "?", strings.Join(sets, ", "), 1)
-	binds = append(binds, args[1:]...)
+	binds = append(binds, args...)
 
 	return sql, binds
 }
@@ -158,54 +212,4 @@ func UpdateSQL(sql string, args ...interface{}) (string, []interface{}) {
 // Expr returns expression, eg: yiigo.Expr("price * ? + ?", 2, 100)
 func Expr(expression string, args ...interface{}) *expr {
 	return &expr{expr: expression, args: args}
-}
-
-func singleInsert(table string, v reflect.Value) (string, []interface{}) {
-	t := v.Type()
-	fieldNum := v.NumField()
-
-	columns := make([]string, fieldNum)
-	placeholders := make([]string, fieldNum)
-	binds := make([]interface{}, fieldNum)
-
-	for i := 0; i < fieldNum; i++ {
-		columns[i] = t.Field(i).Tag.Get("db")
-		placeholders[i] = "?"
-		binds[i] = v.Field(i)
-	}
-
-	sql := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)", table, strings.Join(columns[1:len(columns)], ","), strings.Join(placeholders[1:len(placeholders)], ","))
-
-	return sql, binds
-}
-
-func batchInsert(table string, v reflect.Value) (string, []interface{}) {
-	fieldNum := v.Index(0).NumField()
-	t := v.Index(0).Type()
-
-	columns := make([]string, fieldNum)
-
-	for i := 0; i < fieldNum; i++ {
-		columns[i] = t.Field(i).Tag.Get("db")
-	}
-
-	placeholders := []string{}
-	binds := []interface{}{}
-
-	for i := 0; i < v.Len(); i++ {
-		phrs := make([]string, fieldNum)
-		args := make([]interface{}, fieldNum)
-
-		for j := 0; j < fieldNum; j++ {
-			phrs[j] = "?"
-			args[j] = v.Index(i).Field(j)
-		}
-
-		placeholders = append(placeholders, fmt.Sprintf("(%s)", strings.Join(phrs[1:len(phrs)], ",")))
-		binds = append(binds, args[1:len(args)]...)
-	}
-
-	sql := fmt.Sprintf("INSERT INTO %s (%s) VALUES %s", table, strings.Join(columns[1:len(columns)], ","), strings.Join(placeholders, ","))
-
-	return sql, binds
 }
