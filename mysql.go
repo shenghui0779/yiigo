@@ -175,7 +175,7 @@ func singleInsert(table string, v reflect.Value) (string, []interface{}) {
 		binds = append(binds, v.Field(i).Interface())
 	}
 
-	sql := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)", table, strings.Join(columns, ","), strings.Join(placeholders, ","))
+	sql := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)", table, strings.Join(columns, ", "), strings.Join(placeholders, ", "))
 
 	return sql, binds
 }
@@ -202,10 +202,10 @@ func batchInsert(table string, v reflect.Value) (string, []interface{}) {
 			binds = append(binds, reflect.Indirect(v.Index(i)).Field(j).Interface())
 		}
 
-		placeholders = append(placeholders, fmt.Sprintf("(%s)", strings.Join(phrs, ",")))
+		placeholders = append(placeholders, fmt.Sprintf("(%s)", strings.Join(phrs, ", ")))
 	}
 
-	sql := fmt.Sprintf("INSERT INTO %s (%s) VALUES %s", table, strings.Join(columns, ","), strings.Join(placeholders, ","))
+	sql := fmt.Sprintf("INSERT INTO %s (%s) VALUES %s", table, strings.Join(columns, ", "), strings.Join(placeholders, ","))
 
 	return sql, binds
 }
