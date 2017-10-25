@@ -172,7 +172,7 @@ func singleInsert(table string, v reflect.Value) (string, []interface{}) {
 	for i := 0; i < fieldNum; i++ {
 		columns = append(columns, t.Field(i).Tag.Get("db"))
 		placeholders = append(placeholders, "?")
-		binds = append(binds, v.Field(i))
+		binds = append(binds, v.Field(i).Interface())
 	}
 
 	sql := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)", table, strings.Join(columns, ","), strings.Join(placeholders, ","))
@@ -199,7 +199,7 @@ func batchInsert(table string, v reflect.Value) (string, []interface{}) {
 
 		for j := 0; j < fieldNum; j++ {
 			phrs = append(phrs, "?")
-			binds = append(binds, reflect.Indirect(v.Index(i)).Field(j))
+			binds = append(binds, reflect.Indirect(v.Index(i)).Field(j).Interface())
 		}
 
 		placeholders = append(placeholders, fmt.Sprintf("(%s)", strings.Join(phrs, ",")))
@@ -240,7 +240,7 @@ func updateByStruct(sql string, v reflect.Value, args ...interface{}) (string, [
 
 	for i := 0; i < fieldNum; i++ {
 		sets = append(sets, fmt.Sprintf("%s = ?", t.Field(i).Tag.Get("db")))
-		binds = append(binds, v.Field(i))
+		binds = append(binds, v.Field(i).Interface())
 	}
 
 	sql = strings.Replace(sql, "?", strings.Join(sets, ", "), 1)
