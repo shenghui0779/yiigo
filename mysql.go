@@ -18,10 +18,10 @@ var (
 	dbmux sync.RWMutex
 )
 
-// SQL expression
-type expr struct {
-	expr string
-	args []interface{}
+// SQLExpr SQL expression
+type SQLExpr struct {
+	Expr string
+	Args []interface{}
 }
 
 // initMySQL init mysql connection
@@ -130,7 +130,9 @@ func InsertSQL(table string, data interface{}) (string, []interface{}) {
 	case reflect.Struct:
 		sql, binds = singleInsert(table, v)
 	case reflect.Slice:
-		sql, binds = batchInsert(table, v)
+		if count := v.Len(); count > 0 {
+			sql, binds = batchInsert(table, v, count)
+		}
 	}
 
 	return sql, binds
@@ -156,8 +158,8 @@ func UpdateSQL(sql string, data interface{}, args ...interface{}) (string, []int
 }
 
 // Expr returns expression, eg: yiigo.Expr("price * ? + ?", 2, 100)
-func Expr(expression string, args ...interface{}) *expr {
-	return &expr{expr: expression, args: args}
+func Expr(expr string, args ...interface{}) *SQLExpr {
+	return &SQLExpr{Expr: expr, Args: args}
 }
 
 func singleInsert(table string, v reflect.Value) (string, []interface{}) {
@@ -170,7 +172,13 @@ func singleInsert(table string, v reflect.Value) (string, []interface{}) {
 	t := v.Type()
 
 	for i := 0; i < fieldNum; i++ {
-		columns = append(columns, t.Field(i).Tag.Get("db"))
+		column := t.Field(i).Tag.Get("db")
+
+		if column == "" {
+			column = t.Field(i).Name
+		}
+
+		columns = append(columns, column)
 		placeholders = append(placeholders, "?")
 		binds = append(binds, v.Field(i).Interface())
 	}
@@ -180,18 +188,29 @@ func singleInsert(table string, v reflect.Value) (string, []interface{}) {
 	return sql, binds
 }
 
-func batchInsert(table string, v reflect.Value) (string, []interface{}) {
-	count := v.Len()
-	fieldNum := reflect.Indirect(v.Index(0)).NumField()
+func batchInsert(table string, v reflect.Value, count int) (string, []interface{}) {
+	first := reflect.Indirect(v.Index(0))
+
+	if first.Kind() != reflect.Struct {
+		panic("the data must be a slice to struct")
+	}
+
+	fieldNum := first.NumField()
 
 	columns := make([]string, 0, fieldNum)
 	placeholders := make([]string, 0, fieldNum)
 	binds := make([]interface{}, 0, fieldNum*count)
 
-	t := reflect.Indirect(v.Index(0)).Type()
+	t := first.Type()
 
 	for i := 0; i < fieldNum; i++ {
-		columns = append(columns, t.Field(i).Tag.Get("db"))
+		column := t.Field(i).Tag.Get("db")
+
+		if column == "" {
+			column = t.Field(i).Name
+		}
+
+		columns = append(columns, column)
 	}
 
 	for i := 0; i < count; i++ {
@@ -215,9 +234,9 @@ func updateByMap(sql string, data X, args ...interface{}) (string, []interface{}
 	binds := []interface{}{}
 
 	for k, v := range data {
-		if e, ok := v.(*expr); ok {
-			sets = append(sets, fmt.Sprintf("%s = %s", k, e.expr))
-			binds = append(binds, e.args...)
+		if e, ok := v.(*SQLExpr); ok {
+			sets = append(sets, fmt.Sprintf("%s = %s", k, e.Expr))
+			binds = append(binds, e.Args...)
 		} else {
 			sets = append(sets, fmt.Sprintf("%s = ?", k))
 			binds = append(binds, v)
@@ -239,8 +258,21 @@ func updateByStruct(sql string, v reflect.Value, args ...interface{}) (string, [
 	t := v.Type()
 
 	for i := 0; i < fieldNum; i++ {
-		sets = append(sets, fmt.Sprintf("%s = ?", t.Field(i).Tag.Get("db")))
-		binds = append(binds, v.Field(i).Interface())
+		column := t.Field(i).Tag.Get("db")
+
+		if column == "" {
+			column = t.Field(i).Name
+		}
+
+		field := v.Field(i).Interface()
+
+		if e, ok := field.(*SQLExpr); ok {
+			sets = append(sets, fmt.Sprintf("%s = %s", column, e.Expr))
+			binds = append(binds, e.Args...)
+		} else {
+			sets = append(sets, fmt.Sprintf("%s = ?", column))
+			binds = append(binds, field)
+		}
 	}
 
 	sql = strings.Replace(sql, "?", strings.Join(sets, ", "), 1)
