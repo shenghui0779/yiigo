@@ -2,7 +2,9 @@ package yiigo
 
 import (
 	"fmt"
+	"sync"
 
+	ini "gopkg.in/ini.v1"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -12,10 +14,25 @@ type Sequence struct {
 	Seq int    `bson:"seq"`
 }
 
-var mongoSession *mgo.Session
+var (
+	Mongo    *mgo.Session
+	mongomap map[string]*mgo.Session
+	mongomux sync.RWMutex
+)
 
 // initMongo init mongo connection
 func initMongo() error {
+	sections := childSections("mongo")
+
+	if len(sections) > 0 {
+		return initMultiMongo(sections)
+	}
+
+	return initSingleMongo()
+}
+
+// initSingleMongo init single mongo connection
+func initSingleMongo() error {
 	var err error
 
 	host := EnvString("mongo", "host", "localhost")
@@ -29,29 +46,75 @@ func initMongo() error {
 		dsn = fmt.Sprintf("mongodb://%s:%s@%s:%d", username, password, host, port)
 	}
 
-	mongoSession, err = mgo.Dial(dsn)
+	Mongo, err = mgo.Dial(dsn)
 
 	if err != nil {
 		return err
 	}
 
-	mongoSession.SetPoolLimit(EnvInt("mongo", "poolLimit", 10))
+	Mongo.SetPoolLimit(EnvInt("mongo", "poolLimit", 10))
 
 	return nil
 }
 
-// Mongo get mongo session
-func Mongo() *mgo.Session {
-	session := mongoSession.Clone()
+// initMultiMongo init multi mongo connections
+func initMultiMongo(sections []*ini.Section) error {
+	mongomap = make(map[string]*mgo.Session, len(sections))
 
-	return session
+	for _, v := range sections {
+		host := v.Key("host").MustString("localhost")
+		port := v.Key("port").MustInt(27017)
+		username := v.Key("username").MustString("")
+		password := v.Key("password").MustString("")
+
+		dsn := fmt.Sprintf("mongodb://%s:%d", host, port)
+
+		if username != "" {
+			dsn = fmt.Sprintf("mongodb://%s:%s@%s:%d", username, password, host, port)
+		}
+
+		mongo, err := mgo.Dial(dsn)
+
+		if err != nil {
+			return err
+		}
+
+		mongo.SetPoolLimit(EnvInt("mongo", "poolLimit", 10))
+
+		mongomap[v.Name()] = mongo
+	}
+
+	if mongo, ok := mongomap["mongo.default"]; ok {
+		Mongo = mongo
+	}
+
+	return nil
+}
+
+// MongoSession get mongo session
+func MongoSession(conn ...string) (*mgo.Session, error) {
+	mongomux.RLock()
+	defer mongomux.RUnlock()
+
+	c := "default"
+
+	if len(conn) > 0 {
+		c = conn[0]
+	}
+
+	schema := fmt.Sprintf("mongo.%s", c)
+
+	mongo, ok := mongomap[schema]
+
+	if !ok {
+		return nil, fmt.Errorf("mongodb %s is not connected", schema)
+	}
+
+	return mongo.Clone(), nil
 }
 
 // Seq get auto increment id
-func Seq(db string, collection string, seqs ...int) (int, error) {
-	session := mongoSession.Clone()
-	defer session.Close()
-
+func Seq(session *mgo.Session, db string, collection string, seqs ...int) (int, error) {
 	if len(seqs) == 0 {
 		seqs = append(seqs, 1)
 	}

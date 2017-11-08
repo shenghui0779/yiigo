@@ -113,7 +113,7 @@ func DBConn(conn ...string) (*sqlx.DB, error) {
 	db, ok := dbmap[schema]
 
 	if !ok {
-		return nil, fmt.Errorf("database %s is not connected", schema)
+		return nil, fmt.Errorf("mysql %s is not connected", schema)
 	}
 
 	return db, nil
