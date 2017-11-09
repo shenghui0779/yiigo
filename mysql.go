@@ -24,7 +24,6 @@ type SQLExpr struct {
 	Args []interface{}
 }
 
-// initMySQL init mysql connection
 func initMySQL() error {
 	sections := childSections("mysql")
 
@@ -35,7 +34,6 @@ func initMySQL() error {
 	return initSingleDB()
 }
 
-// initSingleDB init single db connection
 func initSingleDB() error {
 	var err error
 
@@ -62,7 +60,6 @@ func initSingleDB() error {
 	return nil
 }
 
-// initMultiDB init multi db connections
 func initMultiDB(sections []*ini.Section) error {
 	dbmap = make(map[string]*sqlx.DB, len(sections))
 
@@ -97,7 +94,7 @@ func initMultiDB(sections []*ini.Section) error {
 	return nil
 }
 
-// DBConn get db
+// DBConn get db connection
 func DBConn(conn ...string) (*sqlx.DB, error) {
 	dbmux.RLock()
 	defer dbmux.RUnlock()

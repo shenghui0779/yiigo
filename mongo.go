@@ -16,11 +16,10 @@ type Sequence struct {
 
 var (
 	Mongo    *mgo.Session
-	mongomap map[string]*mgo.Session
-	mongomux sync.RWMutex
+	mongoMap map[string]*mgo.Session
+	mongoMux sync.RWMutex
 )
 
-// initMongo init mongo connection
 func initMongo() error {
 	sections := childSections("mongo")
 
@@ -31,7 +30,6 @@ func initMongo() error {
 	return initSingleMongo()
 }
 
-// initSingleMongo init single mongo connection
 func initSingleMongo() error {
 	var err error
 
@@ -57,9 +55,8 @@ func initSingleMongo() error {
 	return nil
 }
 
-// initMultiMongo init multi mongo connections
 func initMultiMongo(sections []*ini.Section) error {
-	mongomap = make(map[string]*mgo.Session, len(sections))
+	mongoMap = make(map[string]*mgo.Session, len(sections))
 
 	for _, v := range sections {
 		host := v.Key("host").MustString("localhost")
@@ -81,10 +78,10 @@ func initMultiMongo(sections []*ini.Section) error {
 
 		mongo.SetPoolLimit(EnvInt("mongo", "poolLimit", 10))
 
-		mongomap[v.Name()] = mongo
+		mongoMap[v.Name()] = mongo
 	}
 
-	if mongo, ok := mongomap["mongo.default"]; ok {
+	if mongo, ok := mongoMap["mongo.default"]; ok {
 		Mongo = mongo
 	}
 
@@ -93,8 +90,8 @@ func initMultiMongo(sections []*ini.Section) error {
 
 // MongoSession get mongo session
 func MongoSession(conn ...string) (*mgo.Session, error) {
-	mongomux.RLock()
-	defer mongomux.RUnlock()
+	mongoMux.RLock()
+	defer mongoMux.RUnlock()
 
 	c := "default"
 
@@ -104,7 +101,7 @@ func MongoSession(conn ...string) (*mgo.Session, error) {
 
 	schema := fmt.Sprintf("mongo.%s", c)
 
-	mongo, ok := mongomap[schema]
+	mongo, ok := mongoMap[schema]
 
 	if !ok {
 		return nil, fmt.Errorf("mongodb %s is not connected", schema)
