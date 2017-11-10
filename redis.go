@@ -15,24 +15,28 @@ import (
 	"golang.org/x/net/context"
 )
 
-type RedisPool struct {
+// RedisPoolResource redis pool resource
+type RedisPoolResource struct {
 	name string
 	pool *pools.ResourcePool
 	mux  sync.Mutex
 }
 
-type ResourceConn struct {
+// RedisResourceConn redis connection resource
+type RedisResourceConn struct {
 	redis.Conn
 }
 
 var (
-	Redis    *RedisPool
-	redisMap map[string]*RedisPool
+	// RedisPool default connection pool
+	RedisPool *RedisPoolResource
+
+	redisMap map[string]*RedisPoolResource
 	redisMux sync.RWMutex
 )
 
 // Close close connection resorce
-func (r ResourceConn) Close() {
+func (r RedisResourceConn) Close() {
 	r.Conn.Close()
 }
 
@@ -48,27 +52,27 @@ func initRedis() {
 }
 
 func initSingleRedis() {
-	Redis = &RedisPool{name: "redis"}
-	Redis.dial()
+	RedisPool = &RedisPoolResource{name: "redis"}
+	RedisPool.dial()
 }
 
 func initMultiRedis(sections []*ini.Section) {
-	redisMap = make(map[string]*RedisPool, len(sections))
+	redisMap = make(map[string]*RedisPoolResource, len(sections))
 
 	for _, v := range sections {
-		pool := &RedisPool{name: v.Name()}
+		pool := &RedisPoolResource{name: v.Name()}
 		pool.dial()
 
 		redisMap[v.Name()] = pool
 	}
 
 	if redis, ok := redisMap["redis.default"]; ok {
-		Redis = redis
+		RedisPool = redis
 	}
 }
 
 // RedisConnPool get an redis pool
-func RedisConnPool(conn ...string) (*RedisPool, error) {
+func RedisConnPool(conn ...string) (*RedisPoolResource, error) {
 	redisMux.RLock()
 	defer redisMux.RUnlock()
 
@@ -89,7 +93,7 @@ func RedisConnPool(conn ...string) (*RedisPool, error) {
 	return pool, nil
 }
 
-func (r *RedisPool) dial() {
+func (r *RedisPoolResource) dial() {
 	r.mux.Lock()
 	defer r.mux.Unlock()
 
@@ -118,12 +122,12 @@ func (r *RedisPool) dial() {
 			return nil, err
 		}
 
-		return ResourceConn{conn}, nil
+		return RedisResourceConn{conn}, nil
 	}, poolMinActive, poolMaxActive, poolIdleTimeout*time.Millisecond)
 }
 
 // Get get a connection resource from the pool
-func (r *RedisPool) Get() (ResourceConn, error) {
+func (r *RedisPoolResource) Get() (RedisResourceConn, error) {
 	if r.pool.IsClosed() {
 		r.dial()
 	}
@@ -132,14 +136,14 @@ func (r *RedisPool) Get() (ResourceConn, error) {
 	resource, err := r.pool.Get(ctx)
 
 	if err != nil {
-		return ResourceConn{}, err
+		return RedisResourceConn{}, err
 	}
 
-	return resource.(ResourceConn), nil
+	return resource.(RedisResourceConn), nil
 }
 
 // Put return a connection resource to the pool
-func (r *RedisPool) Put(rc ResourceConn) {
+func (r *RedisPoolResource) Put(rc RedisResourceConn) {
 	r.pool.Put(rc)
 }
 

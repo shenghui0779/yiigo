@@ -13,7 +13,9 @@ import (
 )
 
 var (
-	DB    *sqlx.DB
+	// DB default connection
+	DB *sqlx.DB
+
 	dbmap map[string]*sqlx.DB
 	dbmux sync.RWMutex
 )

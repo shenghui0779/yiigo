@@ -9,13 +9,16 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
+// Sequence model for _id auto_increment
 type Sequence struct {
 	ID  string `bson:"_id"`
 	Seq int    `bson:"seq"`
 }
 
 var (
-	Mongo    *mgo.Session
+	// Mongo default session
+	Mongo *mgo.Session
+
 	mongoMap map[string]*mgo.Session
 	mongoMux sync.RWMutex
 )
