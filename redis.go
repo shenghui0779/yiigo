@@ -15,7 +15,7 @@ import (
 	"golang.org/x/net/context"
 )
 
-type redisPool struct {
+type RedisPool struct {
 	name string
 	pool *pools.ResourcePool
 	mux  sync.Mutex
@@ -26,9 +26,9 @@ type ResourceConn struct {
 }
 
 var (
-	RedisPool *redisPool
-	redisMap  map[string]*redisPool
-	redisMux  sync.RWMutex
+	Redis    *RedisPool
+	redisMap map[string]*RedisPool
+	redisMux sync.RWMutex
 )
 
 // Close close connection resorce
@@ -48,27 +48,27 @@ func initRedis() {
 }
 
 func initSingleRedis() {
-	RedisPool := &redisPool{name: "redis"}
-	RedisPool.dial()
+	Redis = &RedisPool{name: "redis"}
+	Redis.dial()
 }
 
 func initMultiRedis(sections []*ini.Section) {
-	redisMap = make(map[string]*redisPool, len(sections))
+	redisMap = make(map[string]*RedisPool, len(sections))
 
 	for _, v := range sections {
-		pool := &redisPool{name: v.Name()}
+		pool := &RedisPool{name: v.Name()}
 		pool.dial()
 
 		redisMap[v.Name()] = pool
 	}
 
 	if redis, ok := redisMap["redis.default"]; ok {
-		RedisPool = redis
+		Redis = redis
 	}
 }
 
-// RedisConn get redis connection
-func RedisConn(conn ...string) (redis.Conn, error) {
+// RedisConnPool get an redis pool
+func RedisConnPool(conn ...string) (*RedisPool, error) {
 	redisMux.RLock()
 	defer redisMux.RUnlock()
 
@@ -80,24 +80,16 @@ func RedisConn(conn ...string) (redis.Conn, error) {
 
 	schema := fmt.Sprintf("redis.%s", c)
 
-	rp, ok := redisMap[schema]
+	pool, ok := redisMap[schema]
 
 	if !ok {
 		return nil, fmt.Errorf("redis %s is not connected", schema)
 	}
 
-	rc, err := rp.get()
-
-	if err != nil {
-		return nil, err
-	}
-
-	defer rp.pool.Put(rc)
-
-	return rc.(ResourceConn).Conn, nil
+	return pool, nil
 }
 
-func (r *redisPool) dial() {
+func (r *RedisPool) dial() {
 	r.mux.Lock()
 	defer r.mux.Unlock()
 
@@ -130,19 +122,25 @@ func (r *redisPool) dial() {
 	}, poolMinActive, poolMaxActive, poolIdleTimeout*time.Millisecond)
 }
 
-func (r *redisPool) get() (pools.Resource, error) {
+// Get get a connection resource from the pool
+func (r *RedisPool) Get() (ResourceConn, error) {
 	if r.pool.IsClosed() {
 		r.dial()
 	}
 
 	ctx := context.TODO()
-	rc, err := r.pool.Get(ctx)
+	resource, err := r.pool.Get(ctx)
 
 	if err != nil {
-		return nil, err
+		return ResourceConn{}, err
 	}
 
-	return rc, nil
+	return resource.(ResourceConn), nil
+}
+
+// Put return a connection resource to the pool
+func (r *RedisPool) Put(rc ResourceConn) {
+	r.pool.Put(rc)
 }
 
 // ScanJSON scans src to the struct pointed to by dest
