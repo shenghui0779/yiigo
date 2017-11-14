@@ -139,7 +139,14 @@ func (r *RedisPoolResource) Get() (RedisResourceConn, error) {
 		return RedisResourceConn{}, err
 	}
 
-	return resource.(RedisResourceConn), nil
+	rc := resource.(RedisResourceConn)
+
+	if err = rc.Err(); err != nil {
+		r.pool.Put(rc)
+		return rc, err
+	}
+
+	return rc, nil
 }
 
 // Put return a connection resource to the pool
