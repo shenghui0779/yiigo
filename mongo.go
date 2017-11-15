@@ -17,10 +17,8 @@ type Sequence struct {
 
 var (
 	// Mongo default session
-	Mongo *mgo.Session
-
-	mongoMap map[string]*mgo.Session
-	mongoMux sync.RWMutex
+	Mongo    *mgo.Session
+	mongoMap sync.Map
 )
 
 func initMongo() error {
@@ -59,8 +57,6 @@ func initSingleMongo() error {
 }
 
 func initMultiMongo(sections []*ini.Section) error {
-	mongoMap = make(map[string]*mgo.Session, len(sections))
-
 	for _, v := range sections {
 		host := v.Key("host").MustString("localhost")
 		port := v.Key("port").MustInt(27017)
@@ -81,11 +77,11 @@ func initMultiMongo(sections []*ini.Section) error {
 
 		mongo.SetPoolLimit(EnvInt("mongo", "poolLimit", 10))
 
-		mongoMap[v.Name()] = mongo
+		mongoMap.Store(v.Name(), mongo)
 	}
 
-	if mongo, ok := mongoMap["mongo.default"]; ok {
-		Mongo = mongo
+	if v, ok := mongoMap.Load("mongo.default"); ok {
+		Mongo = v.(*mgo.Session)
 	}
 
 	return nil
@@ -93,9 +89,6 @@ func initMultiMongo(sections []*ini.Section) error {
 
 // MongoSession get mongo session
 func MongoSession(conn ...string) (*mgo.Session, error) {
-	mongoMux.RLock()
-	defer mongoMux.RUnlock()
-
 	c := "default"
 
 	if len(conn) > 0 {
@@ -104,13 +97,15 @@ func MongoSession(conn ...string) (*mgo.Session, error) {
 
 	schema := fmt.Sprintf("mongo.%s", c)
 
-	mongo, ok := mongoMap[schema]
+	v, ok := mongoMap.Load(schema)
 
 	if !ok {
 		return nil, fmt.Errorf("mongodb %s is not connected", schema)
 	}
 
-	return mongo.Clone(), nil
+	session := v.(*mgo.Session)
+
+	return session.Clone(), nil
 }
 
 // Seq get auto increment id

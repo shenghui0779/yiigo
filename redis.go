@@ -30,9 +30,7 @@ type RedisResourceConn struct {
 var (
 	// RedisPool default connection pool
 	RedisPool *RedisPoolResource
-
-	redisMap map[string]*RedisPoolResource
-	redisMux sync.RWMutex
+	redisMap  sync.Map
 )
 
 // Close close connection resorce
@@ -57,25 +55,20 @@ func initSingleRedis() {
 }
 
 func initMultiRedis(sections []*ini.Section) {
-	redisMap = make(map[string]*RedisPoolResource, len(sections))
-
 	for _, v := range sections {
 		pool := &RedisPoolResource{name: v.Name()}
 		pool.dial()
 
-		redisMap[v.Name()] = pool
+		redisMap.Store(v.Name(), pool)
 	}
 
-	if redis, ok := redisMap["redis.default"]; ok {
-		RedisPool = redis
+	if v, ok := redisMap.Load("redis.default"); ok {
+		RedisPool = v.(*RedisPoolResource)
 	}
 }
 
 // RedisConnPool get an redis pool
 func RedisConnPool(conn ...string) (*RedisPoolResource, error) {
-	redisMux.RLock()
-	defer redisMux.RUnlock()
-
 	c := "default"
 
 	if len(conn) > 0 {
@@ -84,13 +77,13 @@ func RedisConnPool(conn ...string) (*RedisPoolResource, error) {
 
 	schema := fmt.Sprintf("redis.%s", c)
 
-	pool, ok := redisMap[schema]
+	v, ok := redisMap.Load(schema)
 
 	if !ok {
 		return nil, fmt.Errorf("redis %s is not connected", schema)
 	}
 
-	return pool, nil
+	return v.(*RedisPoolResource), nil
 }
 
 func (r *RedisPoolResource) dial() {

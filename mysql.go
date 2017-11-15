@@ -14,10 +14,8 @@ import (
 
 var (
 	// DB default connection
-	DB *sqlx.DB
-
-	dbmap map[string]*sqlx.DB
-	dbmux sync.RWMutex
+	DB    *sqlx.DB
+	dbmap sync.Map
 )
 
 // SQLExpr SQL expression
@@ -63,8 +61,6 @@ func initSingleDB() error {
 }
 
 func initMultiDB(sections []*ini.Section) error {
-	dbmap = make(map[string]*sqlx.DB, len(sections))
-
 	for _, v := range sections {
 		host := v.Key("host").MustString("localhost")
 		port := v.Key("port").MustInt(3306)
@@ -86,11 +82,11 @@ func initMultiDB(sections []*ini.Section) error {
 		db.SetMaxOpenConns(v.Key("maxOpenConns").MustInt(20))
 		db.SetMaxIdleConns(v.Key("maxIdleConns").MustInt(10))
 
-		dbmap[v.Name()] = db
+		dbmap.Store(v.Name(), db)
 	}
 
-	if db, ok := dbmap["mysql.default"]; ok {
-		DB = db
+	if v, ok := dbmap.Load("mysql.default"); ok {
+		DB = v.(*sqlx.DB)
 	}
 
 	return nil
@@ -98,9 +94,6 @@ func initMultiDB(sections []*ini.Section) error {
 
 // DBConn get db connection
 func DBConn(conn ...string) (*sqlx.DB, error) {
-	dbmux.RLock()
-	defer dbmux.RUnlock()
-
 	c := "default"
 
 	if len(conn) > 0 {
@@ -109,13 +102,13 @@ func DBConn(conn ...string) (*sqlx.DB, error) {
 
 	schema := fmt.Sprintf("mysql.%s", c)
 
-	db, ok := dbmap[schema]
+	v, ok := dbmap.Load(schema)
 
 	if !ok {
 		return nil, fmt.Errorf("mysql %s is not connected", schema)
 	}
 
-	return db, nil
+	return v.(*sqlx.DB), nil
 }
 
 // InsertSQL returns insert sql and binds
