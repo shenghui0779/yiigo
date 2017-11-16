@@ -22,8 +22,8 @@ type RedisPoolResource struct {
 	mux  sync.Mutex
 }
 
-// RedisResourceConn redis connection resource
-type RedisResourceConn struct {
+// RedisConn redis connection resource
+type RedisConn struct {
 	redis.Conn
 }
 
@@ -34,7 +34,7 @@ var (
 )
 
 // Close close connection resorce
-func (r RedisResourceConn) Close() {
+func (r RedisConn) Close() {
 	r.Conn.Close()
 }
 
@@ -115,12 +115,12 @@ func (r *RedisPoolResource) dial() {
 			return nil, err
 		}
 
-		return RedisResourceConn{conn}, nil
+		return RedisConn{conn}, nil
 	}, poolMinActive, poolMaxActive, poolIdleTimeout*time.Millisecond)
 }
 
 // Get get a connection resource from the pool
-func (r *RedisPoolResource) Get() (RedisResourceConn, error) {
+func (r *RedisPoolResource) Get() (RedisConn, error) {
 	if r.pool.IsClosed() {
 		r.dial()
 	}
@@ -129,10 +129,10 @@ func (r *RedisPoolResource) Get() (RedisResourceConn, error) {
 	resource, err := r.pool.Get(ctx)
 
 	if err != nil {
-		return RedisResourceConn{}, err
+		return RedisConn{}, err
 	}
 
-	rc := resource.(RedisResourceConn)
+	rc := resource.(RedisConn)
 
 	if err = rc.Err(); err != nil {
 		r.pool.Put(rc)
@@ -143,7 +143,7 @@ func (r *RedisPoolResource) Get() (RedisResourceConn, error) {
 }
 
 // Put return a connection resource to the pool
-func (r *RedisPoolResource) Put(rc RedisResourceConn) {
+func (r *RedisPoolResource) Put(rc RedisConn) {
 	r.pool.Put(rc)
 }
 
