@@ -1,19 +1,19 @@
 <seelog>
     <outputs>
         <filter levels="debug">
-            <rollingfile formatid="main" type="size" filename="logs/debug.log" maxsize="102400" maxrolls="5"/>
+            <rollingfile formatid="main" type="date" filename="logs/debug.log"  datepattern="2006.01.02" namemode="prefix" maxrolls="180"/>
         </filter>
         <filter levels="info">
-            <rollingfile formatid="main" type="size" filename="logs/info.log" maxsize="102400" maxrolls="5"/>
+            <rollingfile formatid="main" type="date" filename="logs/info.log"  datepattern="2006.01.02" namemode="prefix" maxrolls="180"/>
         </filter>
         <filter levels="warn">
-            <rollingfile formatid="main" type="size" filename="logs/warn.log" maxsize="102400" maxrolls="5"/>
+            <rollingfile formatid="main" type="date" filename="logs/warn.log"  datepattern="2006.01.02" namemode="prefix" maxrolls="180"/>
         </filter>
         <filter levels="error">
-            <rollingfile formatid="main" type="size" filename="logs/error.log" maxsize="102400" maxrolls="5"/>
+            <rollingfile formatid="main" type="date" filename="logs/error.log" datepattern="2006.01.02" namemode="prefix" maxrolls="180"/>
         </filter>
         <filter levels="critical">
-            <rollingfile formatid="main" type="size" filename="logs/critical.log" maxsize="102400" maxrolls="5"/>
+            <rollingfile formatid="main" type="date" filename="logs/critical.log" datepattern="2006.01.02" namemode="prefix" maxrolls="180"/>
         </filter>
     </outputs>
     <formats>
