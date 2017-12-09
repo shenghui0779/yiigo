@@ -11,14 +11,14 @@ import (
 // Logger yiigo logger
 var Logger *zap.Logger
 
-// initLogger open a log
+// initLogger init logger
 func initLogger() {
 	if EnvBool("app", "debug", true) {
 		w := zapcore.AddSync(&lumberjack.Logger{
 			Filename:   EnvString("log", "path", "app.log"),
-			MaxSize:    EnvInt("log", "log.rotate", 500), // megabytes
-			MaxBackups: EnvInt("log", "log.rotate", 0),
-			MaxAge:     EnvInt("log", "log.rotate", 0), // days
+			MaxSize:    EnvInt("log.rotate", "maxSize", 500), // megabytes
+			MaxBackups: EnvInt("log.rotate", "maxBackups", 0),
+			MaxAge:     EnvInt("log.rotate", "maxAge", 0), // days
 		})
 
 		cfg := zap.NewProductionEncoderConfig()
