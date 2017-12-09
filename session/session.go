@@ -20,7 +20,6 @@ func Get(c *gin.Context, key string, defaultValule ...interface{}) (interface{},
 	session, err := store.Get(c.Request, gosessid)
 
 	if err != nil {
-		yiigo.Err(err.Error())
 		return nil, err
 	}
 
@@ -43,7 +42,6 @@ func Set(c *gin.Context, key string, data interface{}, duration ...int) error {
 	session, err := store.Get(c.Request, gosessid)
 
 	if err != nil {
-		yiigo.Err(err.Error())
 		return err
 	}
 
@@ -59,12 +57,7 @@ func Set(c *gin.Context, key string, data interface{}, duration ...int) error {
 	// Save it before we write to the response/return from the handler.
 	err = session.Save(c.Request, c.Writer)
 
-	if err != nil {
-		yiigo.Err(err.Error())
-		return err
-	}
-
-	return nil
+	return err
 }
 
 // Delete delete session key
@@ -72,7 +65,6 @@ func Delete(c *gin.Context, key string) error {
 	session, err := store.Get(c.Request, gosessid)
 
 	if err != nil {
-		yiigo.Err(err.Error())
 		return err
 	}
 
@@ -80,12 +72,7 @@ func Delete(c *gin.Context, key string) error {
 
 	err = session.Save(c.Request, c.Writer)
 
-	if err != nil {
-		yiigo.Err(err.Error())
-		return err
-	}
-
-	return nil
+	return err
 }
 
 // Destroy destroy session
@@ -93,7 +80,6 @@ func Destroy(c *gin.Context) error {
 	session, err := store.Get(c.Request, gosessid)
 
 	if err != nil {
-		yiigo.Err(err.Error())
 		return err
 	}
 
@@ -104,10 +90,5 @@ func Destroy(c *gin.Context) error {
 
 	err = session.Save(c.Request, c.Writer)
 
-	if err != nil {
-		yiigo.Err(err.Error())
-		return err
-	}
-
-	return nil
+	return err
 }
