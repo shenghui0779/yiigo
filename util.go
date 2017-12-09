@@ -48,8 +48,9 @@ func Date(timestamp int64, format ...string) string {
 // OK API返回成功
 func OK(c *gin.Context, data ...interface{}) {
 	obj := gin.H{
-		"code": EnvInt("code", "ok", 0),
-		"msg":  "success",
+		"success": true,
+		"code":    EnvInt("code", "ok", 0),
+		"msg":     "success",
 	}
 
 	if len(data) > 0 {
@@ -59,11 +60,27 @@ func OK(c *gin.Context, data ...interface{}) {
 	c.JSON(http.StatusOK, obj)
 }
 
-// JSON API返回JSON数据
-func JSON(c *gin.Context, code int, msg string, data ...interface{}) {
+// Error API返回失败
+func Error(c *gin.Context, msg ...interface{}) {
 	obj := gin.H{
-		"code": code,
-		"msg":  msg,
+		"success": false,
+		"code":    EnvInt("code", "ok", -1),
+		"msg":     "error",
+	}
+
+	if len(msg) > 0 {
+		obj["msg"] = msg[0]
+	}
+
+	c.JSON(http.StatusOK, obj)
+}
+
+// JSON API返回JSON数据
+func JSON(c *gin.Context, success bool, code int, msg string, data ...interface{}) {
+	obj := gin.H{
+		"success": success,
+		"code":    code,
+		"msg":     msg,
 	}
 
 	if len(data) > 0 {
