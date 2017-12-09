@@ -3,7 +3,7 @@ package yiigo
 // Bootstrap start components
 func Bootstrap(mysql bool, mongo bool, redis bool) error {
 	loadEnv("env.ini")
-	initLogger("log.xml")
+	initLogger()
 
 	if mysql {
 		if err := initMySQL(); err != nil {

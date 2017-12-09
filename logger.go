@@ -1,95 +1,49 @@
 package yiigo
 
 import (
-	"runtime/debug"
+	"time"
 
-	"github.com/cihub/seelog"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	lumberjack "gopkg.in/natefinch/lumberjack.v2"
 )
 
+// Logger yiigo logger
+var Logger *zap.Logger
+
 // initLogger open a log
-func initLogger(path string) {
-	logger, err := seelog.LoggerFromConfigAsFile(path)
+func initLogger() {
+	if EnvBool("app", "debug", true) {
+		w := zapcore.AddSync(&lumberjack.Logger{
+			Filename:   EnvString("log", "path", "app.log"),
+			MaxSize:    EnvInt("log", "log.rotate", 500), // megabytes
+			MaxBackups: EnvInt("log", "log.rotate", 0),
+			MaxAge:     EnvInt("log", "log.rotate", 0), // days
+		})
 
-	if err != nil {
-		panic(err)
+		cfg := zap.NewProductionEncoderConfig()
+		cfg.TimeKey = "time"
+		cfg.EncodeTime = MyTimeEncoder
+		cfg.EncodeCaller = zapcore.FullCallerEncoder
+
+		core := zapcore.NewCore(
+			zapcore.NewJSONEncoder(cfg),
+			w,
+			zap.DebugLevel,
+		)
+
+		Logger = zap.New(core, zap.AddCaller())
+	} else {
+		cfg := zap.NewDevelopmentConfig()
+
+		cfg.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
+		cfg.EncoderConfig.EncodeTime = MyTimeEncoder
+
+		Logger, _ = cfg.Build()
 	}
-
-	seelog.ReplaceLogger(logger)
 }
 
-// Debug debug
-func Debug(v ...interface{}) {
-	seelog.Debug(v...)
-}
-
-// Info info
-func Info(v ...interface{}) {
-	seelog.Info(v...)
-}
-
-// Warn warning
-func Warn(v ...interface{}) {
-	seelog.Warn(v...)
-}
-
-// Error error
-func Error(v ...interface{}) {
-	seelog.Error(v...)
-}
-
-// Err error with debug
-func Err(v ...interface{}) {
-	v = append(v, "\n", string(debug.Stack()))
-	seelog.Error(v...)
-}
-
-// Critical critical
-func Critical(v ...interface{}) {
-	seelog.Critical(v...)
-}
-
-// Debugf debug
-func Debugf(format string, v ...interface{}) {
-	seelog.Debugf(format, v...)
-}
-
-// Infof info
-func Infof(format string, v ...interface{}) {
-	seelog.Infof(format, v...)
-}
-
-// Warnf warning
-func Warnf(format string, v ...interface{}) {
-	seelog.Warnf(format, v...)
-}
-
-// Errorf error
-func Errorf(format string, v ...interface{}) {
-	seelog.Errorf(format, v...)
-}
-
-// Errf error with debug
-func Errf(format string, v ...interface{}) {
-	format += "\n%s"
-	v = append(v, string(debug.Stack()))
-
-	seelog.Errorf(format, v...)
-}
-
-// Criticalf critical
-func Criticalf(format string, v ...interface{}) {
-	seelog.Criticalf(format, v...)
-}
-
-// Critf critical with debug
-func Critf(format string, v ...interface{}) {
-	format += "\n%s"
-	v = append(v, string(debug.Stack()))
-
-	seelog.Criticalf(format, v...)
-}
-
-// Flush processes all currently queued messages and all currently buffered messages immediately
-func Flush() {
-	seelog.Flush()
+// MyTimeEncoder diy time encoder
+func MyTimeEncoder(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
+	enc.AppendString(t.Format("2006-01-02 15:04:05"))
 }
