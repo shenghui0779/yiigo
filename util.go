@@ -64,7 +64,7 @@ func OK(c *gin.Context, data ...interface{}) {
 func Error(c *gin.Context, msg ...interface{}) {
 	obj := gin.H{
 		"success": false,
-		"code":    EnvInt("code", "ok", -1),
+		"code":    EnvInt("code", "err", -1),
 		"msg":     "error",
 	}
 
