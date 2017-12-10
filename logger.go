@@ -26,6 +26,7 @@ func initLogger() {
 			MaxSize:    EnvInt("log.rotate", "maxSize", 500), // megabytes
 			MaxBackups: EnvInt("log.rotate", "maxBackups", 0),
 			MaxAge:     EnvInt("log.rotate", "maxAge", 0), // days
+			Compress:   EnvBool("log.rotate", "compress", false),
 		})
 
 		cfg := zap.NewProductionEncoderConfig()
