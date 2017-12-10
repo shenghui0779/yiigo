@@ -13,7 +13,14 @@ var Logger *zap.Logger
 
 // initLogger init logger
 func initLogger() {
-	if EnvBool("app", "debug", true) {
+	if EnvBool("app", "debug", false) {
+		cfg := zap.NewDevelopmentConfig()
+
+		cfg.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
+		cfg.EncoderConfig.EncodeTime = MyTimeEncoder
+
+		Logger, _ = cfg.Build()
+	} else {
 		w := zapcore.AddSync(&lumberjack.Logger{
 			Filename:   EnvString("log", "path", "app.log"),
 			MaxSize:    EnvInt("log.rotate", "maxSize", 500), // megabytes
@@ -33,13 +40,6 @@ func initLogger() {
 		)
 
 		Logger = zap.New(core, zap.AddCaller())
-	} else {
-		cfg := zap.NewDevelopmentConfig()
-
-		cfg.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
-		cfg.EncoderConfig.EncodeTime = MyTimeEncoder
-
-		Logger, _ = cfg.Build()
 	}
 }
 
