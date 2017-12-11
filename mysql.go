@@ -51,7 +51,8 @@ func initSingleDB() error {
 
 	if err != nil {
 		DB.Close()
-		return err
+
+		return fmt.Errorf("mysql error: %s", err.Error())
 	}
 
 	DB.SetMaxOpenConns(EnvInt("mysql", "maxOpenConns", 20))
@@ -76,7 +77,8 @@ func initMultiDB(sections []*ini.Section) error {
 
 		if err != nil {
 			db.Close()
-			return err
+
+			return fmt.Errorf("mysql error: %s", err.Error())
 		}
 
 		db.SetMaxOpenConns(v.Key("maxOpenConns").MustInt(20))
@@ -170,12 +172,12 @@ func singleInsert(table string, v reflect.Value) (string, []interface{}) {
 			column = t.Field(i).Name
 		}
 
-		columns = append(columns, column)
+		columns = append(columns, fmt.Sprintf("`%s`", column))
 		placeholders = append(placeholders, "?")
 		binds = append(binds, v.Field(i).Interface())
 	}
 
-	sql := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)", table, strings.Join(columns, ", "), strings.Join(placeholders, ", "))
+	sql := fmt.Sprintf("INSERT INTO `%s` (%s) VALUES (%s)", table, strings.Join(columns, ", "), strings.Join(placeholders, ", "))
 
 	return sql, binds
 }
@@ -202,7 +204,7 @@ func batchInsert(table string, v reflect.Value, count int) (string, []interface{
 			column = t.Field(i).Name
 		}
 
-		columns = append(columns, column)
+		columns = append(columns, fmt.Sprintf("`%s`", column))
 	}
 
 	for i := 0; i < count; i++ {
@@ -216,7 +218,7 @@ func batchInsert(table string, v reflect.Value, count int) (string, []interface{
 		placeholders = append(placeholders, fmt.Sprintf("(%s)", strings.Join(phrs, ", ")))
 	}
 
-	sql := fmt.Sprintf("INSERT INTO %s (%s) VALUES %s", table, strings.Join(columns, ", "), strings.Join(placeholders, ","))
+	sql := fmt.Sprintf("INSERT INTO `%s` (%s) VALUES %s", table, strings.Join(columns, ", "), strings.Join(placeholders, ","))
 
 	return sql, binds
 }
@@ -227,10 +229,10 @@ func updateByMap(sql string, data X, args ...interface{}) (string, []interface{}
 
 	for k, v := range data {
 		if e, ok := v.(*SQLExpr); ok {
-			sets = append(sets, fmt.Sprintf("%s = %s", k, e.Expr))
+			sets = append(sets, fmt.Sprintf("`%s` = %s", k, e.Expr))
 			binds = append(binds, e.Args...)
 		} else {
-			sets = append(sets, fmt.Sprintf("%s = ?", k))
+			sets = append(sets, fmt.Sprintf("`%s` = ?", k))
 			binds = append(binds, v)
 		}
 	}
@@ -259,10 +261,10 @@ func updateByStruct(sql string, v reflect.Value, args ...interface{}) (string, [
 		field := v.Field(i).Interface()
 
 		if e, ok := field.(*SQLExpr); ok {
-			sets = append(sets, fmt.Sprintf("%s = %s", column, e.Expr))
+			sets = append(sets, fmt.Sprintf("`%s` = %s", column, e.Expr))
 			binds = append(binds, e.Args...)
 		} else {
-			sets = append(sets, fmt.Sprintf("%s = ?", column))
+			sets = append(sets, fmt.Sprintf("`%s` = ?", column))
 			binds = append(binds, field)
 		}
 	}

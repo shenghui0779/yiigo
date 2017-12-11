@@ -48,7 +48,7 @@ func initSingleMongo() error {
 	Mongo, err = mgo.Dial(dsn)
 
 	if err != nil {
-		return err
+		return fmt.Errorf("mongo error: %s", err.Error())
 	}
 
 	Mongo.SetPoolLimit(EnvInt("mongo", "poolLimit", 10))
@@ -72,7 +72,7 @@ func initMultiMongo(sections []*ini.Section) error {
 		mongo, err := mgo.Dial(dsn)
 
 		if err != nil {
-			return err
+			return fmt.Errorf("mongo error: %s", err.Error())
 		}
 
 		mongo.SetPoolLimit(EnvInt("mongo", "poolLimit", 10))
