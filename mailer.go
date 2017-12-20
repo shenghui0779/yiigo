@@ -1,8 +1,6 @@
 package yiigo
 
 import (
-	"fmt"
-
 	"gopkg.in/gomail.v2"
 )
 
@@ -53,11 +51,7 @@ func (m *Mailer) Send() error {
 	// Send the email
 	err := d.DialAndSend(msg)
 
-	if err != nil {
-		return fmt.Errorf("[Mailer] %v", err)
-	}
-
-	return nil
+	return err
 }
 
 func (m *Mailer) dialer() *gomail.Dialer {
