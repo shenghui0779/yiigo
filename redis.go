@@ -91,8 +91,8 @@ func redisDial(section *ini.Section) (*pool.Pool, error) {
 		return client, nil
 	}
 
-	host := section.Key("password").MustString("127.0.0.1")
-	port := section.Key("password").MustInt(6379)
+	host := section.Key("host").MustString("127.0.0.1")
+	port := section.Key("port").MustInt(6379)
 	poolSize := section.Key("poolSize").MustInt(10)
 
 	p, err := pool.NewCustom("tcp", fmt.Sprintf("%s:%d", host, port), poolSize, df)
