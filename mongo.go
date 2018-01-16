@@ -34,50 +34,26 @@ func initMongo() error {
 func initSingleMongo() error {
 	var err error
 
-	host := EnvString("mongo", "host", "localhost")
-	port := EnvInt("mongo", "port", 27017)
-	username := EnvString("mongo", "username", "")
-	password := EnvString("mongo", "password", "")
+	section := env.Section("mongo")
 
-	dsn := fmt.Sprintf("mongodb://%s:%d", host, port)
-
-	if username != "" {
-		dsn = fmt.Sprintf("mongodb://%s:%s@%s:%d", username, password, host, port)
-	}
-
-	Mongo, err = mgo.Dial(dsn)
+	Mongo, err = mongoDial(section)
 
 	if err != nil {
 		return fmt.Errorf("mongo error: %s", err.Error())
 	}
-
-	Mongo.SetPoolLimit(EnvInt("mongo", "poolLimit", 10))
 
 	return nil
 }
 
 func initMultiMongo(sections []*ini.Section) error {
 	for _, v := range sections {
-		host := v.Key("host").MustString("localhost")
-		port := v.Key("port").MustInt(27017)
-		username := v.Key("username").MustString("")
-		password := v.Key("password").MustString("")
-
-		dsn := fmt.Sprintf("mongodb://%s:%d", host, port)
-
-		if username != "" {
-			dsn = fmt.Sprintf("mongodb://%s:%s@%s:%d", username, password, host, port)
-		}
-
-		mongo, err := mgo.Dial(dsn)
+		m, err := mongoDial(v)
 
 		if err != nil {
 			return fmt.Errorf("mongo error: %s", err.Error())
 		}
 
-		mongo.SetPoolLimit(EnvInt("mongo", "poolLimit", 10))
-
-		mongoMap.Store(v.Name(), mongo)
+		mongoMap.Store(v.Name(), m)
 	}
 
 	if v, ok := mongoMap.Load("mongo.default"); ok {
@@ -85,6 +61,29 @@ func initMultiMongo(sections []*ini.Section) error {
 	}
 
 	return nil
+}
+
+func mongoDial(section *ini.Section) (*mgo.Session, error) {
+	host := section.Key("host").MustString("127.0.0.1")
+	port := section.Key("port").MustInt(27017)
+	username := section.Key("username").MustString("")
+	password := section.Key("password").MustString("")
+
+	dsn := fmt.Sprintf("mongodb://%s:%d", host, port)
+
+	if username != "" {
+		dsn = fmt.Sprintf("mongodb://%s:%s@%s:%d", username, password, host, port)
+	}
+
+	m, err := mgo.Dial(dsn)
+
+	if err != nil {
+		return nil, err
+	}
+
+	m.SetPoolLimit(EnvInt("mongo", "poolLimit", 10))
+
+	return m, nil
 }
 
 // MongoSession get mongo session

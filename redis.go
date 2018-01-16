@@ -10,65 +10,114 @@ import (
 
 	ini "gopkg.in/ini.v1"
 
-	"github.com/garyburd/redigo/redis"
-	"github.com/youtube/vitess/go/pools"
-	"golang.org/x/net/context"
+	"github.com/mediocregopher/radix.v2/pool"
+	"github.com/mediocregopher/radix.v2/redis"
 )
-
-// RedisPoolResource redis pool resource
-type RedisPoolResource struct {
-	name string
-	pool *pools.ResourcePool
-	mux  sync.Mutex
-}
-
-// RedisConn redis connection resource
-type RedisConn struct {
-	redis.Conn
-}
 
 var (
-	// RedisPool default connection pool
-	RedisPool *RedisPoolResource
-	redisMap  sync.Map
+	// Redis default connection pool
+	Redis    *pool.Pool
+	redisMap sync.Map
 )
 
-// Close close connection resorce
-func (r RedisConn) Close() {
-	r.Conn.Close()
-}
-
-func initRedis() {
+func initRedis() error {
 	sections := childSections("redis")
 
 	if len(sections) > 0 {
-		initMultiRedis(sections)
-		return
+		return initMultiRedis(sections)
 	}
 
-	initSingleRedis()
+	return initSingleRedis()
 }
 
-func initSingleRedis() {
-	RedisPool = &RedisPoolResource{name: "redis"}
-	RedisPool.dial()
+func initSingleRedis() error {
+	var err error
+
+	section := env.Section("redis")
+
+	Redis, err = redisDial(section)
+
+	if err != nil {
+		return fmt.Errorf("redis error: %s", err.Error())
+	}
+
+	return nil
 }
 
-func initMultiRedis(sections []*ini.Section) {
+func initMultiRedis(sections []*ini.Section) error {
 	for _, v := range sections {
-		pool := &RedisPoolResource{name: v.Name()}
-		pool.dial()
+		p, err := redisDial(v)
 
-		redisMap.Store(v.Name(), pool)
+		if err != nil {
+			return fmt.Errorf("redis error: %s", err.Error())
+		}
+
+		redisMap.Store(v.Name(), p)
 	}
 
 	if v, ok := redisMap.Load("redis.default"); ok {
-		RedisPool = v.(*RedisPoolResource)
+		Redis = v.(*pool.Pool)
+	}
+
+	return nil
+}
+
+func redisDial(section *ini.Section) (*pool.Pool, error) {
+	df := func(network, addr string) (*redis.Client, error) {
+		client, err := redis.Dial(network, addr)
+
+		if err != nil {
+			return nil, err
+		}
+
+		if password := section.Key("password").MustString(""); password != "" {
+			// 密码验证
+			if err = client.Cmd("AUTH", password).Err; err != nil {
+				client.Close()
+
+				return nil, err
+			}
+		}
+
+		if database := section.Key("database").MustInt(0); database != 0 {
+			// 选择数据库
+			if err = client.Cmd("SELECT", database).Err; err != nil {
+				client.Close()
+
+				return nil, err
+			}
+		}
+
+		return client, nil
+	}
+
+	host := section.Key("password").MustString("127.0.0.1")
+	port := section.Key("password").MustInt(6379)
+	poolSize := section.Key("poolSize").MustInt(10)
+
+	p, err := pool.NewCustom("tcp", fmt.Sprintf("%s:%d", host, port), poolSize, df)
+
+	if err != nil {
+		return nil, err
+	}
+
+	// 设置心跳检测
+	if poolIdle := section.Key("poolIdle").MustInt(0); poolIdle != 0 {
+		go keepalive(p, poolIdle)
+	}
+
+	return p, nil
+}
+
+func keepalive(p *pool.Pool, idle int) {
+	for {
+		p.Cmd("PING")
+		time.Sleep(time.Duration(idle) * time.Second)
 	}
 }
 
-// RedisConnPool get an redis pool
-func RedisConnPool(conn ...string) (*RedisPoolResource, error) {
+// RedisPool get redis connection pool
+func RedisPool(conn ...string) (*pool.Pool, error) {
 	c := "default"
 
 	if len(conn) > 0 {
@@ -83,73 +132,12 @@ func RedisConnPool(conn ...string) (*RedisPoolResource, error) {
 		return nil, fmt.Errorf("redis %s is not connected", schema)
 	}
 
-	return v.(*RedisPoolResource), nil
-}
-
-func (r *RedisPoolResource) dial() {
-	r.mux.Lock()
-	defer r.mux.Unlock()
-
-	if r.pool != nil {
-		return
-	}
-
-	poolMinActive := EnvInt(r.name, "poolMinActive", 10)
-	poolMaxActive := EnvInt(r.name, "poolMaxActive", 20)
-	poolIdleTimeout := EnvDuration(r.name, "poolIdleTimeout", time.Duration(60000)*time.Millisecond)
-
-	r.pool = pools.NewResourcePool(func() (pools.Resource, error) {
-		dsn := fmt.Sprintf("%s:%d", EnvString(r.name, "host", "localhost"), EnvInt("redis", "port", 6379))
-
-		dialOptions := []redis.DialOption{
-			redis.DialPassword(EnvString(r.name, "password", "")),
-			redis.DialDatabase(EnvInt(r.name, "database", 0)),
-			redis.DialConnectTimeout(EnvDuration(r.name, "connectTimeout", time.Duration(10000)*time.Millisecond)),
-			redis.DialReadTimeout(EnvDuration(r.name, "readTimeout", time.Duration(10000)*time.Millisecond)),
-			redis.DialWriteTimeout(EnvDuration(r.name, "writeTimeout", time.Duration(10000)*time.Millisecond)),
-		}
-
-		conn, err := redis.Dial("tcp", dsn, dialOptions...)
-
-		if err != nil {
-			return nil, err
-		}
-
-		return RedisConn{conn}, nil
-	}, poolMinActive, poolMaxActive, poolIdleTimeout*time.Millisecond)
-}
-
-// Get get a connection resource from the pool
-func (r *RedisPoolResource) Get() (RedisConn, error) {
-	if r.pool.IsClosed() {
-		r.dial()
-	}
-
-	ctx := context.TODO()
-	resource, err := r.pool.Get(ctx)
-
-	if err != nil {
-		return RedisConn{}, err
-	}
-
-	rc := resource.(RedisConn)
-
-	if err = rc.Err(); err != nil {
-		r.pool.Put(rc)
-		return rc, err
-	}
-
-	return rc, nil
-}
-
-// Put return a connection resource to the pool
-func (r *RedisPoolResource) Put(rc RedisConn) {
-	r.pool.Put(rc)
+	return v.(*pool.Pool), nil
 }
 
 // ScanJSON scans src to the struct pointed to by dest
-func ScanJSON(reply interface{}, dest interface{}) error {
-	bytes, err := redis.Bytes(reply, nil)
+func ScanJSON(reply *redis.Resp, dest interface{}) error {
+	bytes, err := reply.Bytes()
 
 	if err != nil {
 		return err
@@ -165,8 +153,8 @@ func ScanJSON(reply interface{}, dest interface{}) error {
 }
 
 // ScanJSONSlice scans src to the slice pointed to by dest
-func ScanJSONSlice(reply interface{}, dest interface{}) error {
-	bytes, err := redis.ByteSlices(reply, nil)
+func ScanJSONSlice(reply *redis.Resp, dest interface{}) error {
+	bytes, err := reply.ListBytes()
 
 	if err != nil {
 		return err

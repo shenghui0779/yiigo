@@ -37,52 +37,24 @@ func initMySQL() error {
 func initSingleDB() error {
 	var err error
 
-	host := EnvString("mysql", "host", "localhost")
-	port := EnvInt("mysql", "port", 3306)
-	username := EnvString("mysql", "username", "root")
-	password := EnvString("mysql", "password", "")
-	database := EnvString("mysql", "database", "test")
-	charset := EnvString("mysql", "charset", "utf8mb4")
-	collection := EnvString("mysql", "collection", "utf8mb4_general_ci")
+	section := env.Section("mysql")
 
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s&collation=%s&parseTime=True&loc=Local", username, password, host, port, database, charset, collection)
-
-	DB, err = sqlx.Connect("mysql", dsn)
+	DB, err = dbDial(section)
 
 	if err != nil {
-		DB.Close()
-
 		return fmt.Errorf("mysql error: %s", err.Error())
 	}
-
-	DB.SetMaxOpenConns(EnvInt("mysql", "maxOpenConns", 20))
-	DB.SetMaxIdleConns(EnvInt("mysql", "maxIdleConns", 10))
 
 	return nil
 }
 
 func initMultiDB(sections []*ini.Section) error {
 	for _, v := range sections {
-		host := v.Key("host").MustString("localhost")
-		port := v.Key("port").MustInt(3306)
-		username := v.Key("username").MustString("root")
-		password := v.Key("password").MustString("")
-		database := v.Key("database").MustString("test")
-		charset := v.Key("charset").MustString("utf8mb4")
-		collection := v.Key("collection").MustString("utf8mb4_general_ci")
-
-		dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s&collation=%s&parseTime=True&loc=Local", username, password, host, port, database, charset, collection)
-
-		db, err := sqlx.Connect("mysql", dsn)
+		db, err := dbDial(v)
 
 		if err != nil {
-			db.Close()
-
 			return fmt.Errorf("mysql error: %s", err.Error())
 		}
-
-		db.SetMaxOpenConns(v.Key("maxOpenConns").MustInt(20))
-		db.SetMaxIdleConns(v.Key("maxIdleConns").MustInt(10))
 
 		dbmap.Store(v.Name(), db)
 	}
@@ -92,6 +64,31 @@ func initMultiDB(sections []*ini.Section) error {
 	}
 
 	return nil
+}
+
+func dbDial(section *ini.Section) (*sqlx.DB, error) {
+	host := section.Key("host").MustString("localhost")
+	port := section.Key("port").MustInt(3306)
+	username := section.Key("username").MustString("root")
+	password := section.Key("password").MustString("")
+	database := section.Key("database").MustString("test")
+	charset := section.Key("charset").MustString("utf8mb4")
+	collection := section.Key("collection").MustString("utf8mb4_general_ci")
+
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s&collation=%s&parseTime=True&loc=Local", username, password, host, port, database, charset, collection)
+
+	db, err := sqlx.Connect("mysql", dsn)
+
+	if err != nil {
+		db.Close()
+
+		return nil, err
+	}
+
+	db.SetMaxOpenConns(EnvInt("mysql", "maxOpenConns", 20))
+	db.SetMaxIdleConns(EnvInt("mysql", "maxIdleConns", 10))
+
+	return db, nil
 }
 
 // DBConn get db connection
