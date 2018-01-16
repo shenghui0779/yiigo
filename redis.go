@@ -64,7 +64,9 @@ func initMultiRedis(sections []*ini.Section) error {
 
 func redisDial(section *ini.Section) (*pool.Pool, error) {
 	df := func(network, addr string) (*redis.Client, error) {
-		client, err := redis.Dial(network, addr)
+		timeout := section.Key("timeout").MustInt(10000)
+
+		client, err := redis.DialTimeout(network, addr, time.Duration(timeout)*time.Millisecond)
 
 		if err != nil {
 			return nil, err
@@ -101,19 +103,7 @@ func redisDial(section *ini.Section) (*pool.Pool, error) {
 		return nil, err
 	}
 
-	// 设置心跳检测
-	if poolIdle := section.Key("poolIdle").MustInt(0); poolIdle != 0 {
-		go keepalive(p, poolIdle)
-	}
-
 	return p, nil
-}
-
-func keepalive(p *pool.Pool, idle int) {
-	for {
-		p.Cmd("PING")
-		time.Sleep(time.Duration(idle) * time.Second)
-	}
 }
 
 // RedisPool get redis connection pool
