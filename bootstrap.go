@@ -18,9 +18,7 @@ func Bootstrap(mysql bool, mongo bool, redis bool) error {
 	}
 
 	if redis {
-		if err := initRedis(); err != nil {
-			return err
-		}
+		initRedis()
 	}
 
 	return nil
