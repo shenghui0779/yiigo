@@ -14,7 +14,7 @@ func MD5(s string) string {
 	return fmt.Sprintf("%x", h.Sum(nil))
 }
 
-// Date 时间戳格式化日期，format: 2006-01-02 15:04:05
+// Date 时间戳格式化日期，默认：2006-01-02 15:04:05
 func Date(timestamp int64, format ...string) string {
 	layout := "2006-01-02 15:04:05"
 
