@@ -27,8 +27,8 @@ func Date(timestamp int64, format ...string) string {
 	return date
 }
 
-// IntUnique int切片去重
-func IntUnique(in []int) []int {
+// UniqueInt int切片去重
+func UniqueInt(in []int) []int {
 	out := make([]int, 0, len(in))
 
 	for _, i := range in {
@@ -49,8 +49,8 @@ func IntUnique(in []int) []int {
 	return out
 }
 
-// Int64Unique int64切片去重
-func Int64Unique(in []int64) []int64 {
+// UniqueInt64 int64切片去重
+func UniqueInt64(in []int64) []int64 {
 	out := make([]int64, 0, len(in))
 
 	for _, i := range in {
@@ -71,8 +71,8 @@ func Int64Unique(in []int64) []int64 {
 	return out
 }
 
-// StringUnique string切片去重
-func StringUnique(in []string) []string {
+// UniqueString string切片去重
+func UniqueString(in []string) []string {
 	out := make([]string, 0, len(in))
 
 	for _, i := range in {
@@ -91,4 +91,64 @@ func StringUnique(in []string) []string {
 	}
 
 	return out
+}
+
+// InArrayInt Checks if a int value exists in an int slice
+func InArrayInt(needle int, haystack []int) bool {
+	if len(haystack) == 0 {
+		return false
+	}
+
+	for _, v := range haystack {
+		if needle == v {
+			return true
+		}
+	}
+
+	return false
+}
+
+// InArrayInt64 Checks if a int64 value exists in an int64 slice
+func InArrayInt64(needle int64, haystack []int64) bool {
+	if len(haystack) == 0 {
+		return false
+	}
+
+	for _, v := range haystack {
+		if needle == v {
+			return true
+		}
+	}
+
+	return false
+}
+
+// InArrayFloat64 Checks if a float64 value exists in a float64 slice
+func InArrayFloat64(needle float64, haystack []float64) bool {
+	if len(haystack) == 0 {
+		return false
+	}
+
+	for _, v := range haystack {
+		if needle == v {
+			return true
+		}
+	}
+
+	return false
+}
+
+// InArrayString Checks if a string value exists in a string slice
+func InArrayString(needle string, haystack []string) bool {
+	if len(haystack) == 0 {
+		return false
+	}
+
+	for _, v := range haystack {
+		if needle == v {
+			return true
+		}
+	}
+
+	return false
 }
