@@ -80,8 +80,6 @@ func dbDial(section *ini.Section) (*sqlx.DB, error) {
 	db, err := sqlx.Connect("mysql", dsn)
 
 	if err != nil {
-		db.Close()
-
 		return nil, err
 	}
 
