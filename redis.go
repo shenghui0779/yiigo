@@ -150,8 +150,23 @@ func (r *RedisPoolResource) Put(rc RedisConn) {
 	r.pool.Put(rc)
 }
 
-// ScanJSON scans src to the struct pointed to by dest
+// ScanJSON scans json string to the struct or struct slice pointed to by dest
 func ScanJSON(reply interface{}, dest interface{}) error {
+	v := reflect.Indirect(reflect.ValueOf(dest))
+
+	var err error
+
+	switch v.Kind() {
+	case reflect.Struct:
+		err = scanJSONObj(reply, dest)
+	case reflect.Slice:
+		err = scanJSONSlice(reply, dest)
+	}
+
+	return err
+}
+
+func scanJSONObj(reply interface{}, dest interface{}) error {
 	bytes, err := redis.Bytes(reply, nil)
 
 	if err != nil {
@@ -167,8 +182,7 @@ func ScanJSON(reply interface{}, dest interface{}) error {
 	return nil
 }
 
-// ScanJSONSlice scans src to the slice pointed to by dest
-func ScanJSONSlice(reply interface{}, dest interface{}) error {
+func scanJSONSlice(reply interface{}, dest interface{}) error {
 	bytes, err := redis.ByteSlices(reply, nil)
 
 	if err != nil {
