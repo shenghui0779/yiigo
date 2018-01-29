@@ -11,66 +11,104 @@ import (
 	ini "gopkg.in/ini.v1"
 
 	"github.com/garyburd/redigo/redis"
-	"github.com/youtube/vitess/go/pools"
-	"golang.org/x/net/context"
 )
-
-// redis pool of redigo
-
-// RedisPoolResource redis pool resource
-type RedisPoolResource struct {
-	name string
-	pool *pools.ResourcePool
-	mux  sync.Mutex
-}
-
-// RedisConn redis connection resource
-type RedisConn struct {
-	redis.Conn
-}
 
 var (
-	// RedisPool default connection pool
-	RedisPool *RedisPoolResource
-	redisMap  sync.Map
+	// Redis default connection pool
+	Redis    *redis.Pool
+	redisMap sync.Map
 )
 
-// Close close connection resorce
-func (r RedisConn) Close() {
-	r.Conn.Close()
-}
-
-func initRedis() {
+func initRedis() error {
 	sections := childSections("redis")
 
 	if len(sections) > 0 {
-		initMultiRedis(sections)
-		return
+		return initMultiRedis(sections)
 	}
 
-	initSingleRedis()
+	return initSingleRedis()
 }
 
-func initSingleRedis() {
-	RedisPool = &RedisPoolResource{name: "redis"}
-	RedisPool.dial()
+func initSingleRedis() error {
+	var err error
+
+	section := env.Section("redis")
+
+	Redis, err = redisDial(section)
+
+	if err != nil {
+		return fmt.Errorf("redis error: %s", err.Error())
+	}
+
+	return nil
 }
 
-func initMultiRedis(sections []*ini.Section) {
+func initMultiRedis(sections []*ini.Section) error {
 	for _, v := range sections {
-		pool := &RedisPoolResource{name: v.Name()}
-		pool.dial()
+		p, err := redisDial(v)
 
-		redisMap.Store(v.Name(), pool)
+		if err != nil {
+			return fmt.Errorf("redis error: %s", err.Error())
+		}
+
+		redisMap.Store(v.Name(), p)
 	}
 
 	if v, ok := redisMap.Load("redis.default"); ok {
-		RedisPool = v.(*RedisPoolResource)
+		Redis = v.(*redis.Pool)
 	}
+
+	return nil
 }
 
-// RedisConnPool get an redis pool
-func RedisConnPool(conn ...string) (*RedisPoolResource, error) {
+func redisDial(section *ini.Section) (*redis.Pool, error) {
+	pool := &redis.Pool{
+		Dial: func() (redis.Conn, error) {
+			host := section.Key("host").MustString("127.0.0.1")
+			port := section.Key("port").MustInt(6379)
+
+			dialOptions := []redis.DialOption{
+				redis.DialPassword(section.Key("password").MustString("")),
+				redis.DialDatabase(section.Key("database").MustInt(0)),
+				redis.DialConnectTimeout(section.Key("connTimeout").MustDuration(time.Duration(10000) * time.Millisecond)),
+				redis.DialReadTimeout(section.Key("readTimeout").MustDuration(time.Duration(10000) * time.Millisecond)),
+				redis.DialWriteTimeout(section.Key("writeTimeout").MustDuration(time.Duration(10000) * time.Millisecond)),
+			}
+
+			conn, err := redis.Dial("tcp", fmt.Sprintf("%s:%d", host, port), dialOptions...)
+
+			return conn, err
+		},
+		TestOnBorrow: func(c redis.Conn, t time.Time) error {
+			period := section.Key("testOnBorrow").MustDuration(time.Duration(60000) * time.Millisecond)
+
+			if time.Since(t) < period {
+				return nil
+			}
+			_, err := c.Do("PING")
+
+			return err
+		},
+		MaxIdle:     section.Key("maxIdleConn").MustInt(10),
+		MaxActive:   section.Key("maxActiveConn").MustInt(20),
+		IdleTimeout: section.Key("idleTimeout").MustDuration(time.Duration(60000) * time.Millisecond),
+		Wait:        section.Key("poolWait").MustBool(true),
+	}
+
+	conn := pool.Get()
+	defer conn.Close()
+
+	_, err := conn.Do("PING")
+
+	if err != nil {
+		return nil, err
+	}
+
+	return pool, nil
+}
+
+// RedisPool get redis connection pool
+func RedisPool(conn ...string) (*redis.Pool, error) {
 	c := "default"
 
 	if len(conn) > 0 {
@@ -85,69 +123,7 @@ func RedisConnPool(conn ...string) (*RedisPoolResource, error) {
 		return nil, fmt.Errorf("redis %s is not connected", schema)
 	}
 
-	return v.(*RedisPoolResource), nil
-}
-
-func (r *RedisPoolResource) dial() {
-	r.mux.Lock()
-	defer r.mux.Unlock()
-
-	if r.pool != nil {
-		return
-	}
-
-	poolMinActive := EnvInt(r.name, "poolMinActive", 10)
-	poolMaxActive := EnvInt(r.name, "poolMaxActive", 20)
-	poolIdleTimeout := EnvDuration(r.name, "poolIdleTimeout", time.Duration(60000)*time.Millisecond)
-
-	r.pool = pools.NewResourcePool(func() (pools.Resource, error) {
-		dsn := fmt.Sprintf("%s:%d", EnvString(r.name, "host", "localhost"), EnvInt("redis", "port", 6379))
-
-		dialOptions := []redis.DialOption{
-			redis.DialPassword(EnvString(r.name, "password", "")),
-			redis.DialDatabase(EnvInt(r.name, "database", 0)),
-			redis.DialConnectTimeout(EnvDuration(r.name, "connectTimeout", time.Duration(10000)*time.Millisecond)),
-			redis.DialReadTimeout(EnvDuration(r.name, "readTimeout", time.Duration(10000)*time.Millisecond)),
-			redis.DialWriteTimeout(EnvDuration(r.name, "writeTimeout", time.Duration(10000)*time.Millisecond)),
-		}
-
-		conn, err := redis.Dial("tcp", dsn, dialOptions...)
-
-		if err != nil {
-			return nil, err
-		}
-
-		return RedisConn{conn}, nil
-	}, poolMinActive, poolMaxActive, poolIdleTimeout*time.Millisecond)
-}
-
-// Get get a connection resource from the pool
-func (r *RedisPoolResource) Get() (RedisConn, error) {
-	if r.pool.IsClosed() {
-		r.dial()
-	}
-
-	ctx := context.TODO()
-	resource, err := r.pool.Get(ctx)
-
-	if err != nil {
-		return RedisConn{}, err
-	}
-
-	rc := resource.(RedisConn)
-
-	if err = rc.Err(); err != nil {
-		r.pool.Put(rc)
-
-		return rc, err
-	}
-
-	return rc, nil
-}
-
-// Put return a connection resource to the pool
-func (r *RedisPoolResource) Put(rc RedisConn) {
-	r.pool.Put(rc)
+	return v.(*redis.Pool), nil
 }
 
 // ScanJSON scans json string to the struct or struct slice pointed to by dest

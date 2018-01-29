@@ -74,6 +74,8 @@ func dbDial(section *ini.Section) (*sqlx.DB, error) {
 	database := section.Key("database").MustString("test")
 	charset := section.Key("charset").MustString("utf8mb4")
 	collection := section.Key("collection").MustString("utf8mb4_general_ci")
+	maxOpenConns := section.Key("maxOpenConns").MustInt(20)
+	maxIdleConns := section.Key("maxIdleConns").MustInt(10)
 
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s&collation=%s&parseTime=True&loc=Local", username, password, host, port, database, charset, collection)
 
@@ -83,8 +85,8 @@ func dbDial(section *ini.Section) (*sqlx.DB, error) {
 		return nil, err
 	}
 
-	db.SetMaxOpenConns(EnvInt("mysql", "maxOpenConns", 20))
-	db.SetMaxIdleConns(EnvInt("mysql", "maxIdleConns", 10))
+	db.SetMaxOpenConns(maxOpenConns)
+	db.SetMaxIdleConns(maxIdleConns)
 
 	return db, nil
 }
