@@ -96,19 +96,26 @@ func (r *RedisPoolResource) dial() {
 		return
 	}
 
-	poolMinActive := EnvInt(r.name, "poolMinActive", 10)
-	poolMaxActive := EnvInt(r.name, "poolMaxActive", 20)
-	poolIdleTimeout := EnvDuration(r.name, "poolIdleTimeout", time.Duration(60000)*time.Millisecond)
+	host := EnvString(r.name, "host", "localhost")
+	port := EnvInt(r.name, "port", 6379)
+	password := EnvString(r.name, "password", "")
+	database := EnvInt(r.name, "database", 0)
+	connTimeout := EnvInt(r.name, "connTimeout", 1000)
+	readTimeout := EnvInt(r.name, "readTimeout", 1000)
+	writeTimeout := EnvInt(r.name, "writeTimeout", 1000)
+	minActiveConn := EnvInt(r.name, "poolMinActive", 10)
+	maxActiveConn := EnvInt(r.name, "poolMaxActive", 20)
+	idleTimeout := EnvInt(r.name, "poolIdleTimeout", 60000)
 
-	r.pool = pools.NewResourcePool(func() (pools.Resource, error) {
-		dsn := fmt.Sprintf("%s:%d", EnvString(r.name, "host", "localhost"), EnvInt("redis", "port", 6379))
+	df := func() (pools.Resource, error) {
+		dsn := fmt.Sprintf("%s:%d", host, port)
 
 		dialOptions := []redis.DialOption{
-			redis.DialPassword(EnvString(r.name, "password", "")),
-			redis.DialDatabase(EnvInt(r.name, "database", 0)),
-			redis.DialConnectTimeout(EnvDuration(r.name, "connectTimeout", time.Duration(10000)*time.Millisecond)),
-			redis.DialReadTimeout(EnvDuration(r.name, "readTimeout", time.Duration(10000)*time.Millisecond)),
-			redis.DialWriteTimeout(EnvDuration(r.name, "writeTimeout", time.Duration(10000)*time.Millisecond)),
+			redis.DialPassword(password),
+			redis.DialDatabase(database),
+			redis.DialConnectTimeout(time.Duration(connTimeout) * time.Millisecond),
+			redis.DialReadTimeout(time.Duration(readTimeout) * time.Millisecond),
+			redis.DialWriteTimeout(time.Duration(writeTimeout) * time.Millisecond),
 		}
 
 		conn, err := redis.Dial("tcp", dsn, dialOptions...)
@@ -118,7 +125,9 @@ func (r *RedisPoolResource) dial() {
 		}
 
 		return RedisConn{conn}, nil
-	}, poolMinActive, poolMaxActive, poolIdleTimeout*time.Millisecond)
+	}
+
+	r.pool = pools.NewResourcePool(df, minActiveConn, maxActiveConn, time.Duration(idleTimeout) * time.Millisecond)
 }
 
 // Get get a connection resource from the pool

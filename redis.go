@@ -62,17 +62,27 @@ func initMultiRedis(sections []*ini.Section) error {
 }
 
 func redisDial(section *ini.Section) (*redis.Pool, error) {
+	host := section.Key("host").MustString("127.0.0.1")
+	port := section.Key("port").MustInt(6379)
+	password := section.Key("password").MustString("")
+	database := section.Key("database").MustInt(0)
+	connTimeout := section.Key("connTimeout").MustInt(1000)
+	readTimeout := section.Key("readTimeout").MustInt(1000)
+	writeTimeout := section.Key("writeTimeout").MustInt(1000)
+	testOnBorrow := section.Key("testOnBorrow").MustInt(0)
+	maxIdleConn := section.Key("maxIdleConn").MustInt(10)
+	maxActiveConn := section.Key("maxActiveConn").MustInt(20)
+	idleTimeout := section.Key("idleTimeout").MustInt(60000)
+	poolWait := section.Key("poolWait").MustBool(false)
+
 	pool := &redis.Pool{
 		Dial: func() (redis.Conn, error) {
-			host := section.Key("host").MustString("127.0.0.1")
-			port := section.Key("port").MustInt(6379)
-
 			dialOptions := []redis.DialOption{
-				redis.DialPassword(section.Key("password").MustString("")),
-				redis.DialDatabase(section.Key("database").MustInt(0)),
-				redis.DialConnectTimeout(section.Key("connTimeout").MustDuration(time.Duration(10000) * time.Millisecond)),
-				redis.DialReadTimeout(section.Key("readTimeout").MustDuration(time.Duration(10000) * time.Millisecond)),
-				redis.DialWriteTimeout(section.Key("writeTimeout").MustDuration(time.Duration(10000) * time.Millisecond)),
+				redis.DialPassword(password),
+				redis.DialDatabase(database),
+				redis.DialConnectTimeout(time.Duration(connTimeout) * time.Millisecond),
+				redis.DialReadTimeout(time.Duration(readTimeout) * time.Millisecond),
+				redis.DialWriteTimeout(time.Duration(writeTimeout) * time.Millisecond),
 			}
 
 			conn, err := redis.Dial("tcp", fmt.Sprintf("%s:%d", host, port), dialOptions...)
@@ -80,19 +90,17 @@ func redisDial(section *ini.Section) (*redis.Pool, error) {
 			return conn, err
 		},
 		TestOnBorrow: func(c redis.Conn, t time.Time) error {
-			period := section.Key("testOnBorrow").MustDuration(time.Duration(60000) * time.Millisecond)
-
-			if time.Since(t) < period {
+			if testOnBorrow == 0 || time.Since(t) < time.Duration(testOnBorrow)*time.Millisecond {
 				return nil
 			}
 			_, err := c.Do("PING")
 
 			return err
 		},
-		MaxIdle:     section.Key("maxIdleConn").MustInt(10),
-		MaxActive:   section.Key("maxActiveConn").MustInt(20),
-		IdleTimeout: section.Key("idleTimeout").MustDuration(time.Duration(60000) * time.Millisecond),
-		Wait:        section.Key("poolWait").MustBool(true),
+		MaxIdle:     maxIdleConn,
+		MaxActive:   maxActiveConn,
+		IdleTimeout: time.Duration(idleTimeout) * time.Millisecond,
+		Wait:        poolWait,
 	}
 
 	conn := pool.Get()
