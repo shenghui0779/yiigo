@@ -77,6 +77,8 @@ func redisDial(section *ini.Section) (*redis.Pool, error) {
 
 	pool := &redis.Pool{
 		Dial: func() (redis.Conn, error) {
+			dsn := fmt.Sprintf("%s:%d", host, port)
+
 			dialOptions := []redis.DialOption{
 				redis.DialPassword(password),
 				redis.DialDatabase(database),
@@ -85,7 +87,7 @@ func redisDial(section *ini.Section) (*redis.Pool, error) {
 				redis.DialWriteTimeout(time.Duration(writeTimeout) * time.Millisecond),
 			}
 
-			conn, err := redis.Dial("tcp", fmt.Sprintf("%s:%d", host, port), dialOptions...)
+			conn, err := redis.Dial("tcp", dsn, dialOptions...)
 
 			return conn, err
 		},
