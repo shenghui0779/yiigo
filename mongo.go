@@ -68,6 +68,7 @@ func mongoDial(section *ini.Section) (*mgo.Session, error) {
 	port := section.Key("port").MustInt(27017)
 	username := section.Key("username").MustString("")
 	password := section.Key("password").MustString("")
+	poolLimit := section.Key("poolLimit").MustInt(10)
 
 	dsn := fmt.Sprintf("mongodb://%s:%d", host, port)
 
@@ -81,7 +82,7 @@ func mongoDial(section *ini.Section) (*mgo.Session, error) {
 		return nil, err
 	}
 
-	m.SetPoolLimit(EnvInt("mongo", "poolLimit", 10))
+	m.SetPoolLimit(poolLimit)
 
 	return m, nil
 }
