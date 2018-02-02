@@ -150,22 +150,22 @@ func InsertSQL(table string, data interface{}) (string, []interface{}) {
 
 // UpdateSQL returns update sql and binds
 // data expect struct, yiigo.X
-func UpdateSQL(sql string, data interface{}, args ...interface{}) (string, []interface{}) {
+func UpdateSQL(query string, data interface{}, args ...interface{}) (string, []interface{}) {
 	v := reflect.Indirect(reflect.ValueOf(data))
 
-	_sql := ""
+	sql := ""
 	binds := []interface{}{}
 
 	switch v.Kind() {
 	case reflect.Map:
 		if x, ok := data.(X); ok {
-			_sql, binds = updateWithMap(sql, x, args...)
+			sql, binds = updateWithMap(query, x, args...)
 		}
 	case reflect.Struct:
-		_sql, binds = updateWithStruct(sql, v, args...)
+		sql, binds = updateWithStruct(query, v, args...)
 	}
 
-	return _sql, binds
+	return sql, binds
 }
 
 // Expr returns expression, eg: yiigo.Expr("price * ? + ?", 2, 100)
@@ -289,7 +289,7 @@ func batchInsertWithMap(table string, data []X, count int) (string, []interface{
 	return sql, binds
 }
 
-func updateWithMap(sql string, data X, args ...interface{}) (string, []interface{}) {
+func updateWithMap(query string, data X, args ...interface{}) (string, []interface{}) {
 	sets := []string{}
 	binds := []interface{}{}
 
@@ -303,13 +303,13 @@ func updateWithMap(sql string, data X, args ...interface{}) (string, []interface
 		}
 	}
 
-	sql = strings.Replace(sql, "?", strings.Join(sets, ", "), 1)
+	sql := strings.Replace(query, "?", strings.Join(sets, ", "), 1)
 	binds = append(binds, args...)
 
 	return sql, binds
 }
 
-func updateWithStruct(sql string, v reflect.Value, args ...interface{}) (string, []interface{}) {
+func updateWithStruct(query string, v reflect.Value, args ...interface{}) (string, []interface{}) {
 	fieldNum := v.NumField()
 
 	sets := make([]string, 0, fieldNum)
@@ -335,7 +335,7 @@ func updateWithStruct(sql string, v reflect.Value, args ...interface{}) (string,
 		}
 	}
 
-	sql = strings.Replace(sql, "?", strings.Join(sets, ", "), 1)
+	sql := strings.Replace(query, "?", strings.Join(sets, ", "), 1)
 	binds = append(binds, args...)
 
 	return sql, binds
