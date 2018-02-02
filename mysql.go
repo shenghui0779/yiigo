@@ -111,6 +111,7 @@ func DBConn(conn ...string) (*sqlx.DB, error) {
 }
 
 // InsertSQL returns insert sql and binds
+// data expect struct, []struct, yiigo.X, []yiigo.X
 func InsertSQL(table string, data interface{}) (string, []interface{}) {
 	v := reflect.Indirect(reflect.ValueOf(data))
 
@@ -118,11 +119,29 @@ func InsertSQL(table string, data interface{}) (string, []interface{}) {
 	binds := []interface{}{}
 
 	switch v.Kind() {
+	case reflect.Map:
+		if x, ok := data.(X); ok {
+			sql, binds = singleInsertWithMap(sql, x)
+		}
 	case reflect.Struct:
-		sql, binds = singleInsert(table, v)
+		sql, binds = singleInsertWithStruct(table, v)
 	case reflect.Slice:
 		if count := v.Len(); count > 0 {
-			sql, binds = batchInsert(table, v, count)
+			elemKind := v.Type().Elem().Kind()
+
+			if elemKind == reflect.Map {
+				if x, ok := data.([]X); ok {
+					sql, binds = batchInsertWithMap(table, x, count)
+				}
+
+				break
+			}
+
+			if elemKind == reflect.Struct {
+				sql, binds = batchInsertWithStruct(table, v, count)
+
+				break
+			}
 		}
 	}
 
@@ -130,6 +149,7 @@ func InsertSQL(table string, data interface{}) (string, []interface{}) {
 }
 
 // UpdateSQL returns update sql and binds
+// data expect struct, yiigo.X
 func UpdateSQL(sql string, data interface{}, args ...interface{}) (string, []interface{}) {
 	v := reflect.Indirect(reflect.ValueOf(data))
 
@@ -139,10 +159,10 @@ func UpdateSQL(sql string, data interface{}, args ...interface{}) (string, []int
 	switch v.Kind() {
 	case reflect.Map:
 		if x, ok := data.(X); ok {
-			_sql, binds = updateByMap(sql, x, args...)
+			_sql, binds = updateWithMap(sql, x, args...)
 		}
 	case reflect.Struct:
-		_sql, binds = updateByStruct(sql, v, args...)
+		_sql, binds = updateWithStruct(sql, v, args...)
 	}
 
 	return _sql, binds
@@ -153,7 +173,25 @@ func Expr(expr string, args ...interface{}) *SQLExpr {
 	return &SQLExpr{Expr: expr, Args: args}
 }
 
-func singleInsert(table string, v reflect.Value) (string, []interface{}) {
+func singleInsertWithMap(table string, data X) (string, []interface{}) {
+	fieldNum := len(data)
+
+	columns := make([]string, 0, fieldNum)
+	placeholders := make([]string, 0, fieldNum)
+	binds := make([]interface{}, 0, fieldNum)
+
+	for k, v := range data {
+		columns = append(columns, fmt.Sprintf("`%s`", k))
+		placeholders = append(placeholders, "?")
+		binds = append(binds, v)
+	}
+
+	sql := fmt.Sprintf("INSERT INTO `%s` (%s) VALUES (%s)", table, strings.Join(columns, ", "), strings.Join(placeholders, ", "))
+
+	return sql, binds
+}
+
+func singleInsertWithStruct(table string, v reflect.Value) (string, []interface{}) {
 	fieldNum := v.NumField()
 
 	columns := make([]string, 0, fieldNum)
@@ -179,7 +217,7 @@ func singleInsert(table string, v reflect.Value) (string, []interface{}) {
 	return sql, binds
 }
 
-func batchInsert(table string, v reflect.Value, count int) (string, []interface{}) {
+func batchInsertWithStruct(table string, v reflect.Value, count int) (string, []interface{}) {
 	first := reflect.Indirect(v.Index(0))
 
 	if first.Kind() != reflect.Struct {
@@ -220,7 +258,38 @@ func batchInsert(table string, v reflect.Value, count int) (string, []interface{
 	return sql, binds
 }
 
-func updateByMap(sql string, data X, args ...interface{}) (string, []interface{}) {
+func batchInsertWithMap(table string, data []X, count int) (string, []interface{}) {
+	fieldNum := len(data[0])
+
+	fields := make([]string, 0, fieldNum)
+	columns := make([]string, 0, fieldNum)
+	placeholders := make([]string, 0, fieldNum)
+	binds := make([]interface{}, 0, fieldNum*count)
+
+	for k := range data[0] {
+		fields = append(fields, k)
+		columns = append(columns, fmt.Sprintf("`%s`", k))
+	}
+
+	fmt.Println(columns)
+
+	for _, x := range data {
+		phrs := make([]string, 0, fieldNum)
+
+		for _, v := range fields {
+			phrs = append(phrs, "?")
+			binds = append(binds, x[v])
+		}
+
+		placeholders = append(placeholders, fmt.Sprintf("(%s)", strings.Join(phrs, ", ")))
+	}
+
+	sql := fmt.Sprintf("INSERT INTO `%s` (%s) VALUES %s", table, strings.Join(columns, ", "), strings.Join(placeholders, ","))
+
+	return sql, binds
+}
+
+func updateWithMap(sql string, data X, args ...interface{}) (string, []interface{}) {
 	sets := []string{}
 	binds := []interface{}{}
 
@@ -240,7 +309,7 @@ func updateByMap(sql string, data X, args ...interface{}) (string, []interface{}
 	return sql, binds
 }
 
-func updateByStruct(sql string, v reflect.Value, args ...interface{}) (string, []interface{}) {
+func updateWithStruct(sql string, v reflect.Value, args ...interface{}) (string, []interface{}) {
 	fieldNum := v.NumField()
 
 	sets := make([]string, 0, fieldNum)
