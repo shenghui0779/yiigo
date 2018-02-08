@@ -4,6 +4,7 @@ import (
 	"gopkg.in/gomail.v2"
 )
 
+// Mailer email
 type Mailer struct {
 	Title    string
 	Subject  string

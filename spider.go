@@ -20,11 +20,13 @@ import (
 // CertPath {CertPath} CA证书存放路径 [默认 certs 目录，证书需用 openssl 转化为 pem格式]
 // CookiePath {string} cookie存放路径 [默认 cookies 目录]
 
+// Spider spider
 type Spider struct {
 	CertPath   CertPath
 	CookiePath string
 }
 
+// CertPath cert path
 type CertPath struct {
 	CertPem           string
 	KeyUnencryptedPem string
