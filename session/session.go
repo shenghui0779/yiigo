@@ -12,7 +12,7 @@ var store *sessions.CookieStore
 
 // Start start session
 func Start() {
-	store = sessions.NewCookieStore([]byte(yiigo.EnvString("session", "secret", "N0awmAuS2OziVFu^9!*0LY7MeCRgQ&z0")))
+	store = sessions.NewCookieStore([]byte(yiigo.Env.String("session.secret", "N0awmAuS2OziVFu^9!*0LY7MeCRgQ&z0")))
 }
 
 // Get get session key - value
