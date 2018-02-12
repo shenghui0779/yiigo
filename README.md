@@ -28,9 +28,12 @@ go get github.com/Masterminds/glide
 #### 获取 `yiigo`
 
 ```sh
+# 初始化
 glide init
-
+# 获取 yiigo
 glide get github.com/iiinsomnia/yiigo
+# 更新依赖
+glide up
 ```
 
 ## 使用
