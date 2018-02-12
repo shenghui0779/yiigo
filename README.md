@@ -30,7 +30,7 @@ go get github.com/Masterminds/glide
 ```sh
 glide init
 
-glide install github.com/iiinsomnia/yiigo
+glide get github.com/iiinsomnia/yiigo
 ```
 
 ## 使用
