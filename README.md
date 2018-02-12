@@ -56,7 +56,7 @@ func main() {
 ## 说明
 * 在 `main.go` 所在目录创建 `env.toml` ENV配置文件，具体配置可以参考 `env.toml.example`
 * `MySQL`、`mongo`、`redis` 多连接配置参考 `env.toml.example` 中的多数据库配置部分(注释部分)
-* code.google.com 上 `go get` 不下来的库，可以在这里[获取](https://github.com/golang)
+* golang.org 上 `go get` 不下来的库，可以在这里[获取](https://github.com/golang)
 * 如爬虫不需要模拟登录，则只需要使用 [goquery](https://github.com/PuerkitoBio/goquery) 即可
 * 具体使用可以参考 [yiigo-example](https://github.com/IIInsomnia/yiigo-example)
 * [glide](https://glide.sh) 使用参考
