@@ -32,8 +32,8 @@ go get github.com/Masterminds/glide
 glide init
 # 获取 yiigo
 glide get github.com/iiinsomnia/yiigo
-# 更新依赖
-glide up
+# 安装依赖
+glide install
 ```
 
 ## 使用
