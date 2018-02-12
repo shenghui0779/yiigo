@@ -4,6 +4,14 @@ import (
 	"gopkg.in/gomail.v2"
 )
 
+type emailConfig struct {
+	Title    string `toml:"title"`
+	Host     string `toml:"host"`
+	Port     int    `toml:"port"`
+	Username string `toml:"username"`
+	Password string `toml:"password"`
+}
+
 // Mailer email
 type Mailer struct {
 	Title    string
@@ -56,12 +64,11 @@ func (m *Mailer) Send() error {
 }
 
 func (m *Mailer) dialer() *gomail.Dialer {
-	host := EnvString("email", "host", "smtp.example.com")
-	port := EnvInt("email", "port", 587)
-	username := EnvString("email", "username", "yiigo@example.com")
-	password := EnvString("email", "password", "xxxxxxxxx")
+	conf := &emailConfig{}
 
-	d := gomail.NewDialer(host, port, username, password)
+	Env.Unmarshal("email", conf)
+
+	d := gomail.NewDialer(conf.Host, conf.Port, conf.Username, conf.Password)
 
 	return d
 }

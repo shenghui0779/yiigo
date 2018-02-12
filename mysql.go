@@ -1,22 +1,29 @@
 package yiigo
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"strings"
 	"sync"
 
-	"gopkg.in/ini.v1"
-
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
+	toml "github.com/pelletier/go-toml"
 )
 
-var (
-	// DB default connection
-	DB    *sqlx.DB
-	dbmap sync.Map
-)
+type mysqlConf struct {
+	Name         string `toml:"name"`
+	Host         string `toml:"host"`
+	Port         int    `toml:"port"`
+	Username     string `toml:"username"`
+	Password     string `toml:"password"`
+	Database     string `toml:"database"`
+	Charset      string `toml:"charset"`
+	Collection   string `toml:"collection"`
+	MaxOpenConns int    `toml:"maxOpenConns"`
+	MaxIdleConns int    `toml:"maxIdleConns"`
+}
 
 // SQLExpr SQL expression
 type SQLExpr struct {
@@ -24,22 +31,45 @@ type SQLExpr struct {
 	Args []interface{}
 }
 
+var (
+	// DB default connection
+	DB    *sqlx.DB
+	dbmap sync.Map
+)
+
 func initMySQL() error {
-	sections := childSections("mysql")
-
-	if len(sections) > 0 {
-		return initMultiDB(sections)
-	}
-
-	return initSingleDB()
-}
-
-func initSingleDB() error {
 	var err error
 
-	section := env.Section("mysql")
+	result := Env.Get("mysql")
 
-	DB, err = dbDial(section)
+	switch node := result.(type) {
+	case *toml.Tree:
+		conf := &mysqlConf{}
+		err = node.Unmarshal(conf)
+
+		if err != nil {
+			break
+		}
+
+		err = initSingleDB(conf)
+	case []*toml.Tree:
+		conf := make([]*mysqlConf, 0, len(node))
+
+		for _, v := range node {
+			c := &mysqlConf{}
+			err = v.Unmarshal(c)
+
+			if err != nil {
+				break
+			}
+
+			conf = append(conf, c)
+		}
+
+		err = initMultiDB(conf)
+	default:
+		return errors.New("mysql error config")
+	}
 
 	if err != nil {
 		return fmt.Errorf("mysql error: %s", err.Error())
@@ -48,36 +78,34 @@ func initSingleDB() error {
 	return nil
 }
 
-func initMultiDB(sections []*ini.Section) error {
-	for _, v := range sections {
+func initSingleDB(conf *mysqlConf) error {
+	var err error
+
+	DB, err = dbDial(conf)
+
+	return err
+}
+
+func initMultiDB(conf []*mysqlConf) error {
+	for _, v := range conf {
 		db, err := dbDial(v)
 
 		if err != nil {
-			return fmt.Errorf("mysql error: %s", err.Error())
+			return err
 		}
 
-		dbmap.Store(v.Name(), db)
+		dbmap.Store(v.Name, db)
 	}
 
-	if v, ok := dbmap.Load("mysql.default"); ok {
+	if v, ok := dbmap.Load("default"); ok {
 		DB = v.(*sqlx.DB)
 	}
 
 	return nil
 }
 
-func dbDial(section *ini.Section) (*sqlx.DB, error) {
-	host := section.Key("host").MustString("localhost")
-	port := section.Key("port").MustInt(3306)
-	username := section.Key("username").MustString("root")
-	password := section.Key("password").MustString("")
-	database := section.Key("database").MustString("test")
-	charset := section.Key("charset").MustString("utf8mb4")
-	collection := section.Key("collection").MustString("utf8mb4_general_ci")
-	maxOpenConns := section.Key("maxOpenConns").MustInt(20)
-	maxIdleConns := section.Key("maxIdleConns").MustInt(10)
-
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s&collation=%s&parseTime=True&loc=Local", username, password, host, port, database, charset, collection)
+func dbDial(conf *mysqlConf) (*sqlx.DB, error) {
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s&collation=%s&parseTime=True&loc=Local", conf.Username, conf.Password, conf.Host, conf.Port, conf.Database, conf.Charset, conf.Collection)
 
 	db, err := sqlx.Connect("mysql", dsn)
 
@@ -85,21 +113,19 @@ func dbDial(section *ini.Section) (*sqlx.DB, error) {
 		return nil, err
 	}
 
-	db.SetMaxOpenConns(maxOpenConns)
-	db.SetMaxIdleConns(maxIdleConns)
+	db.SetMaxOpenConns(conf.MaxOpenConns)
+	db.SetMaxIdleConns(conf.MaxIdleConns)
 
 	return db, nil
 }
 
 // DBConn get db connection
 func DBConn(conn ...string) (*sqlx.DB, error) {
-	c := "default"
+	schema := "default"
 
 	if len(conn) > 0 {
-		c = conn[0]
+		schema = conn[0]
 	}
-
-	schema := fmt.Sprintf("mysql.%s", c)
 
 	v, ok := dbmap.Load(schema)
 

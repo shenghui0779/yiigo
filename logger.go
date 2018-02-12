@@ -8,12 +8,20 @@ import (
 	lumberjack "gopkg.in/natefinch/lumberjack.v2"
 )
 
+type logConf struct {
+	Path       string `toml:"path"`
+	MaxSize    int    `toml:"maxSize"`
+	MaxBackups int    `toml:"maxBackups"`
+	MaxAge     int    `toml:"maxAge"`
+	Compress   bool   `toml:"compress"`
+}
+
 // Logger yiigo logger
 var Logger *zap.Logger
 
 // initLogger init logger
 func initLogger() {
-	if EnvBool("app", "debug", false) {
+	if Env.Bool("app.debug", false) {
 		cfg := zap.NewDevelopmentConfig()
 
 		cfg.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
@@ -21,12 +29,19 @@ func initLogger() {
 
 		Logger, _ = cfg.Build()
 	} else {
+		conf := &logConf{
+			Path:    "app.log",
+			MaxSize: 500,
+		}
+
+		Env.Unmarshal("log", conf)
+
 		w := zapcore.AddSync(&lumberjack.Logger{
-			Filename:   EnvString("log", "path", "app.log"),
-			MaxSize:    EnvInt("log.rotate", "maxSize", 500), // megabytes
-			MaxBackups: EnvInt("log.rotate", "maxBackups", 0),
-			MaxAge:     EnvInt("log.rotate", "maxAge", 0), // days
-			Compress:   EnvBool("log.rotate", "compress", false),
+			Filename:   conf.Path,
+			MaxSize:    conf.MaxSize, // megabytes
+			MaxBackups: conf.MaxBackups,
+			MaxAge:     conf.MaxAge, // days
+			Compress:   conf.Compress,
 		})
 
 		cfg := zap.NewProductionEncoderConfig()

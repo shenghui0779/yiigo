@@ -161,7 +161,7 @@ func (s *Spider) HTTPSGet(httpURL string, host string, setCookie bool, saveCooki
 		}
 	}
 
-	certDir := EnvString("spider", "certdir", "certs")
+	certDir := Env.String("spider.certdir", "certs")
 
 	certFile, _ := filepath.Abs(fmt.Sprintf("%s/%s", certDir, s.CertPath.CertPem))
 	keyFile, _ := filepath.Abs(fmt.Sprintf("%s/%s", certDir, s.CertPath.KeyUnencryptedPem))
@@ -228,7 +228,7 @@ func (s *Spider) HTTPSPost(httpURL string, host string, v url.Values, setCookie 
 		}
 	}
 
-	certDir := EnvString("spider", "certdir", "certs")
+	certDir := Env.String("spider.certdir", "certs")
 
 	certFile, _ := filepath.Abs(fmt.Sprintf("%s/%s", certDir, s.CertPath.CertPem))
 	keyFile, _ := filepath.Abs(fmt.Sprintf("%s/%s", certDir, s.CertPath.KeyUnencryptedPem))
@@ -300,7 +300,7 @@ func (s *Spider) setHTTPCommonHeader(req *http.Request, isPost bool, host string
 // @param req http.Request http请求对象指针
 // @return error
 func (s *Spider) setHTTPCookie(req *http.Request) error {
-	cookieDir := EnvString("spider", "cookiedir", "cookies")
+	cookieDir := Env.String("spider.cookiedir", "cookies")
 	path, _ := filepath.Abs(fmt.Sprintf("%s/%s", cookieDir, s.CookiePath))
 
 	cookies := map[string]*http.Cookie{}
@@ -328,7 +328,7 @@ func (s *Spider) setHTTPCookie(req *http.Request) error {
 // @param clearOldCookie bool 是否需要清空原来的cookie
 // @param error
 func (s *Spider) saveHTTPCookie(newCookies []*http.Cookie, clearOldCookie bool) error {
-	cookieDir := EnvString("spider", "cookiedir", "cookies")
+	cookieDir := Env.String("spider.cookiedir", "cookies")
 	path, _ := filepath.Abs(fmt.Sprintf("%s/%s", cookieDir, s.CookiePath))
 
 	if len(newCookies) == 0 {

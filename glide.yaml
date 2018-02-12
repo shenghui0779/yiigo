@@ -1,4 +1,4 @@
-package: .
+package: test/vendor/github.com/iiinsomnia/yiigo
 import:
 - package: github.com/garyburd/redigo
   subpackages:
@@ -6,14 +6,19 @@ import:
 - package: github.com/gin-gonic/gin
 - package: github.com/go-sql-driver/mysql
 - package: github.com/gorilla/sessions
-- package: github.com/iiinsomnia/yiigo
 - package: github.com/jmoiron/sqlx
+- package: github.com/pelletier/go-toml
 - package: go.uber.org/zap
   subpackages:
   - zapcore
 - package: gopkg.in/gomail.v2
-- package: gopkg.in/ini.v1
 - package: gopkg.in/mgo.v2
   subpackages:
   - bson
 - package: gopkg.in/natefinch/lumberjack.v2
+- package: golang.org/x/net
+  repo: https://github.com/golang/net.git
+- package: golang.org/x/sys
+  repo: https://github.com/golang/sys.git
+- package: google.golang.org/appengine
+  repo: https://github.com/golang/appengine.git

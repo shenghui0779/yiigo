@@ -1,13 +1,26 @@
 package yiigo
 
 import (
+	"errors"
 	"fmt"
 	"sync"
+	"time"
 
-	ini "gopkg.in/ini.v1"
+	toml "github.com/pelletier/go-toml"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
+
+type mongoConf struct {
+	Name      string `toml:"name"`
+	Host      string `toml:"host"`
+	Port      int    `toml:"port"`
+	Username  string `toml:"username"`
+	Password  string `toml:"password"`
+	Timeout   int    `toml:"timeout"`
+	PoolLimit int    `toml:"poolLimit"`
+	Mode      int    `toml:"mode"`
+}
 
 // Sequence model for _id auto_increment
 type Sequence struct {
@@ -22,21 +35,38 @@ var (
 )
 
 func initMongo() error {
-	sections := childSections("mongo")
-
-	if len(sections) > 0 {
-		return initMultiMongo(sections)
-	}
-
-	return initSingleMongo()
-}
-
-func initSingleMongo() error {
 	var err error
 
-	section := env.Section("mongo")
+	result := Env.Get("mongo")
 
-	Mongo, err = mongoDial(section)
+	switch node := result.(type) {
+	case *toml.Tree:
+		conf := &mongoConf{}
+		err = node.Unmarshal(conf)
+
+		if err != nil {
+			break
+		}
+
+		err = initSingleMongo(conf)
+	case []*toml.Tree:
+		conf := make([]*mongoConf, 0, len(node))
+
+		for _, v := range node {
+			c := &mongoConf{}
+			err = v.Unmarshal(c)
+
+			if err != nil {
+				break
+			}
+
+			conf = append(conf, c)
+		}
+
+		err = initMultiMongo(conf)
+	default:
+		return errors.New("mongo error config")
+	}
 
 	if err != nil {
 		return fmt.Errorf("mongo error: %s", err.Error())
@@ -45,57 +75,63 @@ func initSingleMongo() error {
 	return nil
 }
 
-func initMultiMongo(sections []*ini.Section) error {
-	for _, v := range sections {
+func initSingleMongo(conf *mongoConf) error {
+	var err error
+
+	Mongo, err = mongoDial(conf)
+
+	return err
+}
+
+func initMultiMongo(conf []*mongoConf) error {
+	for _, v := range conf {
 		m, err := mongoDial(v)
 
 		if err != nil {
-			return fmt.Errorf("mongo error: %s", err.Error())
+			return err
 		}
 
-		mongoMap.Store(v.Name(), m)
+		mongoMap.Store(v.Name, m)
 	}
 
-	if v, ok := mongoMap.Load("mongo.default"); ok {
+	if v, ok := mongoMap.Load("default"); ok {
 		Mongo = v.(*mgo.Session)
 	}
 
 	return nil
 }
 
-func mongoDial(section *ini.Section) (*mgo.Session, error) {
-	host := section.Key("host").MustString("127.0.0.1")
-	port := section.Key("port").MustInt(27017)
-	username := section.Key("username").MustString("")
-	password := section.Key("password").MustString("")
-	poolLimit := section.Key("poolLimit").MustInt(10)
+func mongoDial(conf *mongoConf) (*mgo.Session, error) {
+	dsn := fmt.Sprintf("mongodb://%s:%d", conf.Host, conf.Port)
 
-	dsn := fmt.Sprintf("mongodb://%s:%d", host, port)
-
-	if username != "" {
-		dsn = fmt.Sprintf("mongodb://%s:%s@%s:%d", username, password, host, port)
+	if conf.Username != "" {
+		dsn = fmt.Sprintf("mongodb://%s:%s@%s:%d", conf.Username, conf.Password, conf.Host, conf.Port)
 	}
 
-	m, err := mgo.Dial(dsn)
+	m, err := mgo.DialWithTimeout(dsn, time.Duration(conf.Timeout)*time.Millisecond)
 
 	if err != nil {
 		return nil, err
 	}
 
-	m.SetPoolLimit(poolLimit)
+	if conf.PoolLimit != 0 {
+		m.SetPoolLimit(conf.PoolLimit)
+	}
+
+	if conf.Mode != 0 {
+		m.SetMode(mgo.Mode(conf.Mode), true)
+	}
 
 	return m, nil
 }
 
 // MongoSession get mongo session
 func MongoSession(conn ...string) (*mgo.Session, error) {
-	c := "default"
+	schema := "default"
 
 	if len(conn) > 0 {
-		c = conn[0]
+		schema = conn[0]
 	}
-
-	schema := fmt.Sprintf("mongo.%s", c)
 
 	v, ok := mongoMap.Load(schema)
 

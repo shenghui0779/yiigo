@@ -8,10 +8,25 @@ import (
 	"sync"
 	"time"
 
-	ini "gopkg.in/ini.v1"
-
 	"github.com/garyburd/redigo/redis"
+	toml "github.com/pelletier/go-toml"
 )
+
+type redisConf struct {
+	Name          string `toml:"name"`
+	Host          string `toml:"host"`
+	Port          int    `toml:"port"`
+	Password      string `toml:"password"`
+	Database      int    `toml:"database"`
+	ConnTimeout   int    `toml:"connTimeout"`
+	ReadTimeout   int    `toml:"readTimeout"`
+	WriteTimeout  int    `toml:"writeTimeout"`
+	MaxIdleConn   int    `toml:"maxIdleConn"`
+	MaxActiveConn int    `toml:"maxActiveConn"`
+	IdleTimeout   int    `toml:"idleTimeout"`
+	TestOnBorrow  int    `toml:"testOnBorrow"`
+	PoolWait      bool   `toml:"poolWait"`
+}
 
 var (
 	// Redis default connection pool
@@ -20,21 +35,38 @@ var (
 )
 
 func initRedis() error {
-	sections := childSections("redis")
-
-	if len(sections) > 0 {
-		return initMultiRedis(sections)
-	}
-
-	return initSingleRedis()
-}
-
-func initSingleRedis() error {
 	var err error
 
-	section := env.Section("redis")
+	result := Env.Get("redis")
 
-	Redis, err = redisDial(section)
+	switch node := result.(type) {
+	case *toml.Tree:
+		conf := &redisConf{}
+		err = node.Unmarshal(conf)
+
+		if err != nil {
+			break
+		}
+
+		err = initSingleRedis(conf)
+	case []*toml.Tree:
+		conf := make([]*redisConf, 0, len(node))
+
+		for _, v := range node {
+			c := &redisConf{}
+			err = v.Unmarshal(c)
+
+			if err != nil {
+				break
+			}
+
+			conf = append(conf, c)
+		}
+
+		err = initMultiRedis(conf)
+	default:
+		return errors.New("redis error config")
+	}
 
 	if err != nil {
 		return fmt.Errorf("redis error: %s", err.Error())
@@ -43,48 +75,43 @@ func initSingleRedis() error {
 	return nil
 }
 
-func initMultiRedis(sections []*ini.Section) error {
-	for _, v := range sections {
+func initSingleRedis(conf *redisConf) error {
+	var err error
+
+	Redis, err = redisDial(conf)
+
+	return err
+}
+
+func initMultiRedis(conf []*redisConf) error {
+	for _, v := range conf {
 		p, err := redisDial(v)
 
 		if err != nil {
-			return fmt.Errorf("redis error: %s", err.Error())
+			return err
 		}
 
-		redisMap.Store(v.Name(), p)
+		redisMap.Store(v.Name, p)
 	}
 
-	if v, ok := redisMap.Load("redis.default"); ok {
+	if v, ok := redisMap.Load("default"); ok {
 		Redis = v.(*redis.Pool)
 	}
 
 	return nil
 }
 
-func redisDial(section *ini.Section) (*redis.Pool, error) {
-	host := section.Key("host").MustString("127.0.0.1")
-	port := section.Key("port").MustInt(6379)
-	password := section.Key("password").MustString("")
-	database := section.Key("database").MustInt(0)
-	connTimeout := section.Key("connTimeout").MustInt(1000)
-	readTimeout := section.Key("readTimeout").MustInt(1000)
-	writeTimeout := section.Key("writeTimeout").MustInt(1000)
-	testOnBorrow := section.Key("testOnBorrow").MustInt(0)
-	maxIdleConn := section.Key("maxIdleConn").MustInt(10)
-	maxActiveConn := section.Key("maxActiveConn").MustInt(20)
-	idleTimeout := section.Key("idleTimeout").MustInt(60000)
-	poolWait := section.Key("poolWait").MustBool(false)
-
+func redisDial(conf *redisConf) (*redis.Pool, error) {
 	pool := &redis.Pool{
 		Dial: func() (redis.Conn, error) {
-			dsn := fmt.Sprintf("%s:%d", host, port)
+			dsn := fmt.Sprintf("%s:%d", conf.Host, conf.Port)
 
 			dialOptions := []redis.DialOption{
-				redis.DialPassword(password),
-				redis.DialDatabase(database),
-				redis.DialConnectTimeout(time.Duration(connTimeout) * time.Millisecond),
-				redis.DialReadTimeout(time.Duration(readTimeout) * time.Millisecond),
-				redis.DialWriteTimeout(time.Duration(writeTimeout) * time.Millisecond),
+				redis.DialPassword(conf.Password),
+				redis.DialDatabase(conf.Database),
+				redis.DialConnectTimeout(time.Duration(conf.ConnTimeout) * time.Millisecond),
+				redis.DialReadTimeout(time.Duration(conf.ReadTimeout) * time.Millisecond),
+				redis.DialWriteTimeout(time.Duration(conf.WriteTimeout) * time.Millisecond),
 			}
 
 			conn, err := redis.Dial("tcp", dsn, dialOptions...)
@@ -92,17 +119,17 @@ func redisDial(section *ini.Section) (*redis.Pool, error) {
 			return conn, err
 		},
 		TestOnBorrow: func(c redis.Conn, t time.Time) error {
-			if testOnBorrow == 0 || time.Since(t) < time.Duration(testOnBorrow)*time.Millisecond {
+			if conf.TestOnBorrow == 0 || time.Since(t) < time.Duration(conf.TestOnBorrow)*time.Millisecond {
 				return nil
 			}
 			_, err := c.Do("PING")
 
 			return err
 		},
-		MaxIdle:     maxIdleConn,
-		MaxActive:   maxActiveConn,
-		IdleTimeout: time.Duration(idleTimeout) * time.Millisecond,
-		Wait:        poolWait,
+		MaxIdle:     conf.MaxIdleConn,
+		MaxActive:   conf.MaxActiveConn,
+		IdleTimeout: time.Duration(conf.IdleTimeout) * time.Millisecond,
+		Wait:        conf.PoolWait,
 	}
 
 	conn := pool.Get()
@@ -119,13 +146,11 @@ func redisDial(section *ini.Section) (*redis.Pool, error) {
 
 // RedisPool get redis connection pool
 func RedisPool(conn ...string) (*redis.Pool, error) {
-	c := "default"
+	schema := "default"
 
 	if len(conn) > 0 {
-		c = conn[0]
+		schema = conn[0]
 	}
-
-	schema := fmt.Sprintf("redis.%s", c)
 
 	v, ok := redisMap.Load(schema)
 

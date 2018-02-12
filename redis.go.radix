@@ -8,11 +8,20 @@ import (
 	"sync"
 	"time"
 
-	ini "gopkg.in/ini.v1"
-
 	"github.com/mediocregopher/radix.v2/pool"
 	"github.com/mediocregopher/radix.v2/redis"
+	toml "github.com/pelletier/go-toml"
 )
+
+type redisConf struct {
+	Name     string `toml:"name"`
+	Host     string `toml:"host"`
+	Port     int    `toml:"port"`
+	Password string `toml:"password"`
+	Database int    `toml:"database"`
+	Timeout  int    `toml:"connTimeout"`
+	PoolSize bool   `toml:"poolSize"`
+}
 
 var (
 	// Redis default connection pool
@@ -21,21 +30,38 @@ var (
 )
 
 func initRedis() error {
-	sections := childSections("redis")
-
-	if len(sections) > 0 {
-		return initMultiRedis(sections)
-	}
-
-	return initSingleRedis()
-}
-
-func initSingleRedis() error {
 	var err error
 
-	section := env.Section("redis")
+	result := Env.Get("redis")
 
-	Redis, err = redisDial(section)
+	switch node := result.(type) {
+	case *toml.Tree:
+		conf := &redisConf{}
+		err = node.Unmarshal(conf)
+
+		if err != nil {
+			break
+		}
+
+		err = initSingleRedis(conf)
+	case []*toml.Tree:
+		conf := make([]*redisConf, 0, len(node))
+
+		for _, v := range node {
+			c := &redisConf{}
+			err = v.Unmarshal(c)
+
+			if err != nil {
+				break
+			}
+
+			conf = append(conf, c)
+		}
+
+		err = initMultiRedis(conf)
+	default:
+		return errors.New("redis error config")
+	}
 
 	if err != nil {
 		return fmt.Errorf("redis error: %s", err.Error())
@@ -44,46 +70,52 @@ func initSingleRedis() error {
 	return nil
 }
 
-func initMultiRedis(sections []*ini.Section) error {
-	for _, v := range sections {
+func initSingleRedis(conf *redisConf) error {
+	var err error
+
+	Redis, err = redisDial(conf)
+
+	return err
+}
+
+func initMultiRedis(conf []*redisConf) error {
+	for _, v := range conf {
 		p, err := redisDial(v)
 
 		if err != nil {
-			return fmt.Errorf("redis error: %s", err.Error())
+			return err
 		}
 
 		redisMap.Store(v.Name(), p)
 	}
 
-	if v, ok := redisMap.Load("redis.default"); ok {
+	if v, ok := redisMap.Load("default"); ok {
 		Redis = v.(*pool.Pool)
 	}
 
 	return nil
 }
 
-func redisDial(section *ini.Section) (*pool.Pool, error) {
+func redisDial(conf *redisConf) (*pool.Pool, error) {
 	df := func(network, addr string) (*redis.Client, error) {
-		timeout := section.Key("timeout").MustInt(10000)
-
-		client, err := redis.DialTimeout(network, addr, time.Duration(timeout)*time.Millisecond)
+		client, err := redis.DialTimeout(network, addr, time.Duration(conf.Timeout)*time.Millisecond)
 
 		if err != nil {
 			return nil, err
 		}
 
-		if password := section.Key("password").MustString(""); password != "" {
+		if conf.Password != "" {
 			// 密码验证
-			if err = client.Cmd("AUTH", password).Err; err != nil {
+			if err = client.Cmd("AUTH", conf.Password).Err; err != nil {
 				client.Close()
 
 				return nil, err
 			}
 		}
 
-		if database := section.Key("database").MustInt(0); database != 0 {
+		if conf.Database != 0 {
 			// 选择数据库
-			if err = client.Cmd("SELECT", database).Err; err != nil {
+			if err = client.Cmd("SELECT", conf.Database).Err; err != nil {
 				client.Close()
 
 				return nil, err
@@ -93,11 +125,7 @@ func redisDial(section *ini.Section) (*pool.Pool, error) {
 		return client, nil
 	}
 
-	host := section.Key("host").MustString("127.0.0.1")
-	port := section.Key("port").MustInt(6379)
-	poolSize := section.Key("poolSize").MustInt(10)
-
-	p, err := pool.NewCustom("tcp", fmt.Sprintf("%s:%d", host, port), poolSize, df)
+	p, err := pool.NewCustom("tcp", fmt.Sprintf("%s:%d", conf.Host, conf.Port), conf.PoolSize, df)
 
 	if err != nil {
 		return nil, err

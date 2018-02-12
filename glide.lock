@@ -1,0 +1,39 @@
+hash: 5394ce2cf8fe78455fcab35cb60f7f651e84593be15fa3c959f1bdb8899d2935
+updated: 2018-02-12T19:33:36.112315476+08:00
+imports:
+- name: github.com/garyburd/redigo
+  version: d1ed5c67e5794de818ea85e6b522fda02623a484
+  subpackages:
+  - redis
+- name: github.com/gin-gonic/gin
+  version: 783c7ee9c14eac0e65b501664b4f553291556b43
+- name: github.com/go-sql-driver/mysql
+  version: bc14601d1bd56421dd60f561e6052c9ed77f9daf
+- name: github.com/gorilla/sessions
+  version: 6ba88b7f1c1e2c8298ec7fb2efda9ee411375c80
+- name: github.com/jmoiron/sqlx
+  version: 05cef0741ade10ca668982355b3f3f0bcf0ff0a8
+- name: github.com/pelletier/go-toml
+  version: acdc4509485b587f5e675510c4f2c63e90ff68a8
+- name: go.uber.org/zap
+  version: f85c78b1dd998214c5f2138155b320a4a43fbe36
+  subpackages:
+  - zapcore
+- name: golang.org/x/net
+  version: f5dfe339be1d06f81b22525fe34671ee7d2c8904
+  repo: https://github.com/golang/net.git
+- name: golang.org/x/sys
+  version: 37707fdb30a5b38865cfb95e5aab41707daec7fd
+  repo: https://github.com/golang/sys.git
+- name: google.golang.org/appengine
+  version: 5bee14b453b4c71be47ec1781b0fa61c2ea182db
+  repo: https://github.com/golang/appengine.git
+- name: gopkg.in/gomail.v2
+  version: 81ebce5c23dfd25c6c67194b37d3dd3f338c98b1
+- name: gopkg.in/mgo.v2
+  version: 3f83fa5005286a7fe593b055f0d7771a7dce4655
+  subpackages:
+  - bson
+- name: gopkg.in/natefinch/lumberjack.v2
+  version: a96e63847dc3c67d17befa69c303767e2f84e54f
+testImports: []
