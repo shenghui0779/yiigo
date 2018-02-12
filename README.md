@@ -19,8 +19,10 @@ Golang常用优秀库封装，用于API、WEB和爬虫开发
 ```sh
 # 安装 glide
 curl https://glide.sh/get | sh
+
 # or
 brew install glide
+
 # or
 go get github.com/Masterminds/glide
 ```
@@ -30,8 +32,10 @@ go get github.com/Masterminds/glide
 ```sh
 # 初始化
 glide init
+
 # 获取 yiigo
 glide get github.com/iiinsomnia/yiigo
+
 # 安装依赖
 glide install
 ```
