@@ -36,8 +36,8 @@ glide init
 # 获取 yiigo
 glide get github.com/iiinsomnia/yiigo
 
-# 安装依赖
-glide install
+# 安装／更新依赖
+glide install / update
 ```
 
 ## 使用
