@@ -10,11 +10,27 @@ Golang常用优秀库封装，用于API、WEB和爬虫开发
 * 支持邮件发送
 * 支持 `uber.zap` 日志记录
 * 采用 `toml` 配置文件
+* 采用 `glide` 管理 pkg
 
 ## 获取
 
-```go
-go get github.com/iiinsomnia/yiigo
+#### 安装 `glide`
+
+```sh
+# 安装 glide
+curl https://glide.sh/get | sh
+# or
+brew install glide
+# or
+go get github.com/Masterminds/glide
+```
+
+#### 获取 `yiigo`
+
+```sh
+glide init
+
+glide install github.com/iiinsomnia/yiigo
 ```
 
 ## 使用
@@ -40,4 +56,4 @@ func main() {
 * code.google.com 上 `go get` 不下来的库，可以在这里[获取](https://github.com/golang)
 * 如爬虫不需要模拟登录，则只需要使用 [goquery](https://github.com/PuerkitoBio/goquery) 即可
 * 具体使用可以参考 [yiigo-example](https://github.com/IIInsomnia/yiigo-example)
-
+* [glide](https://glide.sh) 使用参考
