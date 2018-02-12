@@ -1,4 +1,4 @@
-package: test/vendor/github.com/iiinsomnia/yiigo
+package: github.com/iiinsomnia/yiigo
 import:
 - package: github.com/garyburd/redigo
   subpackages:
