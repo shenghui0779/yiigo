@@ -3,7 +3,9 @@ package yiigo
 import (
 	"errors"
 	"path/filepath"
+	"strconv"
 	"sync"
+	"time"
 
 	toml "github.com/pelletier/go-toml"
 )
@@ -41,11 +43,20 @@ func (e *env) String(key string, defaultValue ...string) string {
 
 	i := e.Get(key)
 
-	if v, ok := i.(string); ok {
-		return v
+	switch t := i.(type) {
+	case string:
+		return t
+	case int64:
+		return strconv.FormatInt(t, 10)
+	case uint64:
+		return strconv.FormatInt(int64(t), 10)
+	case float64:
+		return strconv.FormatFloat(t, 'f', -1, 64)
+	case bool:
+		return strconv.FormatBool(t)
+	default:
+		return dv
 	}
-
-	return dv
 }
 
 // Int return int
@@ -58,11 +69,28 @@ func (e *env) Int(key string, defaultValue ...int) int {
 
 	i := e.Get(key)
 
-	if v, ok := i.(int64); ok {
-		return int(v)
-	}
+	switch t := i.(type) {
+	case int64:
+		return int(t)
+	case uint64:
+		return int(t)
+	case float64:
+		return int(t)
+	case string:
+		if v, err := strconv.ParseInt(t, 0, 0); err == nil {
+			return int(v)
+		}
 
-	return dv
+		return dv
+	case bool:
+		if t {
+			return 1
+		}
+
+		return 0
+	default:
+		return dv
+	}
 }
 
 // Int64 return int64
@@ -75,11 +103,28 @@ func (e *env) Int64(key string, defaultValue ...int64) int64 {
 
 	i := e.Get(key)
 
-	if v, ok := i.(int64); ok {
-		return v
-	}
+	switch t := i.(type) {
+	case int64:
+		return t
+	case uint64:
+		return int64(t)
+	case float64:
+		return int64(t)
+	case string:
+		if v, err := strconv.ParseInt(t, 0, 0); err == nil {
+			return v
+		}
 
-	return dv
+		return dv
+	case bool:
+		if t {
+			return 1
+		}
+
+		return 0
+	default:
+		return dv
+	}
 }
 
 // Float64 return float64
@@ -92,11 +137,28 @@ func (e *env) Float64(key string, defaultValue ...float64) float64 {
 
 	i := e.Get(key)
 
-	if v, ok := i.(float64); ok {
-		return v
-	}
+	switch t := i.(type) {
+	case float64:
+		return t
+	case int64:
+		return float64(t)
+	case uint64:
+		return float64(t)
+	case string:
+		if v, err := strconv.ParseFloat(t, 64); err == nil {
+			return v
+		}
 
-	return dv
+		return dv
+	case bool:
+		if t {
+			return 1
+		}
+
+		return 0
+	default:
+		return dv
+	}
 }
 
 // Bool return bool
@@ -109,11 +171,58 @@ func (e *env) Bool(key string, defaultValue ...bool) bool {
 
 	i := e.Get(key)
 
-	if v, ok := i.(bool); ok {
-		return v
+	switch t := i.(type) {
+	case bool:
+		return t
+	case int64:
+		if t != 0 {
+			return true
+		}
+
+		return false
+	case uint64:
+		if t != 0 {
+			return true
+		}
+
+		return false
+	case string:
+		if v, err := strconv.ParseBool(t); err == nil {
+			return v
+		}
+
+		return dv
+	default:
+		return dv
+	}
+}
+
+// Time return time.Time
+func (e *env) Time(key string, defaultValue ...time.Time) time.Time {
+	var dv time.Time
+
+	if len(defaultValue) > 0 {
+		dv = defaultValue[0]
 	}
 
-	return dv
+	i := e.Get(key)
+
+	switch t := i.(type) {
+	case time.Time:
+		return t
+	case string:
+		if v, err := time.Parse("2006-01-02 15:04:05", t); err == nil {
+			return v
+		}
+
+		return dv
+	case int64:
+		return time.Unix(t, 0)
+	case uint64:
+		return time.Unix(int64(t), 0)
+	default:
+		return dv
+	}
 }
 
 // ToMap return map[string]interface{}
