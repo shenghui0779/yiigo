@@ -1,11 +1,8 @@
 package yiigo
 
-import (
-	"gopkg.in/gomail.v2"
-)
+import "gopkg.in/gomail.v2"
 
 type emailConfig struct {
-	Title    string `toml:"title"`
 	Host     string `toml:"host"`
 	Port     int    `toml:"port"`
 	Username string `toml:"username"`
