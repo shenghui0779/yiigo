@@ -1,8 +1,13 @@
 package yiigo
 
-import "gopkg.in/gomail.v2"
+import (
+	"sync"
+
+	"gopkg.in/gomail.v2"
+)
 
 type emailConfig struct {
+	Title    string `toml:"title"`
 	Host     string `toml:"host"`
 	Port     int    `toml:"port"`
 	Username string `toml:"username"`
@@ -20,6 +25,25 @@ type Mailer struct {
 	Attach   []string
 	Charset  string
 	Encoding gomail.Encoding
+}
+
+var (
+	emailDialer *gomail.Dialer
+	emailMutex  sync.Mutex
+)
+
+func emailDial() {
+	emailMutex.Lock()
+	defer emailMutex.Unlock()
+
+	if emailDialer != nil {
+		return
+	}
+
+	conf := &emailConfig{}
+	Env.Unmarshal("email", conf)
+
+	emailDialer = gomail.NewDialer(conf.Host, conf.Port, conf.Username, conf.Password)
 }
 
 // Send send a mail
@@ -52,20 +76,12 @@ func (m *Mailer) Send() error {
 
 	msg.SetBody("text/html", m.Content)
 
-	d := m.dialer()
+	if emailDialer == nil {
+		emailDial()
+	}
 
 	// Send the email
-	err := d.DialAndSend(msg)
+	err := emailDialer.DialAndSend(msg)
 
 	return err
-}
-
-func (m *Mailer) dialer() *gomail.Dialer {
-	conf := &emailConfig{}
-
-	Env.Unmarshal("email", conf)
-
-	d := gomail.NewDialer(conf.Host, conf.Port, conf.Username, conf.Password)
-
-	return d
 }
