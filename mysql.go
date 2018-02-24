@@ -243,6 +243,37 @@ func singleInsertWithStruct(table string, v reflect.Value) (string, []interface{
 	return sql, binds
 }
 
+func batchInsertWithMap(table string, data []X, count int) (string, []interface{}) {
+	fieldNum := len(data[0])
+
+	fields := make([]string, 0, fieldNum)
+	columns := make([]string, 0, fieldNum)
+	placeholders := make([]string, 0, fieldNum)
+	binds := make([]interface{}, 0, fieldNum*count)
+
+	for k := range data[0] {
+		fields = append(fields, k)
+		columns = append(columns, fmt.Sprintf("`%s`", k))
+	}
+
+	fmt.Println(columns)
+
+	for _, x := range data {
+		phrs := make([]string, 0, fieldNum)
+
+		for _, v := range fields {
+			phrs = append(phrs, "?")
+			binds = append(binds, x[v])
+		}
+
+		placeholders = append(placeholders, fmt.Sprintf("(%s)", strings.Join(phrs, ", ")))
+	}
+
+	sql := fmt.Sprintf("INSERT INTO `%s` (%s) VALUES %s", table, strings.Join(columns, ", "), strings.Join(placeholders, ","))
+
+	return sql, binds
+}
+
 func batchInsertWithStruct(table string, v reflect.Value, count int) (string, []interface{}) {
 	first := reflect.Indirect(v.Index(0))
 
@@ -274,37 +305,6 @@ func batchInsertWithStruct(table string, v reflect.Value, count int) (string, []
 		for j := 0; j < fieldNum; j++ {
 			phrs = append(phrs, "?")
 			binds = append(binds, reflect.Indirect(v.Index(i)).Field(j).Interface())
-		}
-
-		placeholders = append(placeholders, fmt.Sprintf("(%s)", strings.Join(phrs, ", ")))
-	}
-
-	sql := fmt.Sprintf("INSERT INTO `%s` (%s) VALUES %s", table, strings.Join(columns, ", "), strings.Join(placeholders, ","))
-
-	return sql, binds
-}
-
-func batchInsertWithMap(table string, data []X, count int) (string, []interface{}) {
-	fieldNum := len(data[0])
-
-	fields := make([]string, 0, fieldNum)
-	columns := make([]string, 0, fieldNum)
-	placeholders := make([]string, 0, fieldNum)
-	binds := make([]interface{}, 0, fieldNum*count)
-
-	for k := range data[0] {
-		fields = append(fields, k)
-		columns = append(columns, fmt.Sprintf("`%s`", k))
-	}
-
-	fmt.Println(columns)
-
-	for _, x := range data {
-		phrs := make([]string, 0, fieldNum)
-
-		for _, v := range fields {
-			phrs = append(phrs, "?")
-			binds = append(binds, x[v])
 		}
 
 		placeholders = append(placeholders, fmt.Sprintf("(%s)", strings.Join(phrs, ", ")))
