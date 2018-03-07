@@ -24,6 +24,8 @@ glide get github.com/iiinsomnia/yiigo
 
 ## 使用 `yiigo`
 
+* 1、import yiigo
+
 ```go
 package main
 
@@ -41,10 +43,11 @@ func main() {
 }
 ```
 
-## 获取 `yiigo` 所需依赖包
+* 2、resolve imports
 
-* `import "github.com/iiinsomnia/yiigo"`
-* `glide update`
+```sh
+glide update
+```
 
 ## 说明
 * 在 `main.go` 所在目录创建 `env.toml` 配置文件，具体配置可以参考 `env.toml.example`
