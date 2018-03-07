@@ -43,8 +43,8 @@ func main() {
 
 ## 获取 `yiigo` 所需依赖包
 
-* 使用 `yiigo`
-* 执行 `glide update`
+* `import "github.com/iiinsomnia/yiigo"`
+* `glide update`
 
 ## 说明
 * 在 `main.go` 所在目录创建 `env.toml` 配置文件，具体配置可以参考 `env.toml.example`
