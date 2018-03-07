@@ -12,7 +12,7 @@ Golang常用优秀库封装，用于API、WEB和爬虫开发
 * 支持 [gomail](https://github.com/go-gomail/gomail) 邮件发送
 * 支持爬虫模拟登录
 
-## 获取
+## 获取 `yiigo`
 
 ```sh
 # 初始化
@@ -20,12 +20,9 @@ glide init
 
 # 获取 yiigo
 glide get github.com/iiinsomnia/yiigo
-
-# 安装／更新依赖
-glide install / update
 ```
 
-## 使用
+## 使用 `yiigo`
 
 ```go
 package main
@@ -40,9 +37,14 @@ func main() {
         yiigo.Logger.Panic(err.Error())
     }
 
-    // ...
+    // coding...
 }
 ```
+
+## 获取 `yiigo` 所需依赖包
+
+* 使用 `yiigo`
+* 执行 `glide update`
 
 ## 说明
 * 在 `main.go` 所在目录创建 `env.toml` 配置文件，具体配置可以参考 `env.toml.example`
