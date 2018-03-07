@@ -46,6 +46,7 @@ func main() {
 #### 2、resolve imports
 
 ```sh
+# 获取 yiigo 所需依赖包
 glide update
 ```
 
