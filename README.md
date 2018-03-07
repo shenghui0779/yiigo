@@ -12,7 +12,7 @@ Golang常用优秀库封装，用于API、WEB和爬虫开发
 * 支持 [gomail](https://github.com/go-gomail/gomail) 邮件发送
 * 支持爬虫模拟登录
 
-## 获取 `yiigo`
+## 获取
 
 ```sh
 # 初始化
@@ -22,9 +22,9 @@ glide init
 glide get github.com/iiinsomnia/yiigo
 ```
 
-## 使用 `yiigo`
+## 使用
 
-* 1、import yiigo
+#### 1、import yiigo
 
 ```go
 package main
@@ -43,7 +43,7 @@ func main() {
 }
 ```
 
-* 2、resolve imports
+#### 2、resolve imports
 
 ```sh
 glide update
