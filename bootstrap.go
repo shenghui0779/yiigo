@@ -1,6 +1,6 @@
 package yiigo
 
-// Bootstrap start components
+// Bootstrap init and start components
 func Bootstrap(mysql bool, mongo bool, redis bool) error {
 	// load config
 	loadEnv("env.toml")
