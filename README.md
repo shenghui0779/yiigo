@@ -43,7 +43,7 @@ func main() {
 }
 ```
 
-#### 2、resolve imports
+#### 2、resolve dependencies
 
 ```sh
 # 获取 yiigo 所需依赖包
