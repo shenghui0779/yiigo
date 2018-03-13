@@ -1,5 +1,5 @@
 # yiigo
-Golang常用优秀库封装，用于API、WEB和爬虫开发
+Go常用优秀库封装，用于API、WEB和爬虫开发
 
 ## 特点
 
