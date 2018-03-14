@@ -17,11 +17,13 @@ Go常用优秀库封装，用于API、WEB和爬虫开发
 ## 获取
 
 ```sh
-# 初始化
+# glide
 glide init
 
-# 获取 yiigo
 glide get github.com/iiinsomnia/yiigo
+
+# go get
+go get github.com/iiinsomnia/yiigo
 ```
 
 ## 使用
