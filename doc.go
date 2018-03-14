@@ -12,7 +12,7 @@
 //     err := yiigo.Bootstrap(true, true, true)
 //
 //     if err != nil {
-//	     yiigo.Logger.Panic(err.Error())
+//	       yiigo.Logger.Panic(err.Error())
 //     }
 //
 // 获取相关依赖包：
