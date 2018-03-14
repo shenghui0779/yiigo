@@ -19,7 +19,6 @@ Go常用优秀库封装，用于API、WEB和爬虫开发
 ```sh
 # glide
 glide init
-
 glide get github.com/iiinsomnia/yiigo
 
 # go get
