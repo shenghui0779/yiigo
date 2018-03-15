@@ -27,7 +27,7 @@ func Date(timestamp int64, format ...string) string {
 	return date
 }
 
-// UniqueInt int切片去重
+// UniqueInt Int 切片去重
 func UniqueInt(in []int) []int {
 	out := make([]int, 0, len(in))
 
@@ -49,7 +49,7 @@ func UniqueInt(in []int) []int {
 	return out
 }
 
-// UniqueInt64 int64切片去重
+// UniqueInt64 Int64 切片去重
 func UniqueInt64(in []int64) []int64 {
 	out := make([]int64, 0, len(in))
 
@@ -71,7 +71,7 @@ func UniqueInt64(in []int64) []int64 {
 	return out
 }
 
-// UniqueString string切片去重
+// UniqueString String 切片去重
 func UniqueString(in []string) []string {
 	out := make([]string, 0, len(in))
 
@@ -93,7 +93,7 @@ func UniqueString(in []string) []string {
 	return out
 }
 
-// InArrayInt Checks if a int value exists in an int slice
+// InArrayInt Checks if an int value exists in an int slice
 func InArrayInt(needle int, haystack []int) bool {
 	if len(haystack) == 0 {
 		return false
@@ -108,7 +108,7 @@ func InArrayInt(needle int, haystack []int) bool {
 	return false
 }
 
-// InArrayInt64 Checks if a int64 value exists in an int64 slice
+// InArrayInt64 Checks if an int64 value exists in an int64 slice
 func InArrayInt64(needle int64, haystack []int64) bool {
 	if len(haystack) == 0 {
 		return false
