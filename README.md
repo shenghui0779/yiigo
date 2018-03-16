@@ -64,3 +64,5 @@ glide update
 * `MySQL`、`mongo`、`redis` 多连接配置参考 `env.toml.example` 中的多数据库配置部分(注释部分)
 * `golang.org` 上 `go get` 不下来的库，可以在这里[获取](https://github.com/golang)
 * 如爬虫不需要模拟登录，则只需要使用 [goquery](https://github.com/PuerkitoBio/goquery) 即可
+
+**Enjoy 😊 !**
