@@ -1,10 +1,8 @@
 package yiigo
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
-	"reflect"
 	"sync"
 	"time"
 
@@ -159,70 +157,4 @@ func RedisPool(conn ...string) (*redis.Pool, error) {
 	}
 
 	return v.(*redis.Pool), nil
-}
-
-// ScanJSON scans json string to the struct or struct slice pointed to by dest
-func ScanJSON(reply interface{}, dest interface{}) error {
-	v := reflect.Indirect(reflect.ValueOf(dest))
-
-	var err error
-
-	switch v.Kind() {
-	case reflect.Struct:
-		err = scanJSONObj(reply, dest)
-	case reflect.Slice:
-		err = scanJSONSlice(reply, dest)
-	}
-
-	return err
-}
-
-func scanJSONObj(reply interface{}, dest interface{}) error {
-	bytes, err := redis.Bytes(reply, nil)
-
-	if err != nil {
-		return err
-	}
-
-	err = json.Unmarshal(bytes, dest)
-
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func scanJSONSlice(reply interface{}, dest interface{}) error {
-	bytes, err := redis.ByteSlices(reply, nil)
-
-	if err != nil {
-		return err
-	}
-
-	if len(bytes) == 0 {
-		return nil
-	}
-
-	v := reflect.Indirect(reflect.ValueOf(dest))
-
-	if v.Kind() != reflect.Slice {
-		return errors.New("the dest must be a slice")
-	}
-
-	t := v.Type()
-	v.Set(reflect.MakeSlice(t, 0, 0))
-
-	for _, b := range bytes {
-		elem := reflect.New(t.Elem()).Elem()
-		err := json.Unmarshal(b, elem.Addr().Interface())
-
-		if err != nil {
-			return err
-		}
-
-		v.Set(reflect.Append(v, elem))
-	}
-
-	return nil
 }

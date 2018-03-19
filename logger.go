@@ -59,7 +59,7 @@ func initLogger() {
 	}
 }
 
-// MyTimeEncoder diy time encoder
+// MyTimeEncoder zap time encoder
 func MyTimeEncoder(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
 	enc.AppendString(t.Format("2006-01-02 15:04:05"))
 }

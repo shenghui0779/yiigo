@@ -3,7 +3,7 @@ package yiigo
 import (
 	"sync"
 
-	"gopkg.in/gomail.v2"
+	gomail "gopkg.in/gomail.v2"
 )
 
 type emailConfig struct {
