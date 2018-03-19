@@ -21,7 +21,7 @@ func SearchInt64s(a []int64, x int64) int {
 	return sort.Search(len(a), func(i int) bool { return a[i] >= x })
 }
 
-// UniqueInt Int 切片去重
+// UniqueInt Int 切片去重「返回一个递增排序的切片」
 func UniqueInt(a []int) []int {
 	r := make([]int, 0, len(a))
 
@@ -40,7 +40,7 @@ func UniqueInt(a []int) []int {
 	return r
 }
 
-// UniqueInt64 Int64 切片去重
+// UniqueInt64 Int64 切片去重「返回一个递增排序的切片」
 func UniqueInt64(a []int64) []int64 {
 	r := make([]int64, 0, len(a))
 
@@ -59,7 +59,7 @@ func UniqueInt64(a []int64) []int64 {
 	return r
 }
 
-// UniqueFloat64 Float64 切片去重
+// UniqueFloat64 Float64 切片去重「返回一个递增排序的切片」
 func UniqueFloat64(a []float64) []float64 {
 	r := make([]float64, 0, len(a))
 
@@ -78,7 +78,7 @@ func UniqueFloat64(a []float64) []float64 {
 	return r
 }
 
-// UniqueString String 切片去重
+// UniqueString String 切片去重「返回一个递增排序的切片」
 func UniqueString(a []string) []string {
 	r := make([]string, 0, len(a))
 
