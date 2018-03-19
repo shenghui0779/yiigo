@@ -1,8 +1,5 @@
 package yiigo
 
-// X is a convenient alias for a map[string]interface{} map
-type X map[string]interface{}
-
 // Bootstrap init and start components
 func Bootstrap(mysql bool, mongo bool, redis bool) error {
 	// load config

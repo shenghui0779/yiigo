@@ -1,41 +1,38 @@
-package utils
+package yiigo
 
 import (
+	"crypto/md5"
+	"fmt"
 	"net"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
 
-// OK API返回成功
-func OK(c *gin.Context, data ...interface{}) {
-	obj := gin.H{
-		"success": true,
-		"code":    0,
-		"msg":     "success",
-	}
+// X is a convenient alias for a map[string]interface{} map
+type X map[string]interface{}
 
-	if len(data) > 0 {
-		obj["data"] = data[0]
-	}
+// MD5 获取字符串md5值
+func MD5(s string) string {
+	h := md5.New()
+	h.Write([]byte(s))
 
-	c.JSON(http.StatusOK, obj)
+	return fmt.Sprintf("%x", h.Sum(nil))
 }
 
-// Error API返回失败
-func Error(c *gin.Context, code int, msg ...string) {
-	obj := gin.H{
-		"success": false,
-		"code":    code,
-		"msg":     "something wrong",
+// Date 时间戳格式化日期「默认格式：2006-01-02 15:04:05」
+func Date(timestamp int64, format ...string) string {
+	layout := "2006-01-02 15:04:05"
+
+	if len(format) > 0 {
+		layout = format[0]
 	}
 
-	if len(msg) > 0 {
-		obj["msg"] = msg[0]
-	}
+	date := time.Unix(timestamp, 0).Format(layout)
 
-	c.JSON(http.StatusOK, obj)
+	return date
 }
 
 // IsXhr 判断是否为Ajax请求
@@ -84,4 +81,34 @@ func RemoteIP(c *gin.Context) string {
 	}
 
 	return ip
+}
+
+// OK API返回成功
+func OK(c *gin.Context, data ...interface{}) {
+	obj := gin.H{
+		"success": true,
+		"code":    0,
+		"msg":     "success",
+	}
+
+	if len(data) > 0 {
+		obj["data"] = data[0]
+	}
+
+	c.JSON(http.StatusOK, obj)
+}
+
+// Error API返回失败
+func Error(c *gin.Context, code int, msg ...string) {
+	obj := gin.H{
+		"success": false,
+		"code":    code,
+		"msg":     "something wrong",
+	}
+
+	if len(msg) > 0 {
+		obj["msg"] = msg[0]
+	}
+
+	c.JSON(http.StatusOK, obj)
 }

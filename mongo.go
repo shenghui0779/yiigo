@@ -8,6 +8,7 @@ import (
 
 	toml "github.com/pelletier/go-toml"
 	mgo "gopkg.in/mgo.v2"
+	"gopkg.in/mgo.v2/bson"
 )
 
 type mongoConf struct {
@@ -19,6 +20,12 @@ type mongoConf struct {
 	Timeout   int    `toml:"timeout"`
 	PoolLimit int    `toml:"poolLimit"`
 	Mode      int    `toml:"mode"`
+}
+
+// Sequence model for mongo _id auto_increment
+type Sequence struct {
+	ID  string `bson:"_id"`
+	Seq int    `bson:"seq"`
 }
 
 var (
@@ -135,4 +142,29 @@ func MongoSession(conn ...string) (*mgo.Session, error) {
 	session := v.(*mgo.Session)
 
 	return session.Clone(), nil
+}
+
+// SeqID get mongo auto_increment _id
+func SeqID(session *mgo.Session, db string, collection string, seqs ...int) (int, error) {
+	if len(seqs) == 0 {
+		seqs = append(seqs, 1)
+	}
+
+	condition := bson.M{"_id": collection}
+
+	change := mgo.Change{
+		Update:    bson.M{"$inc": bson.M{"seq": seqs[0]}},
+		Upsert:    true,
+		ReturnNew: true,
+	}
+
+	sequence := Sequence{}
+
+	_, err := session.DB(db).C("sequence").Find(condition).Apply(change, &sequence)
+
+	if err != nil {
+		return 0, err
+	}
+
+	return sequence.Seq, nil
 }
