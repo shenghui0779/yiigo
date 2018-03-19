@@ -4,7 +4,7 @@ import (
 	"sort"
 )
 
-// Int64Slice attaches the methods of Interface to []int64, sorting in increasing order.
+// Int64Slice attaches the methods of Interface to []int64, sorting a increasing order.
 type Int64Slice []int64
 
 func (p Int64Slice) Len() int           { return len(p) }
@@ -22,94 +22,94 @@ func SearchInt64s(a []int64, x int64) int {
 }
 
 // UniqueInt Int 切片去重
-func UniqueInt(in []int) []int {
-	out := make([]int, 0, len(in))
+func UniqueInt(a []int) []int {
+	r := make([]int, 0, len(a))
 
-	sort.Ints(in)
+	sort.Ints(a)
 
-	out = append(out, in[0])
-	i := in[0]
+	r = append(r, a[0])
+	i := a[0]
 
-	for _, v := range in {
+	for _, v := range a {
 		if v != i {
-			out = append(out, v)
+			r = append(r, v)
 			i = v
 		}
 	}
 
-	return out
+	return r
 }
 
 // UniqueInt64 Int64 切片去重
-func UniqueInt64(in []int64) []int64 {
-	out := make([]int64, 0, len(in))
+func UniqueInt64(a []int64) []int64 {
+	r := make([]int64, 0, len(a))
 
-	SortInt64s(in)
+	SortInt64s(a)
 
-	out = append(out, in[0])
-	i := in[0]
+	r = append(r, a[0])
+	i := a[0]
 
-	for _, v := range in {
+	for _, v := range a {
 		if v != i {
-			out = append(out, v)
+			r = append(r, v)
 			i = v
 		}
 	}
 
-	return out
+	return r
 }
 
 // UniqueFloat64 Float64 切片去重
-func UniqueFloat64(in []float64) []float64 {
-	out := make([]float64, 0, len(in))
+func UniqueFloat64(a []float64) []float64 {
+	r := make([]float64, 0, len(a))
 
-	sort.Float64s(in)
+	sort.Float64s(a)
 
-	out = append(out, in[0])
-	i := in[0]
+	r = append(r, a[0])
+	i := a[0]
 
-	for _, v := range in {
+	for _, v := range a {
 		if v != i {
-			out = append(out, v)
+			r = append(r, v)
 			i = v
 		}
 	}
 
-	return out
+	return r
 }
 
 // UniqueString String 切片去重
-func UniqueString(in []string) []string {
-	out := make([]string, 0, len(in))
+func UniqueString(a []string) []string {
+	r := make([]string, 0, len(a))
 
-	sort.Strings(in)
+	sort.Strings(a)
 
-	out = append(out, in[0])
-	i := in[0]
+	r = append(r, a[0])
+	i := a[0]
 
-	for _, v := range in {
+	for _, v := range a {
 		if v != i {
-			out = append(out, v)
+			r = append(r, v)
 			i = v
 		}
 	}
 
-	return out
+	return r
 }
 
 // InSliceInt 检查 Int 值是否存在于 Int 切片中
-func InSliceInt(needle int, haystack []int) bool {
-	count := len(haystack)
+func InSliceInt(x int, a []int) bool {
+	l := len(a)
 
-	if count == 0 {
+	if l == 0 {
 		return false
 	}
 
-	sort.Ints(haystack)
+	sort.Ints(a)
 
-	i := sort.SearchInts(haystack, needle)
+	i := sort.SearchInts(a, x)
 
-	if i < count && haystack[i] == needle {
+	if i < l && a[i] == x {
 		return true
 	}
 
@@ -117,18 +117,18 @@ func InSliceInt(needle int, haystack []int) bool {
 }
 
 // InSliceInt64 检查 Int64 值是否存在于 Int64 切片中
-func InSliceInt64(needle int64, haystack []int64) bool {
-	count := len(haystack)
+func InSliceInt64(x int64, a []int64) bool {
+	l := len(a)
 
-	if count == 0 {
+	if l == 0 {
 		return false
 	}
 
-	SortInt64s(haystack)
+	SortInt64s(a)
 
-	i := SearchInt64s(haystack, needle)
+	i := SearchInt64s(a, x)
 
-	if i < count && haystack[i] == needle {
+	if i < l && a[i] == x {
 		return true
 	}
 
@@ -136,18 +136,18 @@ func InSliceInt64(needle int64, haystack []int64) bool {
 }
 
 // InSliceFloat64 检查 Float64 值是否存在于 Float64 切片中
-func InSliceFloat64(needle float64, haystack []float64) bool {
-	count := len(haystack)
+func InSliceFloat64(x float64, a []float64) bool {
+	l := len(a)
 
-	if count == 0 {
+	if l == 0 {
 		return false
 	}
 
-	sort.Float64s(haystack)
+	sort.Float64s(a)
 
-	i := sort.SearchFloat64s(haystack, needle)
+	i := sort.SearchFloat64s(a, x)
 
-	if i < count && haystack[i] == needle {
+	if i < l && a[i] == x {
 		return true
 	}
 
@@ -155,18 +155,18 @@ func InSliceFloat64(needle float64, haystack []float64) bool {
 }
 
 // InSliceString 检查 String 值是否存在于 String 切片中
-func InSliceString(needle string, haystack []string) bool {
-	count := len(haystack)
+func InSliceString(x string, a []string) bool {
+	l := len(a)
 
-	if count == 0 {
+	if l == 0 {
 		return false
 	}
 
-	sort.Strings(haystack)
+	sort.Strings(a)
 
-	i := sort.SearchStrings(haystack, needle)
+	i := sort.SearchStrings(a, x)
 
-	if i < count && haystack[i] == needle {
+	if i < l && a[i] == x {
 		return true
 	}
 
