@@ -1,4 +1,4 @@
-package yiigo
+package utils
 
 import (
 	"net"
@@ -7,9 +7,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 )
-
-// X is a convenient alias for a map[string]interface{} map
-type X map[string]interface{}
 
 // OK API返回成功
 func OK(c *gin.Context, data ...interface{}) {

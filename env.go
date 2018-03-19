@@ -18,8 +18,8 @@ type env struct {
 // Env enviroment
 var Env *env
 
-// ErrNil returned when config not found.
-var ErrNil = errors.New("config not found")
+// ErrEnvNil returned when config not found.
+var ErrEnvNil = errors.New("config not found")
 
 // loadEnv load env file
 func loadEnv(path string) {
@@ -241,7 +241,7 @@ func (e *env) Unmarshal(key string, dest interface{}) error {
 	i := e.Get(key)
 
 	if i == nil {
-		return ErrNil
+		return ErrEnvNil
 	}
 
 	if v, ok := i.(*toml.Tree); ok {
