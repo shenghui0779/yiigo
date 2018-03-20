@@ -21,7 +21,7 @@ var Env *env
 // ErrEnvNil returned when config not found.
 var ErrEnvNil = errors.New("config not found")
 
-// loadEnv load env file
+// loadEnv load env file.
 func loadEnv(path string) {
 	abs, _ := filepath.Abs(path)
 	tomlTree, err := toml.LoadFile(abs)
@@ -33,7 +33,7 @@ func loadEnv(path string) {
 	Env = &env{tree: tomlTree}
 }
 
-// String return string
+// String returns a value of string.
 func (e *env) String(key string, defaultValue ...string) string {
 	dv := ""
 
@@ -59,7 +59,7 @@ func (e *env) String(key string, defaultValue ...string) string {
 	}
 }
 
-// Int return int
+// Int returns a value of int.
 func (e *env) Int(key string, defaultValue ...int) int {
 	dv := 0
 
@@ -93,7 +93,7 @@ func (e *env) Int(key string, defaultValue ...int) int {
 	}
 }
 
-// Int64 return int64
+// Int64 returns a value of int64.
 func (e *env) Int64(key string, defaultValue ...int64) int64 {
 	var dv int64
 
@@ -127,7 +127,7 @@ func (e *env) Int64(key string, defaultValue ...int64) int64 {
 	}
 }
 
-// Float64 return float64
+// Float64 returns a value of float64.
 func (e *env) Float64(key string, defaultValue ...float64) float64 {
 	var dv float64
 
@@ -161,7 +161,7 @@ func (e *env) Float64(key string, defaultValue ...float64) float64 {
 	}
 }
 
-// Bool return bool
+// Bool returns a value of bool.
 func (e *env) Bool(key string, defaultValue ...bool) bool {
 	var dv bool
 
@@ -197,7 +197,7 @@ func (e *env) Bool(key string, defaultValue ...bool) bool {
 	}
 }
 
-// Time return time.Time
+// Time returns a value of time.Time.
 func (e *env) Time(key string, defaultValue ...time.Time) time.Time {
 	var dv time.Time
 
@@ -225,7 +225,7 @@ func (e *env) Time(key string, defaultValue ...time.Time) time.Time {
 	}
 }
 
-// ToMap return map[string]interface{}
+// ToMap returns a value of map[string]interface{}.
 func (e *env) ToMap(key string) map[string]interface{} {
 	i := e.Get(key)
 
@@ -236,7 +236,7 @@ func (e *env) ToMap(key string) map[string]interface{} {
 	return nil
 }
 
-// Unmarshal attempts to unmarshal the Tree into a Go struct pointed by dest
+// Unmarshal attempts to unmarshal the Tree into a Go struct pointed by dest.
 func (e *env) Unmarshal(key string, dest interface{}) error {
 	i := e.Get(key)
 
@@ -253,7 +253,7 @@ func (e *env) Unmarshal(key string, dest interface{}) error {
 	return errors.New("value is not a tree of toml")
 }
 
-// Get return interface{}
+// Get returns a value of interface{}.
 func (e *env) Get(key string) interface{} {
 	e.mutex.RLock()
 	defer e.mutex.RUnlock()

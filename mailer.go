@@ -46,7 +46,7 @@ func emailDial() {
 	emailDialer = gomail.NewDialer(conf.Host, conf.Port, conf.Username, conf.Password)
 }
 
-// Send send a mail
+// Send send an email.
 func (m *Mailer) Send() error {
 	msgSettings := []gomail.MessageSetting{}
 

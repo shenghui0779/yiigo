@@ -112,7 +112,7 @@ func initMultiRedis(conf []*redisConf) {
 	}
 }
 
-// RedisConnPool get an redis pool
+// RedisConnPool returns a redis pool.
 func RedisConnPool(conn ...string) (*RedisPoolResource, error) {
 	schema := "default"
 
@@ -160,7 +160,7 @@ func (r *RedisPoolResource) dial() {
 	r.pool = pools.NewResourcePool(df, r.config.MinActiveConn, r.config.MaxActiveConn, time.Duration(r.config.IdleTimeout)*time.Millisecond)
 }
 
-// Get get a connection resource from the pool
+// Get get a connection resource from the pool.
 func (r *RedisPoolResource) Get() (RedisConn, error) {
 	if r.pool.IsClosed() {
 		r.dial()
@@ -184,7 +184,7 @@ func (r *RedisPoolResource) Get() (RedisConn, error) {
 	return rc, nil
 }
 
-// Put return a connection resource to the pool
+// Put returns a connection resource to the pool.
 func (r *RedisPoolResource) Put(rc RedisConn) {
 	r.pool.Put(rc)
 }

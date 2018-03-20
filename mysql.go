@@ -119,7 +119,7 @@ func dbDial(conf *mysqlConf) (*sqlx.DB, error) {
 	return db, nil
 }
 
-// DBConn get db connection
+// DBConn returns a db connection.
 func DBConn(conn ...string) (*sqlx.DB, error) {
 	schema := "default"
 
@@ -136,8 +136,8 @@ func DBConn(conn ...string) (*sqlx.DB, error) {
 	return v.(*sqlx.DB), nil
 }
 
-// InsertSQL returns insert sql and binds
-// data expect struct, []struct, yiigo.X, []yiigo.X
+// InsertSQL returns insert sql and binds.
+// param data expects struct, []struct, yiigo.X, []yiigo.X.
 func InsertSQL(table string, data interface{}) (string, []interface{}) {
 	v := reflect.Indirect(reflect.ValueOf(data))
 
@@ -174,8 +174,8 @@ func InsertSQL(table string, data interface{}) (string, []interface{}) {
 	return sql, binds
 }
 
-// UpdateSQL returns update sql and binds
-// data expect struct, yiigo.X
+// UpdateSQL returns update sql and binds.
+// param data expects struct, yiigo.X.
 func UpdateSQL(query string, data interface{}, args ...interface{}) (string, []interface{}) {
 	v := reflect.Indirect(reflect.ValueOf(data))
 
@@ -194,7 +194,7 @@ func UpdateSQL(query string, data interface{}, args ...interface{}) (string, []i
 	return sql, binds
 }
 
-// Expr returns expression, eg: yiigo.Expr("price * ? + ?", 2, 100)
+// Expr returns an expression, eg: yiigo.Expr("price * ? + ?", 2, 100).
 func Expr(expr string, args ...interface{}) *SQLExpr {
 	return &SQLExpr{Expr: expr, Args: args}
 }

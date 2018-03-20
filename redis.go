@@ -142,7 +142,7 @@ func redisDial(conf *redisConf) (*redis.Pool, error) {
 	return pool, nil
 }
 
-// RedisPool get redis connection pool
+// RedisPool returns a redis connection pool.
 func RedisPool(conn ...string) (*redis.Pool, error) {
 	schema := "default"
 

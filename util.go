@@ -11,10 +11,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// X is a convenient alias for a map[string]interface{} map
+// X is a convenient alias for a map[string]interface{}.
 type X map[string]interface{}
 
-// MD5 获取字符串md5值
+// MD5 calculate the md5 hash of a string.
 func MD5(s string) string {
 	h := md5.New()
 	h.Write([]byte(s))
@@ -22,7 +22,9 @@ func MD5(s string) string {
 	return fmt.Sprintf("%x", h.Sum(nil))
 }
 
-// Date 时间戳格式化日期「默认格式：2006-01-02 15:04:05」
+// Date format a local time/date and
+// returns a string formatted according to the given format string using the given timestamp of int64.
+// The default format string is: 2006-01-02 15:04:05.
 func Date(timestamp int64, format ...string) string {
 	layout := "2006-01-02 15:04:05"
 
@@ -35,7 +37,7 @@ func Date(timestamp int64, format ...string) string {
 	return date
 }
 
-// IsXhr 判断是否为Ajax请求
+// IsXhr check if a request is a xml-http-request (ajax).
 func IsXhr(c *gin.Context) bool {
 	x := c.Request.Header.Get("X-Requested-With")
 
@@ -46,7 +48,7 @@ func IsXhr(c *gin.Context) bool {
 	return false
 }
 
-// RemoteIP 返回远程客户端的 IP，如：192.168.1.1
+// RemoteIP returns the IP of remote client，eg: 127.0.0.1.
 func RemoteIP(c *gin.Context) string {
 	if remoteAddr := c.Request.Header.Get("X-Forwarded-For"); remoteAddr != "" {
 		ips := strings.Split(remoteAddr, ",")
@@ -83,7 +85,7 @@ func RemoteIP(c *gin.Context) string {
 	return ip
 }
 
-// OK API返回成功
+// OK returns success of an API.
 func OK(c *gin.Context, data ...interface{}) {
 	obj := gin.H{
 		"success": true,
@@ -98,7 +100,7 @@ func OK(c *gin.Context, data ...interface{}) {
 	c.JSON(http.StatusOK, obj)
 }
 
-// Error API返回失败
+// Error returns error of an API.
 func Error(c *gin.Context, code int, msg ...string) {
 	obj := gin.H{
 		"success": false,

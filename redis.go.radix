@@ -134,7 +134,7 @@ func redisDial(conf *redisConf) (*pool.Pool, error) {
 	return p, nil
 }
 
-// RedisPool get redis connection pool
+// RedisPool returns a redis connection pool.
 func RedisPool(conn ...string) (*pool.Pool, error) {
 	c := "default"
 

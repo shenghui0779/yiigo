@@ -22,7 +22,7 @@ type mongoConf struct {
 	Mode      int    `toml:"mode"`
 }
 
-// Sequence model for mongo _id auto_increment
+// Sequence model for _id auto_increment of mongo
 type Sequence struct {
 	ID  string `bson:"_id"`
 	Seq int    `bson:"seq"`
@@ -125,7 +125,7 @@ func mongoDial(conf *mongoConf) (*mgo.Session, error) {
 	return m, nil
 }
 
-// MongoSession get mongo session
+// MongoSession returns a mongo session.
 func MongoSession(conn ...string) (*mgo.Session, error) {
 	schema := "default"
 
@@ -144,7 +144,7 @@ func MongoSession(conn ...string) (*mgo.Session, error) {
 	return session.Clone(), nil
 }
 
-// SeqID get mongo auto_increment _id
+// SeqID returns _id auto_increment of mongo.
 func SeqID(session *mgo.Session, db string, collection string, seqs ...int) (int, error) {
 	if len(seqs) == 0 {
 		seqs = append(seqs, 1)
