@@ -1,8 +1,8 @@
 hash: 33bec29439bf828ae5b70aaccf6f5ad2580bc2164a1298b550e155e39d3d6f51
-updated: 2018-02-24T16:55:31.159017+08:00
+updated: 2018-03-20T11:24:45.793695+08:00
 imports:
 - name: github.com/garyburd/redigo
-  version: d1ed5c67e5794de818ea85e6b522fda02623a484
+  version: f29e87c60606560798ad7c1cf57bb89b87d69899
   subpackages:
   - internal
   - redis
@@ -15,7 +15,7 @@ imports:
   - json
   - render
 - name: github.com/go-sql-driver/mysql
-  version: bc14601d1bd56421dd60f561e6052c9ed77f9daf
+  version: 1a676ac6e4dce68e9303a1800773861350374a9e
 - name: github.com/golang/protobuf
   version: bbd03ef6da3a115852eaf24c8a1c46aeb39aa175
   subpackages:
@@ -25,26 +25,25 @@ imports:
 - name: github.com/gorilla/securecookie
   version: e59506cc896acb7f7bf732d4fdf5e25f7ccd8983
 - name: github.com/gorilla/sessions
-  version: 7087b4d669d1bc3da42fb4e2eda73ae139a24439
+  version: 7910f5bb5ac86ab08f97d8bda39b476fc117b684
 - name: github.com/jmoiron/sqlx
-  version: 05cef0741ade10ca668982355b3f3f0bcf0ff0a8
+  version: cf35089a197953c69420c8d0cecda90809764b1d
   subpackages:
   - reflectx
 - name: github.com/json-iterator/go
-  version: a377e2656b75ece1a84c0509be502e5b16041ab1
+  version: ca39e5af3ece67bbcda3d0f4f56a8e24d9f2dad4
 - name: github.com/mattn/go-isatty
   version: 6ca4dbf54d38eea1a992b3c722a76a5d1c4cb25c
+- name: github.com/modern-go/concurrent
+  version: bacd9c7ef1dd9b15be4a9909b8ac7a4e313eec94
+- name: github.com/modern-go/reflect2
+  version: 0b92968f4be75033e2089fba355a691ea2e9c5cc
 - name: github.com/pelletier/go-toml
-  version: acdc4509485b587f5e675510c4f2c63e90ff68a8
+  version: 05bcc0fb0d3e60da4b8dd5bd7e0ea563eb4ca943
 - name: github.com/ugorji/go
-  version: 9af07b20357a7afd7d5894d25f406c4e07338089
+  version: 02537d3a3e32ef636a53519265d211bd208ca488
   subpackages:
   - codec
-- name: github.com/v2pro/plz
-  version: 10fc95fad3224a032229e59f6e7023137d82b526
-  subpackages:
-  - concurrent
-  - reflect2
 - name: go.uber.org/atomic
   version: 8474b86a5a6f79c443ce4b2992817ff32cf208b8
 - name: go.uber.org/multierr
@@ -58,10 +57,10 @@ imports:
   - internal/exit
   - zapcore
 - name: golang.org/x/net
-  version: cbe0f9307d0156177f9dd5dc85da1a31abc5f2fb
+  version: 6078986fec03a1dcc236c34816c71b0e05018fda
   repo: https://github.com/golang/net.git
 - name: golang.org/x/sys
-  version: 88d2dcc510266da9f7f8c7f34e1940716cab5f5c
+  version: d8e400bc7db4870d786864138af681469693d18c
   repo: https://github.com/golang/sys.git
   subpackages:
   - unix
