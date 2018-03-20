@@ -37,7 +37,7 @@ func Date(timestamp int64, format ...string) string {
 	return date
 }
 
-// IsXhr check if a request is a xml-http-request (ajax).
+// IsXhr checks if a request is xml-http-request (ajax).
 func IsXhr(c *gin.Context) bool {
 	x := c.Request.Header.Get("X-Requested-With")
 

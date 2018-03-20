@@ -24,7 +24,7 @@ func SearchInt64s(a []int64, x int64) int {
 	return sort.Search(len(a), func(i int) bool { return a[i] >= x })
 }
 
-// InSliceInt check if x exists in a slice of ints and
+// InSliceInt checks if x exists in a slice of ints and
 // returns TRUE if x is found.
 func InSliceInt(x int, a []int) bool {
 	l := len(a)
@@ -44,7 +44,7 @@ func InSliceInt(x int, a []int) bool {
 	return false
 }
 
-// InSliceInt64 check if x exists in a slice of int64s and
+// InSliceInt64 checks if x exists in a slice of int64s and
 // returns TRUE if x is found.
 func InSliceInt64(x int64, a []int64) bool {
 	l := len(a)
@@ -64,7 +64,7 @@ func InSliceInt64(x int64, a []int64) bool {
 	return false
 }
 
-// InSliceFloat64 check if x exists in a slice of float64s and
+// InSliceFloat64 checks if x exists in a slice of float64s and
 // returns TRUE if x is found.
 func InSliceFloat64(x float64, a []float64) bool {
 	l := len(a)
@@ -84,7 +84,7 @@ func InSliceFloat64(x float64, a []float64) bool {
 	return false
 }
 
-// InSliceString check if x exists in a slice of strings and
+// InSliceString checks if x exists in a slice of strings and
 // returns TRUE if x is found.
 func InSliceString(x string, a []string) bool {
 	l := len(a)
@@ -104,7 +104,7 @@ func InSliceString(x string, a []string) bool {
 	return false
 }
 
-// UniqueInt take an input slice of ints and
+// UniqueInt takes an input slice of ints and
 // returns a new sorted slice of ints without duplicate values.
 func UniqueInt(a []int) []int {
 	r := make([]int, 0, len(a))
@@ -124,7 +124,7 @@ func UniqueInt(a []int) []int {
 	return r
 }
 
-// UniqueInt64 take an input slice of int64s and
+// UniqueInt64 takes an input slice of int64s and
 // returns a new sorted slice of int64s without duplicate values.
 func UniqueInt64(a []int64) []int64 {
 	r := make([]int64, 0, len(a))
@@ -144,7 +144,7 @@ func UniqueInt64(a []int64) []int64 {
 	return r
 }
 
-// UniqueFloat64 take an input slice of float64s and
+// UniqueFloat64 takes an input slice of float64s and
 // returns a new sorted slice of float64s without duplicate values.
 func UniqueFloat64(a []float64) []float64 {
 	r := make([]float64, 0, len(a))
@@ -164,7 +164,7 @@ func UniqueFloat64(a []float64) []float64 {
 	return r
 }
 
-// UniqueString take an input slice of strings and
+// UniqueString takes an input slice of strings and
 // returns a new sorted slice of strings without duplicate values.
 func UniqueString(a []string) []string {
 	r := make([]string, 0, len(a))
