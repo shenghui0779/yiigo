@@ -1,15 +1,10 @@
-hash: 33bec29439bf828ae5b70aaccf6f5ad2580bc2164a1298b550e155e39d3d6f51
-updated: 2018-03-20T11:24:45.793695+08:00
+hash: 18c589f7e31766933c0810e05073523b646c212a455f52604ba09c7fb5b7b60c
+updated: 2018-03-20T15:23:08.395915+08:00
 imports:
-- name: github.com/garyburd/redigo
-  version: f29e87c60606560798ad7c1cf57bb89b87d69899
-  subpackages:
-  - internal
-  - redis
 - name: github.com/gin-contrib/sse
   version: 22d885f9ecc78bf4ee5d72b937e4bbcdc58e8cae
 - name: github.com/gin-gonic/gin
-  version: 5d3f30cfc81f9109850fa9043a19783cbbde68a5
+  version: 65a65c2edd4e86f96634a553f07a25c38f2b1c75
   subpackages:
   - binding
   - json
@@ -20,6 +15,11 @@ imports:
   version: bbd03ef6da3a115852eaf24c8a1c46aeb39aa175
   subpackages:
   - proto
+- name: github.com/gomodule/redigo
+  version: 9c11da706d9b7902c6da69c592f75637793fe121
+  subpackages:
+  - internal
+  - redis
 - name: github.com/gorilla/context
   version: 08b5f424b9271eedf6f9f0ce86cb9396ed337a42
 - name: github.com/gorilla/securecookie

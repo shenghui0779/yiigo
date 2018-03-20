@@ -7,7 +7,7 @@ Go常用优秀库封装，用于API、WEB和爬虫开发
 
 * 支持多 [MySQL](https://github.com/jmoiron/sqlx) 连接
 * 支持多 [mongo](http://labix.org/mgo) 连接
-* 支持多 [redis](https://github.com/garyburd/redigo) 连接
+* 支持多 [redis](https://github.com/gomodule/redigo) 连接
 * 采用 [zap](https://github.com/uber-go/zap) 日志记录
 * 采用 [toml](https://github.com/pelletier/go-toml) 配置文件
 * 采用 [glide](https://glide.sh) 管理依赖包

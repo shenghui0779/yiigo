@@ -6,24 +6,25 @@ import (
 	"sync"
 	"time"
 
-	"github.com/garyburd/redigo/redis"
+	"github.com/gomodule/redigo/redis"
 	toml "github.com/pelletier/go-toml"
 )
 
 type redisConf struct {
-	Name          string `toml:"name"`
-	Host          string `toml:"host"`
-	Port          int    `toml:"port"`
-	Password      string `toml:"password"`
-	Database      int    `toml:"database"`
-	ConnTimeout   int    `toml:"connTimeout"`
-	ReadTimeout   int    `toml:"readTimeout"`
-	WriteTimeout  int    `toml:"writeTimeout"`
-	MaxIdleConn   int    `toml:"maxIdleConn"`
-	MaxActiveConn int    `toml:"maxActiveConn"`
-	IdleTimeout   int    `toml:"idleTimeout"`
-	TestOnBorrow  int    `toml:"testOnBorrow"`
-	PoolWait      bool   `toml:"poolWait"`
+	Name            string `toml:"name"`
+	Host            string `toml:"host"`
+	Port            int    `toml:"port"`
+	Password        string `toml:"password"`
+	Database        int    `toml:"database"`
+	ConnTimeout     int    `toml:"connTimeout"`
+	ReadTimeout     int    `toml:"readTimeout"`
+	WriteTimeout    int    `toml:"writeTimeout"`
+	MaxIdleConn     int    `toml:"maxIdleConn"`
+	MaxActiveConn   int    `toml:"maxActiveConn"`
+	MaxConnLifetime int    `toml:"maxConnLifetime"`
+	IdleTimeout     int    `toml:"idleTimeout"`
+	TestOnBorrow    int    `toml:"testOnBorrow"`
+	PoolWait        bool   `toml:"poolWait"`
 }
 
 var (
@@ -124,10 +125,11 @@ func redisDial(conf *redisConf) (*redis.Pool, error) {
 
 			return err
 		},
-		MaxIdle:     conf.MaxIdleConn,
-		MaxActive:   conf.MaxActiveConn,
-		IdleTimeout: time.Duration(conf.IdleTimeout) * time.Millisecond,
-		Wait:        conf.PoolWait,
+		MaxIdle:         conf.MaxIdleConn,
+		MaxActive:       conf.MaxActiveConn,
+		MaxConnLifetime: time.Duration(conf.MaxConnLifetime) * time.Millisecond,
+		IdleTimeout:     time.Duration(conf.IdleTimeout) * time.Millisecond,
+		Wait:            conf.PoolWait,
 	}
 
 	conn := pool.Get()
