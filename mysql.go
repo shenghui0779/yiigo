@@ -229,6 +229,10 @@ func singleInsertWithStruct(table string, v reflect.Value) (string, []interface{
 	for i := 0; i < fieldNum; i++ {
 		column := t.Field(i).Tag.Get("db")
 
+		if column == "-" {
+			continue
+		}
+
 		if column == "" {
 			column = t.Field(i).Name
 		}
@@ -275,7 +279,7 @@ func batchInsertWithMap(table string, data []X, count int) (string, []interface{
 }
 
 func batchInsertWithStruct(table string, v reflect.Value, count int) (string, []interface{}) {
-	first := reflect.Indirect(v.Index(0))
+	first := v.Index(0)
 
 	if first.Kind() != reflect.Struct {
 		panic("the data must be a slice to struct")
@@ -289,22 +293,26 @@ func batchInsertWithStruct(table string, v reflect.Value, count int) (string, []
 
 	t := first.Type()
 
-	for i := 0; i < fieldNum; i++ {
-		column := t.Field(i).Tag.Get("db")
-
-		if column == "" {
-			column = t.Field(i).Name
-		}
-
-		columns = append(columns, fmt.Sprintf("`%s`", column))
-	}
-
 	for i := 0; i < count; i++ {
 		phrs := make([]string, 0, fieldNum)
 
 		for j := 0; j < fieldNum; j++ {
+			column := t.Field(j).Tag.Get("db")
+
+			if column == "-" {
+				continue
+			}
+
+			if i == 0 {
+				if column == "" {
+					column = t.Field(j).Name
+				}
+
+				columns = append(columns, fmt.Sprintf("`%s`", column))
+			}
+
 			phrs = append(phrs, "?")
-			binds = append(binds, reflect.Indirect(v.Index(i)).Field(j).Interface())
+			binds = append(binds, v.Index(i).Field(j).Interface())
 		}
 
 		placeholders = append(placeholders, fmt.Sprintf("(%s)", strings.Join(phrs, ", ")))
@@ -345,6 +353,10 @@ func updateWithStruct(query string, v reflect.Value, args ...interface{}) (strin
 
 	for i := 0; i < fieldNum; i++ {
 		column := t.Field(i).Tag.Get("db")
+
+		if column == "-" {
+			continue
+		}
 
 		if column == "" {
 			column = t.Field(i).Name
