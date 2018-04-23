@@ -1,39 +1,89 @@
 hash: 79e1875728ee2146c52fc1843b79d72475d384a7e632db4e9694e8d766d15684
-updated: 2018-03-31T12:48:16.154544+08:00
+updated: 2018-04-23T11:27:17.742927+08:00
 imports:
+- name: github.com/gin-contrib/sse
+  version: 22d885f9ecc78bf4ee5d72b937e4bbcdc58e8cae
 - name: github.com/gin-gonic/gin
-  version: 6d913fc343cfac80d656db5be67a0ffb1323ba0d
-- name: github.com/go-sql-driver/mysql
-  version: 1a676ac6e4dce68e9303a1800773861350374a9e
-- name: github.com/gomodule/redigo
-  version: 80111bd88543fa8b77b49c94c6f326c17390a8df
+  version: 814ac9490a38bb955a742d8ea15fa140489ee658
   subpackages:
+  - binding
+  - json
+  - render
+- name: github.com/go-sql-driver/mysql
+  version: 3287d94d4c6a48a63e16fffaabf27ab20203af2a
+- name: github.com/golang/protobuf
+  version: e09c5db296004fbe3f74490e84dcd62c3c5ddb1b
+  subpackages:
+  - proto
+- name: github.com/gomodule/redigo
+  version: 9352ab68be133885e31a43661cc42a220cb8e821
+  subpackages:
+  - internal
   - redis
+- name: github.com/gorilla/context
+  version: 08b5f424b9271eedf6f9f0ce86cb9396ed337a42
+- name: github.com/gorilla/securecookie
+  version: e59506cc896acb7f7bf732d4fdf5e25f7ccd8983
 - name: github.com/gorilla/sessions
   version: a2f2a3de9a4a575047f73e3e36bc85ecc3546391
 - name: github.com/jmoiron/sqlx
-  version: cf35089a197953c69420c8d0cecda90809764b1d
+  version: 2aeb6a910c2b94f2d5eb53d9895d80e27264ec41
+  subpackages:
+  - reflectx
+- name: github.com/json-iterator/go
+  version: 6c702ce12a197b8382f7b5a1c43e88ac065e7a66
+- name: github.com/mattn/go-isatty
+  version: 6ca4dbf54d38eea1a992b3c722a76a5d1c4cb25c
+- name: github.com/modern-go/concurrent
+  version: bacd9c7ef1dd9b15be4a9909b8ac7a4e313eec94
+- name: github.com/modern-go/reflect2
+  version: 05fbef0ca5da472bbf96c9322b84a53edc03c9fd
 - name: github.com/pelletier/go-toml
   version: 66540cf1fcd2c3aee6f6787dfa32a6ae9a870f12
-- name: go.uber.org/zap
-  version: f85c78b1dd998214c5f2138155b320a4a43fbe36
+- name: github.com/ugorji/go
+  version: f3cacc17c85ecb7f1b6a9e373ee85d1480919868
   subpackages:
+  - codec
+- name: go.uber.org/atomic
+  version: 8474b86a5a6f79c443ce4b2992817ff32cf208b8
+- name: go.uber.org/multierr
+  version: 3c4937480c32f4c13a875a1829af76c98ca3d40a
+- name: go.uber.org/zap
+  version: eeedf312bc6c57391d84767a4cd413f02a917974
+  subpackages:
+  - buffer
+  - internal/bufferpool
+  - internal/color
+  - internal/exit
   - zapcore
 - name: golang.org/x/net
-  version: b68f30494add4df6bd8ef5e82803f308e7f7c59c
+  version: 5f9ae10d9af5b1c89ae6904293b14b064d4ada23
   repo: https://github.com/golang/net.git
 - name: golang.org/x/sys
-  version: 378d26f46672a356c46195c28f61bdb4c0a781dd
+  version: 79b0c6888797020a994db17c8510466c72fe75d9
   repo: https://github.com/golang/sys.git
+  subpackages:
+  - unix
 - name: google.golang.org/appengine
-  version: ad39d7fab7c60b2493fdc318c3d2cdb2128f92a4
+  version: 0a24098c0ec68416ec050f567f75df563d6b231e
   repo: https://github.com/golang/appengine.git
+  subpackages:
+  - cloudsql
+- name: gopkg.in/alexcesaro/quotedprintable.v3
+  version: 2caba252f4dc53eaf6b553000885530023f54623
+- name: gopkg.in/go-playground/validator.v8
+  version: 5f1438d3fca68893a817e4a66806cea46a9e4ebf
 - name: gopkg.in/gomail.v2
   version: 81ebce5c23dfd25c6c67194b37d3dd3f338c98b1
 - name: gopkg.in/mgo.v2
   version: 3f83fa5005286a7fe593b055f0d7771a7dce4655
   subpackages:
   - bson
+  - internal/json
+  - internal/sasl
+  - internal/scram
 - name: gopkg.in/natefinch/lumberjack.v2
   version: a96e63847dc3c67d17befa69c303767e2f84e54f
+- name: gopkg.in/yaml.v2
+  version: 5420a8b6744d3b0345ab293f6fcba19c978f1183
 testImports: []
