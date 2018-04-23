@@ -24,8 +24,8 @@ func SearchInt64s(a []int64, x int64) int {
 	return sort.Search(len(a), func(i int) bool { return a[i] >= x })
 }
 
-// InSliceInt checks if x exists in a slice of ints and
-// returns TRUE if x is found.
+// InSliceInt checks if x exists in a slice of ints and returns TRUE if x is found.
+// The slice will be sorted.
 func InSliceInt(x int, a []int) bool {
 	l := len(a)
 
@@ -44,8 +44,8 @@ func InSliceInt(x int, a []int) bool {
 	return false
 }
 
-// InSliceInt64 checks if x exists in a slice of int64s and
-// returns TRUE if x is found.
+// InSliceInt64 checks if x exists in a slice of int64s and returns TRUE if x is found.
+// The slice will be sorted.
 func InSliceInt64(x int64, a []int64) bool {
 	l := len(a)
 
@@ -64,8 +64,8 @@ func InSliceInt64(x int64, a []int64) bool {
 	return false
 }
 
-// InSliceFloat64 checks if x exists in a slice of float64s and
-// returns TRUE if x is found.
+// InSliceFloat64 checks if x exists in a slice of float64s and returns TRUE if x is found.
+// The slice will be sorted.
 func InSliceFloat64(x float64, a []float64) bool {
 	l := len(a)
 
@@ -84,8 +84,8 @@ func InSliceFloat64(x float64, a []float64) bool {
 	return false
 }
 
-// InSliceString checks if x exists in a slice of strings and
-// returns TRUE if x is found.
+// InSliceString checks if x exists in a slice of strings and returns TRUE if x is found.
+// The slice will be sorted.
 func InSliceString(x string, a []string) bool {
 	l := len(a)
 
