@@ -147,7 +147,7 @@ func InsertSQL(table string, data interface{}) (string, []interface{}) {
 	switch v.Kind() {
 	case reflect.Map:
 		if x, ok := data.(X); ok {
-			sql, binds = singleInsertWithMap(sql, x)
+			sql, binds = singleInsertWithMap(table, x)
 		}
 	case reflect.Struct:
 		sql, binds = singleInsertWithStruct(table, v)
