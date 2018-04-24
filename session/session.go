@@ -1,9 +1,10 @@
 package session
 
 import (
+	"yiigo"
+
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/sessions"
-	"github.com/iiinsomnia/yiigo"
 )
 
 const gosessid = "GOSESSID"

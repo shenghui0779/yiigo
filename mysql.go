@@ -260,8 +260,6 @@ func batchInsertWithMap(table string, data []X, count int) (string, []interface{
 		columns = append(columns, fmt.Sprintf("`%s`", k))
 	}
 
-	fmt.Println(columns)
-
 	for _, x := range data {
 		phrs := make([]string, 0, fieldNum)
 
