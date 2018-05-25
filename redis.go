@@ -121,14 +121,15 @@ func redisDial(conf *redisConf) (*redis.Pool, error) {
 			if conf.TestOnBorrow == 0 || time.Since(t) < time.Duration(conf.TestOnBorrow)*time.Second {
 				return nil
 			}
+
 			_, err := c.Do("PING")
 
 			return err
 		},
 		MaxIdle:         conf.MaxIdleConn,
 		MaxActive:       conf.MaxActiveConn,
-		MaxConnLifetime: time.Duration(conf.MaxConnLifetime) * time.Second,
 		IdleTimeout:     time.Duration(conf.IdleTimeout) * time.Second,
+		MaxConnLifetime: time.Duration(conf.MaxConnLifetime) * time.Second,
 		Wait:            conf.PoolWait,
 	}
 
