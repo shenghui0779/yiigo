@@ -108,7 +108,7 @@ func mongoDial(conf *mongoConf) (*mgo.Session, error) {
 		dsn = fmt.Sprintf("mongodb://%s:%s@%s:%d", conf.Username, conf.Password, conf.Host, conf.Port)
 	}
 
-	m, err := mgo.DialWithTimeout(dsn, time.Duration(conf.Timeout)*time.Millisecond)
+	m, err := mgo.DialWithTimeout(dsn, time.Duration(conf.Timeout)*time.Second)
 
 	if err != nil {
 		return nil, err
