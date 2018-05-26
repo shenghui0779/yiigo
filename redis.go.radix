@@ -98,7 +98,7 @@ func initMultiRedis(conf []*redisConf) error {
 
 func redisDial(conf *redisConf) (*pool.Pool, error) {
 	df := func(network, addr string) (*redis.Client, error) {
-		client, err := redis.DialTimeout(network, addr, time.Duration(conf.Timeout)*time.Millisecond)
+		client, err := redis.DialTimeout(network, addr, time.Duration(conf.Timeout)*time.Second)
 
 		if err != nil {
 			return nil, err

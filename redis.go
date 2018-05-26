@@ -108,9 +108,9 @@ func redisDial(conf *redisConf) (*redis.Pool, error) {
 			dialOptions := []redis.DialOption{
 				redis.DialPassword(conf.Password),
 				redis.DialDatabase(conf.Database),
-				redis.DialConnectTimeout(time.Duration(conf.ConnTimeout) * time.Millisecond),
-				redis.DialReadTimeout(time.Duration(conf.ReadTimeout) * time.Millisecond),
-				redis.DialWriteTimeout(time.Duration(conf.WriteTimeout) * time.Millisecond),
+				redis.DialConnectTimeout(time.Duration(conf.ConnTimeout) * time.Second),
+				redis.DialReadTimeout(time.Duration(conf.ReadTimeout) * time.Second),
+				redis.DialWriteTimeout(time.Duration(conf.WriteTimeout) * time.Second),
 			}
 
 			conn, err := redis.Dial("tcp", dsn, dialOptions...)
@@ -118,17 +118,18 @@ func redisDial(conf *redisConf) (*redis.Pool, error) {
 			return conn, err
 		},
 		TestOnBorrow: func(c redis.Conn, t time.Time) error {
-			if conf.TestOnBorrow == 0 || time.Since(t) < time.Duration(conf.TestOnBorrow)*time.Millisecond {
+			if conf.TestOnBorrow == 0 || time.Since(t) < time.Duration(conf.TestOnBorrow)*time.Second {
 				return nil
 			}
+
 			_, err := c.Do("PING")
 
 			return err
 		},
 		MaxIdle:         conf.MaxIdleConn,
 		MaxActive:       conf.MaxActiveConn,
-		MaxConnLifetime: time.Duration(conf.MaxConnLifetime) * time.Millisecond,
-		IdleTimeout:     time.Duration(conf.IdleTimeout) * time.Millisecond,
+		IdleTimeout:     time.Duration(conf.IdleTimeout) * time.Second,
+		MaxConnLifetime: time.Duration(conf.MaxConnLifetime) * time.Second,
 		Wait:            conf.PoolWait,
 	}
 

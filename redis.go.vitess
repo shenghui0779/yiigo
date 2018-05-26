@@ -143,9 +143,9 @@ func (r *RedisPoolResource) dial() {
 		dialOptions := []redis.DialOption{
 			redis.DialPassword(r.config.Password),
 			redis.DialDatabase(r.config.Database),
-			redis.DialConnectTimeout(time.Duration(r.config.ConnTimeout) * time.Millisecond),
-			redis.DialReadTimeout(time.Duration(r.config.ReadTimeout) * time.Millisecond),
-			redis.DialWriteTimeout(time.Duration(r.config.WriteTimeout) * time.Millisecond),
+			redis.DialConnectTimeout(time.Duration(r.config.ConnTimeout) * time.Second),
+			redis.DialReadTimeout(time.Duration(r.config.ReadTimeout) * time.Second),
+			redis.DialWriteTimeout(time.Duration(r.config.WriteTimeout) * time.Second),
 		}
 
 		conn, err := redis.Dial("tcp", dsn, dialOptions...)
@@ -157,7 +157,7 @@ func (r *RedisPoolResource) dial() {
 		return RedisConn{conn}, nil
 	}
 
-	r.pool = pools.NewResourcePool(df, r.config.MinActiveConn, r.config.MaxActiveConn, time.Duration(r.config.IdleTimeout)*time.Millisecond)
+	r.pool = pools.NewResourcePool(df, r.config.MinActiveConn, r.config.MaxActiveConn, time.Duration(r.config.IdleTimeout)*time.Second)
 }
 
 // Get get a connection resource from the pool.

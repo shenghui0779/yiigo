@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"strings"
 	"sync"
+	"time"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
@@ -13,16 +14,17 @@ import (
 )
 
 type mysqlConf struct {
-	Name         string `toml:"name"`
-	Host         string `toml:"host"`
-	Port         int    `toml:"port"`
-	Username     string `toml:"username"`
-	Password     string `toml:"password"`
-	Database     string `toml:"database"`
-	Charset      string `toml:"charset"`
-	Collection   string `toml:"collection"`
-	MaxOpenConns int    `toml:"maxOpenConns"`
-	MaxIdleConns int    `toml:"maxIdleConns"`
+	Name            string `toml:"name"`
+	Host            string `toml:"host"`
+	Port            int    `toml:"port"`
+	Username        string `toml:"username"`
+	Password        string `toml:"password"`
+	Database        string `toml:"database"`
+	Charset         string `toml:"charset"`
+	Collection      string `toml:"collection"`
+	MaxOpenConns    int    `toml:"maxOpenConns"`
+	MaxIdleConns    int    `toml:"maxIdleConns"`
+	ConnMaxLifetime int    `toml:"connMaxLifetime"`
 }
 
 // SQLExpr SQL expression
@@ -115,6 +117,7 @@ func dbDial(conf *mysqlConf) (*sqlx.DB, error) {
 
 	db.SetMaxOpenConns(conf.MaxOpenConns)
 	db.SetMaxIdleConns(conf.MaxIdleConns)
+	db.SetConnMaxLifetime(time.Duration(conf.ConnMaxLifetime) * time.Second)
 
 	return db, nil
 }
