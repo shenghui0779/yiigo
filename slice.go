@@ -87,59 +87,75 @@ func InSliceString(x string, a []string) bool {
 // UniqueInt takes an input slice of ints and
 // returns a new slice of ints without duplicate values.
 func UniqueInt(a []int) []int {
-	r := make([]int, 0, len(a))
+	l := len(a)
 
-	for _, v := range a {
-		exist := false
-
-		for _, o := range r {
-			if v == o {
-				exist = true
-				break
-			}
-		}
-
-		if !exist {
-			r = append(r, v)
-		}
+	if l <= 1 {
+		return a
 	}
 
-	return r
+	if l < 1024 {
+		return uniqueIntByLoop(a, l)
+	}
+
+	return uniqueIntByMap(a, l)
 }
 
 // UniqueInt64 takes an input slice of int64s and
 // returns a new slice of int64s without duplicate values.
 func UniqueInt64(a []int64) []int64 {
-	r := make([]int64, 0, len(a))
+	l := len(a)
 
-	for _, v := range a {
-		exist := false
-
-		for _, o := range r {
-			if v == o {
-				exist = true
-				break
-			}
-		}
-
-		if !exist {
-			r = append(r, v)
-		}
+	if l <= 1 {
+		return a
 	}
 
-	return r
+	if l < 1024 {
+		return uniqueInt64ByLoop(a, l)
+	}
+
+	return uniqueInt64ByMap(a, l)
 }
 
 // UniqueFloat64 takes an input slice of float64s and
 // returns a new slice of float64s without duplicate values.
 func UniqueFloat64(a []float64) []float64 {
-	r := make([]float64, 0, len(a))
+	l := len(a)
+
+	if l <= 1 {
+		return a
+	}
+
+	if l < 1024 {
+		return uniqueFloat64ByLoop(a, l)
+	}
+
+	return uniqueFloat64ByMap(a, l)
+}
+
+// UniqueString takes an input slice of strings and
+// returns a new slice of strings without duplicate values.
+func UniqueString(a []string) []string {
+	l := len(a)
+
+	if l <= 1 {
+		return a
+	}
+
+	if l < 256 {
+		return uniqueStringByLoop(a, l)
+	}
+
+	return uniqueStringByMap(a, l)
+}
+
+func uniqueIntByLoop(a []int, l int) []int {
+	r := make([]int, 0, l)
 
 	for _, v := range a {
 		exist := false
 
-		for _, o := range r {
-			if v == o {
+		for _, u := range r {
+			if v == u {
 				exist = true
 				break
 			}
@@ -153,22 +169,118 @@ func UniqueFloat64(a []float64) []float64 {
 	return r
 }
 
-// UniqueString takes an input slice of strings and
-// returns a new slice of strings without duplicate values.
-func UniqueString(a []string) []string {
-	r := make([]string, 0, len(a))
+func uniqueIntByMap(a []int, l int) []int {
+	r := make([]int, 0, l)
+	m := make(map[int]byte, l)
+
+	for _, v := range a {
+		if _, ok := m[v]; !ok {
+			m[v] = 0
+			r = append(r, v)
+		}
+	}
+
+	return r
+}
+
+func uniqueInt64ByLoop(a []int64, l int) []int64 {
+	r := make([]int64, 0, l)
 
 	for _, v := range a {
 		exist := false
 
-		for _, o := range r {
-			if v == o {
+		for _, u := range r {
+			if v == u {
 				exist = true
 				break
 			}
 		}
 
 		if !exist {
+			r = append(r, v)
+		}
+	}
+
+	return r
+}
+
+func uniqueInt64ByMap(a []int64, l int) []int64 {
+	r := make([]int64, 0, l)
+	m := make(map[int64]byte, l)
+
+	for _, v := range a {
+		if _, ok := m[v]; !ok {
+			m[v] = 0
+			r = append(r, v)
+		}
+	}
+
+	return r
+}
+
+func uniqueFloat64ByLoop(a []float64, l int) []float64 {
+	r := make([]float64, 0, l)
+
+	for _, v := range a {
+		exist := false
+
+		for _, u := range r {
+			if v == u {
+				exist = true
+				break
+			}
+		}
+
+		if !exist {
+			r = append(r, v)
+		}
+	}
+
+	return r
+}
+
+func uniqueFloat64ByMap(a []float64, l int) []float64 {
+	r := make([]float64, 0, l)
+	m := make(map[float64]byte, l)
+
+	for _, v := range a {
+		if _, ok := m[v]; !ok {
+			m[v] = 0
+			r = append(r, v)
+		}
+	}
+
+	return r
+}
+
+func uniqueStringByLoop(a []string, l int) []string {
+	r := make([]string, 0, l)
+
+	for _, v := range a {
+		exist := false
+
+		for _, u := range r {
+			if v == u {
+				exist = true
+				break
+			}
+		}
+
+		if !exist {
+			r = append(r, v)
+		}
+	}
+
+	return r
+}
+
+func uniqueStringByMap(a []string, l int) []string {
+	r := make([]string, 0, l)
+	m := make(map[string]byte, l)
+
+	for _, v := range a {
+		if _, ok := m[v]; !ok {
+			m[v] = 0
 			r = append(r, v)
 		}
 	}
