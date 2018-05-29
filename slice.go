@@ -25,99 +25,82 @@ func SearchInt64s(a []int64, x int64) int {
 }
 
 // InSliceInt checks if x exists in a slice of ints and returns TRUE if x is found.
-// The slice will be sorted.
 func InSliceInt(x int, a []int) bool {
-	l := len(a)
-
-	if l == 0 {
+	if len(a) == 0 {
 		return false
 	}
 
-	sort.Ints(a)
-
-	i := sort.SearchInts(a, x)
-
-	if i < l && a[i] == x {
-		return true
+	for _, v := range a {
+		if x == v {
+			return true
+		}
 	}
 
 	return false
 }
 
 // InSliceInt64 checks if x exists in a slice of int64s and returns TRUE if x is found.
-// The slice will be sorted.
 func InSliceInt64(x int64, a []int64) bool {
-	l := len(a)
-
-	if l == 0 {
+	if len(a) == 0 {
 		return false
 	}
 
-	SortInt64s(a)
-
-	i := SearchInt64s(a, x)
-
-	if i < l && a[i] == x {
-		return true
+	for _, v := range a {
+		if x == v {
+			return true
+		}
 	}
 
 	return false
 }
 
 // InSliceFloat64 checks if x exists in a slice of float64s and returns TRUE if x is found.
-// The slice will be sorted.
 func InSliceFloat64(x float64, a []float64) bool {
-	l := len(a)
-
-	if l == 0 {
+	if len(a) == 0 {
 		return false
 	}
 
-	sort.Float64s(a)
-
-	i := sort.SearchFloat64s(a, x)
-
-	if i < l && a[i] == x {
-		return true
+	for _, v := range a {
+		if x == v {
+			return true
+		}
 	}
 
 	return false
 }
 
 // InSliceString checks if x exists in a slice of strings and returns TRUE if x is found.
-// The slice will be sorted.
 func InSliceString(x string, a []string) bool {
-	l := len(a)
-
-	if l == 0 {
+	if len(a) == 0 {
 		return false
 	}
 
-	sort.Strings(a)
-
-	i := sort.SearchStrings(a, x)
-
-	if i < l && a[i] == x {
-		return true
+	for _, v := range a {
+		if x == v {
+			return true
+		}
 	}
 
 	return false
 }
 
 // UniqueInt takes an input slice of ints and
-// returns a new sorted slice of ints without duplicate values.
+// returns a new slice of ints without duplicate values.
 func UniqueInt(a []int) []int {
 	r := make([]int, 0, len(a))
 
-	sort.Ints(a)
-
-	r = append(r, a[0])
-	i := a[0]
-
 	for _, v := range a {
-		if v != i {
+		exist := false
+
+		for _, o := range r {
+			if v == o {
+				exist = true
+				break
+			}
+		}
+
+		if !exist {
 			r = append(r, v)
-			i = v
 		}
 	}
 
@@ -125,19 +108,22 @@ func UniqueInt(a []int) []int {
 }
 
 // UniqueInt64 takes an input slice of int64s and
-// returns a new sorted slice of int64s without duplicate values.
+// returns a new slice of int64s without duplicate values.
 func UniqueInt64(a []int64) []int64 {
 	r := make([]int64, 0, len(a))
 
-	SortInt64s(a)
-
-	r = append(r, a[0])
-	i := a[0]
-
 	for _, v := range a {
-		if v != i {
+		exist := false
+
+		for _, o := range r {
+			if v == o {
+				exist = true
+				break
+			}
+		}
+
+		if !exist {
 			r = append(r, v)
-			i = v
 		}
 	}
 
@@ -145,19 +131,22 @@ func UniqueInt64(a []int64) []int64 {
 }
 
 // UniqueFloat64 takes an input slice of float64s and
-// returns a new sorted slice of float64s without duplicate values.
+// returns a new slice of float64s without duplicate values.
 func UniqueFloat64(a []float64) []float64 {
 	r := make([]float64, 0, len(a))
 
-	sort.Float64s(a)
-
-	r = append(r, a[0])
-	i := a[0]
-
 	for _, v := range a {
-		if v != i {
+		exist := false
+
+		for _, o := range r {
+			if v == o {
+				exist = true
+				break
+			}
+		}
+
+		if !exist {
 			r = append(r, v)
-			i = v
 		}
 	}
 
@@ -165,19 +154,22 @@ func UniqueFloat64(a []float64) []float64 {
 }
 
 // UniqueString takes an input slice of strings and
-// returns a new sorted slice of strings without duplicate values.
+// returns a new slice of strings without duplicate values.
 func UniqueString(a []string) []string {
 	r := make([]string, 0, len(a))
 
-	sort.Strings(a)
-
-	r = append(r, a[0])
-	i := a[0]
-
 	for _, v := range a {
-		if v != i {
+		exist := false
+
+		for _, o := range r {
+			if v == o {
+				exist = true
+				break
+			}
+		}
+
+		if !exist {
 			r = append(r, v)
-			i = v
 		}
 	}
 
