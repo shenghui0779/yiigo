@@ -28,7 +28,7 @@ func Get(c *gin.Context, key string, defaultValule ...interface{}) (interface{},
 
 	if !ok {
 		if len(defaultValule) > 0 {
-			return defaultValule, nil
+			return defaultValule[0], nil
 		}
 
 		return nil, nil
