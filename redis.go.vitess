@@ -97,6 +97,8 @@ func initRedis() error {
 func initSingleRedis(conf *redisConf) {
 	RedisPool = &RedisPoolResource{config: conf}
 	RedisPool.dial()
+
+	redisMap.Store("default", RedisPool)
 }
 
 func initMultiRedis(conf []*redisConf) {

@@ -79,7 +79,13 @@ func initSingleRedis(conf *redisConf) error {
 
 	Redis, err = redisDial(conf)
 
-	return err
+	if err != nil {
+		return err
+	}
+
+	redisMap.Store("default", Redis)
+
+	return nil
 }
 
 func initMultiRedis(conf []*redisConf) error {

@@ -24,7 +24,7 @@ func MD5(s string) string {
 
 // Date format a local time/date and
 // returns a string formatted according to the given format string using the given timestamp of int64.
-// The default format string is: 2006-01-02 15:04:05.
+// The default format is: 2006-01-02 15:04:05.
 func Date(timestamp int64, format ...string) string {
 	layout := "2006-01-02 15:04:05"
 

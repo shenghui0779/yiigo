@@ -80,7 +80,13 @@ func initSingleMongo(conf *mongoConf) error {
 
 	Mongo, err = mongoDial(conf)
 
-	return err
+	if err != nil {
+		return err
+	}
+
+	mongoMap.Store("default", Mongo)
+
+	return nil
 }
 
 func initMultiMongo(conf []*mongoConf) error {

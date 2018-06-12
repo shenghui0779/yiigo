@@ -85,7 +85,13 @@ func initSingleDB(conf *mysqlConf) error {
 
 	DB, err = dbDial(conf)
 
-	return err
+	if err != nil {
+		return err
+	}
+
+	dbmap.Store("default", DB)
+
+	return nil
 }
 
 func initMultiDB(conf []*mysqlConf) error {
