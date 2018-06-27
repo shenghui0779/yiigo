@@ -68,7 +68,7 @@ func (s *Spider) HTTPGet(reqBody *ReqBody) (io.ReadCloser, error) {
 		}
 	}
 
-	//忽略对服务端传过来的数字证书进行校验
+	// 忽略对服务端传过来的数字证书进行校验
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
@@ -113,7 +113,7 @@ func (s *Spider) HTTPPost(reqBody *ReqBody) (io.ReadCloser, error) {
 		}
 	}
 
-	//忽略对服务端传过来的数字证书进行校验
+	// 忽略对服务端传过来的数字证书进行校验
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
@@ -365,13 +365,4 @@ func (s *Spider) saveHTTPCookie(newCookies []*http.Cookie, cleanOldCookie bool) 
 	}
 
 	return nil
-}
-
-// TrimString 处理字符串,去除页面数据中的 `\n` 、`&nbsp;` 和 `空格` 字符
-func TrimString(str string) string {
-	text := strings.Trim(str, "\n")
-	text = strings.Trim(str, "&nbsp;")
-	text = strings.TrimSpace(text)
-
-	return text
 }
