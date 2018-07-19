@@ -1,4 +1,4 @@
-// Package yiigo Go常用优秀库的封装，用于API、WEB和爬虫开发
+// Package yiigo 简单易用的Golang微框架，封装常用优秀库，用于API、WEB和爬虫开发
 //
 // 获取：
 //
