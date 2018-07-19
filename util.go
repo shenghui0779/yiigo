@@ -3,6 +3,7 @@ package yiigo
 import (
 	"crypto/md5"
 	"fmt"
+	"math/big"
 	"net"
 	"net/http"
 	"strings"
@@ -83,6 +84,27 @@ func RemoteIP(c *gin.Context) string {
 	}
 
 	return ip
+}
+
+// IP2long converts a string containing an (IPv4) Internet Protocol dotted address into a long integer
+func IP2long(ip string) int64 {
+	ipv4 := net.ParseIP(ip).To4()
+
+	if ipv4 == nil {
+		return 0
+	}
+
+	ret := big.NewInt(0)
+	ret.SetBytes(ipv4)
+
+	return ret.Int64()
+}
+
+// Long2IP converts an long integer address into a string in (IPv4) Internet standard dotted format
+func Long2IP(ip int64) string {
+	ipv4 := fmt.Sprintf("%d.%d.%d.%d", byte(ip>>24), byte(ip>>16), byte(ip>>8), byte(ip))
+
+	return ipv4
 }
 
 // OK returns success of an API.
