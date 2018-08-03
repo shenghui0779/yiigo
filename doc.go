@@ -9,7 +9,7 @@
 //
 // 使用：
 //
-//     err := yiigo.Bootstrap(true, true, true)
+//     err := yiigo.Bootstrap(true, true, true, true)
 //
 //     if err != nil {
 //	       yiigo.Logger.Panic(err.Error())

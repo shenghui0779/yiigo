@@ -6,6 +6,7 @@ yiigo
 ## 特点
 
 - 支持多 [MySQL](https://github.com/jmoiron/sqlx) 连接
+- 支持多 [PostgreSQL](https://github.com/lib/pq) 连接
 - 支持多 [mongo](http://labix.org/mgo) 连接
 - 支持多 [redis](https://github.com/gomodule/redigo) 连接
 - 采用 [zap](https://github.com/uber-go/zap) 日志记录
@@ -36,8 +37,8 @@ package main
 import "github.com/iiinsomnia/yiigo"
 
 func main() {
-    // 启用 mysql、mongo、redis
-    err := yiigo.Bootstrap(true, true, true)
+    // 启用 mysql、postgres、mongo、redis
+    err := yiigo.Bootstrap(true, true, true, true)
 
     if err != nil {
         yiigo.Logger.Panic(err.Error())
