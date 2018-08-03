@@ -27,14 +27,8 @@ type mysqlConf struct {
 	ConnMaxLifetime int    `toml:"connMaxLifetime"`
 }
 
-// SQLExpr SQL expression
-type SQLExpr struct {
-	Expr string
-	Args []interface{}
-}
-
 var (
-	// DB default connection
+	// DB default mysql connection
 	DB    *sqlx.DB
 	dbmap sync.Map
 )
@@ -128,7 +122,7 @@ func dbDial(conf *mysqlConf) (*sqlx.DB, error) {
 	return db, nil
 }
 
-// DBConn returns a db connection.
+// DBConn returns a mysql connection.
 func DBConn(conn ...string) (*sqlx.DB, error) {
 	schema := "default"
 
@@ -145,13 +139,26 @@ func DBConn(conn ...string) (*sqlx.DB, error) {
 	return v.(*sqlx.DB), nil
 }
 
-// InsertSQL returns insert sql and binds.
+// SQLExpr SQL expression
+type SQLExpr struct {
+	Expr string
+	Args []interface{}
+}
+
+// Expr returns a sql expression, eg: yiigo.Expr("price * ? + ?", 2, 100).
+func Expr(expr string, args ...interface{}) *SQLExpr {
+	return &SQLExpr{Expr: expr, Args: args}
+}
+
+// InsertSQL returns mysql insert sql and binds.
 // param data expects struct, []struct, yiigo.X, []yiigo.X.
 func InsertSQL(table string, data interface{}) (string, []interface{}) {
-	v := reflect.Indirect(reflect.ValueOf(data))
+	var (
+		sql   string
+		binds []interface{}
+	)
 
-	sql := ""
-	binds := []interface{}{}
+	v := reflect.Indirect(reflect.ValueOf(data))
 
 	switch v.Kind() {
 	case reflect.Map:
@@ -183,13 +190,15 @@ func InsertSQL(table string, data interface{}) (string, []interface{}) {
 	return sql, binds
 }
 
-// UpdateSQL returns update sql and binds.
+// UpdateSQL returns mysql update sql and binds.
 // param data expects struct, yiigo.X.
 func UpdateSQL(query string, data interface{}, args ...interface{}) (string, []interface{}) {
-	v := reflect.Indirect(reflect.ValueOf(data))
+	var (
+		sql   string
+		binds []interface{}
+	)
 
-	sql := ""
-	binds := []interface{}{}
+	v := reflect.Indirect(reflect.ValueOf(data))
 
 	switch v.Kind() {
 	case reflect.Map:
@@ -201,11 +210,6 @@ func UpdateSQL(query string, data interface{}, args ...interface{}) (string, []i
 	}
 
 	return sql, binds
-}
-
-// Expr returns an expression, eg: yiigo.Expr("price * ? + ?", 2, 100).
-func Expr(expr string, args ...interface{}) *SQLExpr {
-	return &SQLExpr{Expr: expr, Args: args}
 }
 
 func singleInsertWithMap(table string, data X) (string, []interface{}) {
@@ -280,7 +284,7 @@ func batchInsertWithMap(table string, data []X, count int) (string, []interface{
 		placeholders = append(placeholders, fmt.Sprintf("(%s)", strings.Join(phrs, ", ")))
 	}
 
-	sql := fmt.Sprintf("INSERT INTO `%s` (%s) VALUES %s", table, strings.Join(columns, ", "), strings.Join(placeholders, ","))
+	sql := fmt.Sprintf("INSERT INTO `%s` (%s) VALUES %s", table, strings.Join(columns, ", "), strings.Join(placeholders, ", "))
 
 	return sql, binds
 }
@@ -325,14 +329,14 @@ func batchInsertWithStruct(table string, v reflect.Value, count int) (string, []
 		placeholders = append(placeholders, fmt.Sprintf("(%s)", strings.Join(phrs, ", ")))
 	}
 
-	sql := fmt.Sprintf("INSERT INTO `%s` (%s) VALUES %s", table, strings.Join(columns, ", "), strings.Join(placeholders, ","))
+	sql := fmt.Sprintf("INSERT INTO `%s` (%s) VALUES %s", table, strings.Join(columns, ", "), strings.Join(placeholders, ", "))
 
 	return sql, binds
 }
 
 func updateWithMap(query string, data X, args ...interface{}) (string, []interface{}) {
-	sets := []string{}
-	binds := []interface{}{}
+	var sets []string
+	var binds []interface{}
 
 	for k, v := range data {
 		if e, ok := v.(*SQLExpr); ok {

@@ -29,7 +29,7 @@ type Sequence struct {
 }
 
 var (
-	// Mongo default session
+	// Mongo default mongo session
 	Mongo    *mgo.Session
 	mongoMap sync.Map
 )

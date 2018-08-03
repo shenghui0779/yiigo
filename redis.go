@@ -28,7 +28,7 @@ type redisConf struct {
 }
 
 var (
-	// Redis default connection pool
+	// Redis default redis connection pool
 	Redis    *redis.Pool
 	redisMap sync.Map
 )

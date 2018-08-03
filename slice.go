@@ -1,8 +1,6 @@
 package yiigo
 
-import (
-	"sort"
-)
+import "sort"
 
 // Int64Slice attaches the methods of Interface to []int64, sorting a increasing order.
 type Int64Slice []int64
