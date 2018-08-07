@@ -38,6 +38,12 @@ func initRedis() error {
 
 	result := Env.Get("redis")
 
+	if result == nil {
+		fmt.Println("no redis configured")
+
+		return nil
+	}
+
 	switch node := result.(type) {
 	case *toml.Tree:
 		conf := &redisConf{}
@@ -64,7 +70,7 @@ func initRedis() error {
 
 		err = initMultiRedis(conf)
 	default:
-		return errors.New("redis error config")
+		return errors.New("invalid redis config")
 	}
 
 	if err != nil {

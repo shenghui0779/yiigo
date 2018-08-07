@@ -22,6 +22,7 @@ type mysqlConf struct {
 	Database        string `toml:"database"`
 	Charset         string `toml:"charset"`
 	Collection      string `toml:"collection"`
+	ConnTimeout     int    `toml:"connTimeout"`
 	MaxOpenConns    int    `toml:"maxOpenConns"`
 	MaxIdleConns    int    `toml:"maxIdleConns"`
 	ConnMaxLifetime int    `toml:"connMaxLifetime"`
@@ -37,6 +38,12 @@ func initMySQL() error {
 	var err error
 
 	result := Env.Get("mysql")
+
+	if result == nil {
+		fmt.Println("no mysql configured")
+
+		return nil
+	}
 
 	switch node := result.(type) {
 	case *toml.Tree:
@@ -64,7 +71,7 @@ func initMySQL() error {
 
 		err = initMultiDB(conf)
 	default:
-		return errors.New("mysql error config")
+		return errors.New("invalid mysql config")
 	}
 
 	if err != nil {
@@ -107,7 +114,7 @@ func initMultiDB(conf []*mysqlConf) error {
 }
 
 func dbDial(conf *mysqlConf) (*sqlx.DB, error) {
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s&collation=%s&parseTime=True&loc=Local", conf.Username, conf.Password, conf.Host, conf.Port, conf.Database, conf.Charset, conf.Collection)
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?timeout=%ds&charset=%s&collation=%s&parseTime=True&loc=Local", conf.Username, conf.Password, conf.Host, conf.Port, conf.Database, conf.ConnTimeout, conf.Charset, conf.Collection)
 
 	db, err := sqlx.Connect("mysql", dsn)
 
@@ -293,7 +300,7 @@ func batchInsertWithStruct(table string, v reflect.Value, count int) (string, []
 	first := v.Index(0)
 
 	if first.Kind() != reflect.Struct {
-		panic("the data must be a slice to struct")
+		panic("param data must be a slice to struct")
 	}
 
 	fieldNum := first.NumField()

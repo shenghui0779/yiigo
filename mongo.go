@@ -39,6 +39,12 @@ func initMongo() error {
 
 	result := Env.Get("mongo")
 
+	if result == nil {
+		fmt.Println("no mongo configured")
+
+		return nil
+	}
+
 	switch node := result.(type) {
 	case *toml.Tree:
 		conf := &mongoConf{}
@@ -65,7 +71,7 @@ func initMongo() error {
 
 		err = initMultiMongo(conf)
 	default:
-		return errors.New("mongo error config")
+		return errors.New("invalid mongo config")
 	}
 
 	if err != nil {

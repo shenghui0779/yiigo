@@ -84,7 +84,7 @@ func initRedis() error {
 
 		initMultiRedis(conf)
 	default:
-		return errors.New("redis error config")
+		return errors.New("invalid redis config")
 	}
 
 	if err != nil {

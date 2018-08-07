@@ -20,6 +20,7 @@ type postgresConf struct {
 	Username        string `toml:"username"`
 	Password        string `toml:"password"`
 	Database        string `toml:"database"`
+	ConnTimeout     int    `toml:"connTimeout"`
 	MaxOpenConns    int    `toml:"maxOpenConns"`
 	MaxIdleConns    int    `toml:"maxIdleConns"`
 	ConnMaxLifetime int    `toml:"connMaxLifetime"`
@@ -35,6 +36,12 @@ func initPostgres() error {
 	var err error
 
 	result := Env.Get("postgres")
+
+	if result == nil {
+		fmt.Println("no postgres configured")
+
+		return nil
+	}
 
 	switch node := result.(type) {
 	case *toml.Tree:
@@ -62,7 +69,7 @@ func initPostgres() error {
 
 		err = initMultiPostgres(conf)
 	default:
-		return errors.New("postgres error config")
+		return errors.New("invalid postgres config")
 	}
 
 	if err != nil {
@@ -105,7 +112,7 @@ func initMultiPostgres(conf []*postgresConf) error {
 }
 
 func postgresDial(conf *postgresConf) (*sqlx.DB, error) {
-	dsn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", conf.Host, conf.Port, conf.Username, conf.Password, conf.Database)
+	dsn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s connect_timeout=%d sslmode=disable", conf.Host, conf.Port, conf.Username, conf.Password, conf.Database, conf.ConnTimeout)
 
 	db, err := sqlx.Connect("postgres", dsn)
 
@@ -210,12 +217,12 @@ func singlePGInsertWithMap(table string, data X) (string, []interface{}) {
 
 	for k, v := range data {
 		bindIndex++
-		columns = append(columns, fmt.Sprintf("`%s`", k))
+		columns = append(columns, fmt.Sprintf("%s", k))
 		placeholders = append(placeholders, fmt.Sprintf("$%d", bindIndex))
 		binds = append(binds, v)
 	}
 
-	sql := fmt.Sprintf("INSERT INTO `%s` (%s) VALUES (%s)", table, strings.Join(columns, ", "), strings.Join(placeholders, ", "))
+	sql := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s) RETURNING id", table, strings.Join(columns, ", "), strings.Join(placeholders, ", "))
 
 	return sql, binds
 }
@@ -243,12 +250,12 @@ func singlePGInsertWithStruct(table string, v reflect.Value) (string, []interfac
 			column = t.Field(i).Name
 		}
 
-		columns = append(columns, fmt.Sprintf("`%s`", column))
+		columns = append(columns, fmt.Sprintf("%s", column))
 		placeholders = append(placeholders, fmt.Sprintf("$%d", bindIndex))
 		binds = append(binds, v.Field(i).Interface())
 	}
 
-	sql := fmt.Sprintf("INSERT INTO `%s` (%s) VALUES (%s)", table, strings.Join(columns, ", "), strings.Join(placeholders, ", "))
+	sql := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s) RETURNING id", table, strings.Join(columns, ", "), strings.Join(placeholders, ", "))
 
 	return sql, binds
 }
@@ -263,7 +270,7 @@ func batchPGInsertWithMap(table string, data []X, count int) (string, []interfac
 
 	for k := range data[0] {
 		fields = append(fields, k)
-		columns = append(columns, fmt.Sprintf("`%s`", k))
+		columns = append(columns, fmt.Sprintf("%s", k))
 	}
 
 	bindIndex := 0
@@ -280,7 +287,7 @@ func batchPGInsertWithMap(table string, data []X, count int) (string, []interfac
 		placeholders = append(placeholders, fmt.Sprintf("(%s)", strings.Join(phrs, ", ")))
 	}
 
-	sql := fmt.Sprintf("INSERT INTO `%s` (%s) VALUES %s", table, strings.Join(columns, ", "), strings.Join(placeholders, ", "))
+	sql := fmt.Sprintf("INSERT INTO %s (%s) VALUES %s", table, strings.Join(columns, ", "), strings.Join(placeholders, ", "))
 
 	return sql, binds
 }
@@ -289,7 +296,7 @@ func batchPGInsertWithStruct(table string, v reflect.Value, count int) (string, 
 	first := v.Index(0)
 
 	if first.Kind() != reflect.Struct {
-		panic("the data must be a slice to struct")
+		panic("param data must be a slice to struct")
 	}
 
 	fieldNum := first.NumField()
@@ -318,7 +325,7 @@ func batchPGInsertWithStruct(table string, v reflect.Value, count int) (string, 
 					column = t.Field(j).Name
 				}
 
-				columns = append(columns, fmt.Sprintf("`%s`", column))
+				columns = append(columns, fmt.Sprintf("%s", column))
 			}
 
 			phrs = append(phrs, fmt.Sprintf("$%d", bindIndex))
@@ -328,7 +335,7 @@ func batchPGInsertWithStruct(table string, v reflect.Value, count int) (string, 
 		placeholders = append(placeholders, fmt.Sprintf("(%s)", strings.Join(phrs, ", ")))
 	}
 
-	sql := fmt.Sprintf("INSERT INTO `%s` (%s) VALUES %s", table, strings.Join(columns, ", "), strings.Join(placeholders, ", "))
+	sql := fmt.Sprintf("INSERT INTO %s (%s) VALUES %s", table, strings.Join(columns, ", "), strings.Join(placeholders, ", "))
 
 	return sql, binds
 }
@@ -346,11 +353,11 @@ func pgUpdateWithMap(query string, data X, args ...interface{}) (string, []inter
 				e.Expr = strings.Replace(e.Expr, "?", fmt.Sprintf("$%d", bindIndex), 1)
 			}
 
-			sets = append(sets, fmt.Sprintf("`%s` = %s", k, e.Expr))
+			sets = append(sets, fmt.Sprintf("%s = %s", k, e.Expr))
 			binds = append(binds, e.Args...)
 		} else {
 			bindIndex++
-			sets = append(sets, fmt.Sprintf("`%s` = $%d", k, bindIndex))
+			sets = append(sets, fmt.Sprintf("%s = $%d", k, bindIndex))
 			binds = append(binds, v)
 		}
 	}
@@ -395,11 +402,11 @@ func pgUpdateWithStruct(query string, v reflect.Value, args ...interface{}) (str
 				e.Expr = strings.Replace(e.Expr, "?", fmt.Sprintf("$%d", bindIndex), 1)
 			}
 
-			sets = append(sets, fmt.Sprintf("`%s` = %s", column, e.Expr))
+			sets = append(sets, fmt.Sprintf("%s = %s", column, e.Expr))
 			binds = append(binds, e.Args...)
 		} else {
 			bindIndex++
-			sets = append(sets, fmt.Sprintf("`%s` = $%d", column, bindIndex))
+			sets = append(sets, fmt.Sprintf("%s = $%d", column, bindIndex))
 			binds = append(binds, field)
 		}
 	}
