@@ -81,6 +81,6 @@ func bootstrap() {
 			errMsgs = append(errMsgs, err.Error())
 		}
 
-		panic(fmt.Sprintf("yiigo components init error\n%s", strings.Join(errMsgs, "\n")))
+		Logger.Panic(strings.Join(errMsgs, "\n"))
 	}
 }

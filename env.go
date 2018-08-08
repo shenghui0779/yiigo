@@ -22,8 +22,8 @@ var Env *env
 var ErrEnvNil = errors.New("config not found")
 
 // loadEnv load env file.
-func loadEnv(path string) {
-	abs, _ := filepath.Abs(path)
+func loadEnv() {
+	abs, _ := filepath.Abs("env.toml")
 	tomlTree, err := toml.LoadFile(abs)
 
 	if err != nil {
