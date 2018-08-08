@@ -19,7 +19,7 @@ type env struct {
 var Env *env
 
 // ErrEnvNil returned when config not found.
-var ErrEnvNil = errors.New("config not found")
+var ErrEnvNil = errors.New("yiigo: env config not found")
 
 // loadEnv load env file.
 func loadEnv() {
@@ -250,7 +250,7 @@ func (e *env) Unmarshal(key string, dest interface{}) error {
 		return err
 	}
 
-	return errors.New("value is not a tree of toml")
+	return errors.New("yiigo: env config is not a tree of toml")
 }
 
 // Get returns a value of interface{}.
