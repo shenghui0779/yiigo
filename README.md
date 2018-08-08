@@ -54,7 +54,7 @@ glide update
 - 在 `main.go` 所在目录创建 `env.toml` 配置文件，具体组件配置可以参考 `env.toml.example`
 - 组件在 `env.toml` 中配置后会自动初始化加载，没有配置的组件不会初始化加载
 - `yiigo` 组件以外的应用配置均可在 `env.toml` 中配置，使用 `yiigo.ENV` 的相关方法获取配置值
-- `MySQL`、`postgres`、`mongo`、`redis` 多连接配置参考 `env.toml.example` 中的多数据库配置部分(注释部分)
+- `MySQL`、`postgres`、`mongo`、`redis` 多连接配置参考 `env.toml.example` 中的多数据库配置部分 (注释部分)
 - `golang.org` 上 `go get` 不下来的库，可以在这里[获取](https://github.com/golang)
 - 如爬虫不需要模拟登录，则只需要使用 [goquery](https://github.com/PuerkitoBio/goquery) 即可
 
