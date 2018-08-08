@@ -26,7 +26,7 @@ type mongoConf struct {
 // Sequence model for _id auto_increment of mongo
 type Sequence struct {
 	ID  string `bson:"_id"`
-	Seq int    `bson:"seq"`
+	Seq int64  `bson:"seq"`
 }
 
 var (
@@ -163,16 +163,18 @@ func MongoSession(conn ...string) (*mgo.Session, error) {
 	return session.Clone(), nil
 }
 
-// SeqID returns _id auto_increment of mongo.
-func SeqID(session *mgo.Session, db string, collection string, seqs ...int) (int, error) {
-	if len(seqs) == 0 {
-		seqs = append(seqs, 1)
+// SeqID returns _id auto_increment to mongo.
+func SeqID(session *mgo.Session, db string, collection string, seqs ...int64) (int64, error) {
+	var seq int64 = 1
+
+	if len(seqs) > 0 {
+		seq = seqs[0]
 	}
 
 	condition := bson.M{"_id": collection}
 
 	change := mgo.Change{
-		Update:    bson.M{"$inc": bson.M{"seq": seqs[0]}},
+		Update:    bson.M{"$inc": bson.M{"seq": seq}},
 		Upsert:    true,
 		ReturnNew: true,
 	}

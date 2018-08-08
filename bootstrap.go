@@ -1,14 +1,13 @@
 package yiigo
 
 import (
-	"fmt"
 	"strings"
 	"sync"
 )
 
 func init() {
 	// load config
-	loadEnv("env.toml")
+	loadEnv()
 	// init logger
 	initLogger()
 	// init core components
