@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/fatih/color"
 	toml "github.com/pelletier/go-toml"
 	mgo "gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
@@ -30,17 +31,15 @@ type Sequence struct {
 
 var (
 	// Mongo default mongo session
-	Mongo    *mgo.Session
-	mongoMap sync.Map
+	Mongo  *mgo.Session
+	mgoMap sync.Map
 )
 
 func initMongo() error {
-	var err error
-
 	result := Env.Get("mongo")
 
 	if result == nil {
-		fmt.Println("no mongo configured")
+		color.Blue("[yiigo] no mongodb configured")
 
 		return nil
 	}
@@ -48,34 +47,38 @@ func initMongo() error {
 	switch node := result.(type) {
 	case *toml.Tree:
 		conf := &mongoConf{}
-		err = node.Unmarshal(conf)
+		err := node.Unmarshal(conf)
 
 		if err != nil {
-			break
+			return err
 		}
 
 		err = initSingleMongo(conf)
+
+		if err != nil {
+			return err
+		}
 	case []*toml.Tree:
 		conf := make([]*mongoConf, 0, len(node))
 
 		for _, v := range node {
 			c := &mongoConf{}
-			err = v.Unmarshal(c)
+			err := v.Unmarshal(c)
 
 			if err != nil {
-				break
+				return err
 			}
 
 			conf = append(conf, c)
 		}
 
-		err = initMultiMongo(conf)
-	default:
-		return errors.New("invalid mongo config")
-	}
+		err := initMultiMongo(conf)
 
-	if err != nil {
-		return fmt.Errorf("mongo error: %s", err.Error())
+		if err != nil {
+			return err
+		}
+	default:
+		return errors.New("yiigo: invalid mongo config")
 	}
 
 	return nil
@@ -87,10 +90,12 @@ func initSingleMongo(conf *mongoConf) error {
 	Mongo, err = mongoDial(conf)
 
 	if err != nil {
-		return err
+		return fmt.Errorf("yiigo: mongo.default connect error: %s", err.Error())
 	}
 
-	mongoMap.Store("default", Mongo)
+	mgoMap.Store("default", Mongo)
+
+	color.Green("[yiigo] mongo.default connect success")
 
 	return nil
 }
@@ -100,13 +105,15 @@ func initMultiMongo(conf []*mongoConf) error {
 		m, err := mongoDial(v)
 
 		if err != nil {
-			return err
+			return fmt.Errorf("yiigo: mongo.%s connect error: %s", v.Name, err.Error())
 		}
 
-		mongoMap.Store(v.Name, m)
+		mgoMap.Store(v.Name, m)
+
+		color.Green("[yiigo] mongo.%s connect success", v.Name)
 	}
 
-	if v, ok := mongoMap.Load("default"); ok {
+	if v, ok := mgoMap.Load("default"); ok {
 		Mongo = v.(*mgo.Session)
 	}
 
@@ -145,10 +152,10 @@ func MongoSession(conn ...string) (*mgo.Session, error) {
 		schema = conn[0]
 	}
 
-	v, ok := mongoMap.Load(schema)
+	v, ok := mgoMap.Load(schema)
 
 	if !ok {
-		return nil, fmt.Errorf("mongodb %s is not connected", schema)
+		return nil, fmt.Errorf("yiigo: mongo.%s is not connected", schema)
 	}
 
 	session := v.(*mgo.Session)

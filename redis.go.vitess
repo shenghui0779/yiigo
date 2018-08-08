@@ -1,13 +1,12 @@
 package yiigo
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
-	"reflect"
 	"sync"
 	"time"
 
+	"github.com/fatih/color"
 	"github.com/gomodule/redigo/redis"
 	toml "github.com/pelletier/go-toml"
 	"github.com/youtube/vitess/go/pools"
@@ -54,17 +53,21 @@ func (r RedisConn) Close() {
 }
 
 func initRedis() error {
-	var err error
-
 	result := Env.Get("redis")
+
+	if result == nil {
+		color.Blue("[yiigo] no redis configured")
+
+		return nil
+	}
 
 	switch node := result.(type) {
 	case *toml.Tree:
 		conf := &redisConf{}
-		err = node.Unmarshal(conf)
+		err := node.Unmarshal(conf)
 
 		if err != nil {
-			break
+			return err
 		}
 
 		initSingleRedis(conf)
@@ -73,10 +76,10 @@ func initRedis() error {
 
 		for _, v := range node {
 			c := &redisConf{}
-			err = v.Unmarshal(c)
+			err := v.Unmarshal(c)
 
 			if err != nil {
-				break
+				return err
 			}
 
 			conf = append(conf, c)
@@ -84,11 +87,7 @@ func initRedis() error {
 
 		initMultiRedis(conf)
 	default:
-		return errors.New("invalid redis config")
-	}
-
-	if err != nil {
-		return fmt.Errorf("redis error: %s", err.Error())
+		return errors.New("yiigo: invalid redis config")
 	}
 
 	return nil
@@ -125,7 +124,7 @@ func RedisConnPool(conn ...string) (*RedisPoolResource, error) {
 	v, ok := redisMap.Load(schema)
 
 	if !ok {
-		return nil, fmt.Errorf("redis %s is not connected", schema)
+		return nil, fmt.Errorf("yiigo: redis.%s is not connected", schema)
 	}
 
 	return v.(*RedisPoolResource), nil

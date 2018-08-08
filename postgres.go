@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/fatih/color"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	toml "github.com/pelletier/go-toml"
@@ -33,12 +34,10 @@ var (
 )
 
 func initPostgres() error {
-	var err error
-
 	result := Env.Get("postgres")
 
 	if result == nil {
-		fmt.Println("no postgres configured")
+		color.Blue("[yiigo] no postgres configured")
 
 		return nil
 	}
@@ -46,34 +45,38 @@ func initPostgres() error {
 	switch node := result.(type) {
 	case *toml.Tree:
 		conf := &postgresConf{}
-		err = node.Unmarshal(conf)
+		err := node.Unmarshal(conf)
 
 		if err != nil {
-			break
+			return err
 		}
 
 		err = initSinglePostgres(conf)
+
+		if err != nil {
+			return err
+		}
 	case []*toml.Tree:
 		conf := make([]*postgresConf, 0, len(node))
 
 		for _, v := range node {
 			c := &postgresConf{}
-			err = v.Unmarshal(c)
+			err := v.Unmarshal(c)
 
 			if err != nil {
-				break
+				return err
 			}
 
 			conf = append(conf, c)
 		}
 
-		err = initMultiPostgres(conf)
-	default:
-		return errors.New("invalid postgres config")
-	}
+		err := initMultiPostgres(conf)
 
-	if err != nil {
-		return fmt.Errorf("postgres error: %s", err.Error())
+		if err != nil {
+			return err
+		}
+	default:
+		return errors.New("yiigo: invalid postgres config")
 	}
 
 	return nil
@@ -85,10 +88,12 @@ func initSinglePostgres(conf *postgresConf) error {
 	PG, err = postgresDial(conf)
 
 	if err != nil {
-		return err
+		return fmt.Errorf("yiigo: postgres.default error: %s", err.Error())
 	}
 
 	pgmap.Store("default", PG)
+
+	color.Green("[yiigo] postgres.default connect success")
 
 	return nil
 }
@@ -98,10 +103,12 @@ func initMultiPostgres(conf []*postgresConf) error {
 		db, err := postgresDial(v)
 
 		if err != nil {
-			return err
+			return fmt.Errorf("yiigo: postgres.%s error: %s", v.Name, err.Error())
 		}
 
 		pgmap.Store(v.Name, db)
+
+		color.Green("[yiigo] postgres.%s connect success", v.Name)
 	}
 
 	if v, ok := pgmap.Load("default"); ok {
@@ -138,7 +145,7 @@ func PGConn(conn ...string) (*sqlx.DB, error) {
 	v, ok := pgmap.Load(schema)
 
 	if !ok {
-		return nil, fmt.Errorf("postgres %s is not connected", schema)
+		return nil, fmt.Errorf("yiigo: postgres.%s is not connected", schema)
 	}
 
 	return v.(*sqlx.DB), nil
@@ -185,6 +192,7 @@ func PGInsertSQL(table string, data interface{}) (string, []interface{}) {
 }
 
 // PGUpdateSQL returns postgres update sql and binds.
+// param query expects eg: "UPDATE table SET $1 WHERE id = $2".
 // param data expects struct, yiigo.X.
 func PGUpdateSQL(query string, data interface{}, args ...interface{}) (string, []interface{}) {
 	var (
@@ -217,6 +225,7 @@ func singlePGInsertWithMap(table string, data X) (string, []interface{}) {
 
 	for k, v := range data {
 		bindIndex++
+
 		columns = append(columns, fmt.Sprintf("%s", k))
 		placeholders = append(placeholders, fmt.Sprintf("$%d", bindIndex))
 		binds = append(binds, v)
@@ -235,23 +244,16 @@ func singlePGInsertWithStruct(table string, v reflect.Value) (string, []interfac
 	binds := make([]interface{}, 0, fieldNum)
 
 	t := v.Type()
-	bindIndex := 0
 
 	for i := 0; i < fieldNum; i++ {
 		column := t.Field(i).Tag.Get("db")
-
-		if column == "-" {
-			continue
-		}
-
-		bindIndex++
 
 		if column == "" {
 			column = t.Field(i).Name
 		}
 
 		columns = append(columns, fmt.Sprintf("%s", column))
-		placeholders = append(placeholders, fmt.Sprintf("$%d", bindIndex))
+		placeholders = append(placeholders, fmt.Sprintf("$%d", i+1))
 		binds = append(binds, v.Field(i).Interface())
 	}
 
@@ -280,6 +282,7 @@ func batchPGInsertWithMap(table string, data []X, count int) (string, []interfac
 
 		for _, v := range fields {
 			bindIndex++
+
 			phrs = append(phrs, fmt.Sprintf("$%d", bindIndex))
 			binds = append(binds, x[v])
 		}
@@ -296,7 +299,7 @@ func batchPGInsertWithStruct(table string, v reflect.Value, count int) (string, 
 	first := v.Index(0)
 
 	if first.Kind() != reflect.Struct {
-		panic("param data must be a slice to struct")
+		panic("yiigo: param data must be a slice to struct")
 	}
 
 	fieldNum := first.NumField()
@@ -314,12 +317,6 @@ func batchPGInsertWithStruct(table string, v reflect.Value, count int) (string, 
 		for j := 0; j < fieldNum; j++ {
 			column := t.Field(j).Tag.Get("db")
 
-			if column == "-" {
-				continue
-			}
-
-			bindIndex++
-
 			if i == 0 {
 				if column == "" {
 					column = t.Field(j).Name
@@ -327,6 +324,8 @@ func batchPGInsertWithStruct(table string, v reflect.Value, count int) (string, 
 
 				columns = append(columns, fmt.Sprintf("%s", column))
 			}
+
+			bindIndex++
 
 			phrs = append(phrs, fmt.Sprintf("$%d", bindIndex))
 			binds = append(binds, v.Index(i).Field(j).Interface())
@@ -341,34 +340,31 @@ func batchPGInsertWithStruct(table string, v reflect.Value, count int) (string, 
 }
 
 func pgUpdateWithMap(query string, data X, args ...interface{}) (string, []interface{}) {
-	var sets []string
-	var binds []interface{}
+	dataLen := len(data)
+	argsLen := len(args)
+
+	oldnew := make([]string, 0, argsLen*2)
+
+	for i := 1; i <= argsLen; i++ {
+		oldnew = append(oldnew, fmt.Sprintf("$%d", i+1), fmt.Sprintf("$%d", dataLen+i))
+	}
+
+	r := strings.NewReplacer(oldnew...)
+	query = r.Replace(query)
+
+	sets := make([]string, 0, dataLen)
+	binds := make([]interface{}, 0, dataLen+argsLen)
 
 	bindIndex := 0
 
 	for k, v := range data {
-		if e, ok := v.(*SQLExpr); ok {
-			for i := 0; i < len(e.Args); i++ {
-				bindIndex++
-				e.Expr = strings.Replace(e.Expr, "?", fmt.Sprintf("$%d", bindIndex), 1)
-			}
-
-			sets = append(sets, fmt.Sprintf("%s = %s", k, e.Expr))
-			binds = append(binds, e.Args...)
-		} else {
-			bindIndex++
-			sets = append(sets, fmt.Sprintf("%s = $%d", k, bindIndex))
-			binds = append(binds, v)
-		}
-	}
-
-	sql := strings.Replace(query, "?", strings.Join(sets, ", "), 1)
-
-	for i := 0; i < strings.Count(sql, "?"); i++ {
 		bindIndex++
-		sql = strings.Replace(sql, "?", fmt.Sprintf("$%d", bindIndex), 1)
+
+		sets = append(sets, fmt.Sprintf("%s = $%d", k, bindIndex))
+		binds = append(binds, v)
 	}
 
+	sql := strings.Replace(query, "$1", strings.Join(sets, ", "), 1)
 	binds = append(binds, args...)
 
 	return sql, binds
@@ -376,47 +372,34 @@ func pgUpdateWithMap(query string, data X, args ...interface{}) (string, []inter
 
 func pgUpdateWithStruct(query string, v reflect.Value, args ...interface{}) (string, []interface{}) {
 	fieldNum := v.NumField()
+	argsLen := len(args)
+
+	oldnew := make([]string, 0, argsLen*2)
+
+	for i := 1; i <= argsLen; i++ {
+		oldnew = append(oldnew, fmt.Sprintf("$%d", i+1), fmt.Sprintf("$%d", fieldNum+i))
+	}
+
+	r := strings.NewReplacer(oldnew...)
+	query = r.Replace(query)
 
 	sets := make([]string, 0, fieldNum)
-	binds := make([]interface{}, 0, fieldNum+len(args))
+	binds := make([]interface{}, 0, fieldNum+argsLen)
 
 	t := v.Type()
-	bindIndex := 0
 
 	for i := 0; i < fieldNum; i++ {
 		column := t.Field(i).Tag.Get("db")
-
-		if column == "-" {
-			continue
-		}
 
 		if column == "" {
 			column = t.Field(i).Name
 		}
 
-		field := v.Field(i).Interface()
-
-		if e, ok := field.(*SQLExpr); ok {
-			for i := 0; i < len(e.Args); i++ {
-				bindIndex++
-				e.Expr = strings.Replace(e.Expr, "?", fmt.Sprintf("$%d", bindIndex), 1)
-			}
-
-			sets = append(sets, fmt.Sprintf("%s = %s", column, e.Expr))
-			binds = append(binds, e.Args...)
-		} else {
-			bindIndex++
-			sets = append(sets, fmt.Sprintf("%s = $%d", column, bindIndex))
-			binds = append(binds, field)
-		}
+		sets = append(sets, fmt.Sprintf("%s = $%d", column, i+1))
+		binds = append(binds, v.Field(i).Interface())
 	}
 
-	sql := strings.Replace(query, "?", strings.Join(sets, ", "), 1)
-
-	for i := 0; i < strings.Count(sql, "?"); i++ {
-		bindIndex++
-		sql = strings.Replace(sql, "?", fmt.Sprintf("$%d", bindIndex), 1)
-	}
+	sql := strings.Replace(query, "$1", strings.Join(sets, ", "), 1)
 
 	binds = append(binds, args...)
 

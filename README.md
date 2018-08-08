@@ -20,7 +20,7 @@ yiigo
 ## 获取
 
 ```sh
-# glide (推荐)
+# Glide (推荐)
 glide init
 glide get github.com/iiinsomnia/yiigo
 
@@ -33,7 +33,7 @@ go get github.com/iiinsomnia/yiigo
 #### 1、import yiigo
 
 ```go
-// 导入后自动初始化配置的组件
+// 自动根据配置初始化组件
 import "github.com/iiinsomnia/yiigo"
 ```
 

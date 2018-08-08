@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/fatih/color"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
 	toml "github.com/pelletier/go-toml"
@@ -35,12 +36,10 @@ var (
 )
 
 func initMySQL() error {
-	var err error
-
 	result := Env.Get("mysql")
 
 	if result == nil {
-		fmt.Println("no mysql configured")
+		color.Blue("[yiigo] no mysql configured")
 
 		return nil
 	}
@@ -48,34 +47,38 @@ func initMySQL() error {
 	switch node := result.(type) {
 	case *toml.Tree:
 		conf := &mysqlConf{}
-		err = node.Unmarshal(conf)
+		err := node.Unmarshal(conf)
 
 		if err != nil {
-			break
+			return err
 		}
 
 		err = initSingleDB(conf)
+
+		if err != nil {
+			return err
+		}
 	case []*toml.Tree:
 		conf := make([]*mysqlConf, 0, len(node))
 
 		for _, v := range node {
 			c := &mysqlConf{}
-			err = v.Unmarshal(c)
+			err := v.Unmarshal(c)
 
 			if err != nil {
-				break
+				return err
 			}
 
 			conf = append(conf, c)
 		}
 
-		err = initMultiDB(conf)
-	default:
-		return errors.New("invalid mysql config")
-	}
+		err := initMultiDB(conf)
 
-	if err != nil {
-		return fmt.Errorf("mysql error: %s", err.Error())
+		if err != nil {
+			return err
+		}
+	default:
+		return errors.New("yiigo: invalid mysql config")
 	}
 
 	return nil
@@ -87,10 +90,12 @@ func initSingleDB(conf *mysqlConf) error {
 	DB, err = dbDial(conf)
 
 	if err != nil {
-		return err
+		return fmt.Errorf("yiigo: mysql.default connect error: %s", err.Error())
 	}
 
 	dbmap.Store("default", DB)
+
+	color.Green("[yiigo] mysql.default connect success")
 
 	return nil
 }
@@ -100,10 +105,12 @@ func initMultiDB(conf []*mysqlConf) error {
 		db, err := dbDial(v)
 
 		if err != nil {
-			return err
+			return fmt.Errorf("yiigo: mysql.%s connect error: %s", v.Name, err.Error())
 		}
 
 		dbmap.Store(v.Name, db)
+
+		color.Green("[yiigo] mysql.%s connect success", v.Name)
 	}
 
 	if v, ok := dbmap.Load("default"); ok {
@@ -144,17 +151,6 @@ func DBConn(conn ...string) (*sqlx.DB, error) {
 	}
 
 	return v.(*sqlx.DB), nil
-}
-
-// SQLExpr SQL expression
-type SQLExpr struct {
-	Expr string
-	Args []interface{}
-}
-
-// Expr returns a sql expression, eg: yiigo.Expr("price * ? + ?", 2, 100).
-func Expr(expr string, args ...interface{}) *SQLExpr {
-	return &SQLExpr{Expr: expr, Args: args}
 }
 
 // InsertSQL returns mysql insert sql and binds.
@@ -198,6 +194,7 @@ func InsertSQL(table string, data interface{}) (string, []interface{}) {
 }
 
 // UpdateSQL returns mysql update sql and binds.
+// param query expects eg: "UPDATE table SET ? WHERE id = ?".
 // param data expects struct, yiigo.X.
 func UpdateSQL(query string, data interface{}, args ...interface{}) (string, []interface{}) {
 	var (
@@ -249,10 +246,6 @@ func singleInsertWithStruct(table string, v reflect.Value) (string, []interface{
 	for i := 0; i < fieldNum; i++ {
 		column := t.Field(i).Tag.Get("db")
 
-		if column == "-" {
-			continue
-		}
-
 		if column == "" {
 			column = t.Field(i).Name
 		}
@@ -300,7 +293,7 @@ func batchInsertWithStruct(table string, v reflect.Value, count int) (string, []
 	first := v.Index(0)
 
 	if first.Kind() != reflect.Struct {
-		panic("param data must be a slice to struct")
+		panic("yiigo: param data must be a slice to struct")
 	}
 
 	fieldNum := first.NumField()
@@ -316,10 +309,6 @@ func batchInsertWithStruct(table string, v reflect.Value, count int) (string, []
 
 		for j := 0; j < fieldNum; j++ {
 			column := t.Field(j).Tag.Get("db")
-
-			if column == "-" {
-				continue
-			}
 
 			if i == 0 {
 				if column == "" {
@@ -342,17 +331,14 @@ func batchInsertWithStruct(table string, v reflect.Value, count int) (string, []
 }
 
 func updateWithMap(query string, data X, args ...interface{}) (string, []interface{}) {
-	var sets []string
-	var binds []interface{}
+	dataLen := len(data)
+
+	sets := make([]string, 0, dataLen)
+	binds := make([]interface{}, 0, dataLen+len(args))
 
 	for k, v := range data {
-		if e, ok := v.(*SQLExpr); ok {
-			sets = append(sets, fmt.Sprintf("`%s` = %s", k, e.Expr))
-			binds = append(binds, e.Args...)
-		} else {
-			sets = append(sets, fmt.Sprintf("`%s` = ?", k))
-			binds = append(binds, v)
-		}
+		sets = append(sets, fmt.Sprintf("`%s` = ?", k))
+		binds = append(binds, v)
 	}
 
 	sql := strings.Replace(query, "?", strings.Join(sets, ", "), 1)
@@ -372,23 +358,12 @@ func updateWithStruct(query string, v reflect.Value, args ...interface{}) (strin
 	for i := 0; i < fieldNum; i++ {
 		column := t.Field(i).Tag.Get("db")
 
-		if column == "-" {
-			continue
-		}
-
 		if column == "" {
 			column = t.Field(i).Name
 		}
 
-		field := v.Field(i).Interface()
-
-		if e, ok := field.(*SQLExpr); ok {
-			sets = append(sets, fmt.Sprintf("`%s` = %s", column, e.Expr))
-			binds = append(binds, e.Args...)
-		} else {
-			sets = append(sets, fmt.Sprintf("`%s` = ?", column))
-			binds = append(binds, field)
-		}
+		sets = append(sets, fmt.Sprintf("`%s` = ?", column))
+		binds = append(binds, v.Field(i).Interface())
 	}
 
 	sql := strings.Replace(query, "?", strings.Join(sets, ", "), 1)

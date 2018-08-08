@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/fatih/color"
 	"github.com/gomodule/redigo/redis"
 	toml "github.com/pelletier/go-toml"
 )
@@ -34,12 +35,10 @@ var (
 )
 
 func initRedis() error {
-	var err error
-
 	result := Env.Get("redis")
 
 	if result == nil {
-		fmt.Println("no redis configured")
+		color.Blue("[yiigo] no redis configured")
 
 		return nil
 	}
@@ -47,34 +46,38 @@ func initRedis() error {
 	switch node := result.(type) {
 	case *toml.Tree:
 		conf := &redisConf{}
-		err = node.Unmarshal(conf)
+		err := node.Unmarshal(conf)
 
 		if err != nil {
-			break
+			return err
 		}
 
 		err = initSingleRedis(conf)
+
+		if err != nil {
+			return err
+		}
 	case []*toml.Tree:
 		conf := make([]*redisConf, 0, len(node))
 
 		for _, v := range node {
 			c := &redisConf{}
-			err = v.Unmarshal(c)
+			err := v.Unmarshal(c)
 
 			if err != nil {
-				break
+				return err
 			}
 
 			conf = append(conf, c)
 		}
 
-		err = initMultiRedis(conf)
-	default:
-		return errors.New("invalid redis config")
-	}
+		err := initMultiRedis(conf)
 
-	if err != nil {
-		return fmt.Errorf("redis error: %s", err.Error())
+		if err != nil {
+			return err
+		}
+	default:
+		return errors.New("yiigo: invalid redis config")
 	}
 
 	return nil
@@ -86,10 +89,12 @@ func initSingleRedis(conf *redisConf) error {
 	Redis, err = redisDial(conf)
 
 	if err != nil {
-		return err
+		return fmt.Errorf("yiigo: redis.default connect error: %s", err.Error())
 	}
 
 	redisMap.Store("default", Redis)
+
+	color.Green("[yiigo] redis.default connect success")
 
 	return nil
 }
@@ -99,10 +104,12 @@ func initMultiRedis(conf []*redisConf) error {
 		p, err := redisDial(v)
 
 		if err != nil {
-			return err
+			return fmt.Errorf("yiigo: redis.%s connect error: %s", v.Name, err.Error())
 		}
 
 		redisMap.Store(v.Name, p)
+
+		color.Green("[yiigo] redis.%s connect success", v.Name)
 	}
 
 	if v, ok := redisMap.Load("default"); ok {
@@ -168,7 +175,7 @@ func RedisPool(conn ...string) (*redis.Pool, error) {
 	v, ok := redisMap.Load(schema)
 
 	if !ok {
-		return nil, fmt.Errorf("redis %s is not connected", schema)
+		return nil, fmt.Errorf("yiigo: redis.%s is not connected", schema)
 	}
 
 	return v.(*redis.Pool), nil
