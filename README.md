@@ -6,9 +6,9 @@ yiigo
 ## 特点
 
 - 采用 [Glide](https://glide.sh) 管理依赖包
-- 采用 [sqlx](https://github.com/jmoiron/sqlx) 处理SQL查询
-- 采用 [zap](https://github.com/uber-go/zap) 日志记录
 - 采用 [toml](https://github.com/pelletier/go-toml) 配置文件
+- 采用 [zap](https://github.com/uber-go/zap) 日志记录
+- 采用 [sqlx](https://github.com/jmoiron/sqlx) 处理SQL查询
 - 支持多 [MySQL](https://github.com/go-sql-driver/mysql) 连接
 - 支持多 [PostgreSQL](https://github.com/lib/pq) 连接
 - 支持多 [mongo](http://labix.org/mgo) 连接
