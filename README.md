@@ -5,7 +5,7 @@ yiigo
 
 ## 特点
 
-- 采用 [glide](https://glide.sh) 管理依赖包
+- 采用 [Glide](https://glide.sh) 管理依赖包
 - 采用 [sqlx](https://github.com/jmoiron/sqlx) 处理SQL查询
 - 采用 [zap](https://github.com/uber-go/zap) 日志记录
 - 采用 [toml](https://github.com/pelletier/go-toml) 配置文件
