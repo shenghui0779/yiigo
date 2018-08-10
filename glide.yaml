@@ -2,6 +2,7 @@ package: github.com/iiinsomnia/yiigo
 import:
 - package: github.com/gin-gonic/gin
 - package: github.com/go-sql-driver/mysql
+- package: github.com/lib/pq
 - package: github.com/gomodule/redigo
   subpackages:
   - redis
@@ -16,6 +17,7 @@ import:
   subpackages:
   - bson
 - package: gopkg.in/natefinch/lumberjack.v2
+- package: github.com/fatih/color
 - package: golang.org/x/net
   repo: https://github.com/golang/net.git
 - package: golang.org/x/sys
