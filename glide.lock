@@ -1,12 +1,12 @@
 hash: 677dda61542679e7e4ce4ad6d4330d241cb853206f15f3ad37b8217ad0609d5a
-updated: 2018-08-10T08:01:44.916009+08:00
+updated: 2018-08-22T14:28:33.488757+08:00
 imports:
 - name: github.com/fatih/color
   version: 2d684516a8861da43017284349b7e303e809ac21
 - name: github.com/gin-contrib/sse
   version: 22d885f9ecc78bf4ee5d72b937e4bbcdc58e8cae
 - name: github.com/gin-gonic/gin
-  version: 1f1bc429ed7a4d591a7374f0e267b59747b177bd
+  version: 0da5b0c85ac2539e775a7e63aebf3e0b5808dab4
   subpackages:
   - binding
   - json
@@ -14,7 +14,7 @@ imports:
 - name: github.com/go-sql-driver/mysql
   version: 99ff426eb706cffe92ff3d058e168b278cabf7c7
 - name: github.com/golang/protobuf
-  version: 89a0c16f4dc2a70c0ed864d8ef64878f24fdaa51
+  version: b27b920f9e71b439b873b17bf99f56467623814a
   subpackages:
   - proto
 - name: github.com/gomodule/redigo
@@ -49,7 +49,7 @@ imports:
 - name: github.com/pelletier/go-toml
   version: c2dbbc24a97911339e01bda0b8cabdbd8f13b602
 - name: github.com/ugorji/go
-  version: 0e8ffdb13c81bdb48fa80a963cf83f10a0f5a496
+  version: 00b869d2f4a5e27445c2d916fa106fc72c106d4c
   subpackages:
   - codec
 - name: go.uber.org/atomic
@@ -57,7 +57,7 @@ imports:
 - name: go.uber.org/multierr
   version: 3c4937480c32f4c13a875a1829af76c98ca3d40a
 - name: go.uber.org/zap
-  version: ff33455a0e382e8a81d14dd7c922020b6b5e7982
+  version: 67bc79d13d155c02fd008f721863ff8cc5f30659
   subpackages:
   - buffer
   - internal/bufferpool
@@ -65,10 +65,10 @@ imports:
   - internal/exit
   - zapcore
 - name: golang.org/x/net
-  version: f9ce57c11b242f0f1599cf25c89d8cb02c45295a
+  version: 922f4815f713f213882e8ef45e0d315b164d705c
   repo: https://github.com/golang/net.git
 - name: golang.org/x/sys
-  version: 904bdc257025c7b3f43c19360ad3ab85783fad78
+  version: 3b58ed4ad3395d483fc92d5d14123ce2c3581fec
   repo: https://github.com/golang/sys.git
   subpackages:
   - unix
