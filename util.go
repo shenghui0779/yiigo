@@ -5,11 +5,7 @@ import (
 	"fmt"
 	"math/big"
 	"net"
-	"net/http"
-	"strings"
 	"time"
-
-	"github.com/gin-gonic/gin"
 )
 
 // X is a convenient alias for a map[string]interface{}.
@@ -38,17 +34,6 @@ func Date(timestamp int64, format ...string) string {
 	return date
 }
 
-// IsXhr checks if a request is xml-http-request (ajax).
-func IsXhr(c *gin.Context) bool {
-	x := c.Request.Header.Get("X-Requested-With")
-
-	if strings.ToLower(x) == "xmlhttprequest" {
-		return true
-	}
-
-	return false
-}
-
 // IP2long converts a string containing an (IPv4) Internet Protocol dotted address into a long integer
 func IP2long(ip string) int64 {
 	ipv4 := net.ParseIP(ip).To4()
@@ -68,34 +53,4 @@ func Long2IP(ip int64) string {
 	ipv4 := fmt.Sprintf("%d.%d.%d.%d", byte(ip>>24), byte(ip>>16), byte(ip>>8), byte(ip))
 
 	return ipv4
-}
-
-// OK returns success of an API.
-func OK(c *gin.Context, data ...interface{}) {
-	obj := gin.H{
-		"success": true,
-		"code":    0,
-		"msg":     "success",
-	}
-
-	if len(data) > 0 {
-		obj["data"] = data[0]
-	}
-
-	c.JSON(http.StatusOK, obj)
-}
-
-// Err returns error of an API.
-func Err(c *gin.Context, code int, msg ...string) {
-	obj := gin.H{
-		"success": false,
-		"code":    code,
-		"msg":     "something wrong",
-	}
-
-	if len(msg) > 0 {
-		obj["msg"] = msg[0]
-	}
-
-	c.JSON(http.StatusOK, obj)
 }
