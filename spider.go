@@ -4,7 +4,6 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -19,15 +18,15 @@ import (
 //     1、gbk 转 utf8：gopkg.in/iconv.v1 [https://github.com/qiniu/iconv]
 //     2、页面 dom 处理：github.com/PuerkitoBio/goquery
 //
-// CertPath CA证书存放路径 默认：`certs` 目录，证书需用 `openssl` 转化为 `pem` 格式
-// CookiePath cookie存放路径 默认：`cookies` 目录
+// HTTPS CA证书默认存放路径：`certs` 目录，证书需用 `openssl` 转化为 `pem` 格式：cert.pem、key.pem
+// cookie 默认存放路径：`cookies` 目录
 type Spider struct {
-	CertPath   CertPath
-	CookiePath string
+	client     *http.Client
+	cookieFile string
 }
 
-// CertPath cert path
-type CertPath struct {
+// HTTPSCert https cert
+type HTTPSCert struct {
 	CertPem           string
 	KeyUnencryptedPem string
 }
@@ -50,52 +49,96 @@ type ReqBody struct {
 	Referer string
 }
 
+// NewSpider return a new spider
+func NewSpider(cookieFile string, cert *HTTPSCert, timeout ...time.Duration) (*Spider, error) {
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: true, // 忽略对服务端传过来的数字证书进行校验
+		},
+		DisableCompression: true,
+	}
+
+	if cert != nil {
+		certDir := Env.String("spider.certdir", "certs")
+
+		certFile, _ := filepath.Abs(fmt.Sprintf("%s/%s", certDir, cert.CertPem))
+		keyFile, _ := filepath.Abs(fmt.Sprintf("%s/%s", certDir, cert.KeyUnencryptedPem))
+
+		cert, err := tls.LoadX509KeyPair(certFile, keyFile)
+
+		if err != nil {
+			return nil, err
+		}
+
+		tr.TLSClientConfig.Certificates = []tls.Certificate{cert}
+	}
+
+	spider := &Spider{
+		client: &http.Client{
+			Transport: tr,
+			Timeout:   5 * time.Second,
+		},
+		cookieFile: cookieFile,
+	}
+
+	if len(timeout) > 0 {
+		spider.client.Timeout = timeout[0]
+	}
+
+	return spider, nil
+}
+
 // HTTPGet http get请求
-func (s *Spider) HTTPGet(reqBody *ReqBody) (io.ReadCloser, error) {
+func (s *Spider) HTTPGet(reqBody *ReqBody) ([]byte, error) {
 	req, err := http.NewRequest("GET", reqBody.URL, nil)
 
 	if err != nil {
 		return nil, err
 	}
 
-	s.setHTTPCommonHeader(req, false, reqBody.Host, reqBody.Referer)
+	setSpiderHeader(req, false, reqBody.Host, reqBody.Referer)
 
 	if reqBody.SetCookie {
-		err := s.setHTTPCookie(req)
+		err := setSpiderCookie(req, s.cookieFile)
 
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	// 忽略对服务端传过来的数字证书进行校验
-	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-	}
-
-	client := &http.Client{
-		Transport: tr,
-		Timeout:   20 * time.Second,
-	}
-	resp, err := client.Do(req)
+	resp, err := s.client.Do(req)
 
 	if err != nil {
 		return nil, err
 	}
 
 	if reqBody.SaveCookie {
-		err := s.saveHTTPCookie(resp.Cookies(), reqBody.CleanOldCookie)
+		err := saveSpiderCookie(resp.Cookies(), s.cookieFile, reqBody.CleanOldCookie)
 
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	return resp.Body, nil
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("error http code: %d", resp.StatusCode)
+	}
+
+	var b []byte
+
+	if resp.Body == http.NoBody {
+		return b, nil
+	}
+
+	b, err = ioutil.ReadAll(resp.Body)
+
+	return b, err
 }
 
 // HTTPPost http post请求
-func (s *Spider) HTTPPost(reqBody *ReqBody) (io.ReadCloser, error) {
+func (s *Spider) HTTPPost(reqBody *ReqBody) ([]byte, error) {
 	postParam := strings.NewReader(reqBody.PostData.Encode())
 	req, err := http.NewRequest("POST", reqBody.URL, postParam)
 
@@ -103,161 +146,49 @@ func (s *Spider) HTTPPost(reqBody *ReqBody) (io.ReadCloser, error) {
 		return nil, err
 	}
 
-	s.setHTTPCommonHeader(req, true, reqBody.Host, reqBody.Referer)
+	setSpiderHeader(req, true, reqBody.Host, reqBody.Referer)
 
 	if reqBody.SetCookie {
-		err := s.setHTTPCookie(req)
+		err := setSpiderCookie(req, s.cookieFile)
 
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	// 忽略对服务端传过来的数字证书进行校验
-	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-	}
-
-	client := &http.Client{
-		Transport: tr,
-		Timeout:   20 * time.Second,
-	}
-	resp, err := client.Do(req)
+	resp, err := s.client.Do(req)
 
 	if err != nil {
 		return nil, err
 	}
 
 	if reqBody.SaveCookie {
-		err := s.saveHTTPCookie(resp.Cookies(), reqBody.CleanOldCookie)
+		err := saveSpiderCookie(resp.Cookies(), s.cookieFile, reqBody.CleanOldCookie)
 
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	return resp.Body, nil
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("error http code: %d", resp.StatusCode)
+	}
+
+	var b []byte
+
+	if resp.Body == http.NoBody {
+		return b, nil
+	}
+
+	b, err = ioutil.ReadAll(resp.Body)
+
+	return b, err
 }
 
-// HTTPSGet https get请求 CA证书需要用 `openssl` 转换成 `pem` 格式：cert.pem、key.pem
-func (s *Spider) HTTPSGet(reqBody *ReqBody) (io.ReadCloser, error) {
-	req, err := http.NewRequest("GET", reqBody.URL, nil)
-
-	if err != nil {
-		return nil, err
-	}
-
-	s.setHTTPCommonHeader(req, false, reqBody.Host, reqBody.Referer)
-
-	if reqBody.SetCookie {
-		err := s.setHTTPCookie(req)
-
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	certDir := Env.String("spider.certdir", "certs")
-
-	certFile, _ := filepath.Abs(fmt.Sprintf("%s/%s", certDir, s.CertPath.CertPem))
-	keyFile, _ := filepath.Abs(fmt.Sprintf("%s/%s", certDir, s.CertPath.KeyUnencryptedPem))
-
-	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
-
-	if err != nil {
-		return nil, err
-	}
-
-	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{
-			Certificates:       []tls.Certificate{cert},
-			InsecureSkipVerify: true,
-		},
-		DisableCompression: true,
-	}
-
-	client := &http.Client{
-		Transport: tr,
-		Timeout:   20 * time.Second,
-	}
-	resp, err := client.Do(req)
-
-	if err != nil {
-		return nil, err
-	}
-
-	if reqBody.SaveCookie {
-		err := s.saveHTTPCookie(resp.Cookies(), reqBody.CleanOldCookie)
-
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return resp.Body, nil
-}
-
-// HTTPSPost https post请求 CA证书需要用 `openssl` 转换成 `pem` 格式：cert.pem、key.pem
-func (s *Spider) HTTPSPost(reqBody *ReqBody) (io.ReadCloser, error) {
-	postParam := strings.NewReader(reqBody.PostData.Encode())
-	req, err := http.NewRequest("POST", reqBody.URL, postParam)
-
-	if err != nil {
-		return nil, err
-	}
-
-	s.setHTTPCommonHeader(req, true, reqBody.Host, reqBody.Referer)
-
-	if reqBody.SetCookie {
-		err := s.setHTTPCookie(req)
-
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	certDir := Env.String("spider.certdir", "certs")
-
-	certFile, _ := filepath.Abs(fmt.Sprintf("%s/%s", certDir, s.CertPath.CertPem))
-	keyFile, _ := filepath.Abs(fmt.Sprintf("%s/%s", certDir, s.CertPath.KeyUnencryptedPem))
-
-	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
-
-	if err != nil {
-		return nil, err
-	}
-
-	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{
-			Certificates:       []tls.Certificate{cert},
-			InsecureSkipVerify: true,
-		},
-		DisableCompression: true,
-	}
-
-	client := &http.Client{
-		Transport: tr,
-		Timeout:   20 * time.Second,
-	}
-	resp, err := client.Do(req)
-
-	if err != nil {
-		return nil, err
-	}
-
-	if reqBody.SaveCookie {
-		err := s.saveHTTPCookie(resp.Cookies(), reqBody.CleanOldCookie)
-
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return resp.Body, nil
-}
-
-// setHTTPCommonHeader 设置HTTP请求公共头信息
-func (s *Spider) setHTTPCommonHeader(req *http.Request, isPost bool, host string, referer string) {
+// setSpiderHeader 设置HTTP请求公共头信息
+func setSpiderHeader(req *http.Request, isPost bool, host string, referer string) {
 	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/,;q=0.8")
 	req.Header.Set("Accept-Encoding", "gzip, deflate")
 	req.Header.Set("Accept-Language", "zh-CN,zh;q=0.8")
@@ -280,10 +211,10 @@ func (s *Spider) setHTTPCommonHeader(req *http.Request, isPost bool, host string
 	req.Header.Set("User-Agent", "Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; WOW64; Trident/5.0)")
 }
 
-// setHTTPCookie 设置http请求cookie
-func (s *Spider) setHTTPCookie(req *http.Request) error {
+// setSpiderCookie 设置http请求cookie
+func setSpiderCookie(req *http.Request, cookieFile string) error {
 	cookieDir := Env.String("spider.cookiedir", "cookies")
-	path, _ := filepath.Abs(fmt.Sprintf("%s/%s", cookieDir, s.CookiePath))
+	path, _ := filepath.Abs(fmt.Sprintf("%s/%s", cookieDir, cookieFile))
 
 	cookies := map[string]*http.Cookie{}
 	content, err := ioutil.ReadFile(path)
@@ -305,10 +236,10 @@ func (s *Spider) setHTTPCookie(req *http.Request) error {
 	return nil
 }
 
-// saveHTTPCookie 保存http请求返回的cookie
-func (s *Spider) saveHTTPCookie(newCookies []*http.Cookie, cleanOldCookie bool) error {
+// saveSpiderCookie 保存http请求返回的cookie
+func saveSpiderCookie(newCookies []*http.Cookie, cookieFile string, cleanOldCookie bool) error {
 	cookieDir := Env.String("spider.cookiedir", "cookies")
-	path, _ := filepath.Abs(fmt.Sprintf("%s/%s", cookieDir, s.CookiePath))
+	path, _ := filepath.Abs(fmt.Sprintf("%s/%s", cookieDir, cookieFile))
 
 	if len(newCookies) == 0 {
 		return nil

@@ -38,7 +38,7 @@ func initLogger() {
 
 		w := zapcore.AddSync(&lumberjack.Logger{
 			Filename:   conf.Path,
-			MaxSize:    conf.MaxSize, // megabytes
+			MaxSize:    conf.MaxSize, // MB
 			MaxBackups: conf.MaxBackups,
 			MaxAge:     conf.MaxAge, // days
 			Compress:   conf.Compress,
