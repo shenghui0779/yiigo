@@ -48,13 +48,11 @@ func HTTPGet(url string, headers map[string]string, timeout ...time.Duration) ([
 		return nil, fmt.Errorf("error http code: %d", resp.StatusCode)
 	}
 
-	var b []byte
-
 	if resp.Body == http.NoBody {
-		return b, nil
+		return nil, nil
 	}
 
-	b, err = ioutil.ReadAll(resp.Body)
+	b, err := ioutil.ReadAll(resp.Body)
 
 	return b, err
 }
@@ -95,13 +93,11 @@ func HTTPPost(url string, body []byte, headers map[string]string, timeout ...tim
 		return nil, fmt.Errorf("error http code: %d", resp.StatusCode)
 	}
 
-	var b []byte
-
 	if resp.Body == http.NoBody {
-		return b, nil
+		return nil, nil
 	}
 
-	b, err = ioutil.ReadAll(resp.Body)
+	b, err := ioutil.ReadAll(resp.Body)
 
 	return b, err
 }
