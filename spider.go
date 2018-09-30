@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -18,11 +19,10 @@ import (
 //     1、gbk 转 utf8：gopkg.in/iconv.v1 [https://github.com/qiniu/iconv]
 //     2、页面 dom 处理：github.com/PuerkitoBio/goquery
 //
-// HTTPS CA证书默认存放路径：`certs` 目录，证书需用 `openssl` 转化为 `pem` 格式：cert.pem、key.pem
-// cookie 默认存放路径：`cookies` 目录
+// HTTPS CA证书需用 `openssl` 转化为 `pem` 格式：cert.pem、key.pem
 type Spider struct {
 	client     *http.Client
-	cookieFile string
+	cookiePath string
 }
 
 // HTTPSCert https cert
@@ -51,6 +51,28 @@ type ReqBody struct {
 
 // NewSpider return a new spider
 func NewSpider(cookieFile string, cert *HTTPSCert, timeout ...time.Duration) (*Spider, error) {
+	cookiePath, err := filepath.Abs(cookieFile)
+
+	if err != nil {
+		return nil, err
+	}
+
+	dir := filepath.Dir(cookiePath)
+
+	// 目录不存在则创建目录
+	if _, err := os.Stat(dir); err != nil && os.IsNotExist(err) {
+		if err := os.MkdirAll(dir, os.ModePerm); err != nil {
+			return nil, err
+		}
+	}
+
+	// 文件不存在则创建文件
+	if _, err := os.Stat(cookiePath); err != nil && os.IsNotExist(err) {
+		if _, err := os.Create(cookiePath); err != nil {
+			return nil, err
+		}
+	}
+
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{
 			InsecureSkipVerify: true, // 忽略对服务端传过来的数字证书进行校验
@@ -58,11 +80,19 @@ func NewSpider(cookieFile string, cert *HTTPSCert, timeout ...time.Duration) (*S
 		DisableCompression: true,
 	}
 
+	// 有CA证书则处理CA证书
 	if cert != nil {
-		certDir := Env.String("spider.certdir", "certs")
+		certFile, err := filepath.Abs(cert.CertPem)
 
-		certFile, _ := filepath.Abs(fmt.Sprintf("%s/%s", certDir, cert.CertPem))
-		keyFile, _ := filepath.Abs(fmt.Sprintf("%s/%s", certDir, cert.KeyUnencryptedPem))
+		if err != nil {
+			return nil, err
+		}
+
+		keyFile, err := filepath.Abs(cert.KeyUnencryptedPem)
+
+		if err != nil {
+			return nil, err
+		}
 
 		cert, err := tls.LoadX509KeyPair(certFile, keyFile)
 
@@ -78,7 +108,7 @@ func NewSpider(cookieFile string, cert *HTTPSCert, timeout ...time.Duration) (*S
 			Transport: tr,
 			Timeout:   5 * time.Second,
 		},
-		cookieFile: cookieFile,
+		cookiePath: cookiePath,
 	}
 
 	if len(timeout) > 0 {
@@ -96,10 +126,12 @@ func (s *Spider) HTTPGet(reqBody *ReqBody) ([]byte, error) {
 		return nil, err
 	}
 
+	// 设置请求头
 	setSpiderHeader(req, false, reqBody.Host, reqBody.Referer)
 
+	// 请求带上cookie
 	if reqBody.SetCookie {
-		err := setSpiderCookie(req, s.cookieFile)
+		err := setSpiderCookie(req, s.cookiePath)
 
 		if err != nil {
 			return nil, err
@@ -112,8 +144,9 @@ func (s *Spider) HTTPGet(reqBody *ReqBody) ([]byte, error) {
 		return nil, err
 	}
 
+	// 保存新的cookie
 	if reqBody.SaveCookie {
-		err := saveSpiderCookie(resp.Cookies(), s.cookieFile, reqBody.CleanOldCookie)
+		err := saveSpiderCookie(resp.Cookies(), s.cookiePath, reqBody.CleanOldCookie)
 
 		if err != nil {
 			return nil, err
@@ -146,10 +179,12 @@ func (s *Spider) HTTPPost(reqBody *ReqBody) ([]byte, error) {
 		return nil, err
 	}
 
+	// 设置请求头
 	setSpiderHeader(req, true, reqBody.Host, reqBody.Referer)
 
+	// 请求带上cookie
 	if reqBody.SetCookie {
-		err := setSpiderCookie(req, s.cookieFile)
+		err := setSpiderCookie(req, s.cookiePath)
 
 		if err != nil {
 			return nil, err
@@ -162,8 +197,9 @@ func (s *Spider) HTTPPost(reqBody *ReqBody) ([]byte, error) {
 		return nil, err
 	}
 
+	// 保存新的cookie
 	if reqBody.SaveCookie {
-		err := saveSpiderCookie(resp.Cookies(), s.cookieFile, reqBody.CleanOldCookie)
+		err := saveSpiderCookie(resp.Cookies(), s.cookiePath, reqBody.CleanOldCookie)
 
 		if err != nil {
 			return nil, err
@@ -212,12 +248,9 @@ func setSpiderHeader(req *http.Request, isPost bool, host string, referer string
 }
 
 // setSpiderCookie 设置http请求cookie
-func setSpiderCookie(req *http.Request, cookieFile string) error {
-	cookieDir := Env.String("spider.cookiedir", "cookies")
-	path, _ := filepath.Abs(fmt.Sprintf("%s/%s", cookieDir, cookieFile))
-
+func setSpiderCookie(req *http.Request, cookiePath string) error {
 	cookies := map[string]*http.Cookie{}
-	content, err := ioutil.ReadFile(path)
+	content, err := ioutil.ReadFile(cookiePath)
 
 	if err != nil {
 		return err
@@ -237,63 +270,39 @@ func setSpiderCookie(req *http.Request, cookieFile string) error {
 }
 
 // saveSpiderCookie 保存http请求返回的cookie
-func saveSpiderCookie(newCookies []*http.Cookie, cookieFile string, cleanOldCookie bool) error {
-	cookieDir := Env.String("spider.cookiedir", "cookies")
-	path, _ := filepath.Abs(fmt.Sprintf("%s/%s", cookieDir, cookieFile))
-
+func saveSpiderCookie(newCookies []*http.Cookie, cookiePath string, cleanOldCookie bool) error {
 	if len(newCookies) == 0 {
 		return nil
 	}
 
 	cookies := map[string]*http.Cookie{}
 
-	if cleanOldCookie {
-		// 清空原cookie，保存新的cookie
-		for _, cookie := range newCookies {
-			cookies[cookie.Name] = cookie
-		}
-
-		byteArr, err := json.Marshal(cookies)
+	// 追加新的cookie
+	if !cleanOldCookie {
+		content, err := ioutil.ReadFile(cookiePath)
 
 		if err != nil {
 			return err
 		}
 
-		err = ioutil.WriteFile(path, byteArr, 0777)
+		if len(content) > 0 {
+			err = json.Unmarshal(content, &cookies)
 
-		if err != nil {
-			return err
-		}
-	} else {
-		// 追加新的cookie
-		content, err := ioutil.ReadFile(path)
-
-		if err != nil {
-			return err
-		}
-
-		err = json.Unmarshal(content, &cookies)
-
-		if err != nil {
-			return err
-		}
-
-		for _, cookie := range newCookies {
-			cookies[cookie.Name] = cookie
-		}
-
-		byteArr, err := json.Marshal(cookies)
-
-		if err != nil {
-			return err
-		}
-
-		err = ioutil.WriteFile(path, byteArr, 0777)
-
-		if err != nil {
-			return err
+			if err != nil {
+				return err
+			}
 		}
 	}
 
-	return nil
+	for _, cookie := range newCookies {
+		cookies[cookie.Name] = cookie
+	}
+
+	byteArr, err := json.Marshal(cookies)
+
+	if err != nil {
+		return err
+	}
+
+	return ioutil.WriteFile(cookiePath, byteArr, 0777)
 }
