@@ -29,16 +29,96 @@ type redisConf struct {
 
 // redis pool of redigo
 
+// RedisConn redis connection resource
+type RedisConn struct {
+	redis.Conn
+}
+
+// Close close connection resorce
+func (r RedisConn) Close() {
+	r.Conn.Close()
+}
+
 // RedisPoolResource redis pool resource
 type RedisPoolResource struct {
 	pool   *pools.ResourcePool
 	config *redisConf
-	muxtex sync.Mutex
+	mutex sync.Mutex
 }
 
-// RedisConn redis connection resource
-type RedisConn struct {
-	redis.Conn
+func (r *RedisPoolResource) dial() (redis.Conn, error) {
+	dsn := fmt.Sprintf("%s:%d", r.config.Host, r.config.Port)
+
+	dialOptions := []redis.DialOption{
+		redis.DialPassword(r.config.Password),
+		redis.DialDatabase(r.config.Database),
+		redis.DialConnectTimeout(time.Duration(r.config.ConnTimeout) * time.Second),
+		redis.DialReadTimeout(time.Duration(r.config.ReadTimeout) * time.Second),
+		redis.DialWriteTimeout(time.Duration(r.config.WriteTimeout) * time.Second),
+	}
+
+	conn, err := redis.Dial("tcp", dsn, dialOptions...)
+
+	return conn, err
+}
+
+func (r *RedisPoolResource) initPool() {
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
+
+	if r.pool != nil && !r.pool.IsClosed() {
+		return
+	}
+
+	df := func() (pools.Resource, error) {
+		conn, err := r.dial()
+
+		if err != nil {
+			return nil, err
+		}
+
+		return RedisConn{conn}, nil
+	}
+
+	r.pool = pools.NewResourcePool(df, r.config.MinActiveConn, r.config.MaxActiveConn, time.Duration(r.config.IdleTimeout)*time.Second)
+}
+
+// Get get a connection resource from the pool.
+func (r *RedisPoolResource) Get() (RedisConn, error) {
+	if r.pool.IsClosed() {
+		r.initPool()
+	}
+
+	ctx := context.TODO()
+	resource, err := r.pool.Get(ctx)
+
+	if err != nil {
+		return RedisConn{}, err
+	}
+
+	rc := resource.(RedisConn)
+
+	// if rc is error, close and reconnect
+	if err = rc.Err(); err != nil {
+		conn, err := r.dial()
+
+		if err != nil {
+			r.pool.Put(rc)
+
+			return rc, err
+		}
+
+		rc.Close()
+
+		return RedisConn{conn}, nil
+	}
+
+	return rc, nil
+}
+
+// Put returns a connection resource to the pool.
+func (r *RedisPoolResource) Put(rc RedisConn) {
+	r.pool.Put(rc)
 }
 
 var (
@@ -46,11 +126,6 @@ var (
 	RedisPool *RedisPoolResource
 	redisMap  sync.Map
 )
-
-// Close close connection resorce
-func (r RedisConn) Close() {
-	r.Conn.Close()
-}
 
 func initRedis() error {
 	result := Env.Get("redis")
@@ -95,17 +170,17 @@ func initRedis() error {
 
 func initSingleRedis(conf *redisConf) {
 	RedisPool = &RedisPoolResource{config: conf}
-	RedisPool.dial()
+	RedisPool.initPool()
 
 	redisMap.Store("default", RedisPool)
 }
 
 func initMultiRedis(conf []*redisConf) {
 	for _, v := range conf {
-		pool := &RedisPoolResource{config: v}
-		pool.dial()
+		poolResource := &RedisPoolResource{config: v}
+		poolResource.initPool()
 
-		redisMap.Store(v.Name, pool)
+		redisMap.Store(v.Name, poolResource)
 	}
 
 	if v, ok := redisMap.Load("default"); ok {
@@ -128,64 +203,4 @@ func RedisConnPool(conn ...string) (*RedisPoolResource, error) {
 	}
 
 	return v.(*RedisPoolResource), nil
-}
-
-func (r *RedisPoolResource) dial() {
-	r.mutex.Lock()
-	defer r.mutex.Unlock()
-
-	if r.pool != nil {
-		return
-	}
-
-	df := func() (pools.Resource, error) {
-		dsn := fmt.Sprintf("%s:%d", r.config.Host, r.config.Port)
-
-		dialOptions := []redis.DialOption{
-			redis.DialPassword(r.config.Password),
-			redis.DialDatabase(r.config.Database),
-			redis.DialConnectTimeout(time.Duration(r.config.ConnTimeout) * time.Second),
-			redis.DialReadTimeout(time.Duration(r.config.ReadTimeout) * time.Second),
-			redis.DialWriteTimeout(time.Duration(r.config.WriteTimeout) * time.Second),
-		}
-
-		conn, err := redis.Dial("tcp", dsn, dialOptions...)
-
-		if err != nil {
-			return nil, err
-		}
-
-		return RedisConn{conn}, nil
-	}
-
-	r.pool = pools.NewResourcePool(df, r.config.MinActiveConn, r.config.MaxActiveConn, time.Duration(r.config.IdleTimeout)*time.Second)
-}
-
-// Get get a connection resource from the pool.
-func (r *RedisPoolResource) Get() (RedisConn, error) {
-	if r.pool.IsClosed() {
-		r.dial()
-	}
-
-	ctx := context.TODO()
-	resource, err := r.pool.Get(ctx)
-
-	if err != nil {
-		return RedisConn{}, err
-	}
-
-	rc := resource.(RedisConn)
-
-	if err = rc.Err(); err != nil {
-		r.pool.Put(rc)
-
-		return rc, err
-	}
-
-	return rc, nil
-}
-
-// Put returns a connection resource to the pool.
-func (r *RedisPoolResource) Put(rc RedisConn) {
-	r.pool.Put(rc)
 }
