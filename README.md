@@ -1,6 +1,6 @@
-# yiigo 2.0 🎉🎉🎉
+# yiigo
 
-简单易用的 Go Web 微框架
+简单易用的 Golang 辅助库
 
 ## 特点
 
@@ -13,7 +13,6 @@
 - 支持多 [mongo](http://labix.org/mgo) 连接
 - 支持多 [redis](https://github.com/gomodule/redigo) 连接
 - 支持 [gomail](https://github.com/go-gomail/gomail) 邮件发送
-- 支持 [session](http://www.gorillatoolkit.org/pkg/sessions) 存取
 - 支持爬虫模拟登录
 
 ## 获取

@@ -8,7 +8,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/fatih/color"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
 	toml "github.com/pelletier/go-toml"
@@ -39,8 +38,6 @@ func initMySQL() error {
 	result := Env.Get("mysql")
 
 	if result == nil {
-		color.Blue("[yiigo] no mysql configured")
-
 		return nil
 	}
 
@@ -95,8 +92,6 @@ func initSingleDB(conf *mysqlConf) error {
 
 	dbmap.Store("default", DB)
 
-	color.Green("[yiigo] mysql.default connect success")
-
 	return nil
 }
 
@@ -109,8 +104,6 @@ func initMultiDB(conf []*mysqlConf) error {
 		}
 
 		dbmap.Store(v.Name, db)
-
-		color.Green("[yiigo] mysql.%s connect success", v.Name)
 	}
 
 	if v, ok := dbmap.Load("default"); ok {

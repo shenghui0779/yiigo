@@ -5,10 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"strings"
 	"time"
-
-	"github.com/gin-gonic/gin"
 )
 
 // YiiClient HTTP request client
@@ -48,11 +45,13 @@ func HTTPGet(url string, headers map[string]string, timeout ...time.Duration) ([
 		return nil, fmt.Errorf("error http code: %d", resp.StatusCode)
 	}
 
+	var b []byte
+
 	if resp.Body == http.NoBody {
-		return nil, nil
+		return b, nil
 	}
 
-	b, err := ioutil.ReadAll(resp.Body)
+	b, err = ioutil.ReadAll(resp.Body)
 
 	return b, err
 }
@@ -93,22 +92,13 @@ func HTTPPost(url string, body []byte, headers map[string]string, timeout ...tim
 		return nil, fmt.Errorf("error http code: %d", resp.StatusCode)
 	}
 
+	var b []byte
+
 	if resp.Body == http.NoBody {
-		return nil, nil
+		return b, nil
 	}
 
-	b, err := ioutil.ReadAll(resp.Body)
+	b, err = ioutil.ReadAll(resp.Body)
 
 	return b, err
-}
-
-// IsXhr checks if a request is xml-http-request (ajax).
-func IsXhr(c *gin.Context) bool {
-	x := c.Request.Header.Get("X-Requested-With")
-
-	if strings.ToLower(x) == "xmlhttprequest" {
-		return true
-	}
-
-	return false
 }

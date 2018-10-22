@@ -6,7 +6,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/fatih/color"
 	"github.com/gomodule/redigo/redis"
 	toml "github.com/pelletier/go-toml"
 )
@@ -38,8 +37,6 @@ func initRedis() error {
 	result := Env.Get("redis")
 
 	if result == nil {
-		color.Blue("[yiigo] no redis configured")
-
 		return nil
 	}
 
@@ -94,8 +91,6 @@ func initSingleRedis(conf *redisConf) error {
 
 	redisMap.Store("default", Redis)
 
-	color.Green("[yiigo] redis.default connect success")
-
 	return nil
 }
 
@@ -108,8 +103,6 @@ func initMultiRedis(conf []*redisConf) error {
 		}
 
 		redisMap.Store(v.Name, p)
-
-		color.Green("[yiigo] redis.%s connect success", v.Name)
 	}
 
 	if v, ok := redisMap.Load("default"); ok {

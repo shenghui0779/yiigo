@@ -8,7 +8,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/fatih/color"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	toml "github.com/pelletier/go-toml"
@@ -37,8 +36,6 @@ func initPostgres() error {
 	result := Env.Get("postgres")
 
 	if result == nil {
-		color.Blue("[yiigo] no postgres configured")
-
 		return nil
 	}
 
@@ -93,8 +90,6 @@ func initSinglePostgres(conf *postgresConf) error {
 
 	pgmap.Store("default", PG)
 
-	color.Green("[yiigo] postgres.default connect success")
-
 	return nil
 }
 
@@ -107,8 +102,6 @@ func initMultiPostgres(conf []*postgresConf) error {
 		}
 
 		pgmap.Store(v.Name, db)
-
-		color.Green("[yiigo] postgres.%s connect success", v.Name)
 	}
 
 	if v, ok := pgmap.Load("default"); ok {

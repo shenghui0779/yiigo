@@ -1,4 +1,4 @@
-// Package yiigo 简单易用的 Go Web 微框架
+// Package yiigo 简单易用的 Golang 辅助库
 //
 // 获取：(推荐使用Glide)
 //
