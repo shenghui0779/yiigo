@@ -94,7 +94,6 @@ func (r *RedisPoolResource) initPool() {
 
 // Get get a connection resource from the pool.
 func (r *RedisPoolResource) Get() (RedisClient, error) {
-	fmt.Println(r.pool.StatsJSON())
 	if r.pool.IsClosed() {
 		r.initPool()
 	}
@@ -138,7 +137,7 @@ var (
 )
 
 func initRedis() error {
-	result := Env.Get("pool")
+	result := Env.Get("redis")
 
 	if result == nil {
 		return nil
