@@ -1,22 +1,24 @@
-hash: 7c4b3ebcde850e11e8110fe5dc4a28b48ecf8c85c95ce5f4dd01757c7d658ea7
-updated: 2018-10-22T16:28:02.997068+08:00
+hash: 0bbb587c3355866a108476ba13b1d02e583505a0801a0e4b1db73ac21ca1705d
+updated: 2018-11-07T21:41:12.497419+08:00
 imports:
 - name: github.com/go-sql-driver/mysql
-  version: 7daee5be2a29576f4bada53f3754b8cf886772a6
-- name: github.com/gomodule/redigo
-  version: b9037db4b8b9ef501f28279160ab1a73a2de59ec
-  subpackages:
-  - redis
+  version: fd197cdcfae0c686792ef5399f223f5b66a30b6b
 - name: github.com/jmoiron/sqlx
-  version: 3a411660be52b3236199fbfe1919f515cfc1ca32
+  version: 82935fac6c1a317907c8f43ed3f7f85ea844a78b
   subpackages:
   - reflectx
 - name: github.com/lib/pq
   version: 9eb73efc1fcc404148b56765b0d3f61d9a5ef8ee
   subpackages:
   - oid
+- name: github.com/mediocregopher/radix.v2
+  version: 94360be262532d465b7e4760c7a67195d3319a87
+  subpackages:
+  - redis
 - name: github.com/pelletier/go-toml
   version: 81a861c69d25a841d0c4394f0e6f84bc8c5afae0
+- name: github.com/vitessio/vitess
+  version: 54855ec7b36906b6d53aa5af0f0293a0a73ae928
 - name: go.uber.org/atomic
   version: 1ea20fb1cbb1cc08cbd0d913a96dead89aa18289
 - name: go.uber.org/multierr
@@ -30,7 +32,7 @@ imports:
   - internal/exit
   - zapcore
 - name: google.golang.org/appengine
-  version: ae0ab99deb4dc413a2b4bd6c8bdd0eb67f1e4d06
+  version: 4a4468ece617fc8205e99368fa2200e9d1fad421
   repo: https://github.com/golang/appengine.git
   subpackages:
   - cloudsql

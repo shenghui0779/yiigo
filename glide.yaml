@@ -1,12 +1,11 @@
 package: github.com/iiinsomnia/yiigo
 import:
 - package: github.com/go-sql-driver/mysql
-- package: github.com/gomodule/redigo
-  subpackages:
-  - redis
 - package: github.com/jmoiron/sqlx
 - package: github.com/lib/pq
+- package: github.com/mediocregopher/radix.v2
 - package: github.com/pelletier/go-toml
+- package: github.com/vitessio/vitess
 - package: go.uber.org/zap
   subpackages:
   - zapcore

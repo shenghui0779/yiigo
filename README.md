@@ -11,7 +11,7 @@
 - 支持多 [MySQL](https://github.com/go-sql-driver/mysql) 连接
 - 支持多 [PostgreSQL](https://github.com/lib/pq) 连接
 - 支持多 [mongo](http://labix.org/mgo) 连接
-- 支持多 [redis](https://github.com/gomodule/redigo) 连接
+- 支持多 [redis](github.com/mediocregopher/radix.v2) 连接
 - 支持 [gomail](https://github.com/go-gomail/gomail) 邮件发送
 - 支持爬虫模拟登录
 
