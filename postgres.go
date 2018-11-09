@@ -120,6 +120,10 @@ func postgresDial(conf *postgresConf) (*sqlx.DB, error) {
 		return nil, err
 	}
 
+	if err := db.Ping(); err != nil {
+		return nil, err
+	}
+
 	db.SetMaxOpenConns(conf.MaxOpenConns)
 	db.SetMaxIdleConns(conf.MaxIdleConns)
 	db.SetConnMaxLifetime(time.Duration(conf.ConnMaxLifetime) * time.Second)

@@ -126,6 +126,10 @@ func mongoDial(conf *mongoConf) (*mgo.Session, error) {
 		return nil, err
 	}
 
+	if err := m.Ping(); err != nil {
+		return nil, err
+	}
+
 	if conf.PoolLimit != 0 {
 		m.SetPoolLimit(conf.PoolLimit)
 	}
