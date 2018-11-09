@@ -183,8 +183,8 @@ func initMultiRedis(conf []*redisConf) {
 	}
 }
 
-// RedisConnPool returns a redis pool.
-func RedisConnPool(conn ...string) (*RedisPoolResource, error) {
+// RedisPool returns a redis pool.
+func RedisPool(conn ...string) (*RedisPoolResource, error) {
 	schema := "default"
 
 	if len(conn) > 0 {
