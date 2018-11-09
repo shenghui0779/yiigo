@@ -1,39 +1,39 @@
 package yiigo
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"sync"
 	"time"
 
-	"github.com/mediocregopher/radix.v2/redis"
-	"github.com/pelletier/go-toml"
-	"github.com/vitessio/vitess/go/pools"
+	"github.com/gomodule/redigo/redis"
+	toml "github.com/pelletier/go-toml"
+	"golang.org/x/net/context"
+	"vitess.io/vitess/go/pools"
 )
 
 type redisConf struct {
-	Name          string `toml:"name"`
-	Host          string `toml:"host"`
-	Port          int    `toml:"port"`
-	Password      string `toml:"password"`
-	Database      int    `toml:"database"`
-	ConnTimeout   int    `toml:"connTimeout"`
-	ReadTimeout   int    `toml:"readTimeout"`
-	WriteTimeout  int    `toml:"writeTimeout"`
-	MinActiveConn int    `toml:"minActiveConn"`
-	MaxActiveConn int    `toml:"maxActiveConn"`
-	IdleTimeout   int    `toml:"idleTimeout"`
+	Name         string `toml:"name"`
+	Host         string `toml:"host"`
+	Port         int    `toml:"port"`
+	Password     string `toml:"password"`
+	Database     int    `toml:"database"`
+	ConnTimeout  int    `toml:"connTimeout"`
+	ReadTimeout  int    `toml:"readTimeout"`
+	WriteTimeout int    `toml:"writeTimeout"`
+	PoolSize     int    `toml:"poolSize"`
+	PoolLimit    int    `toml:"poolLimit"`
+	IdleTimeout  int    `toml:"idleTimeout"`
 }
 
-// RedisClient redis connection resource
-type RedisClient struct {
-	*redis.Client
+// RedisConn redis connection resource
+type RedisConn struct {
+	redis.Conn
 }
 
 // Close close connection resorce
-func (r RedisClient) Close() {
-	r.Client.Close()
+func (r RedisConn) Close() {
+	r.Conn.Close()
 }
 
 // RedisPoolResource redis pool resource
@@ -43,32 +43,20 @@ type RedisPoolResource struct {
 	mutex  sync.Mutex
 }
 
-func (r *RedisPoolResource) dial() (*redis.Client, error) {
+func (r *RedisPoolResource) dial() (redis.Conn, error) {
 	dsn := fmt.Sprintf("%s:%d", r.config.Host, r.config.Port)
 
-	client, err := redis.DialTimeout("tcp", dsn, time.Duration(r.config.ConnTimeout)*time.Second)
-
-	if err != nil {
-		return nil, err
+	dialOptions := []redis.DialOption{
+		redis.DialPassword(r.config.Password),
+		redis.DialDatabase(r.config.Database),
+		redis.DialConnectTimeout(time.Duration(r.config.ConnTimeout) * time.Second),
+		redis.DialReadTimeout(time.Duration(r.config.ReadTimeout) * time.Second),
+		redis.DialWriteTimeout(time.Duration(r.config.WriteTimeout) * time.Second),
 	}
 
-	if r.config.Password != "" {
-		if err = client.Cmd("AUTH", r.config.Password).Err; err != nil {
-			client.Close()
+	conn, err := redis.Dial("tcp", dsn, dialOptions...)
 
-			return nil, err
-		}
-	}
-
-	if r.config.Database != 0 {
-		if err = client.Cmd("SELECT", r.config.Database).Err; err != nil {
-			client.Close()
-
-			return nil, err
-		}
-	}
-
-	return client, nil
+	return conn, err
 }
 
 func (r *RedisPoolResource) initPool() {
@@ -86,14 +74,14 @@ func (r *RedisPoolResource) initPool() {
 			return nil, err
 		}
 
-		return RedisClient{conn}, nil
+		return RedisConn{conn}, nil
 	}
 
-	r.pool = pools.NewResourcePool(df, r.config.MinActiveConn, r.config.MaxActiveConn, time.Duration(r.config.IdleTimeout)*time.Second)
+	r.pool = pools.NewResourcePool(df, r.config.PoolSize, r.config.PoolLimit, time.Duration(r.config.IdleTimeout)*time.Second)
 }
 
 // Get get a connection resource from the pool.
-func (r *RedisPoolResource) Get() (RedisClient, error) {
+func (r *RedisPoolResource) Get() (RedisConn, error) {
 	if r.pool.IsClosed() {
 		r.initPool()
 	}
@@ -102,14 +90,14 @@ func (r *RedisPoolResource) Get() (RedisClient, error) {
 	resource, err := r.pool.Get(ctx)
 
 	if err != nil {
-		return RedisClient{}, err
+		return RedisConn{}, err
 	}
 
-	rc := resource.(RedisClient)
+	rc := resource.(RedisConn)
 
 	// if rc is error, close and reconnect
-	if rc.LastCritical != nil {
-		client, err := r.dial()
+	if rc.Err() != nil {
+		conn, err := r.dial()
 
 		if err != nil {
 			r.pool.Put(rc)
@@ -119,14 +107,14 @@ func (r *RedisPoolResource) Get() (RedisClient, error) {
 
 		rc.Close()
 
-		return RedisClient{client}, nil
+		return RedisConn{conn}, nil
 	}
 
 	return rc, nil
 }
 
 // Put returns a connection resource to the pool.
-func (r *RedisPoolResource) Put(rc RedisClient) {
+func (r *RedisPoolResource) Put(rc RedisConn) {
 	r.pool.Put(rc)
 }
 
@@ -195,8 +183,8 @@ func initMultiRedis(conf []*redisConf) {
 	}
 }
 
-// RedisPool returns a redis pool.
-func RedisPool(conn ...string) (*RedisPoolResource, error) {
+// RedisConnPool returns a redis pool.
+func RedisConnPool(conn ...string) (*RedisPoolResource, error) {
 	schema := "default"
 
 	if len(conn) > 0 {

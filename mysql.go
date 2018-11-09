@@ -140,7 +140,7 @@ func DBConn(conn ...string) (*sqlx.DB, error) {
 	v, ok := dbmap.Load(schema)
 
 	if !ok {
-		return nil, fmt.Errorf("mysql %s is not connected", schema)
+		return nil, fmt.Errorf("yiigo: mysql.%s is not connected", schema)
 	}
 
 	return v.(*sqlx.DB), nil

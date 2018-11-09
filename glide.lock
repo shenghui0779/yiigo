@@ -1,8 +1,12 @@
-hash: 0bbb587c3355866a108476ba13b1d02e583505a0801a0e4b1db73ac21ca1705d
-updated: 2018-11-07T21:41:12.497419+08:00
+hash: 9e12e8ab393606a93ffdcbb04ce97ff672c087f1dc803bdaa6a14c5b0bf79335
+updated: 2018-11-09T10:58:45.631372+08:00
 imports:
 - name: github.com/go-sql-driver/mysql
   version: fd197cdcfae0c686792ef5399f223f5b66a30b6b
+- name: github.com/gomodule/redigo
+  version: e8fc0692a7e26a05b06517348ed466349062eb47
+  subpackages:
+  - redis
 - name: github.com/jmoiron/sqlx
   version: 82935fac6c1a317907c8f43ed3f7f85ea844a78b
   subpackages:
@@ -11,14 +15,8 @@ imports:
   version: 9eb73efc1fcc404148b56765b0d3f61d9a5ef8ee
   subpackages:
   - oid
-- name: github.com/mediocregopher/radix.v2
-  version: 94360be262532d465b7e4760c7a67195d3319a87
-  subpackages:
-  - redis
 - name: github.com/pelletier/go-toml
   version: 81a861c69d25a841d0c4394f0e6f84bc8c5afae0
-- name: github.com/vitessio/vitess
-  version: 54855ec7b36906b6d53aa5af0f0293a0a73ae928
 - name: go.uber.org/atomic
   version: 1ea20fb1cbb1cc08cbd0d913a96dead89aa18289
 - name: go.uber.org/multierr
@@ -31,6 +29,11 @@ imports:
   - internal/color
   - internal/exit
   - zapcore
+- name: golang.org/x/net
+  version: 03003ca0c849e57b6ea29a4bab8d3cb6e4d568fe
+  repo: https://github.com/golang/net.git
+  subpackages:
+  - context
 - name: google.golang.org/appengine
   version: 4a4468ece617fc8205e99368fa2200e9d1fad421
   repo: https://github.com/golang/appengine.git
@@ -49,4 +52,11 @@ imports:
   - internal/scram
 - name: gopkg.in/natefinch/lumberjack.v2
   version: a96e63847dc3c67d17befa69c303767e2f84e54f
+- name: vitess.io/vitess
+  version: 7537577525367f86bd057d7b82f8cdffaabf8151
+  subpackages:
+  - go/cache
+  - go/pools
+  - go/sync2
+  - go/timer
 testImports: []
