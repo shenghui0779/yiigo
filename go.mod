@@ -18,6 +18,6 @@ require (
 	vitess.io/vitess v0.0.0-20181108210702-753757752536
 )
 
-replace google.golang.org/appengine => github.com/golang/appengine v1.2.0
+replace google.golang.org/appengine => github.com/golang/appengine v1.3.0
 
-replace golang.org/x/net => golang.org/x/net v0.0.0-20181108084400-03003ca0c849
+replace golang.org/x/net => golang.org/x/net v0.0.0-20181108094442-03003ca0c849
