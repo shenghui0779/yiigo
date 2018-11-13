@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -31,8 +32,8 @@ type HTTPSCert struct {
 	KeyUnencryptedPem string
 }
 
-// ReqBody http request body
-type ReqBody struct {
+// SpiderReqBody spider http request body
+type SpiderReqBody struct {
 	// URL 请求地址
 	URL string
 	// Host 请求头Host
@@ -47,10 +48,12 @@ type ReqBody struct {
 	CleanOldCookie bool
 	// Referer 请求头Referer
 	Referer string
+	// Timeout 超时时间
+	Timeout time.Duration
 }
 
 // NewSpider return a new spider
-func NewSpider(cookieFile string, cert *HTTPSCert, timeout ...time.Duration) (*Spider, error) {
+func NewSpider(cookieFile string, cert *HTTPSCert) (*Spider, error) {
 	cookiePath, err := filepath.Abs(cookieFile)
 
 	if err != nil {
@@ -74,10 +77,22 @@ func NewSpider(cookieFile string, cert *HTTPSCert, timeout ...time.Duration) (*S
 	}
 
 	tr := &http.Transport{
+		Proxy: http.ProxyFromEnvironment,
+		DialContext: (&net.Dialer{
+			Timeout:   60 * time.Second,
+			KeepAlive: 60 * time.Second,
+			DualStack: true,
+		}).DialContext,
 		TLSClientConfig: &tls.Config{
 			InsecureSkipVerify: true, // 忽略对服务端传过来的数字证书进行校验
 		},
-		DisableCompression: true,
+		MaxConnsPerHost:       200,
+		MaxIdleConnsPerHost:   100,
+		MaxIdleConns:          100,
+		IdleConnTimeout:       60 * time.Second,
+		TLSHandshakeTimeout:   10 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+		DisableCompression:    true,
 	}
 
 	// 有CA证书则处理CA证书
@@ -106,20 +121,16 @@ func NewSpider(cookieFile string, cert *HTTPSCert, timeout ...time.Duration) (*S
 	spider := &Spider{
 		client: &http.Client{
 			Transport: tr,
-			Timeout:   5 * time.Second,
+			Timeout:   10 * time.Second,
 		},
 		cookiePath: cookiePath,
-	}
-
-	if len(timeout) > 0 {
-		spider.client.Timeout = timeout[0]
 	}
 
 	return spider, nil
 }
 
 // HTTPGet http get请求
-func (s *Spider) HTTPGet(reqBody *ReqBody) ([]byte, error) {
+func (s *Spider) HTTPGet(reqBody *SpiderReqBody) ([]byte, error) {
 	req, err := http.NewRequest("GET", reqBody.URL, nil)
 
 	if err != nil {
@@ -136,6 +147,11 @@ func (s *Spider) HTTPGet(reqBody *ReqBody) ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
+	}
+
+	// 设置超时时间
+	if reqBody.Timeout != 0 {
+		s.client.Timeout = reqBody.Timeout
 	}
 
 	resp, err := s.client.Do(req)
@@ -171,7 +187,7 @@ func (s *Spider) HTTPGet(reqBody *ReqBody) ([]byte, error) {
 }
 
 // HTTPPost http post请求
-func (s *Spider) HTTPPost(reqBody *ReqBody) ([]byte, error) {
+func (s *Spider) HTTPPost(reqBody *SpiderReqBody) ([]byte, error) {
 	postParam := strings.NewReader(reqBody.PostData.Encode())
 	req, err := http.NewRequest("POST", reqBody.URL, postParam)
 
@@ -189,6 +205,11 @@ func (s *Spider) HTTPPost(reqBody *ReqBody) ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
+	}
+
+	// 设置超时时间
+	if reqBody.Timeout != 0 {
+		s.client.Timeout = reqBody.Timeout
 	}
 
 	resp, err := s.client.Do(req)

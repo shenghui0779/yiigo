@@ -3,14 +3,53 @@ package yiigo
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"time"
 )
 
-// YiiClient HTTP request client
-var YiiClient = &http.Client{
-	Timeout: 5 * time.Second,
+type httpConf struct {
+	ConnTimeout         int `toml:"connTimeout"`
+	KeepAlive           int `toml:"keepAlive"`
+	MaxConnsPerHost     int `toml:"maxConnsPerHost"`
+	MaxIdleConnsPerHost int `toml:"maxIdleConnsPerHost"`
+	MaxIdleConns        int `toml:"maxIdleConns"`
+	IdleConnTimeout     int `toml:"idleConnTimeout"`
+}
+
+// httpClient HTTP request client
+var httpClient *http.Client
+
+func initHttpClient() {
+	conf := &httpConf{
+		KeepAlive:           60,
+		MaxConnsPerHost:     200,
+		MaxIdleConnsPerHost: 100,
+		MaxIdleConns:        100,
+		IdleConnTimeout:     60,
+	}
+
+	Env.Unmarshal("http", conf)
+
+	httpClient = &http.Client{
+		Transport: &http.Transport{
+			Proxy: http.ProxyFromEnvironment,
+			DialContext: (&net.Dialer{
+				Timeout:   time.Duration(conf.ConnTimeout) * time.Second,
+				KeepAlive: time.Duration(conf.KeepAlive) * time.Second,
+				DualStack: true,
+			}).DialContext,
+			MaxConnsPerHost:       conf.MaxConnsPerHost,
+			MaxIdleConnsPerHost:   conf.MaxIdleConnsPerHost,
+			MaxIdleConns:          conf.MaxIdleConns,
+			IdleConnTimeout:       time.Duration(conf.IdleConnTimeout) * time.Second,
+			TLSHandshakeTimeout:   10 * time.Second,
+			ExpectContinueTimeout: 1 * time.Second,
+		},
+		Timeout: 10 * time.Second,
+	}
 }
 
 // HTTPGet http get request
@@ -30,10 +69,10 @@ func HTTPGet(url string, headers map[string]string, timeout ...time.Duration) ([
 
 	// custom timeout
 	if len(timeout) > 0 {
-		YiiClient.Timeout = timeout[0]
+		httpClient.Timeout = timeout[0]
 	}
 
-	resp, err := YiiClient.Do(req)
+	resp, err := httpClient.Do(req)
 
 	if err != nil {
 		return nil, err
@@ -42,18 +81,18 @@ func HTTPGet(url string, headers map[string]string, timeout ...time.Duration) ([
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
+		io.Copy(ioutil.Discard, resp.Body)
+
 		return nil, fmt.Errorf("error http code: %d", resp.StatusCode)
 	}
 
-	var b []byte
+	b, err := ioutil.ReadAll(resp.Body)
 
-	if resp.Body == http.NoBody {
-		return b, nil
+	if err != nil {
+		return nil, err
 	}
 
-	b, err = ioutil.ReadAll(resp.Body)
-
-	return b, err
+	return b, nil
 }
 
 // HTTPPost http post request
@@ -77,10 +116,10 @@ func HTTPPost(url string, body []byte, headers map[string]string, timeout ...tim
 
 	// custom timeout
 	if len(timeout) > 0 {
-		YiiClient.Timeout = timeout[0]
+		httpClient.Timeout = timeout[0]
 	}
 
-	resp, err := YiiClient.Do(req)
+	resp, err := httpClient.Do(req)
 
 	if err != nil {
 		return nil, err
@@ -89,16 +128,16 @@ func HTTPPost(url string, body []byte, headers map[string]string, timeout ...tim
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
+		io.Copy(ioutil.Discard, resp.Body)
+
 		return nil, fmt.Errorf("error http code: %d", resp.StatusCode)
 	}
 
-	var b []byte
+	b, err := ioutil.ReadAll(resp.Body)
 
-	if resp.Body == http.NoBody {
-		return b, nil
+	if err != nil {
+		return nil, err
 	}
 
-	b, err = ioutil.ReadAll(resp.Body)
-
-	return b, err
+	return b, nil
 }
