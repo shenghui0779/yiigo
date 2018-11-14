@@ -96,7 +96,7 @@ func HTTPGet(url string, headers map[string]string, timeout ...time.Duration) ([
 	return b, nil
 }
 
-// HTTPPost http post request, default content-type is 'application/json'
+// HTTPPost http post request, default content-type is 'application/json'.
 func HTTPPost(url string, body []byte, headers map[string]string, timeout ...time.Duration) ([]byte, error) {
 	reader := bytes.NewReader(body)
 
