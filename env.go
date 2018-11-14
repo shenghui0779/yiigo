@@ -225,15 +225,17 @@ func (e *env) Time(key string, defaultValue ...time.Time) time.Time {
 	}
 }
 
-// ToMap returns a value of map[string]interface{}.
-func (e *env) ToMap(key string) map[string]interface{} {
+// Map returns a value of map[string]interface{}.
+func (e *env) Map(key string) map[string]interface{} {
 	i := e.Get(key)
 
+	m := make(map[string]interface{})
+
 	if v, ok := i.(*toml.Tree); ok {
-		return v.ToMap()
+		m = v.ToMap()
 	}
 
-	return nil
+	return m
 }
 
 // Unmarshal attempts to unmarshal the Tree into a Go struct pointed by dest.
@@ -258,7 +260,5 @@ func (e *env) Get(key string) interface{} {
 	e.mutex.RLock()
 	defer e.mutex.RUnlock()
 
-	i := e.tree.Get(key)
-
-	return i
+	return e.tree.Get(key)
 }
