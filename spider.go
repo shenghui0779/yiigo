@@ -86,8 +86,7 @@ func NewSpider(cookieFile string, cert *HTTPSCert) (*Spider, error) {
 		TLSClientConfig: &tls.Config{
 			InsecureSkipVerify: true, // 忽略对服务端传过来的数字证书进行校验
 		},
-		MaxConnsPerHost:       200,
-		MaxIdleConnsPerHost:   100,
+		MaxIdleConnsPerHost:   10,
 		MaxIdleConns:          100,
 		IdleConnTimeout:       60 * time.Second,
 		TLSHandshakeTimeout:   10 * time.Second,

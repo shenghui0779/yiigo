@@ -26,8 +26,7 @@ func initHTTPClient() {
 	conf := &httpConf{
 		ConnTimeout:         30,
 		KeepAlive:           60,
-		MaxConnsPerHost:     200,
-		MaxIdleConnsPerHost: 100,
+		MaxIdleConnsPerHost: 10,
 		MaxIdleConns:        100,
 		IdleConnTimeout:     60,
 	}
