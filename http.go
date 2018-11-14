@@ -22,8 +22,9 @@ type httpConf struct {
 // httpClient HTTP request client
 var httpClient *http.Client
 
-func initHttpClient() {
+func initHTTPClient() {
 	conf := &httpConf{
+		ConnTimeout:         30,
 		KeepAlive:           60,
 		MaxConnsPerHost:     200,
 		MaxIdleConnsPerHost: 100,
@@ -95,7 +96,7 @@ func HTTPGet(url string, headers map[string]string, timeout ...time.Duration) ([
 	return b, nil
 }
 
-// HTTPPost http post request
+// HTTPPost http post request, default content-type is 'application/json'
 func HTTPPost(url string, body []byte, headers map[string]string, timeout ...time.Duration) ([]byte, error) {
 	reader := bytes.NewReader(body)
 

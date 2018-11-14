@@ -79,7 +79,7 @@ func NewSpider(cookieFile string, cert *HTTPSCert) (*Spider, error) {
 	tr := &http.Transport{
 		Proxy: http.ProxyFromEnvironment,
 		DialContext: (&net.Dialer{
-			Timeout:   60 * time.Second,
+			Timeout:   30 * time.Second,
 			KeepAlive: 60 * time.Second,
 			DualStack: true,
 		}).DialContext,

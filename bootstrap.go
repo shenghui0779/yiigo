@@ -11,7 +11,7 @@ func init() {
 	// init logger
 	initLogger()
 	// init http client
-	initHttpClient()
+	initHTTPClient()
 	// init core components
 	bootstrap()
 }
