@@ -1,5 +1,7 @@
 # yiigo
 
+[![GoDoc](https://godoc.org/github.com/IIInsomnia/yiigo?status.svg)](https://godoc.org/github.com/IIInsomnia/yiigo)
+
 简单易用的 Golang 辅助库
 
 ## 特点
