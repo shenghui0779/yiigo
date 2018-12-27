@@ -48,7 +48,7 @@ func emailDial() {
 
 // Send send an email.
 func (m *Mailer) Send() error {
-	msgSettings := []gomail.MessageSetting{}
+	msgSettings := make([]gomail.MessageSetting, 0, 2)
 
 	if m.Charset != "" {
 		msgSettings = append(msgSettings, gomail.SetCharset(m.Charset))
