@@ -45,6 +45,7 @@ func initLogger() {
 		})
 
 		cfg := zap.NewProductionEncoderConfig()
+
 		cfg.TimeKey = "time"
 		cfg.EncodeTime = MyTimeEncoder
 		cfg.EncodeCaller = zapcore.FullCallerEncoder
