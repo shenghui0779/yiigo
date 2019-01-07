@@ -4,7 +4,7 @@
 [![GitHub release](https://img.shields.io/github/release/IIInsomnia/yiigo.svg)](https://github.com/IIInsomnia/yiigo/releases/latest)
 [![MIT license](http://img.shields.io/badge/license-MIT-brightgreen.svg)](http://opensource.org/licenses/MIT)
 
-简单易用的 Golang 辅助库
+简单易用的 Golang 辅助库，让 Golang 开发更简单
 
 ## 特点
 
