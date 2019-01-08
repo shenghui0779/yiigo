@@ -1,7 +1,9 @@
 package yiigo
 
 import (
+	"bytes"
 	"crypto/md5"
+	"encoding/hex"
 	"fmt"
 	"math/big"
 	"net"
@@ -16,7 +18,7 @@ func MD5(s string) string {
 	h := md5.New()
 	h.Write([]byte(s))
 
-	return fmt.Sprintf("%x", h.Sum(nil))
+	return hex.EncodeToString(h.Sum(nil))
 }
 
 // Date format a local time/date and
@@ -53,4 +55,63 @@ func Long2IP(ip int64) string {
 	ipv4 := fmt.Sprintf("%d.%d.%d.%d", byte(ip>>24), byte(ip>>16), byte(ip>>8), byte(ip))
 
 	return ipv4
+}
+
+// AddSlashes returns a string with backslashes added before characters that need to be escaped.
+func AddSlashes(s string) string {
+	var buf bytes.Buffer
+
+	for _, ch := range s {
+		if ch == '\'' || ch == '"' || ch == '\\' {
+			buf.WriteRune('\\')
+		}
+
+		buf.WriteRune(ch)
+	}
+
+	return buf.String()
+}
+
+// StripSlashes returns a string with backslashes stripped off. (\' becomes ' and so on.) Double backslashes (\\) are made into a single backslash (\).
+func StripSlashes(s string) string {
+	var buf bytes.Buffer
+
+	l, skip := len(s), false
+
+	for i, ch := range s {
+		if skip {
+			buf.WriteRune(ch)
+			skip = false
+
+			continue
+		}
+
+		if ch == '\\' {
+			if i+1 < l && s[i+1] == '\\' {
+				skip = true
+			}
+
+			continue
+		}
+
+		buf.WriteRune(ch)
+	}
+
+	return buf.String()
+}
+
+// QuoteMeta returns a version of str with a backslash character (\) before every character that is among these: . \ + * ? [ ^ ] ( $ )
+func QuoteMeta(s string) string {
+	var buf bytes.Buffer
+
+	for _, ch := range s {
+		switch ch {
+		case '.', '+', '\\', '(', '$', ')', '[', '^', ']', '*', '?':
+			buf.WriteRune('\\')
+		}
+
+		buf.WriteRune(ch)
+	}
+
+	return buf.String()
 }
