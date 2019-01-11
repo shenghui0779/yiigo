@@ -2,6 +2,7 @@ package yiigo
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -18,6 +19,9 @@ type httpConf struct {
 	MaxIdleConns        int `toml:"maxIdleConns"`
 	IdleConnTimeout     int `toml:"idleConnTimeout"`
 }
+
+// httpDefaultTimeout HTTP request default timeout
+const httpDefaultTimeout = 10 * time.Second
 
 // httpClient HTTP request client
 var httpClient *http.Client
@@ -48,7 +52,6 @@ func initHTTPClient() {
 			TLSHandshakeTimeout:   10 * time.Second,
 			ExpectContinueTimeout: 1 * time.Second,
 		},
-		Timeout: 10 * time.Second,
 	}
 }
 
@@ -67,12 +70,18 @@ func HTTPGet(url string, headers map[string]string, timeout ...time.Duration) ([
 		}
 	}
 
+	t := httpDefaultTimeout
+
 	// custom timeout
 	if len(timeout) > 0 {
-		httpClient.Timeout = timeout[0]
+		t = timeout[0]
 	}
 
-	resp, err := httpClient.Do(req)
+	ctx, cancel := context.WithTimeout(context.TODO(), t)
+
+	defer cancel()
+
+	resp, err := httpClient.Do(req.WithContext(ctx))
 
 	if err != nil {
 		return nil, err
@@ -114,12 +123,18 @@ func HTTPPost(url string, body []byte, headers map[string]string, timeout ...tim
 		}
 	}
 
+	t := httpDefaultTimeout
+
 	// custom timeout
 	if len(timeout) > 0 {
-		httpClient.Timeout = timeout[0]
+		t = timeout[0]
 	}
 
-	resp, err := httpClient.Do(req)
+	ctx, cancel := context.WithTimeout(context.TODO(), t)
+
+	defer cancel()
+
+	resp, err := httpClient.Do(req.WithContext(ctx))
 
 	if err != nil {
 		return nil, err
