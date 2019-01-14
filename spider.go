@@ -39,16 +39,14 @@ type SpiderReqBody struct {
 	URL string
 	// Headers 请求头
 	Headers map[string]string
-	// PostData post请求数据
+	// PostData POST请求数据
 	PostData []byte
-	// SetCookie 请求是否需要加cookie
-	SetCookie bool
-	// SaveCookie 是否保存返回的cookie
-	SaveCookie bool
+	// NeedSetCookie 请求是否需要带上cookie
+	NeedSetCookie bool
+	// NeedSaveCookie 是否需要保存返回的cookie
+	NeedSaveCookie bool
 	// ClearOldCookie 是否需要清空原来的cookie
 	CleanOldCookie bool
-	// Referer 请求头Referer
-	Referer string
 	// Timeout 超时时间
 	Timeout time.Duration
 }
@@ -145,7 +143,7 @@ func (s *Spider) HTTPGet(reqBody *SpiderReqBody) ([]byte, error) {
 	}
 
 	// 请求带上cookie
-	if reqBody.SetCookie {
+	if reqBody.NeedSetCookie {
 		err := setSpiderCookie(req, s.cookiePath)
 
 		if err != nil {
@@ -171,7 +169,7 @@ func (s *Spider) HTTPGet(reqBody *SpiderReqBody) ([]byte, error) {
 	}
 
 	// 保存新的cookie
-	if reqBody.SaveCookie {
+	if reqBody.NeedSaveCookie {
 		if err := saveSpiderCookie(resp.Cookies(), s.cookiePath, reqBody.CleanOldCookie); err != nil {
 			return nil, err
 		}
@@ -210,7 +208,7 @@ func (s *Spider) HTTPPost(reqBody *SpiderReqBody) ([]byte, error) {
 	}
 
 	// 请求带上cookie
-	if reqBody.SetCookie {
+	if reqBody.NeedSetCookie {
 		err := setSpiderCookie(req, s.cookiePath)
 
 		if err != nil {
@@ -236,7 +234,7 @@ func (s *Spider) HTTPPost(reqBody *SpiderReqBody) ([]byte, error) {
 	}
 
 	// 保存新的cookie
-	if reqBody.SaveCookie {
+	if reqBody.NeedSaveCookie {
 		if err := saveSpiderCookie(resp.Cookies(), s.cookiePath, reqBody.CleanOldCookie); err != nil {
 			return nil, err
 		}
