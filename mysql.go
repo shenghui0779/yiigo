@@ -34,6 +34,7 @@ var (
 	dbmap sync.Map
 )
 
+// initMySQL init MySQL
 func initMySQL() error {
 	result := Env.Get("mysql")
 
@@ -43,35 +44,29 @@ func initMySQL() error {
 
 	switch node := result.(type) {
 	case *toml.Tree:
-		conf := &mysqlConf{}
-		err := node.Unmarshal(conf)
+		conf := new(mysqlConf)
 
-		if err != nil {
+		if err := node.Unmarshal(conf); err != nil {
 			return err
 		}
 
-		err = initSingleDB(conf)
-
-		if err != nil {
+		if err := initSingleDB(conf); err != nil {
 			return err
 		}
 	case []*toml.Tree:
 		conf := make([]*mysqlConf, 0, len(node))
 
 		for _, v := range node {
-			c := &mysqlConf{}
-			err := v.Unmarshal(c)
+			c := new(mysqlConf)
 
-			if err != nil {
+			if err := v.Unmarshal(c); err != nil {
 				return err
 			}
 
 			conf = append(conf, c)
 		}
 
-		err := initMultiDB(conf)
-
-		if err != nil {
+		if err := initMultiDB(conf); err != nil {
 			return err
 		}
 	default:

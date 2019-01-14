@@ -41,35 +41,29 @@ func initPostgres() error {
 
 	switch node := result.(type) {
 	case *toml.Tree:
-		conf := &postgresConf{}
-		err := node.Unmarshal(conf)
+		conf := new(postgresConf)
 
-		if err != nil {
+		if err := node.Unmarshal(conf); err != nil {
 			return err
 		}
 
-		err = initSinglePostgres(conf)
-
-		if err != nil {
+		if err := initSinglePostgres(conf); err != nil {
 			return err
 		}
 	case []*toml.Tree:
 		conf := make([]*postgresConf, 0, len(node))
 
 		for _, v := range node {
-			c := &postgresConf{}
-			err := v.Unmarshal(c)
+			c := new(postgresConf)
 
-			if err != nil {
+			if err := v.Unmarshal(c); err != nil {
 				return err
 			}
 
 			conf = append(conf, c)
 		}
 
-		err := initMultiPostgres(conf)
-
-		if err != nil {
+		if err := initMultiPostgres(conf); err != nil {
 			return err
 		}
 	default:

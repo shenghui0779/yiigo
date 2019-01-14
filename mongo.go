@@ -34,6 +34,7 @@ var (
 	mgoMap sync.Map
 )
 
+// initMongo init MongoDB
 func initMongo() error {
 	result := Env.Get("mongo")
 
@@ -43,35 +44,29 @@ func initMongo() error {
 
 	switch node := result.(type) {
 	case *toml.Tree:
-		conf := &mongoConf{}
-		err := node.Unmarshal(conf)
+		conf := new(mongoConf)
 
-		if err != nil {
+		if err := node.Unmarshal(conf); err != nil {
 			return err
 		}
 
-		err = initSingleMongo(conf)
-
-		if err != nil {
+		if err := initSingleMongo(conf); err != nil {
 			return err
 		}
 	case []*toml.Tree:
 		conf := make([]*mongoConf, 0, len(node))
 
 		for _, v := range node {
-			c := &mongoConf{}
-			err := v.Unmarshal(c)
+			c := new(mongoConf)
 
-			if err != nil {
+			if err := v.Unmarshal(c); err != nil {
 				return err
 			}
 
 			conf = append(conf, c)
 		}
 
-		err := initMultiMongo(conf)
-
-		if err != nil {
+		if err := initMultiMongo(conf); err != nil {
 			return err
 		}
 	default:
@@ -176,11 +171,9 @@ func SeqID(session *mgo.Session, db string, collection string, seqs ...int64) (i
 		ReturnNew: true,
 	}
 
-	sequence := Sequence{}
+	sequence := new(Sequence)
 
-	_, err := session.DB(db).C("sequence").Find(condition).Apply(change, &sequence)
-
-	if err != nil {
+	if _, err := session.DB(db).C("sequence").Find(condition).Apply(change, sequence); err != nil {
 		return 0, err
 	}
 

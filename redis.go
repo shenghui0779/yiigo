@@ -86,8 +86,7 @@ func (r *RedisPoolResource) Get() (RedisConn, error) {
 		r.initPool()
 	}
 
-	ctx := context.TODO()
-	resource, err := r.pool.Get(ctx)
+	resource, err := r.pool.Get(context.TODO())
 
 	if err != nil {
 		return RedisConn{}, err
@@ -133,10 +132,9 @@ func initRedis() error {
 
 	switch node := result.(type) {
 	case *toml.Tree:
-		conf := &redisConf{}
-		err := node.Unmarshal(conf)
+		conf := new(redisConf)
 
-		if err != nil {
+		if err := node.Unmarshal(conf); err != nil {
 			return err
 		}
 
@@ -145,10 +143,9 @@ func initRedis() error {
 		conf := make([]*redisConf, 0, len(node))
 
 		for _, v := range node {
-			c := &redisConf{}
-			err := v.Unmarshal(c)
+			c := new(redisConf)
 
-			if err != nil {
+			if err := v.Unmarshal(c); err != nil {
 				return err
 			}
 

@@ -1,16 +1,17 @@
 package yiigo
 
 import (
+	"bytes"
+	"context"
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net"
 	"net/http"
-	"net/url"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 )
 
@@ -36,10 +37,10 @@ type HTTPSCert struct {
 type SpiderReqBody struct {
 	// URL 请求地址
 	URL string
-	// Host 请求头Host
-	Host string
-	// PostData post参数
-	PostData url.Values
+	// Headers 请求头
+	Headers map[string]string
+	// PostData post请求数据
+	PostData []byte
 	// SetCookie 请求是否需要加cookie
 	SetCookie bool
 	// SaveCookie 是否保存返回的cookie
@@ -86,12 +87,12 @@ func NewSpider(cookieFile string, cert *HTTPSCert) (*Spider, error) {
 		TLSClientConfig: &tls.Config{
 			InsecureSkipVerify: true, // 忽略对服务端传过来的数字证书进行校验
 		},
+		MaxConnsPerHost:       20,
 		MaxIdleConnsPerHost:   10,
 		MaxIdleConns:          100,
 		IdleConnTimeout:       60 * time.Second,
 		TLSHandshakeTimeout:   10 * time.Second,
 		ExpectContinueTimeout: 1 * time.Second,
-		DisableCompression:    true,
 	}
 
 	// 有CA证书则处理CA证书
@@ -137,7 +138,11 @@ func (s *Spider) HTTPGet(reqBody *SpiderReqBody) ([]byte, error) {
 	}
 
 	// 设置请求头
-	setSpiderHeader(req, false, reqBody.Host, reqBody.Referer)
+	if len(reqBody.Headers) != 0 {
+		for k, v := range reqBody.Headers {
+			req.Header.Set(k, v)
+		}
+	}
 
 	// 请求带上cookie
 	if reqBody.SetCookie {
@@ -149,11 +154,17 @@ func (s *Spider) HTTPGet(reqBody *SpiderReqBody) ([]byte, error) {
 	}
 
 	// 设置超时时间
+	t := httpDefaultTimeout
+
 	if reqBody.Timeout != 0 {
-		s.client.Timeout = reqBody.Timeout
+		t = reqBody.Timeout
 	}
 
-	resp, err := s.client.Do(req)
+	ctx, cancel := context.WithTimeout(context.TODO(), t)
+
+	defer cancel()
+
+	resp, err := s.client.Do(req.WithContext(ctx))
 
 	if err != nil {
 		return nil, err
@@ -161,9 +172,7 @@ func (s *Spider) HTTPGet(reqBody *SpiderReqBody) ([]byte, error) {
 
 	// 保存新的cookie
 	if reqBody.SaveCookie {
-		err := saveSpiderCookie(resp.Cookies(), s.cookiePath, reqBody.CleanOldCookie)
-
-		if err != nil {
+		if err := saveSpiderCookie(resp.Cookies(), s.cookiePath, reqBody.CleanOldCookie); err != nil {
 			return nil, err
 		}
 	}
@@ -171,31 +180,34 @@ func (s *Spider) HTTPGet(reqBody *SpiderReqBody) ([]byte, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
+		io.Copy(ioutil.Discard, resp.Body)
+
 		return nil, fmt.Errorf("error http code: %d", resp.StatusCode)
 	}
 
-	var b []byte
+	b, err := ioutil.ReadAll(resp.Body)
 
-	if resp.Body == http.NoBody {
-		return b, nil
+	if err != nil {
+		return nil, err
 	}
 
-	b, err = ioutil.ReadAll(resp.Body)
-
-	return b, err
+	return b, nil
 }
 
 // HTTPPost http post请求
 func (s *Spider) HTTPPost(reqBody *SpiderReqBody) ([]byte, error) {
-	postParam := strings.NewReader(reqBody.PostData.Encode())
-	req, err := http.NewRequest("POST", reqBody.URL, postParam)
+	req, err := http.NewRequest("POST", reqBody.URL, bytes.NewReader(reqBody.PostData))
 
 	if err != nil {
 		return nil, err
 	}
 
 	// 设置请求头
-	setSpiderHeader(req, true, reqBody.Host, reqBody.Referer)
+	if len(reqBody.Headers) != 0 {
+		for k, v := range reqBody.Headers {
+			req.Header.Set(k, v)
+		}
+	}
 
 	// 请求带上cookie
 	if reqBody.SetCookie {
@@ -207,11 +219,17 @@ func (s *Spider) HTTPPost(reqBody *SpiderReqBody) ([]byte, error) {
 	}
 
 	// 设置超时时间
+	t := httpDefaultTimeout
+
 	if reqBody.Timeout != 0 {
-		s.client.Timeout = reqBody.Timeout
+		t = reqBody.Timeout
 	}
 
-	resp, err := s.client.Do(req)
+	ctx, cancel := context.WithTimeout(context.TODO(), t)
+
+	defer cancel()
+
+	resp, err := s.client.Do(req.WithContext(ctx))
 
 	if err != nil {
 		return nil, err
@@ -219,9 +237,7 @@ func (s *Spider) HTTPPost(reqBody *SpiderReqBody) ([]byte, error) {
 
 	// 保存新的cookie
 	if reqBody.SaveCookie {
-		err := saveSpiderCookie(resp.Cookies(), s.cookiePath, reqBody.CleanOldCookie)
-
-		if err != nil {
+		if err := saveSpiderCookie(resp.Cookies(), s.cookiePath, reqBody.CleanOldCookie); err != nil {
 			return nil, err
 		}
 	}
@@ -229,56 +245,30 @@ func (s *Spider) HTTPPost(reqBody *SpiderReqBody) ([]byte, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
+		io.Copy(ioutil.Discard, resp.Body)
+
 		return nil, fmt.Errorf("error http code: %d", resp.StatusCode)
 	}
 
-	var b []byte
+	b, err := ioutil.ReadAll(resp.Body)
 
-	if resp.Body == http.NoBody {
-		return b, nil
+	if err != nil {
+		return nil, err
 	}
 
-	b, err = ioutil.ReadAll(resp.Body)
-
-	return b, err
-}
-
-// setSpiderHeader 设置HTTP请求公共头信息
-func setSpiderHeader(req *http.Request, isPost bool, host string, referer string) {
-	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/,;q=0.8")
-	req.Header.Set("Accept-Encoding", "gzip, deflate")
-	req.Header.Set("Accept-Language", "zh-CN,zh;q=0.8")
-
-	if isPost {
-		req.Header.Set("Cache-Control", "no-cache")
-		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	} else {
-		req.Header.Set("Cache-Control", "max-age=0")
-	}
-
-	req.Header.Set("Connection", "Keep-Alive")
-	req.Header.Set("Host", host)
-
-	if referer != "" {
-		req.Header.Set("Referer", referer)
-	}
-
-	req.Header.Set("Upgrade-Insecure-Requests", "1")
-	req.Header.Set("User-Agent", "Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; WOW64; Trident/5.0)")
+	return b, nil
 }
 
 // setSpiderCookie 设置http请求cookie
 func setSpiderCookie(req *http.Request, cookiePath string) error {
-	cookies := map[string]*http.Cookie{}
+	cookies := make(map[string]*http.Cookie)
 	content, err := ioutil.ReadFile(cookiePath)
 
 	if err != nil {
 		return err
 	}
 
-	err = json.Unmarshal(content, &cookies)
-
-	if err != nil {
+	if err := json.Unmarshal(content, &cookies); err != nil {
 		return err
 	}
 
@@ -295,7 +285,7 @@ func saveSpiderCookie(newCookies []*http.Cookie, cookiePath string, cleanOldCook
 		return nil
 	}
 
-	cookies := map[string]*http.Cookie{}
+	cookies := make(map[string]*http.Cookie)
 
 	// 追加新的cookie
 	if !cleanOldCookie {
@@ -306,9 +296,7 @@ func saveSpiderCookie(newCookies []*http.Cookie, cookiePath string, cleanOldCook
 		}
 
 		if len(content) > 0 {
-			err = json.Unmarshal(content, &cookies)
-
-			if err != nil {
+			if err := json.Unmarshal(content, &cookies); err != nil {
 				return err
 			}
 		}
@@ -318,11 +306,11 @@ func saveSpiderCookie(newCookies []*http.Cookie, cookiePath string, cleanOldCook
 		cookies[cookie.Name] = cookie
 	}
 
-	byteArr, err := json.Marshal(cookies)
+	b, err := json.Marshal(cookies)
 
 	if err != nil {
 		return err
 	}
 
-	return ioutil.WriteFile(cookiePath, byteArr, 0777)
+	return ioutil.WriteFile(cookiePath, b, 0777)
 }
