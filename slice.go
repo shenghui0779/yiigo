@@ -14,7 +14,7 @@ func SortInt64s(a []int64) {
 	sort.Sort(Int64Slice(a))
 }
 
-// SearchInt64s searches for x in a sorted slice of ints and returns the index
+// SearchInt64s searches for x in a sorted slice of int64s and returns the index
 // as specified by Search. The return value is the index to insert x if x is
 // not present (it could be len(a)).
 // The slice must be sorted in ascending order.

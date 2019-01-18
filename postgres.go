@@ -32,6 +32,9 @@ var (
 	pgmap sync.Map
 )
 
+var errPGInsertInvalidType = errors.New("yiigo: invalid data type for PGInsertSQL(), expects: struct, *struct, []struct, []*struct, yiigo.X, []yiigo.X")
+var errPGUpdateInvalidType = errors.New("yiigo: invalid data type for PGUpdateSQL(), expects: struct, *struct, yiigo.X")
+
 func initPostgres() error {
 	result := Env.Get("postgres")
 
@@ -143,7 +146,7 @@ func PGConn(conn ...string) (*sqlx.DB, error) {
 }
 
 // PGInsertSQL returns postgres insert sql and binds.
-// param data expects struct, []struct, yiigo.X, []yiigo.X.
+// param data expects struct, *struct, []struct, []*struct, yiigo.X, []yiigo.X.
 func PGInsertSQL(table string, data interface{}) (string, []interface{}) {
 	var (
 		sql   string
@@ -161,22 +164,31 @@ func PGInsertSQL(table string, data interface{}) (string, []interface{}) {
 		sql, binds = singlePGInsertWithStruct(table, v)
 	case reflect.Slice:
 		if count := v.Len(); count > 0 {
-			elemKind := v.Type().Elem().Kind()
+			e := v.Type().Elem()
 
-			if elemKind == reflect.Map {
-				if x, ok := data.([]X); ok {
-					sql, binds = batchPGInsertWithMap(table, x, count)
+			switch e.Kind() {
+			case reflect.Map:
+				x, ok := data.([]X)
+
+				if !ok {
+					panic(errPGInsertInvalidType)
 				}
 
-				break
-			}
-
-			if elemKind == reflect.Struct {
+				sql, binds = batchPGInsertWithMap(table, x, count)
+			case reflect.Struct:
 				sql, binds = batchPGInsertWithStruct(table, v, count)
+			case reflect.Ptr:
+				if e.Elem().Kind() != reflect.Struct {
+					panic(errPGInsertInvalidType)
+				}
 
-				break
+				sql, binds = batchPGInsertWithStruct(table, v, count)
+			default:
+				panic(errPGInsertInvalidType)
 			}
 		}
+	default:
+		panic(errPGInsertInvalidType)
 	}
 
 	return sql, binds
@@ -184,7 +196,7 @@ func PGInsertSQL(table string, data interface{}) (string, []interface{}) {
 
 // PGUpdateSQL returns postgres update sql and binds.
 // param query expects eg: "UPDATE table SET $1 WHERE id = $2".
-// param data expects struct, yiigo.X.
+// param data expects struct, *struct, yiigo.X.
 func PGUpdateSQL(query string, data interface{}, args ...interface{}) (string, []interface{}) {
 	var (
 		sql   string
@@ -195,9 +207,13 @@ func PGUpdateSQL(query string, data interface{}, args ...interface{}) (string, [
 
 	switch v.Kind() {
 	case reflect.Map:
-		if x, ok := data.(X); ok {
-			sql, binds = pgUpdateWithMap(query, x, args...)
+		x, ok := data.(X)
+
+		if !ok {
+			panic(errPGUpdateInvalidType)
 		}
+
+		sql, binds = pgUpdateWithMap(query, x, args...)
 	case reflect.Struct:
 		sql, binds = pgUpdateWithStruct(query, v, args...)
 	}
@@ -217,12 +233,12 @@ func singlePGInsertWithMap(table string, data X) (string, []interface{}) {
 	for k, v := range data {
 		bindIndex++
 
-		columns = append(columns, fmt.Sprintf("%s", k))
+		columns = append(columns, fmt.Sprintf("`%s`", k))
 		placeholders = append(placeholders, fmt.Sprintf("$%d", bindIndex))
 		binds = append(binds, v)
 	}
 
-	sql := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s) RETURNING id", table, strings.Join(columns, ", "), strings.Join(placeholders, ", "))
+	sql := fmt.Sprintf("INSERT INTO `%s` (%s) VALUES (%s) RETURNING `id`", table, strings.Join(columns, ", "), strings.Join(placeholders, ", "))
 
 	return sql, binds
 }
@@ -243,12 +259,12 @@ func singlePGInsertWithStruct(table string, v reflect.Value) (string, []interfac
 			column = t.Field(i).Name
 		}
 
-		columns = append(columns, fmt.Sprintf("%s", column))
+		columns = append(columns, fmt.Sprintf("`%s`", column))
 		placeholders = append(placeholders, fmt.Sprintf("$%d", i+1))
 		binds = append(binds, v.Field(i).Interface())
 	}
 
-	sql := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s) RETURNING id", table, strings.Join(columns, ", "), strings.Join(placeholders, ", "))
+	sql := fmt.Sprintf("INSERT INTO `%s` (%s) VALUES (%s) RETURNING `id`", table, strings.Join(columns, ", "), strings.Join(placeholders, ", "))
 
 	return sql, binds
 }
@@ -263,7 +279,7 @@ func batchPGInsertWithMap(table string, data []X, count int) (string, []interfac
 
 	for k := range data[0] {
 		fields = append(fields, k)
-		columns = append(columns, fmt.Sprintf("%s", k))
+		columns = append(columns, fmt.Sprintf("`%s`", k))
 	}
 
 	bindIndex := 0
@@ -281,17 +297,13 @@ func batchPGInsertWithMap(table string, data []X, count int) (string, []interfac
 		placeholders = append(placeholders, fmt.Sprintf("(%s)", strings.Join(phrs, ", ")))
 	}
 
-	sql := fmt.Sprintf("INSERT INTO %s (%s) VALUES %s", table, strings.Join(columns, ", "), strings.Join(placeholders, ", "))
+	sql := fmt.Sprintf("INSERT INTO `%s` (%s) VALUES %s", table, strings.Join(columns, ", "), strings.Join(placeholders, ", "))
 
 	return sql, binds
 }
 
 func batchPGInsertWithStruct(table string, v reflect.Value, count int) (string, []interface{}) {
-	first := v.Index(0)
-
-	if first.Kind() != reflect.Struct {
-		panic("yiigo: param data must be a slice to struct")
-	}
+	first := reflect.Indirect(v.Index(0))
 
 	fieldNum := first.NumField()
 
@@ -313,19 +325,19 @@ func batchPGInsertWithStruct(table string, v reflect.Value, count int) (string, 
 					column = t.Field(j).Name
 				}
 
-				columns = append(columns, fmt.Sprintf("%s", column))
+				columns = append(columns, fmt.Sprintf("`%s`", column))
 			}
 
 			bindIndex++
 
 			phrs = append(phrs, fmt.Sprintf("$%d", bindIndex))
-			binds = append(binds, v.Index(i).Field(j).Interface())
+			binds = append(binds, reflect.Indirect(v.Index(i)).Field(j).Interface())
 		}
 
 		placeholders = append(placeholders, fmt.Sprintf("(%s)", strings.Join(phrs, ", ")))
 	}
 
-	sql := fmt.Sprintf("INSERT INTO %s (%s) VALUES %s", table, strings.Join(columns, ", "), strings.Join(placeholders, ", "))
+	sql := fmt.Sprintf("INSERT INTO `%s` (%s) VALUES %s", table, strings.Join(columns, ", "), strings.Join(placeholders, ", "))
 
 	return sql, binds
 }
@@ -351,7 +363,7 @@ func pgUpdateWithMap(query string, data X, args ...interface{}) (string, []inter
 	for k, v := range data {
 		bindIndex++
 
-		sets = append(sets, fmt.Sprintf("%s = $%d", k, bindIndex))
+		sets = append(sets, fmt.Sprintf("`%s` = $%d", k, bindIndex))
 		binds = append(binds, v)
 	}
 
@@ -386,7 +398,7 @@ func pgUpdateWithStruct(query string, v reflect.Value, args ...interface{}) (str
 			column = t.Field(i).Name
 		}
 
-		sets = append(sets, fmt.Sprintf("%s = $%d", column, i+1))
+		sets = append(sets, fmt.Sprintf("`%s` = $%d", column, i+1))
 		binds = append(binds, v.Field(i).Interface())
 	}
 

@@ -34,6 +34,9 @@ var (
 	dbmap sync.Map
 )
 
+var errInsertInvalidType = errors.New("yiigo: invalid data type for InsertSQL(), expects: struct, *struct, []struct, []*struct, yiigo.X, []yiigo.X")
+var errUpdateInvalidType = errors.New("yiigo: invalid data type for UpdateSQL(), expects: struct, *struct, yiigo.X")
+
 // initMySQL init MySQL
 func initMySQL() error {
 	result := Env.Get("mysql")
@@ -146,7 +149,7 @@ func DBConn(conn ...string) (*sqlx.DB, error) {
 }
 
 // InsertSQL returns mysql insert sql and binds.
-// param data expects struct, []struct, yiigo.X, []yiigo.X.
+// param data expects struct, *struct, []struct, []*struct, yiigo.X, []yiigo.X.
 func InsertSQL(table string, data interface{}) (string, []interface{}) {
 	var (
 		sql   string
@@ -164,30 +167,39 @@ func InsertSQL(table string, data interface{}) (string, []interface{}) {
 		sql, binds = singleInsertWithStruct(table, v)
 	case reflect.Slice:
 		if count := v.Len(); count > 0 {
-			elemKind := v.Type().Elem().Kind()
+			e := v.Type().Elem()
 
-			if elemKind == reflect.Map {
-				if x, ok := data.([]X); ok {
-					sql, binds = batchInsertWithMap(table, x, count)
+			switch e.Kind() {
+			case reflect.Map:
+				x, ok := data.([]X)
+
+				if !ok {
+					panic(errInsertInvalidType)
 				}
 
-				break
-			}
-
-			if elemKind == reflect.Struct {
+				sql, binds = batchInsertWithMap(table, x, count)
+			case reflect.Struct:
 				sql, binds = batchInsertWithStruct(table, v, count)
+			case reflect.Ptr:
+				if e.Elem().Kind() != reflect.Struct {
+					panic(errInsertInvalidType)
+				}
 
-				break
+				sql, binds = batchInsertWithStruct(table, v, count)
+			default:
+				panic(errInsertInvalidType)
 			}
 		}
+	default:
+		panic(errInsertInvalidType)
 	}
 
 	return sql, binds
 }
 
 // UpdateSQL returns mysql update sql and binds.
-// param query expects eg: "UPDATE table SET ? WHERE id = ?".
-// param data expects struct, yiigo.X.
+// param query expects eg: "UPDATE `table` SET ? WHERE id = ?".
+// param data expects struct, *struct, yiigo.X.
 func UpdateSQL(query string, data interface{}, args ...interface{}) (string, []interface{}) {
 	var (
 		sql   string
@@ -198,11 +210,17 @@ func UpdateSQL(query string, data interface{}, args ...interface{}) (string, []i
 
 	switch v.Kind() {
 	case reflect.Map:
-		if x, ok := data.(X); ok {
-			sql, binds = updateWithMap(query, x, args...)
+		x, ok := data.(X)
+
+		if !ok {
+			panic(errUpdateInvalidType)
 		}
+
+		sql, binds = updateWithMap(query, x, args...)
 	case reflect.Struct:
 		sql, binds = updateWithStruct(query, v, args...)
+	default:
+		panic(errUpdateInvalidType)
 	}
 
 	return sql, binds
@@ -282,11 +300,7 @@ func batchInsertWithMap(table string, data []X, count int) (string, []interface{
 }
 
 func batchInsertWithStruct(table string, v reflect.Value, count int) (string, []interface{}) {
-	first := v.Index(0)
-
-	if first.Kind() != reflect.Struct {
-		panic("yiigo: param data must be a slice to struct")
-	}
+	first := reflect.Indirect(v.Index(0))
 
 	fieldNum := first.NumField()
 
@@ -311,7 +325,7 @@ func batchInsertWithStruct(table string, v reflect.Value, count int) (string, []
 			}
 
 			phrs = append(phrs, "?")
-			binds = append(binds, v.Index(i).Field(j).Interface())
+			binds = append(binds, reflect.Indirect(v.Index(i)).Field(j).Interface())
 		}
 
 		placeholders = append(placeholders, fmt.Sprintf("(%s)", strings.Join(phrs, ", ")))
