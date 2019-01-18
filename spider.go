@@ -265,6 +265,7 @@ func (c *SpiderClientConf) buildClient() (*http.Client, error) {
 	return &http.Client{Transport: tr}, nil
 }
 
+// SpiderTransport 爬虫 HTTP Transport 配置
 type SpiderTransport struct {
 	// ConnTimeout 拨号连接超时时间「单位：秒；0：不限」
 	ConnTimeout int
