@@ -149,7 +149,7 @@ func DBConn(conn ...string) (*sqlx.DB, error) {
 }
 
 // InsertSQL returns mysql insert sql and binds.
-// param data expects struct, *struct, []struct, []*struct, yiigo.X, []yiigo.X.
+// param data expects: struct, *struct, []struct, []*struct, yiigo.X, []yiigo.X.
 func InsertSQL(table string, data interface{}) (string, []interface{}) {
 	var (
 		sql   string
@@ -199,7 +199,7 @@ func InsertSQL(table string, data interface{}) (string, []interface{}) {
 
 // UpdateSQL returns mysql update sql and binds.
 // param query expects eg: "UPDATE `table` SET ? WHERE id = ?".
-// param data expects struct, *struct, yiigo.X.
+// param data expects: struct, *struct, yiigo.X.
 func UpdateSQL(query string, data interface{}, args ...interface{}) (string, []interface{}) {
 	var (
 		sql   string

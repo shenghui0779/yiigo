@@ -146,7 +146,7 @@ func PGConn(conn ...string) (*sqlx.DB, error) {
 }
 
 // PGInsertSQL returns postgres insert sql and binds.
-// param data expects struct, *struct, []struct, []*struct, yiigo.X, []yiigo.X.
+// param data expects: struct, *struct, []struct, []*struct, yiigo.X, []yiigo.X.
 func PGInsertSQL(table string, data interface{}) (string, []interface{}) {
 	var (
 		sql   string
@@ -196,7 +196,7 @@ func PGInsertSQL(table string, data interface{}) (string, []interface{}) {
 
 // PGUpdateSQL returns postgres update sql and binds.
 // param query expects eg: "UPDATE table SET $1 WHERE id = $2".
-// param data expects struct, *struct, yiigo.X.
+// param data expects: struct, *struct, yiigo.X.
 func PGUpdateSQL(query string, data interface{}, args ...interface{}) (string, []interface{}) {
 	var (
 		sql   string
