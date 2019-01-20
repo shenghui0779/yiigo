@@ -34,8 +34,8 @@ var (
 	dbmap sync.Map
 )
 
-var errInsertInvalidType = errors.New("yiigo: invalid data type for InsertSQL(), expects: struct, *struct, []struct, []*struct, yiigo.X, []yiigo.X")
-var errUpdateInvalidType = errors.New("yiigo: invalid data type for UpdateSQL(), expects: struct, *struct, yiigo.X")
+var errInsertInvalidType = errors.New("yiigo: invalid data type of InsertSQL(), expects: struct, *struct, []struct, []*struct, yiigo.X, []yiigo.X")
+var errUpdateInvalidType = errors.New("yiigo: invalid data type of UpdateSQL(), expects: struct, *struct, yiigo.X")
 
 // initMySQL init MySQL
 func initMySQL() error {
