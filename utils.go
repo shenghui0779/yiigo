@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"crypto/md5"
 	"encoding/hex"
-	"fmt"
 	"math/big"
 	"net"
 	"time"
@@ -36,8 +35,8 @@ func Date(timestamp int64, format ...string) string {
 	return date
 }
 
-// IP2long converts a string containing an (IPv4) Internet Protocol dotted address into a long integer.
-func IP2long(ip string) int64 {
+// IP2Long converts a string containing an (IPv4) Internet Protocol dotted address into a long integer.
+func IP2Long(ip string) int64 {
 	ipv4 := net.ParseIP(ip).To4()
 
 	if ipv4 == nil {
@@ -52,9 +51,10 @@ func IP2long(ip string) int64 {
 
 // Long2IP converts an long integer address into a string in (IPv4) Internet standard dotted format.
 func Long2IP(ip int64) string {
-	ipv4 := fmt.Sprintf("%d.%d.%d.%d", byte(ip>>24), byte(ip>>16), byte(ip>>8), byte(ip))
+	ret := big.NewInt(ip)
+	ipv4 := net.IP(ret.Bytes())
 
-	return ipv4
+	return ipv4.String()
 }
 
 // AddSlashes returns a string with backslashes added before characters that need to be escaped.
