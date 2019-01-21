@@ -54,7 +54,7 @@ func TestDate(t *testing.T) {
 	}
 }
 
-func TestIP2long(t *testing.T) {
+func TestIP2Long(t *testing.T) {
 	type args struct {
 		ip string
 	}
@@ -71,8 +71,8 @@ func TestIP2long(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := IP2long(tt.args.ip); got != tt.want {
-				t.Errorf("IP2long() = %v, want %v", got, tt.want)
+			if got := IP2Long(tt.args.ip); got != tt.want {
+				t.Errorf("IP2Long() = %v, want %v", got, tt.want)
 			}
 		})
 	}
