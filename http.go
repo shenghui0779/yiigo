@@ -3,91 +3,358 @@ package yiigo
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net"
 	"net/http"
+	"os"
+	"path/filepath"
 	"time"
 )
 
-type httpConf struct {
-	ConnTimeout         int `toml:"connTimeout"`
-	KeepAlive           int `toml:"keepAlive"`
-	MaxConnsPerHost     int `toml:"maxConnsPerHost"`
-	MaxIdleConnsPerHost int `toml:"maxIdleConnsPerHost"`
-	MaxIdleConns        int `toml:"maxIdleConns"`
-	IdleConnTimeout     int `toml:"idleConnTimeout"`
-}
+// defaultHTTPTimeout default http request timeout
+const defaultHTTPTimeout = 10 * time.Second
 
-// httpDefaultTimeout HTTP request default timeout
-const httpDefaultTimeout = 10 * time.Second
+// errCookieFileNotFound cookie file not found error
+var errCookieFileNotFound = errors.New("cookie file not found")
 
-// httpClient HTTP request client
-var httpClient *http.Client
-
-func initHTTPClient() {
-	conf := &httpConf{
-		ConnTimeout:         30,
-		KeepAlive:           60,
-		MaxIdleConnsPerHost: 10,
-		MaxIdleConns:        100,
-		IdleConnTimeout:     60,
-	}
-
-	Env.Unmarshal("http", conf)
-
-	httpClient = &http.Client{
+// defaultHTTPClient default http client
+var defaultHTTPClient = &HTTPClient{
+	client: &http.Client{
 		Transport: &http.Transport{
 			Proxy: http.ProxyFromEnvironment,
 			DialContext: (&net.Dialer{
-				Timeout:   time.Duration(conf.ConnTimeout) * time.Second,
-				KeepAlive: time.Duration(conf.KeepAlive) * time.Second,
+				Timeout:   30 * time.Second,
+				KeepAlive: 60 * time.Second,
 				DualStack: true,
 			}).DialContext,
-			MaxConnsPerHost:       conf.MaxConnsPerHost,
-			MaxIdleConnsPerHost:   conf.MaxIdleConnsPerHost,
-			MaxIdleConns:          conf.MaxIdleConns,
-			IdleConnTimeout:       time.Duration(conf.IdleConnTimeout) * time.Second,
+			MaxIdleConnsPerHost:   10,
+			MaxIdleConns:          100,
+			IdleConnTimeout:       60 * time.Second,
 			TLSHandshakeTimeout:   10 * time.Second,
 			ExpectContinueTimeout: 1 * time.Second,
 		},
-	}
+	},
 }
 
-// HTTPGet http get request
-func HTTPGet(url string, headers map[string]string, timeout ...time.Duration) ([]byte, error) {
+// httpClientOptions http client options
+type httpClientOptions struct {
+	dialTimeout           time.Duration
+	dialKeepAlive         time.Duration
+	maxConnsPerHost       int
+	maxIdleConnsPerHost   int
+	maxIdleConns          int
+	idleConnTimeout       time.Duration
+	sslCertificates       []tls.Certificate
+	tlsHandshakeTimeout   time.Duration
+	expectContinueTimeout time.Duration
+}
+
+// HTTPClientOption configures how we set up the http client
+type HTTPClientOption interface {
+	apply(*httpClientOptions) error
+}
+
+// funcHTTPClientOption implements http client option
+type funcHTTPClientOption struct {
+	f func(*httpClientOptions) error
+}
+
+func (fo *funcHTTPClientOption) apply(o *httpClientOptions) error {
+	return fo.f(o)
+}
+
+func newFuncHTTPOption(f func(*httpClientOptions) error) *funcHTTPClientOption {
+	return &funcHTTPClientOption{f: f}
+}
+
+// WithDialTimeout specifies the `DialTimeout` to net.Dialer.
+func WithDialTimeout(d time.Duration) HTTPClientOption {
+	return newFuncHTTPOption(func(o *httpClientOptions) error {
+		o.dialTimeout = d
+
+		return nil
+	})
+}
+
+// WithDialKeepAlive specifies the `KeepAlive` to net.Dialer.
+func WithDialKeepAlive(d time.Duration) HTTPClientOption {
+	return newFuncHTTPOption(func(o *httpClientOptions) error {
+		o.dialKeepAlive = d
+
+		return nil
+	})
+}
+
+// WithMaxConnsPerHost specifies the `MaxConnsPerHost` to http client.
+func WithMaxConnsPerHost(n int) HTTPClientOption {
+	return newFuncHTTPOption(func(o *httpClientOptions) error {
+		o.maxConnsPerHost = n
+
+		return nil
+	})
+}
+
+// WithMaxIdleConnsPerHost specifies the `MaxIdleConnsPerHost` to http client.
+func WithMaxIdleConnsPerHost(n int) HTTPClientOption {
+	return newFuncHTTPOption(func(o *httpClientOptions) error {
+		o.maxIdleConnsPerHost = n
+
+		return nil
+	})
+}
+
+// WithMaxIdleConns specifies the `MaxIdleConns` to http client.
+func WithMaxIdleConns(n int) HTTPClientOption {
+	return newFuncHTTPOption(func(o *httpClientOptions) error {
+		o.maxIdleConns = n
+
+		return nil
+	})
+}
+
+// WithIdleConnTimeout specifies the `IdleConnTimeout` to http client.
+func WithIdleConnTimeout(d time.Duration) HTTPClientOption {
+	return newFuncHTTPOption(func(o *httpClientOptions) error {
+		o.idleConnTimeout = d
+
+		return nil
+	})
+}
+
+// WithSSLCertFile specifies the TLS with cert file to http client.
+func WithSSLCertFile(certFile, keyFile string) HTTPClientOption {
+	return newFuncHTTPOption(func(o *httpClientOptions) error {
+		certFilePath, err := filepath.Abs(certFile)
+
+		if err != nil {
+			return err
+		}
+
+		keyFilePath, err := filepath.Abs(keyFile)
+
+		if err != nil {
+			return err
+		}
+
+		cert, err := tls.LoadX509KeyPair(certFilePath, keyFilePath)
+
+		if err != nil {
+			return err
+		}
+
+		o.sslCertificates = []tls.Certificate{cert}
+
+		return nil
+	})
+}
+
+// WithSSLCertBlock specifies the TLS with cert pem block to http client.
+func WithSSLCertBlock(certPEMBlock, keyPEMBlock []byte) HTTPClientOption {
+	return newFuncHTTPOption(func(o *httpClientOptions) error {
+		cert, err := tls.X509KeyPair(certPEMBlock, keyPEMBlock)
+
+		if err != nil {
+			return err
+		}
+
+		o.sslCertificates = []tls.Certificate{cert}
+
+		return nil
+	})
+}
+
+// WithTLSHandshakeTimeout specifies the `TLSHandshakeTimeout` to http client.
+func WithTLSHandshakeTimeout(d time.Duration) HTTPClientOption {
+	return newFuncHTTPOption(func(o *httpClientOptions) error {
+		o.tlsHandshakeTimeout = d
+
+		return nil
+	})
+}
+
+// WithExpectContinueTimeout specifies the `ExpectContinueTimeout` to http client.
+func WithExpectContinueTimeout(d time.Duration) HTTPClientOption {
+	return newFuncHTTPOption(func(o *httpClientOptions) error {
+		o.expectContinueTimeout = d
+
+		return nil
+	})
+}
+
+// httpRequestOptions http request options
+type httpRequestOptions struct {
+	headers          map[string]string
+	cookieFile       string
+	withCookies      bool
+	cookieSave       bool
+	cookieReplace    bool
+	disableKeepAlive bool
+	timeout          time.Duration
+}
+
+// HTTPRequestOption configures how we set up the http request
+type HTTPRequestOption interface {
+	apply(*httpRequestOptions) error
+}
+
+// funcHTTPRequestOption implements request option
+type funcHTTPRequestOption struct {
+	f func(*httpRequestOptions) error
+}
+
+func (fo *funcHTTPRequestOption) apply(r *httpRequestOptions) error {
+	return fo.f(r)
+}
+
+func newFuncHTTPRequestOption(f func(*httpRequestOptions) error) *funcHTTPRequestOption {
+	return &funcHTTPRequestOption{f: f}
+}
+
+// WithHeader specifies the headers to http request.
+func WithHeader(key, value string) HTTPRequestOption {
+	return newFuncHTTPRequestOption(func(o *httpRequestOptions) error {
+		o.headers[key] = value
+
+		return nil
+	})
+}
+
+// WithCookieFile specifies the file which to save http response cookies.
+func WithCookieFile(file string) HTTPRequestOption {
+	return newFuncHTTPRequestOption(func(o *httpRequestOptions) error {
+		path, err := filepath.Abs(file)
+
+		if err != nil {
+			return err
+		}
+
+		o.cookieFile = path
+
+		if err := mkCookieFile(path); err != nil {
+			return err
+		}
+
+		return nil
+	})
+}
+
+// WithCookies specifies http requested with cookies.
+func WithCookies() HTTPRequestOption {
+	return newFuncHTTPRequestOption(func(o *httpRequestOptions) error {
+		o.withCookies = true
+
+		return nil
+	})
+}
+
+// WithCookieSave specifies save the http response cookies.
+func WithCookieSave() HTTPRequestOption {
+	return newFuncHTTPRequestOption(func(o *httpRequestOptions) error {
+		o.cookieSave = true
+
+		return nil
+	})
+}
+
+// WithCookieReplace specifies replace the old http response cookies.
+func WithCookieReplace() HTTPRequestOption {
+	return newFuncHTTPRequestOption(func(o *httpRequestOptions) error {
+		o.cookieReplace = true
+
+		return nil
+	})
+}
+
+// WithDisableKeepAlive specifies close the connection after
+// replying to this request (for servers) or after sending this
+// request and reading its response (for clients).
+func WithDisableKeepAlive() HTTPRequestOption {
+	return newFuncHTTPRequestOption(func(o *httpRequestOptions) error {
+		o.disableKeepAlive = true
+
+		return nil
+	})
+}
+
+// WithTimeout specifies the timeout to http request.
+func WithTimeout(d time.Duration) HTTPRequestOption {
+	return newFuncHTTPRequestOption(func(o *httpRequestOptions) error {
+		o.timeout = d
+
+		return nil
+	})
+}
+
+// HTTPClient http client
+type HTTPClient struct {
+	client *http.Client
+}
+
+// Get http get request
+func (h *HTTPClient) Get(url string, options ...HTTPRequestOption) ([]byte, error) {
 	req, err := http.NewRequest("GET", url, nil)
 
 	if err != nil {
 		return nil, err
 	}
 
-	// custom headers
-	if len(headers) != 0 {
-		for k, v := range headers {
+	o := &httpRequestOptions{
+		headers: make(map[string]string),
+		timeout: defaultHTTPTimeout,
+	}
+
+	if len(options) > 0 {
+		for _, option := range options {
+			if err := option.apply(o); err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	if len(o.headers) > 0 {
+		for k, v := range o.headers {
 			req.Header.Set(k, v)
 		}
 	}
 
-	t := httpDefaultTimeout
+	if o.withCookies {
+		cookies, err := getCookies(o.cookieFile)
 
-	// custom timeout
-	if len(timeout) > 0 {
-		t = timeout[0]
+		if err != nil {
+			return nil, err
+		}
+
+		for _, c := range cookies {
+			req.AddCookie(c)
+		}
 	}
 
-	ctx, cancel := context.WithTimeout(context.TODO(), t)
+	if o.disableKeepAlive {
+		req.Close = true
+	}
+
+	ctx, cancel := context.WithTimeout(context.TODO(), o.timeout)
 
 	defer cancel()
 
-	resp, err := httpClient.Do(req.WithContext(ctx))
+	resp, err := h.client.Do(req.WithContext(ctx))
 
 	if err != nil {
 		return nil, err
 	}
 
 	defer resp.Body.Close()
+
+	if o.cookieSave {
+		if err := saveCookie(resp.Cookies(), o.cookieFile, o.cookieReplace); err != nil {
+			return nil, err
+		}
+	}
 
 	if resp.StatusCode != http.StatusOK {
 		io.Copy(ioutil.Discard, resp.Body)
@@ -104,41 +371,66 @@ func HTTPGet(url string, headers map[string]string, timeout ...time.Duration) ([
 	return b, nil
 }
 
-// HTTPPost http post request, the default `content-type` is 'application/json'.
-func HTTPPost(url string, body []byte, headers map[string]string, timeout ...time.Duration) ([]byte, error) {
+// Post http post request
+func (h *HTTPClient) Post(url string, body []byte, options ...HTTPRequestOption) ([]byte, error) {
 	req, err := http.NewRequest("POST", url, bytes.NewReader(body))
 
 	if err != nil {
 		return nil, err
 	}
 
-	req.Header.Set("Content-Type", "application/json; charset=utf-8")
+	o := &httpRequestOptions{
+		headers: make(map[string]string),
+		timeout: defaultHTTPTimeout,
+	}
 
-	// custom headers
-	if len(headers) != 0 {
-		for k, v := range headers {
+	if len(options) > 0 {
+		for _, option := range options {
+			if err := option.apply(o); err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	if len(o.headers) > 0 {
+		for k, v := range o.headers {
 			req.Header.Set(k, v)
 		}
 	}
 
-	t := httpDefaultTimeout
+	if o.withCookies {
+		cookies, err := getCookies(o.cookieFile)
 
-	// custom timeout
-	if len(timeout) > 0 {
-		t = timeout[0]
+		if err != nil {
+			return nil, err
+		}
+
+		for _, c := range cookies {
+			req.AddCookie(c)
+		}
 	}
 
-	ctx, cancel := context.WithTimeout(context.TODO(), t)
+	if o.disableKeepAlive {
+		req.Close = true
+	}
+
+	ctx, cancel := context.WithTimeout(context.TODO(), o.timeout)
 
 	defer cancel()
 
-	resp, err := httpClient.Do(req.WithContext(ctx))
+	resp, err := h.client.Do(req.WithContext(ctx))
 
 	if err != nil {
 		return nil, err
 	}
 
 	defer resp.Body.Close()
+
+	if o.cookieSave {
+		if err := saveCookie(resp.Cookies(), o.cookieFile, o.cookieReplace); err != nil {
+			return nil, err
+		}
+	}
 
 	if resp.StatusCode != http.StatusOK {
 		io.Copy(ioutil.Discard, resp.Body)
@@ -153,4 +445,150 @@ func HTTPPost(url string, body []byte, headers map[string]string, timeout ...tim
 	}
 
 	return b, nil
+}
+
+// NewHttpClient returns a new http client
+func NewHttpClient(options ...HTTPClientOption) (*HTTPClient, error) {
+	o := &httpClientOptions{
+		dialTimeout:           30 * time.Second,
+		dialKeepAlive:         60 * time.Second,
+		maxIdleConnsPerHost:   10,
+		maxIdleConns:          100,
+		idleConnTimeout:       60 * time.Second,
+		tlsHandshakeTimeout:   10 * time.Second,
+		expectContinueTimeout: 1 * time.Second,
+	}
+
+	if len(options) > 0 {
+		for _, option := range options {
+			if err := option.apply(o); err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	t := &http.Transport{
+		Proxy: http.ProxyFromEnvironment,
+		DialContext: (&net.Dialer{
+			Timeout:   o.dialTimeout,
+			KeepAlive: o.dialKeepAlive,
+			DualStack: true,
+		}).DialContext,
+		MaxConnsPerHost:       o.maxConnsPerHost,
+		MaxIdleConnsPerHost:   o.maxIdleConnsPerHost,
+		MaxIdleConns:          o.maxIdleConns,
+		IdleConnTimeout:       o.idleConnTimeout,
+		TLSHandshakeTimeout:   o.tlsHandshakeTimeout,
+		ExpectContinueTimeout: o.expectContinueTimeout,
+	}
+
+	if len(o.sslCertificates) > 0 {
+		t.TLSClientConfig = &tls.Config{
+			Certificates: o.sslCertificates,
+		}
+	}
+
+	c := &HTTPClient{
+		client: &http.Client{
+			Transport: t,
+		},
+	}
+
+	return c, nil
+}
+
+// HTTPGet http get request
+func HTTPGet(url string, options ...HTTPRequestOption) ([]byte, error) {
+	return defaultHTTPClient.Get(url, options...)
+}
+
+// HTTPPost http post request
+func HTTPPost(url string, body []byte, options ...HTTPRequestOption) ([]byte, error) {
+	return defaultHTTPClient.Post(url, body, options...)
+}
+
+// mkCookieFile create cookie file
+func mkCookieFile(path string) error {
+	dir := filepath.Dir(path)
+
+	// make dir if not exsit
+	if _, err := os.Stat(dir); err != nil && os.IsNotExist(err) {
+		if err := os.MkdirAll(dir, os.ModePerm); err != nil {
+			return err
+		}
+	}
+
+	// create file if not exsit
+	if _, err := os.Stat(path); err != nil && os.IsNotExist(err) {
+		if _, err := os.Create(path); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// getCookie get http saved cookies
+func getCookies(file string) ([]*http.Cookie, error) {
+	if file == "" {
+		return nil, errCookieFileNotFound
+	}
+
+	cookieM := make(map[string]*http.Cookie)
+	content, err := ioutil.ReadFile(file)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if err := json.Unmarshal(content, &cookieM); err != nil {
+		return nil, err
+	}
+
+	cookies := make([]*http.Cookie, 0, len(cookieM))
+
+	for _, v := range cookieM {
+		cookies = append(cookies, v)
+	}
+
+	return cookies, nil
+}
+
+// saveCookie save http cookies
+func saveCookie(cookies []*http.Cookie, file string, replace bool) error {
+	if len(cookies) == 0 {
+		return nil
+	}
+
+	if file == "" {
+		return errCookieFileNotFound
+	}
+
+	cookieM := make(map[string]*http.Cookie)
+
+	if !replace {
+		content, err := ioutil.ReadFile(file)
+
+		if err != nil {
+			return err
+		}
+
+		if len(content) > 0 {
+			if err := json.Unmarshal(content, &cookieM); err != nil {
+				return err
+			}
+		}
+	}
+
+	for _, c := range cookies {
+		cookieM[c.Name] = c
+	}
+
+	b, err := json.Marshal(cookieM)
+
+	if err != nil {
+		return err
+	}
+
+	return ioutil.WriteFile(file, b, 0777)
 }

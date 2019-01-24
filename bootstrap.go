@@ -10,8 +10,6 @@ func init() {
 	loadEnv()
 	// init logger
 	initLogger()
-	// init http client
-	initHTTPClient()
 	// init core components
 	bootstrap()
 }
@@ -72,16 +70,14 @@ func bootstrap() {
 
 	wg.Wait()
 
-	errCount := len(ch)
+	if l := len(ch); l > 0 {
+		msgs := make([]string, 0, l)
 
-	if errCount > 0 {
-		errMsgs := make([]string, 0, errCount)
-
-		for i := 0; i < errCount; i++ {
+		for i := 0; i < l; i++ {
 			err := <-ch
-			errMsgs = append(errMsgs, err.Error())
+			msgs = append(msgs, err.Error())
 		}
 
-		Logger.Panic(strings.Join(errMsgs, "\n"))
+		Logger.Panic(strings.Join(msgs, "\n"))
 	}
 }

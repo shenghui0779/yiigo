@@ -17,7 +17,6 @@
 - 支持多 [mongo](https://labix.org/mgo) 连接
 - 支持多 [redis](https://github.com/gomodule/redigo) 连接
 - 支持 [gomail](https://github.com/go-gomail/gomail) 邮件发送
-- 支持爬虫模拟登录
 
 ## 获取
 
@@ -53,11 +52,14 @@ glide update
 
 ## 说明
 
+- 支持 Go1.11+
 - 在 `main.go` 所在目录创建 `env.toml` 配置文件，具体组件配置可以参考 `env.toml.example`
 - 组件在 `env.toml` 中配置后会自动初始化加载，没有配置的组件不会初始化加载
-- `yiigo` 组件以外的应用配置均可在 `env.toml` 中配置，使用 `yiigo.ENV` 的相关方法获取配置值
+- `yiigo` 组件以外的应用配置均可在 `env.toml` 中配置，语法参考 [toml](https://github.com/toml-lang/toml)，使用 `yiigo.ENV` 的相关方法获取配置值
 - `MySQL`、`postgres`、`mongo`、`redis` 多连接配置参考 `env.toml.example` 中的多数据库配置部分 (注释部分)
 - `golang.org` 上 `go get` 不下来的库，可以在这里[获取](https://github.com/golang)
-- 如爬虫不需要模拟登录，则只需要使用 [goquery](https://github.com/PuerkitoBio/goquery) 即可
+- 做爬虫时需用到另外两个库：
+    1. 页面 DOM 处理：[goquery](https://github.com/PuerkitoBio/goquery)
+    2. GBK 转 UTF8：[iconv](https://github.com/qiniu/iconv)
 
 **Enjoy 😊**
