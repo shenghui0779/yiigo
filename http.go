@@ -235,11 +235,7 @@ func WithCookieFile(file string) HTTPRequestOption {
 
 		o.cookieFile = path
 
-		if err := mkCookieFile(path); err != nil {
-			return err
-		}
-
-		return nil
+		return mkCookieFile(path)
 	})
 }
 
@@ -447,8 +443,8 @@ func (h *HTTPClient) Post(url string, body []byte, options ...HTTPRequestOption)
 	return b, nil
 }
 
-// NewHttpClient returns a new http client
-func NewHttpClient(options ...HTTPClientOption) (*HTTPClient, error) {
+// NewHTTPClient returns a new http client
+func NewHTTPClient(options ...HTTPClientOption) (*HTTPClient, error) {
 	o := &httpClientOptions{
 		dialTimeout:           30 * time.Second,
 		dialKeepAlive:         60 * time.Second,
