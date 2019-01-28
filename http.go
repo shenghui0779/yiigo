@@ -22,25 +22,6 @@ const defaultHTTPTimeout = 10 * time.Second
 // errCookieFileNotFound cookie file not found error
 var errCookieFileNotFound = errors.New("cookie file not found")
 
-// defaultHTTPClient default http client
-var defaultHTTPClient = &HTTPClient{
-	client: &http.Client{
-		Transport: &http.Transport{
-			Proxy: http.ProxyFromEnvironment,
-			DialContext: (&net.Dialer{
-				Timeout:   30 * time.Second,
-				KeepAlive: 60 * time.Second,
-				DualStack: true,
-			}).DialContext,
-			MaxIdleConnsPerHost:   10,
-			MaxIdleConns:          100,
-			IdleConnTimeout:       60 * time.Second,
-			TLSHandshakeTimeout:   10 * time.Second,
-			ExpectContinueTimeout: 1 * time.Second,
-		},
-	},
-}
-
 // httpClientOptions http client options
 type httpClientOptions struct {
 	dialTimeout           time.Duration
@@ -443,6 +424,25 @@ func (h *HTTPClient) Post(url string, body []byte, options ...HTTPRequestOption)
 	return b, nil
 }
 
+// DefaultHTTPClient default http client
+var DefaultHTTPClient = &HTTPClient{
+	client: &http.Client{
+		Transport: &http.Transport{
+			Proxy: http.ProxyFromEnvironment,
+			DialContext: (&net.Dialer{
+				Timeout:   30 * time.Second,
+				KeepAlive: 60 * time.Second,
+				DualStack: true,
+			}).DialContext,
+			MaxIdleConnsPerHost:   10,
+			MaxIdleConns:          100,
+			IdleConnTimeout:       60 * time.Second,
+			TLSHandshakeTimeout:   10 * time.Second,
+			ExpectContinueTimeout: 1 * time.Second,
+		},
+	},
+}
+
 // NewHTTPClient returns a new http client
 func NewHTTPClient(options ...HTTPClientOption) (*HTTPClient, error) {
 	o := &httpClientOptions{
@@ -495,12 +495,12 @@ func NewHTTPClient(options ...HTTPClientOption) (*HTTPClient, error) {
 
 // HTTPGet http get request
 func HTTPGet(url string, options ...HTTPRequestOption) ([]byte, error) {
-	return defaultHTTPClient.Get(url, options...)
+	return DefaultHTTPClient.Get(url, options...)
 }
 
 // HTTPPost http post request
 func HTTPPost(url string, body []byte, options ...HTTPRequestOption) ([]byte, error) {
-	return defaultHTTPClient.Post(url, body, options...)
+	return DefaultHTTPClient.Post(url, body, options...)
 }
 
 // mkCookieFile create cookie file
