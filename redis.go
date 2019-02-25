@@ -1,6 +1,7 @@
 package yiigo
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"sync"
@@ -8,7 +9,6 @@ import (
 
 	"github.com/gomodule/redigo/redis"
 	toml "github.com/pelletier/go-toml"
-	"golang.org/x/net/context"
 	"vitess.io/vitess/go/pools"
 )
 

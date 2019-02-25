@@ -1,10 +1,10 @@
-hash: 9e12e8ab393606a93ffdcbb04ce97ff672c087f1dc803bdaa6a14c5b0bf79335
-updated: 2018-11-09T10:58:45.631372+08:00
+hash: b326bc38933f6ae36a9a77129c26773f680c47e9d1a43db9980528e283cdcb44
+updated: 2019-02-25T20:07:59.4479+08:00
 imports:
 - name: github.com/go-sql-driver/mysql
-  version: fd197cdcfae0c686792ef5399f223f5b66a30b6b
+  version: 972a708cf97995463843c08c8585b26997daf0e1
 - name: github.com/gomodule/redigo
-  version: e8fc0692a7e26a05b06517348ed466349062eb47
+  version: 4b40ddb4586bdd2805bcfba564ed0dfa28ec3886
   subpackages:
   - redis
 - name: github.com/jmoiron/sqlx
@@ -16,13 +16,13 @@ imports:
   subpackages:
   - oid
 - name: github.com/pelletier/go-toml
-  version: 81a861c69d25a841d0c4394f0e6f84bc8c5afae0
+  version: 27c6b39a135b7dc87a14afb068809132fb7a9a8f
 - name: go.uber.org/atomic
   version: 1ea20fb1cbb1cc08cbd0d913a96dead89aa18289
 - name: go.uber.org/multierr
   version: 3c4937480c32f4c13a875a1829af76c98ca3d40a
 - name: go.uber.org/zap
-  version: 67bc79d13d155c02fd008f721863ff8cc5f30659
+  version: d2a364dac1d9b70c651d9f47381c5912361e5596
   subpackages:
   - buffer
   - internal/bufferpool
@@ -30,12 +30,12 @@ imports:
   - internal/exit
   - zapcore
 - name: golang.org/x/net
-  version: 03003ca0c849e57b6ea29a4bab8d3cb6e4d568fe
+  version: 3a22650c66bd7f4fb6d1e8072ffd7b75c8a27898
   repo: https://github.com/golang/net.git
   subpackages:
   - context
 - name: google.golang.org/appengine
-  version: 4a4468ece617fc8205e99368fa2200e9d1fad421
+  version: 54a98f90d1c46b7731eb8fb305d2a321c30ef610
   repo: https://github.com/golang/appengine.git
   subpackages:
   - cloudsql
@@ -53,7 +53,7 @@ imports:
 - name: gopkg.in/natefinch/lumberjack.v2
   version: a96e63847dc3c67d17befa69c303767e2f84e54f
 - name: vitess.io/vitess
-  version: 7537577525367f86bd057d7b82f8cdffaabf8151
+  version: 6b90920da9898927142a27f3ad64015851843f0b
   subpackages:
   - go/cache
   - go/pools
