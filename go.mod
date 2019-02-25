@@ -7,11 +7,11 @@ require (
 	github.com/lib/pq v1.0.1-0.20181016162627-9eb73efc1fcc
 	github.com/pelletier/go-toml v1.2.1-0.20181124002727-27c6b39a135b
 	go.uber.org/zap v1.9.2-0.20190215012540-d2a364dac1d9
-	golang.org/x/net v0.0.0
+	golang.org/x/net v0.0.0-20190213061140-3a22650c66bd
 	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df
 	gopkg.in/mgo.v2 v2.0.0-20180705113604-9856a29383ce
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0-20170531160350-a96e63847dc3
 	vitess.io/vitess v3.0.0-rc.3.0.20190224205558-6b90920da989+incompatible
 )
 
-replace golang.org/x/net => github.com/golang/net v0.0.0-20190213061140-3a22650c66bd
+// replace golang.org/x/net => github.com/golang/net v0.0.0-20190213061140-3a22650c66bd
