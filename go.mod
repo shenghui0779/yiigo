@@ -1,4 +1,4 @@
-module github.com/IIInsomnia/yiigo
+module github.com/iiinsomnia/yiigo
 
 require (
 	github.com/go-sql-driver/mysql v1.4.1-0.20190217072658-972a708cf979
