@@ -81,6 +81,7 @@ conn.Do("SET", "test_key", "hello world")
 
 // other redis
 yiigo.RegisterRedis("foo", "localhost:6379")
+
 foo := yiigo.UseRedis("foo")
 conn, err := foo.Get()
 
@@ -96,8 +97,18 @@ conn.Do("SET", "test_key", "hello world")
 - 使用配置文件
 
 ```go
+// env.toml
+//
+// [app]
+// env = "dev"
+// debug = true
+// port = 50001
+
 yiigo.UseEnv("env.toml")
+
 yiigo.Env.GetBool("app.debug", true)
+yiigo.Env.GetInt("app.port", 12345)
+yiigo.Env.GetString("app.env", "dev")
 ```
 
 - 使用日志
