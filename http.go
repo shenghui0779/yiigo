@@ -37,24 +37,24 @@ type httpClientOptions struct {
 
 // HTTPClientOption configures how we set up the http client
 type HTTPClientOption interface {
-	apply(*httpClientOptions) error
+	apply(options *httpClientOptions) error
 }
 
 // funcHTTPClientOption implements http client option
 type funcHTTPClientOption struct {
-	f func(*httpClientOptions) error
+	f func(options *httpClientOptions) error
 }
 
 func (fo *funcHTTPClientOption) apply(o *httpClientOptions) error {
 	return fo.f(o)
 }
 
-func newFuncHTTPOption(f func(*httpClientOptions) error) *funcHTTPClientOption {
+func newFuncHTTPOption(f func(options *httpClientOptions) error) *funcHTTPClientOption {
 	return &funcHTTPClientOption{f: f}
 }
 
-// WithDialTimeout specifies the `DialTimeout` to net.Dialer.
-func WithDialTimeout(d time.Duration) HTTPClientOption {
+// WithHTTPDialTimeout specifies the `DialTimeout` to net.Dialer.
+func WithHTTPDialTimeout(d time.Duration) HTTPClientOption {
 	return newFuncHTTPOption(func(o *httpClientOptions) error {
 		o.dialTimeout = d
 
@@ -62,8 +62,8 @@ func WithDialTimeout(d time.Duration) HTTPClientOption {
 	})
 }
 
-// WithDialKeepAlive specifies the `KeepAlive` to net.Dialer.
-func WithDialKeepAlive(d time.Duration) HTTPClientOption {
+// WithHTTPDialKeepAlive specifies the `KeepAlive` to net.Dialer.
+func WithHTTPDialKeepAlive(d time.Duration) HTTPClientOption {
 	return newFuncHTTPOption(func(o *httpClientOptions) error {
 		o.dialKeepAlive = d
 
@@ -71,8 +71,8 @@ func WithDialKeepAlive(d time.Duration) HTTPClientOption {
 	})
 }
 
-// WithMaxConnsPerHost specifies the `MaxConnsPerHost` to http client.
-func WithMaxConnsPerHost(n int) HTTPClientOption {
+// WithHTTPMaxConnsPerHost specifies the `MaxConnsPerHost` to http client.
+func WithHTTPMaxConnsPerHost(n int) HTTPClientOption {
 	return newFuncHTTPOption(func(o *httpClientOptions) error {
 		o.maxConnsPerHost = n
 
@@ -80,8 +80,8 @@ func WithMaxConnsPerHost(n int) HTTPClientOption {
 	})
 }
 
-// WithMaxIdleConnsPerHost specifies the `MaxIdleConnsPerHost` to http client.
-func WithMaxIdleConnsPerHost(n int) HTTPClientOption {
+// WithHTTPMaxIdleConnsPerHost specifies the `MaxIdleConnsPerHost` to http client.
+func WithHTTPMaxIdleConnsPerHost(n int) HTTPClientOption {
 	return newFuncHTTPOption(func(o *httpClientOptions) error {
 		o.maxIdleConnsPerHost = n
 
@@ -89,8 +89,8 @@ func WithMaxIdleConnsPerHost(n int) HTTPClientOption {
 	})
 }
 
-// WithMaxIdleConns specifies the `MaxIdleConns` to http client.
-func WithMaxIdleConns(n int) HTTPClientOption {
+// WithHTTPMaxIdleConns specifies the `MaxIdleConns` to http client.
+func WithHTTPMaxIdleConns(n int) HTTPClientOption {
 	return newFuncHTTPOption(func(o *httpClientOptions) error {
 		o.maxIdleConns = n
 
@@ -98,8 +98,8 @@ func WithMaxIdleConns(n int) HTTPClientOption {
 	})
 }
 
-// WithIdleConnTimeout specifies the `IdleConnTimeout` to http client.
-func WithIdleConnTimeout(d time.Duration) HTTPClientOption {
+// WithHTTPIdleConnTimeout specifies the `IdleConnTimeout` to http client.
+func WithHTTPIdleConnTimeout(d time.Duration) HTTPClientOption {
 	return newFuncHTTPOption(func(o *httpClientOptions) error {
 		o.idleConnTimeout = d
 
@@ -107,8 +107,8 @@ func WithIdleConnTimeout(d time.Duration) HTTPClientOption {
 	})
 }
 
-// WithSSLCertFile specifies the TLS with cert file to http client.
-func WithSSLCertFile(certFile, keyFile string) HTTPClientOption {
+// WithHTTPSSLCertFile specifies the TLS with cert file to http client.
+func WithHTTPSSLCertFile(certFile, keyFile string) HTTPClientOption {
 	return newFuncHTTPOption(func(o *httpClientOptions) error {
 		certFilePath, err := filepath.Abs(certFile)
 
@@ -134,8 +134,8 @@ func WithSSLCertFile(certFile, keyFile string) HTTPClientOption {
 	})
 }
 
-// WithSSLCertBlock specifies the TLS with cert pem block to http client.
-func WithSSLCertBlock(certPEMBlock, keyPEMBlock []byte) HTTPClientOption {
+// WithHTTPSSLCertBlock specifies the TLS with cert pem block to http client.
+func WithHTTPSSLCertBlock(certPEMBlock, keyPEMBlock []byte) HTTPClientOption {
 	return newFuncHTTPOption(func(o *httpClientOptions) error {
 		cert, err := tls.X509KeyPair(certPEMBlock, keyPEMBlock)
 
@@ -149,8 +149,8 @@ func WithSSLCertBlock(certPEMBlock, keyPEMBlock []byte) HTTPClientOption {
 	})
 }
 
-// WithTLSHandshakeTimeout specifies the `TLSHandshakeTimeout` to http client.
-func WithTLSHandshakeTimeout(d time.Duration) HTTPClientOption {
+// WithHTTPTLSHandshakeTimeout specifies the `TLSHandshakeTimeout` to http client.
+func WithHTTPTLSHandshakeTimeout(d time.Duration) HTTPClientOption {
 	return newFuncHTTPOption(func(o *httpClientOptions) error {
 		o.tlsHandshakeTimeout = d
 
@@ -158,8 +158,8 @@ func WithTLSHandshakeTimeout(d time.Duration) HTTPClientOption {
 	})
 }
 
-// WithExpectContinueTimeout specifies the `ExpectContinueTimeout` to http client.
-func WithExpectContinueTimeout(d time.Duration) HTTPClientOption {
+// WithHTTPExpectContinueTimeout specifies the `ExpectContinueTimeout` to http client.
+func WithHTTPExpectContinueTimeout(d time.Duration) HTTPClientOption {
 	return newFuncHTTPOption(func(o *httpClientOptions) error {
 		o.expectContinueTimeout = d
 
@@ -196,8 +196,8 @@ func newFuncHTTPRequestOption(f func(*httpRequestOptions) error) *funcHTTPReques
 	return &funcHTTPRequestOption{f: f}
 }
 
-// WithHeader specifies the headers to http request.
-func WithHeader(key, value string) HTTPRequestOption {
+// WithRequestHeader specifies the headers to http request.
+func WithRequestHeader(key, value string) HTTPRequestOption {
 	return newFuncHTTPRequestOption(func(o *httpRequestOptions) error {
 		o.headers[key] = value
 
@@ -205,8 +205,8 @@ func WithHeader(key, value string) HTTPRequestOption {
 	})
 }
 
-// WithCookieFile specifies the file which to save http response cookies.
-func WithCookieFile(file string) HTTPRequestOption {
+// WithRequestCookieFile specifies the file which to save http response cookies.
+func WithRequestCookieFile(file string) HTTPRequestOption {
 	return newFuncHTTPRequestOption(func(o *httpRequestOptions) error {
 		path, err := filepath.Abs(file)
 
@@ -220,8 +220,8 @@ func WithCookieFile(file string) HTTPRequestOption {
 	})
 }
 
-// WithCookies specifies http requested with cookies.
-func WithCookies() HTTPRequestOption {
+// WithRequestCookies specifies http requested with cookies.
+func WithRequestCookies() HTTPRequestOption {
 	return newFuncHTTPRequestOption(func(o *httpRequestOptions) error {
 		o.withCookies = true
 
@@ -229,8 +229,8 @@ func WithCookies() HTTPRequestOption {
 	})
 }
 
-// WithCookieSave specifies save the http response cookies.
-func WithCookieSave() HTTPRequestOption {
+// WithRequestCookieSave specifies save the http response cookies.
+func WithRequestCookieSave() HTTPRequestOption {
 	return newFuncHTTPRequestOption(func(o *httpRequestOptions) error {
 		o.cookieSave = true
 
@@ -238,8 +238,8 @@ func WithCookieSave() HTTPRequestOption {
 	})
 }
 
-// WithCookieReplace specifies replace the old http response cookies.
-func WithCookieReplace() HTTPRequestOption {
+// WithRequestCookieReplace specifies replace the old http response cookies.
+func WithRequestCookieReplace() HTTPRequestOption {
 	return newFuncHTTPRequestOption(func(o *httpRequestOptions) error {
 		o.cookieReplace = true
 
@@ -247,10 +247,10 @@ func WithCookieReplace() HTTPRequestOption {
 	})
 }
 
-// WithDisableKeepAlive specifies close the connection after
+// WithRequestDisableKeepAlive specifies close the connection after
 // replying to this request (for servers) or after sending this
 // request and reading its response (for clients).
-func WithDisableKeepAlive() HTTPRequestOption {
+func WithRequestDisableKeepAlive() HTTPRequestOption {
 	return newFuncHTTPRequestOption(func(o *httpRequestOptions) error {
 		o.disableKeepAlive = true
 
@@ -258,8 +258,8 @@ func WithDisableKeepAlive() HTTPRequestOption {
 	})
 }
 
-// WithTimeout specifies the timeout to http request.
-func WithTimeout(d time.Duration) HTTPRequestOption {
+// WithRequestTimeout specifies the timeout to http request.
+func WithRequestTimeout(d time.Duration) HTTPRequestOption {
 	return newFuncHTTPRequestOption(func(o *httpRequestOptions) error {
 		o.timeout = d
 

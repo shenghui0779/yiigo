@@ -2,28 +2,97 @@ package yiigo
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"sync"
 	"time"
 
 	"github.com/gomodule/redigo/redis"
-	toml "github.com/pelletier/go-toml"
 	"vitess.io/vitess/go/pools"
 )
 
-type redisConf struct {
-	Name         string `toml:"name"`
-	Host         string `toml:"host"`
-	Port         int    `toml:"port"`
-	Password     string `toml:"password"`
-	Database     int    `toml:"database"`
-	ConnTimeout  int    `toml:"connTimeout"`
-	ReadTimeout  int    `toml:"readTimeout"`
-	WriteTimeout int    `toml:"writeTimeout"`
-	PoolSize     int    `toml:"poolSize"`
-	PoolLimit    int    `toml:"poolLimit"`
-	IdleTimeout  int    `toml:"idleTimeout"`
+type redisOptions struct {
+	password     string
+	database     int
+	connTimeout  time.Duration
+	readTimeout  time.Duration
+	writeTimeout time.Duration
+	poolSize     int
+	poolLimit    int
+	idleTimeout  time.Duration
+}
+
+// RedisOption configures how we set up the db
+type RedisOption interface {
+	apply(options *redisOptions)
+}
+
+// funcRedisOption implements redis option
+type funcRedisOption struct {
+	f func(options *redisOptions)
+}
+
+func (fo *funcRedisOption) apply(o *redisOptions) {
+	fo.f(o)
+}
+
+func newFuncRedisOption(f func(options *redisOptions)) *funcRedisOption {
+	return &funcRedisOption{f: f}
+}
+
+// WithRedisPassword specifies the `Password` to redis.
+func WithRedisPassword(s string) RedisOption {
+	return newFuncRedisOption(func(o *redisOptions) {
+		o.password = s
+	})
+}
+
+// WithRedisDatabase specifies the `Database` to redis.
+func WithRedisDatabase(n int) RedisOption {
+	return newFuncRedisOption(func(o *redisOptions) {
+		o.database = n
+	})
+}
+
+// WithRedisConnTimeout specifies the `ConnTimeout` to redis.
+func WithRedisConnTimeout(d time.Duration) RedisOption {
+	return newFuncRedisOption(func(o *redisOptions) {
+		o.connTimeout = d
+	})
+}
+
+// WithRedisReadTimeout specifies the `ReadTimeout` to redis.
+func WithRedisReadTimeout(d time.Duration) RedisOption {
+	return newFuncRedisOption(func(o *redisOptions) {
+		o.readTimeout = d
+	})
+}
+
+// WithRedisWriteTimeout specifies the `WriteTimeout` to redis.
+func WithRedisWriteTimeout(d time.Duration) RedisOption {
+	return newFuncRedisOption(func(o *redisOptions) {
+		o.writeTimeout = d
+	})
+}
+
+// WithRedisPoolSize specifies the `PoolSize` to redis.
+func WithRedisPoolSize(n int) RedisOption {
+	return newFuncRedisOption(func(o *redisOptions) {
+		o.poolSize = n
+	})
+}
+
+// WithRedisPoolLimit specifies the `PoolLimit` to redis.
+func WithRedisPoolLimit(n int) RedisOption {
+	return newFuncRedisOption(func(o *redisOptions) {
+		o.poolSize = n
+	})
+}
+
+// WithRedisIdleTimeout specifies the `IdleTimeout` to redis.
+func WithRedisIdleTimeout(d time.Duration) RedisOption {
+	return newFuncRedisOption(func(o *redisOptions) {
+		o.idleTimeout = d
+	})
 }
 
 // RedisConn redis connection resource
@@ -38,28 +107,27 @@ func (r RedisConn) Close() {
 
 // RedisPoolResource redis pool resource
 type RedisPoolResource struct {
-	pool   *pools.ResourcePool
-	config *redisConf
-	mutex  sync.Mutex
+	addr    string
+	options *redisOptions
+	pool    *pools.ResourcePool
+	mutex   sync.Mutex
 }
 
 func (r *RedisPoolResource) dial() (redis.Conn, error) {
-	dsn := fmt.Sprintf("%s:%d", r.config.Host, r.config.Port)
-
 	dialOptions := []redis.DialOption{
-		redis.DialPassword(r.config.Password),
-		redis.DialDatabase(r.config.Database),
-		redis.DialConnectTimeout(time.Duration(r.config.ConnTimeout) * time.Second),
-		redis.DialReadTimeout(time.Duration(r.config.ReadTimeout) * time.Second),
-		redis.DialWriteTimeout(time.Duration(r.config.WriteTimeout) * time.Second),
+		redis.DialPassword(r.options.password),
+		redis.DialDatabase(r.options.database),
+		redis.DialConnectTimeout(r.options.connTimeout),
+		redis.DialReadTimeout(r.options.readTimeout),
+		redis.DialWriteTimeout(r.options.writeTimeout),
 	}
 
-	conn, err := redis.Dial("tcp", dsn, dialOptions...)
+	conn, err := redis.Dial("tcp", r.addr, dialOptions...)
 
 	return conn, err
 }
 
-func (r *RedisPoolResource) initPool() {
+func (r *RedisPoolResource) init() {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 
@@ -77,13 +145,13 @@ func (r *RedisPoolResource) initPool() {
 		return RedisConn{conn}, nil
 	}
 
-	r.pool = pools.NewResourcePool(df, r.config.PoolSize, r.config.PoolLimit, time.Duration(r.config.IdleTimeout)*time.Second)
+	r.pool = pools.NewResourcePool(df, r.options.poolSize, r.options.poolLimit, r.options.idleTimeout)
 }
 
 // Get get a connection resource from the pool.
 func (r *RedisPoolResource) Get() (RedisConn, error) {
 	if r.pool.IsClosed() {
-		r.initPool()
+		r.init()
 	}
 
 	resource, err := r.pool.Get(context.TODO())
@@ -118,81 +186,48 @@ func (r *RedisPoolResource) Put(rc RedisConn) {
 }
 
 var (
-	// Redis default connection pool
+	// Redis default redis connection pool
 	Redis    *RedisPoolResource
 	redisMap sync.Map
 )
 
-func initRedis() error {
-	result := Env.Get("redis")
-
-	if result == nil {
-		return nil
+// RegisterRedis register a redis
+func RegisterRedis(name, addr string, options ...RedisOption) {
+	o := &redisOptions{
+		connTimeout:  10 * time.Second,
+		readTimeout:  10 * time.Second,
+		writeTimeout: 10 * time.Second,
+		poolSize:     10,
+		poolLimit:    20,
+		idleTimeout:  60 * time.Second,
 	}
 
-	switch node := result.(type) {
-	case *toml.Tree:
-		conf := new(redisConf)
-
-		if err := node.Unmarshal(conf); err != nil {
-			return err
+	if len(options) > 0 {
+		for _, option := range options {
+			option.apply(o)
 		}
-
-		initSingleRedis(conf)
-	case []*toml.Tree:
-		conf := make([]*redisConf, 0, len(node))
-
-		for _, v := range node {
-			c := new(redisConf)
-
-			if err := v.Unmarshal(c); err != nil {
-				return err
-			}
-
-			conf = append(conf, c)
-		}
-
-		initMultiRedis(conf)
-	default:
-		return errors.New("yiigo: invalid redis config")
 	}
 
-	return nil
-}
-
-func initSingleRedis(conf *redisConf) {
-	Redis = &RedisPoolResource{config: conf}
-	Redis.initPool()
-
-	redisMap.Store("default", Redis)
-}
-
-func initMultiRedis(conf []*redisConf) {
-	for _, v := range conf {
-		poolResource := &RedisPoolResource{config: v}
-		poolResource.initPool()
-
-		redisMap.Store(v.Name, poolResource)
+	poolResource := &RedisPoolResource{
+		addr:    addr,
+		options: o,
 	}
+	poolResource.init()
 
-	if v, ok := redisMap.Load("default"); ok {
-		Redis = v.(*RedisPoolResource)
+	redisMap.Store(name, poolResource)
+
+	if name == AsDefault {
+		Redis = poolResource
 	}
 }
 
-// RedisPool returns a redis pool.
-func RedisPool(conn ...string) (*RedisPoolResource, error) {
-	schema := "default"
-
-	if len(conn) > 0 {
-		schema = conn[0]
-	}
-
-	v, ok := redisMap.Load(schema)
+// UseRedis returns a redis pool.
+func UseRedis(name string) *RedisPoolResource {
+	v, ok := redisMap.Load(name)
 
 	if !ok {
-		return nil, fmt.Errorf("yiigo: redis.%s is not connected", schema)
+		panic(fmt.Errorf("yiigo: redis.%s is not registered", name))
 	}
 
-	return v.(*RedisPoolResource), nil
+	return v.(*RedisPoolResource)
 }

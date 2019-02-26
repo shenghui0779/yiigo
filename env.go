@@ -22,21 +22,23 @@ var Env *env
 // ErrEnvNil returned when config not found.
 var ErrEnvNil = errors.New("yiigo: env config not found")
 
-// loadEnv load env file.
-func loadEnv() {
-	abs, err := filepath.Abs("env.toml")
+// UseEnv use `toml` config file.
+func UseEnv(file string) error {
+	path, err := filepath.Abs(file)
 
 	if err != nil {
-		panic(err)
+		return err
 	}
 
-	tomlTree, err := toml.LoadFile(abs)
+	tomlTree, err := toml.LoadFile(path)
 
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	Env = &env{tree: tomlTree}
+
+	return nil
 }
 
 // String returns a value of string.

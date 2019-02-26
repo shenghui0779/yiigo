@@ -1,64 +1,89 @@
 package yiigo
 
 import (
-	"sync"
-
-	gomail "gopkg.in/gomail.v2"
+	"gopkg.in/gomail.v2"
 )
 
-type emailConfig struct {
-	Title    string `toml:"title"`
-	Host     string `toml:"host"`
-	Port     int    `toml:"port"`
-	Username string `toml:"username"`
-	Password string `toml:"password"`
+var email *gomail.Dialer
+
+// emailOptions email options
+type emailOptions struct {
+	charset     string
+	encoding    gomail.Encoding
+	contentType string
+}
+
+// EMailOption configures how we set up the db
+type EMailOption interface {
+	apply(options *emailOptions)
+}
+
+// funcEMailOption implements email option
+type funcEMailOption struct {
+	f func(options *emailOptions)
+}
+
+func (fo *funcEMailOption) apply(o *emailOptions) {
+	fo.f(o)
+}
+
+func newFuncEMailOption(f func(options *emailOptions)) *funcEMailOption {
+	return &funcEMailOption{f: f}
+}
+
+// WithEMailCharset specifies the `Charset` to email.
+func WithEMailCharset(s string) EMailOption {
+	return newFuncEMailOption(func(o *emailOptions) {
+		o.charset = s
+	})
+}
+
+// WithEMailEncoding specifies the `Encoding` to email.
+func WithEMailEncoding(e gomail.Encoding) EMailOption {
+	return newFuncEMailOption(func(o *emailOptions) {
+		o.encoding = e
+	})
+}
+
+// WithEMailContentType specifies the `ContentType` to email.
+func WithEMailContentType(s string) EMailOption {
+	return newFuncEMailOption(func(o *emailOptions) {
+		o.contentType = s
+	})
 }
 
 // Mailer email
 type Mailer struct {
-	Title    string
-	Subject  string
-	From     string
-	To       []string
-	Cc       []string
-	Content  string
-	Attach   []string
-	Charset  string
-	Encoding gomail.Encoding
-}
-
-var (
-	emailDialer *gomail.Dialer
-	emailMutex  sync.Mutex
-)
-
-func emailDial() {
-	emailMutex.Lock()
-	defer emailMutex.Unlock()
-
-	if emailDialer != nil {
-		return
-	}
-
-	conf := &emailConfig{}
-	Env.Unmarshal("email", conf)
-
-	emailDialer = gomail.NewDialer(conf.Host, conf.Port, conf.Username, conf.Password)
+	Title   string
+	Subject string
+	From    string
+	To      []string
+	Cc      []string
+	Content string
+	Attach  []string
 }
 
 // Send send an email.
-func (m *Mailer) Send() error {
-	msgSettings := make([]gomail.MessageSetting, 0, 2)
+func (m *Mailer) Send(options ...EMailOption) error {
+	o := &emailOptions{contentType: "text/html"}
 
-	if m.Charset != "" {
-		msgSettings = append(msgSettings, gomail.SetCharset(m.Charset))
+	if len(options) > 0 {
+		for _, option := range options {
+			option.apply(o)
+		}
 	}
 
-	if m.Encoding != "" {
-		msgSettings = append(msgSettings, gomail.SetEncoding(m.Encoding))
+	settings := make([]gomail.MessageSetting, 0, 2)
+
+	if o.charset != "" {
+		settings = append(settings, gomail.SetCharset(o.charset))
 	}
 
-	msg := gomail.NewMessage(msgSettings...)
+	if o.encoding != "" {
+		settings = append(settings, gomail.SetEncoding(o.encoding))
+	}
+
+	msg := gomail.NewMessage(settings...)
 
 	msg.SetHeader("Subject", m.Subject)
 	msg.SetAddressHeader("From", m.From, m.Title)
@@ -74,14 +99,15 @@ func (m *Mailer) Send() error {
 		}
 	}
 
-	msg.SetBody("text/html", m.Content)
-
-	if emailDialer == nil {
-		emailDial()
-	}
+	msg.SetBody(o.contentType, m.Content)
 
 	// Send the email
-	err := emailDialer.DialAndSend(msg)
+	err := email.DialAndSend(msg)
 
 	return err
+}
+
+// UseEMail use email
+func UseEMail(host string, port int, username, password string) {
+	email = gomail.NewDialer(host, port, username, password)
 }

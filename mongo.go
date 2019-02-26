@@ -1,25 +1,140 @@
 package yiigo
 
 import (
-	"errors"
+	"context"
 	"fmt"
 	"sync"
 	"time"
 
-	toml "github.com/pelletier/go-toml"
-	mgo "gopkg.in/mgo.v2"
-	"gopkg.in/mgo.v2/bson"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
-type mongoConf struct {
-	Name      string `toml:"name"`
-	Host      string `toml:"host"`
-	Port      int    `toml:"port"`
-	Username  string `toml:"username"`
-	Password  string `toml:"password"`
-	Timeout   int    `toml:"timeout"`
-	PoolLimit int    `toml:"poolLimit"`
-	Mode      int    `toml:"mode"`
+type Mode int
+
+const (
+	Primary            Mode = 1 // Default mode. All operations read from the current replica set primary.
+	PrimaryPreferred   Mode = 2 // Read from the primary if available. Read from the secondary otherwise.
+	Secondary          Mode = 3 // Read from one of the nearest secondary members of the replica set.
+	SecondaryPreferred Mode = 4 // Read from one of the nearest secondaries if available. Read from primary otherwise.
+	Nearest            Mode = 5 // Read from one of the nearest members, irrespective of it being primary or secondary.
+)
+
+type mongoOptions struct {
+	connTimeout            time.Duration
+	poolSize               int
+	maxConnIdleTime        time.Duration
+	localThreshold         time.Duration
+	serverSelectionTimeout time.Duration
+	socketTimeout          time.Duration
+	heartbeatInterval      time.Duration
+	retryWrites            bool
+	direct                 bool
+	mode                   Mode
+}
+
+// MongoOption configures how we set up the mongo
+type MongoOption interface {
+	apply(options *mongoOptions)
+}
+
+// funcMongoOption implements mongo option
+type funcMongoOption struct {
+	f func(options *mongoOptions)
+}
+
+func (fo *funcMongoOption) apply(o *mongoOptions) {
+	fo.f(o)
+}
+
+func newFuncMongoOption(f func(options *mongoOptions)) *funcMongoOption {
+	return &funcMongoOption{f: f}
+}
+
+// WithMongoConnTimeout specifies the `ConnTimeout` to mongo.
+func WithMongoConnTimeout(d time.Duration) MongoOption {
+	return newFuncMongoOption(func(o *mongoOptions) {
+		o.connTimeout = d
+	})
+}
+
+// WithMongoPoolSize specifies the `PoolSize` to mongo.
+// MaxPoolSize specifies the max size of a server's connection pool.
+func WithMongoPoolSize(n int) MongoOption {
+	return newFuncMongoOption(func(o *mongoOptions) {
+		o.poolSize = n
+	})
+}
+
+// WithMongoMaxConnIdleTime specifies the `MaxConnIdleTime` to mongo.
+// MaxConnIdleTime specifies the maximum number of milliseconds that a connection can remain idle
+// in a connection pool before being removed and closed.
+func WithMongoMaxConnIdleTime(d time.Duration) MongoOption {
+	return newFuncMongoOption(func(o *mongoOptions) {
+		o.maxConnIdleTime = d
+	})
+}
+
+// WithMongoLocalThreshold specifies the `LocalThreshold` to mongo.
+// LocalThreshold specifies how far to distribute queries, beyond the server with the fastest
+// round-trip time. If a server's roundtrip time is more than LocalThreshold slower than the
+// the fastest, the driver will not send queries to that server.
+func WithMongoLocalThreshold(d time.Duration) MongoOption {
+	return newFuncMongoOption(func(o *mongoOptions) {
+		o.localThreshold = d
+	})
+}
+
+// WithMongoServerSelectionTimeout specifies the `ServerSelectionTimeout` to mongo.
+// ServerSelectionTimeout specifies a timeout in milliseconds to block for server selection.
+func WithMongoServerSelectionTimeout(d time.Duration) MongoOption {
+	return newFuncMongoOption(func(o *mongoOptions) {
+		o.serverSelectionTimeout = d
+	})
+}
+
+// WithMongoSocketTimeout specifies the `SocketTimeout` to mongo.
+// SocketTimeout specifies the time in milliseconds to attempt to send or receive on a socket
+// before the attempt times out.
+func WithMongoSocketTimeout(d time.Duration) MongoOption {
+	return newFuncMongoOption(func(o *mongoOptions) {
+		o.socketTimeout = d
+	})
+}
+
+// WithMongoHeartbeatInterval specifies the `HeartbeatInterval` to mongo.
+// HeartbeatInterval specifies the interval to wait between server monitoring checks.
+func WithMongoHeartbeatInterval(d time.Duration) MongoOption {
+	return newFuncMongoOption(func(o *mongoOptions) {
+		o.heartbeatInterval = d
+	})
+}
+
+// WithRetryWrites specifies the `RetryWrites` to mongo.
+// RetryWrites specifies whether the client has retryable writes enabled.
+func WithRetryWrites() MongoOption {
+	return newFuncMongoOption(func(o *mongoOptions) {
+		o.retryWrites = true
+	})
+}
+
+// WithDirect specifies the `Direct` to mongo.
+// Direct specifies whether the driver should connect directly to the server instead of
+// auto-discovering other servers in the cluster.
+func WithDirect() MongoOption {
+	return newFuncMongoOption(func(o *mongoOptions) {
+		o.direct = true
+	})
+}
+
+// WithMongoMode specifies the `Mode` to mongo.
+// Mode specifies the read preference.
+func WithMongoMode(m Mode) MongoOption {
+	return newFuncMongoOption(func(o *mongoOptions) {
+		o.mode = m
+	})
 }
 
 // Sequence model for _id auto_increment of mongo
@@ -29,134 +144,106 @@ type Sequence struct {
 }
 
 var (
-	// Mongo default mongo session
-	Mongo  *mgo.Session
+	// Mongo default mongo client
+	Mongo  *mongo.Client
 	mgoMap sync.Map
 )
 
-// initMongo init MongoDB
-func initMongo() error {
-	result := Env.Get("mongo")
-
-	if result == nil {
-		return nil
+func mongoDial(dsn string, mgoOptions ...MongoOption) (*mongo.Client, error) {
+	o := &mongoOptions{
+		connTimeout:     10 * time.Second,
+		poolSize:        10,
+		maxConnIdleTime: 60 * time.Second,
 	}
 
-	switch node := result.(type) {
-	case *toml.Tree:
-		conf := new(mongoConf)
-
-		if err := node.Unmarshal(conf); err != nil {
-			return err
+	if len(mgoOptions) > 0 {
+		for _, option := range mgoOptions {
+			option.apply(o)
 		}
-
-		if err := initSingleMongo(conf); err != nil {
-			return err
-		}
-	case []*toml.Tree:
-		conf := make([]*mongoConf, 0, len(node))
-
-		for _, v := range node {
-			c := new(mongoConf)
-
-			if err := v.Unmarshal(c); err != nil {
-				return err
-			}
-
-			conf = append(conf, c)
-		}
-
-		if err := initMultiMongo(conf); err != nil {
-			return err
-		}
-	default:
-		return errors.New("yiigo: invalid mongo config")
 	}
 
-	return nil
+	clientOptions := options.Client()
+
+	clientOptions.ApplyURI(dsn)
+	clientOptions.SetConnectTimeout(o.connTimeout)
+	clientOptions.SetMaxPoolSize(uint16(o.poolSize))
+	clientOptions.SetMaxConnIdleTime(o.maxConnIdleTime)
+
+	if o.localThreshold != 0 {
+		clientOptions.SetLocalThreshold(o.localThreshold)
+	}
+
+	if o.serverSelectionTimeout != 0 {
+		clientOptions.SetServerSelectionTimeout(o.serverSelectionTimeout)
+	}
+
+	if o.socketTimeout != 0 {
+		clientOptions.SetSocketTimeout(o.socketTimeout)
+	}
+
+	if o.heartbeatInterval != 0 {
+		clientOptions.SetHeartbeatInterval(o.heartbeatInterval)
+	}
+
+	if o.retryWrites {
+		clientOptions.SetRetryWrites(true)
+	}
+
+	if o.direct {
+		clientOptions.SetDirect(true)
+	}
+
+	if o.mode != 0 {
+		switch o.mode {
+		case Primary:
+			clientOptions.SetReadPreference(readpref.Primary())
+		case PrimaryPreferred:
+			clientOptions.SetReadPreference(readpref.PrimaryPreferred())
+		case Secondary:
+			clientOptions.SetReadPreference(readpref.Secondary())
+		case SecondaryPreferred:
+			clientOptions.SetReadPreference(readpref.SecondaryPreferred())
+		case Nearest:
+			clientOptions.SetReadPreference(readpref.Nearest())
+		}
+	}
+
+	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
+	client, err := mongo.Connect(ctx, clientOptions)
+
+	return client, err
 }
 
-func initSingleMongo(conf *mongoConf) error {
-	var err error
-
-	Mongo, err = mongoDial(conf)
+// RegisterMongoDB register a mongodb, `dsn` eg: `mongodb://username:password@localhost:27017`
+func RegisterMongoDB(name, dsn string, options ...MongoOption) error {
+	client, err := mongoDial(dsn, options...)
 
 	if err != nil {
-		return fmt.Errorf("yiigo: mongo.default connect error: %s", err.Error())
+		return err
 	}
 
-	mgoMap.Store("default", Mongo)
+	mgoMap.Store(name, client)
 
-	return nil
-}
-
-func initMultiMongo(conf []*mongoConf) error {
-	for _, v := range conf {
-		m, err := mongoDial(v)
-
-		if err != nil {
-			return fmt.Errorf("yiigo: mongo.%s connect error: %s", v.Name, err.Error())
-		}
-
-		mgoMap.Store(v.Name, m)
-	}
-
-	if v, ok := mgoMap.Load("default"); ok {
-		Mongo = v.(*mgo.Session)
+	if name == AsDefault {
+		Mongo = client
 	}
 
 	return nil
 }
 
-func mongoDial(conf *mongoConf) (*mgo.Session, error) {
-	dsn := fmt.Sprintf("mongodb://%s:%d", conf.Host, conf.Port)
-
-	if conf.Username != "" {
-		dsn = fmt.Sprintf("mongodb://%s:%s@%s:%d", conf.Username, conf.Password, conf.Host, conf.Port)
-	}
-
-	m, err := mgo.DialWithTimeout(dsn, time.Duration(conf.Timeout)*time.Second)
-
-	if err != nil {
-		return nil, err
-	}
-
-	if err := m.Ping(); err != nil {
-		return nil, err
-	}
-
-	if conf.PoolLimit != 0 {
-		m.SetPoolLimit(conf.PoolLimit)
-	}
-
-	if conf.Mode != 0 {
-		m.SetMode(mgo.Mode(conf.Mode), true)
-	}
-
-	return m, nil
-}
-
-// MongoSession returns a mongo session.
-func MongoSession(conn ...string) (*mgo.Session, error) {
-	schema := "default"
-
-	if len(conn) > 0 {
-		schema = conn[0]
-	}
-
-	v, ok := mgoMap.Load(schema)
+// UseMongo returns a mongo client.
+func UseMongo(name string) *mongo.Client {
+	v, ok := mgoMap.Load(name)
 
 	if !ok {
-		return nil, fmt.Errorf("yiigo: mongo.%s is not connected", schema)
+		panic(fmt.Errorf("yiigo: mongo.%s is not registered", name))
 	}
 
-	session := v.(*mgo.Session)
-
-	return session.Clone(), nil
+	return v.(*mongo.Client)
 }
 
 // SeqID returns _id auto_increment to mongo.
-func SeqID(session *mgo.Session, db string, collection string, seqs ...int64) (int64, error) {
+func SeqID(ctx context.Context, client *mongo.Client, db string, collection string, seqs ...int64) (int64, error) {
 	var seq int64 = 1
 
 	if len(seqs) > 0 {
@@ -165,17 +252,17 @@ func SeqID(session *mgo.Session, db string, collection string, seqs ...int64) (i
 
 	condition := bson.M{"_id": collection}
 
-	change := mgo.Change{
-		Update:    bson.M{"$inc": bson.M{"seq": seq}},
-		Upsert:    true,
-		ReturnNew: true,
-	}
+	change := bson.M{"$inc": bson.M{"seq": seq}}
 
-	sequence := new(Sequence)
+	// sequence := new(Sequence)
 
-	if _, err := session.DB(db).C("sequence").Find(condition).Apply(change, sequence); err != nil {
+	r, err := client.Database(db).Collection("sequence").UpdateOne(ctx, condition, change, options.Update().SetUpsert(true))
+
+	if err != nil {
 		return 0, err
 	}
 
-	return sequence.Seq, nil
+	fmt.Println(r.UpsertedID)
+
+	return 0, nil
 }
