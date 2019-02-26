@@ -37,12 +37,12 @@ go get github.com/iiinsomnia/yiigo
 
 ```go
 // default db
-yiigo.RegisterDB("default", yiigo.MySQL, "root:root@tcp(localhost:3306)/test?timeout=10s&charset=utf8mb4&collation=utf8mb4_general_ci&parseTime=True&loc=Local")
+yiigo.RegisterDB("default", yiigo.MySQL, "root:root@tcp(localhost:3306)/test")
 
 yiigo.DB.Get(&User{}, "SELECT * FROM `user` WHERE `id` = 1")
 
 // other db
-yiigo.RegisterDB("foo", yiigo.MySQL, "root:root@tcp(localhost:3306)/test?timeout=10s&charset=utf8mb4&collation=utf8mb4_general_ci&parseTime=True&loc=Local")
+yiigo.RegisterDB("foo", yiigo.MySQL, "root:root@tcp(localhost:3306)/test")
 
 yiigo.UseDB("foo").Get(&User{}, "SELECT * FROM `user` WHERE `id` = 1")
 ```
