@@ -1,6 +1,8 @@
 // Package yiigo 简单易用的 Golang 辅助库
 //
-// 使用 MySQL：
+// 基本使用如下：
+//
+// MySQL:
 //
 //    // default db
 //    yiigo.RegisterDB("default", yiigo.MySQL, "root:root@tcp(localhost:3306)/test")
@@ -12,7 +14,7 @@
 //
 //    yiigo.UseDB("foo").Get(&User{}, "SELECT * FROM `user` WHERE `id` = ?", 1)
 //
-// 使用 MongoDB：
+// MongoDB:
 //
 //    // default mongodb
 //    yiigo.RegisterMongoDB("default", "mongodb://username:password@localhost:27017")
@@ -26,7 +28,7 @@
 //    ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 //    yiigo.UseMongo("foo").Database("test").Collection("numbers").InsertOne(ctx, bson.M{"name": "pi", "value": 3.14159})
 //
-// 使用 Redis：
+// Redis:
 //
 //    // default redis
 //    yiigo.RegisterRedis("default", "localhost:6379")
@@ -55,7 +57,7 @@
 //
 //    conn.Do("SET", "test_key", "hello world")
 //
-// 使用配置文件：
+// Config:
 //
 //    // env.toml
 //    //
@@ -70,7 +72,7 @@
 //    yiigo.Env.GetInt("app.port", 12345)
 //    yiigo.Env.GetString("app.env", "dev")
 //
-// 使用日志：
+// Logger:
 //
 //    // default logger
 //    yiigo.RegisterLogger("default", "app.log")
