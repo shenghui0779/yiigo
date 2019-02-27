@@ -21,17 +21,12 @@
 ## 获取
 
 ```sh
-# Glide (推荐)
-glide init
-glide get github.com/iiinsomnia/yiigo
-
-# go get
 go get github.com/iiinsomnia/yiigo
 ```
 
 ## 使用
 
-#### `MySQL`
+#### MySQL
 
 ```go
 // default db
@@ -45,7 +40,7 @@ yiigo.RegisterDB("foo", yiigo.MySQL, "root:root@tcp(localhost:3306)/test")
 yiigo.UseDB("foo").Get(&User{}, "SELECT * FROM `user` WHERE `id` = ?", 1)
 ```
 
-#### `MongoDB`
+#### MongoDB
 
 ```go
 // default mongodb
@@ -61,7 +56,7 @@ ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 yiigo.UseMongo("foo").Database("test").Collection("numbers").InsertOne(ctx, bson.M{"name": "pi", "value": 3.14159})
 ```
 
-#### `Redis`
+#### Redis
 
 ```go
 // default redis
@@ -92,7 +87,7 @@ defer foo.Put(conn)
 conn.Do("SET", "test_key", "hello world")
 ```
 
-#### `Config`
+#### Config
 
 ```go
 // env.toml
@@ -109,7 +104,7 @@ yiigo.Env.GetInt("app.port", 12345)
 yiigo.Env.GetString("app.env", "dev")
 ```
 
-#### `Logger`
+#### Logger
 
 ```go
 // default logger
