@@ -123,8 +123,8 @@ yiigo.UseLogger("foo").Info("hello world")
 ## 说明
 
 - 支持 Go1.11+
-- `toml` 配置文件相关语法参考 [toml](https://github.com/toml-lang/toml)，使用 `yiigo.ENV` 的相关方法获取配置
-- 做爬虫时需用到另外两个库：
+- 配置文件相关语法参考 [toml](https://github.com/toml-lang/toml)
+- 爬虫可能需要的两个库：
     1. 页面 DOM 处理：[goquery](https://github.com/PuerkitoBio/goquery)
     2. GBK 转 UTF8：[iconv](https://github.com/qiniu/iconv)
 
