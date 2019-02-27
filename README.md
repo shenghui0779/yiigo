@@ -52,13 +52,13 @@ yiigo.UseDB("foo").Get(&User{}, "SELECT * FROM `user` WHERE `id` = ?", 1)
 yiigo.RegisterMongoDB("default", "mongodb://username:password@localhost:27017")
 
 ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
-yiigo.Mongo.Database("test").Collection("user").InsertOne(ctx, bson.M{"name": "pi", "value": 3.14159})
+yiigo.Mongo.Database("test").Collection("numbers").InsertOne(ctx, bson.M{"name": "pi", "value": 3.14159})
 
 // other mongodb
 yiigo.RegisterMongoDB("foo", "mongodb://username:password@localhost:27017")
 
 ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
-yiigo.UseMongo("foo").Database("test").Collection("user").InsertOne(ctx, bson.M{"name": "pi", "value": 3.14159})
+yiigo.UseMongo("foo").Database("test").Collection("numbers").InsertOne(ctx, bson.M{"name": "pi", "value": 3.14159})
 ```
 
 #### 使用 `Redis`
