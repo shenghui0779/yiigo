@@ -31,23 +31,21 @@ go get github.com/iiinsomnia/yiigo
 
 ## 使用
 
-#### 1、import yiigo
-
-- 使用 `MySQL`
+#### 使用 `MySQL`
 
 ```go
 // default db
 yiigo.RegisterDB("default", yiigo.MySQL, "root:root@tcp(localhost:3306)/test")
 
-yiigo.DB.Get(&User{}, "SELECT * FROM `user` WHERE `id` = 1")
+yiigo.DB.Get(&User{}, "SELECT * FROM `user` WHERE `id` = ?", 1)
 
 // other db
 yiigo.RegisterDB("foo", yiigo.MySQL, "root:root@tcp(localhost:3306)/test")
 
-yiigo.UseDB("foo").Get(&User{}, "SELECT * FROM `user` WHERE `id` = 1")
+yiigo.UseDB("foo").Get(&User{}, "SELECT * FROM `user` WHERE `id` = ?", 1)
 ```
 
--  使用 `MongoDB`
+####  使用 `MongoDB`
 
 ```go
 // default mongodb
@@ -63,7 +61,7 @@ ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 yiigo.UseMongo("foo").Database("test").Collection("user").InsertOne(ctx, bson.M{"name": "pi", "value": 3.14159})
 ```
 
-- 使用 `Redis`
+#### 使用 `Redis`
 
 ```go
 // default redis
@@ -94,7 +92,7 @@ defer foo.Put(conn)
 conn.Do("SET", "test_key", "hello world")
 ```
 
-- 使用配置文件
+#### 使用配置文件
 
 ```go
 // env.toml
@@ -111,7 +109,7 @@ yiigo.Env.GetInt("app.port", 12345)
 yiigo.Env.GetString("app.env", "dev")
 ```
 
-- 使用日志
+#### 使用日志
 
 ```go
 // default logger
@@ -121,13 +119,6 @@ yiigo.Logger.Info("hello world")
 // other logger
 yiigo.RegisterLogger("foo", "foo.log")
 yiigo.UseLogger("foo").Info("hello world")
-```
-
-#### 2、resolve dependencies
-
-```sh
-# 获取 yiigo 所需依赖包
-glide update
 ```
 
 ## 文档
