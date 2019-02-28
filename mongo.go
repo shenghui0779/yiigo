@@ -11,6 +11,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
+// Mode indicates the user's preference on reads.
 type Mode int
 
 const (
