@@ -1,3 +1,5 @@
 .vscode
 .idea
 vendor
+go.sum
+glide.lock

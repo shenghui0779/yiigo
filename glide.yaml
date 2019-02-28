@@ -1,0 +1,21 @@
+package: .
+import:
+- package: github.com/go-sql-driver/mysql
+- package: github.com/gomodule/redigo
+  subpackages:
+  - redis
+- package: github.com/jmoiron/sqlx
+- package: github.com/pelletier/go-toml
+- package: go.mongodb.org/mongo-driver
+  subpackages:
+  - mongo
+  - mongo/options
+  - mongo/readpref
+- package: go.uber.org/zap
+  subpackages:
+  - zapcore
+- package: gopkg.in/gomail.v2
+- package: gopkg.in/natefinch/lumberjack.v2
+- package: vitess.io/vitess
+  subpackages:
+  - go/pools
