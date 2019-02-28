@@ -93,7 +93,7 @@ func (m *EMailDialer) Send(e *EMail, options ...EMailOption) error {
 }
 
 var (
-	Mailer    *mailer
+	Mailer    *EMailDialer
 	mailerMap sync.Map
 )
 
