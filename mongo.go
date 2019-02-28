@@ -6,10 +6,9 @@ import (
 	"sync"
 	"time"
 
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.mongodb.org/mongo-driver/mongo/readpref"
+	"github.com/mongodb/mongo-go-driver/mongo"
+	"github.com/mongodb/mongo-go-driver/mongo/options"
+	"github.com/mongodb/mongo-go-driver/mongo/readpref"
 )
 
 type Mode int
@@ -137,12 +136,6 @@ func WithMongoMode(m Mode) MongoOption {
 	})
 }
 
-// Sequence model for _id auto_increment of mongo
-type Sequence struct {
-	ID  string `bson:"_id"`
-	Seq int64  `bson:"seq"`
-}
-
 var (
 	// Mongo default mongo client
 	Mongo  *mongo.Client
@@ -240,29 +233,4 @@ func UseMongo(name string) *mongo.Client {
 	}
 
 	return v.(*mongo.Client)
-}
-
-// SeqID returns _id auto_increment to mongo.
-func SeqID(ctx context.Context, client *mongo.Client, db string, collection string, seqs ...int64) (int64, error) {
-	var seq int64 = 1
-
-	if len(seqs) > 0 {
-		seq = seqs[0]
-	}
-
-	condition := bson.M{"_id": collection}
-
-	change := bson.M{"$inc": bson.M{"seq": seq}}
-
-	// sequence := new(Sequence)
-
-	r, err := client.Database(db).Collection("sequence").UpdateOne(ctx, condition, change, options.Update().SetUpsert(true))
-
-	if err != nil {
-		return 0, err
-	}
-
-	fmt.Println(r.UpsertedID)
-
-	return 0, nil
 }
