@@ -43,12 +43,13 @@ func newFuncEMailOption(f func(options *emailOptions)) *funcEMailOption {
 	return &funcEMailOption{f: f}
 }
 
-type mailer struct {
+// EMailDialer email dialer
+type EMailDialer struct {
 	dialer *gomail.Dialer
 }
 
 // Send send an email.
-func (m *mailer) Send(e *EMail, options ...EMailOption) error {
+func (m *EMailDialer) Send(e *EMail, options ...EMailOption) error {
 	o := &emailOptions{contentType: "text/html"}
 
 	if len(options) > 0 {
@@ -119,8 +120,7 @@ func WithEMailContentType(s string) EMailOption {
 
 // RegisterMailer register a mailer
 func RegisterMailer(name, host string, port int, account, password string) {
-
-	m := &mailer{dialer: gomail.NewDialer(host, port, account, password)}
+	m := &EMailDialer{dialer: gomail.NewDialer(host, port, account, password)}
 
 	mailerMap.Store(name, m)
 
@@ -130,12 +130,12 @@ func RegisterMailer(name, host string, port int, account, password string) {
 }
 
 // UseMailer returns a mailer
-func UseMailer(name string) *mailer {
+func UseMailer(name string) *EMailDialer {
 	v, ok := mailerMap.Load(name)
 
 	if !ok {
 		panic(fmt.Errorf("yiigo: mailer.%s is not registered", name))
 	}
 
-	return v.(*mailer)
+	return v.(*EMailDialer)
 }

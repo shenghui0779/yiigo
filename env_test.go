@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-// test env.toml
+// env.toml
 //
 // [app]
 // env = "dev"
