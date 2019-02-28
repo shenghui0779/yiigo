@@ -84,7 +84,7 @@ func WithRedisPoolSize(n int) RedisOption {
 // WithRedisPoolLimit specifies the `PoolLimit` to redis.
 func WithRedisPoolLimit(n int) RedisOption {
 	return newFuncRedisOption(func(o *redisOptions) {
-		o.poolSize = n
+		o.poolLimit = n
 	})
 }
 
