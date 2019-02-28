@@ -34,7 +34,7 @@ yiigo.RegisterDB("default", yiigo.MySQL, "root:root@tcp(localhost:3306)/test")
 yiigo.DB.Get(&User{}, "SELECT * FROM `user` WHERE `id` = ?", 1)
 
 // other db
-yiigo.RegisterDB("foo", yiigo.MySQL, "root:root@tcp(localhost:3306)/test")
+yiigo.RegisterDB("foo", yiigo.MySQL, "root:root@tcp(localhost:3306)/foo")
 
 yiigo.UseDB("foo").Get(&User{}, "SELECT * FROM `user` WHERE `id` = ?", 1)
 ```
@@ -43,13 +43,13 @@ yiigo.UseDB("foo").Get(&User{}, "SELECT * FROM `user` WHERE `id` = ?", 1)
 
 ```go
 // default mongodb
-yiigo.RegisterMongoDB("default", "mongodb://username:password@localhost:27017")
+yiigo.RegisterMongoDB("default", "mongodb://localhost:27017")
 
 ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 yiigo.Mongo.Database("test").Collection("numbers").InsertOne(ctx, bson.M{"name": "pi", "value": 3.14159})
 
 // other mongodb
-yiigo.RegisterMongoDB("foo", "mongodb://username:password@localhost:27017")
+yiigo.RegisterMongoDB("foo", "mongodb://localhost:27017")
 
 ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 yiigo.UseMongo("foo").Database("test").Collection("numbers").InsertOne(ctx, bson.M{"name": "pi", "value": 3.14159})
