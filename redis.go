@@ -212,6 +212,7 @@ func RegisterRedis(name, addr string, options ...RedisOption) {
 		addr:    addr,
 		options: o,
 	}
+
 	poolResource.init()
 
 	redisMap.Store(name, poolResource)
