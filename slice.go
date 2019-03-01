@@ -2,6 +2,11 @@ package yiigo
 
 import "sort"
 
+const (
+	uniqueNumberThreshold = 1024
+	uniqueStringThreshold = 256
+)
+
 // Int64Slice attaches the methods of Interface to []int64, sorting a increasing order.
 type Int64Slice []int64
 
@@ -91,7 +96,7 @@ func UniqueInt(a []int) []int {
 		return a
 	}
 
-	if l < 1024 {
+	if l < uniqueNumberThreshold {
 		return uniqueIntByLoop(a, l)
 	}
 
@@ -107,7 +112,7 @@ func UniqueInt64(a []int64) []int64 {
 		return a
 	}
 
-	if l < 1024 {
+	if l < uniqueNumberThreshold {
 		return uniqueInt64ByLoop(a, l)
 	}
 
@@ -123,7 +128,7 @@ func UniqueFloat64(a []float64) []float64 {
 		return a
 	}
 
-	if l < 1024 {
+	if l < uniqueNumberThreshold {
 		return uniqueFloat64ByLoop(a, l)
 	}
 
@@ -139,7 +144,7 @@ func UniqueString(a []string) []string {
 		return a
 	}
 
-	if l < 256 {
+	if l < uniqueStringThreshold {
 		return uniqueStringByLoop(a, l)
 	}
 
