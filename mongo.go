@@ -208,7 +208,10 @@ func mongoDial(dsn string, mgoOptions ...MongoOption) (*mongo.Client, error) {
 	return client, err
 }
 
-// RegisterMongoDB register a mongodb, `dsn` eg: `mongodb://username:password@localhost:27017`
+// RegisterMongoDB register a mongodb, `dsn` eg: `mongodb://username:password@localhost:27017`.
+// The default `ConnTimeout` is 10s.
+// The default `PoolSize` is 10.
+// The default `MaxConnIdleTime` is 60s.
 func RegisterMongoDB(name, dsn string, options ...MongoOption) error {
 	client, err := mongoDial(dsn, options...)
 

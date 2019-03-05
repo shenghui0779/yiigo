@@ -81,7 +81,7 @@ func WithLogCompress() LogOption {
 	})
 }
 
-// initLogger init logger
+// initLogger init logger, the default `MaxSize` is 500M.
 func initLogger(logfile string, options ...LogOption) *zap.Logger {
 	o := &logOptions{maxSize: 500}
 

@@ -104,7 +104,7 @@ func dbDial(driverName, dsn string, options ...DBOption) (*sqlx.DB, error) {
 	o := &dbOptions{
 		maxOpenConns:    20,
 		maxIdleConns:    10,
-		connMaxLifetime: 10 * time.Second,
+		connMaxLifetime: 60 * time.Second,
 	}
 
 	if len(options) > 0 {
@@ -133,6 +133,9 @@ func dbDial(driverName, dsn string, options ...DBOption) (*sqlx.DB, error) {
 // RegisterDB register a db, `dsn` eg:
 // MySQL: `username:password@tcp(localhost:3306)/dbname?timeout=10s&charset=utf8mb4&collation=utf8mb4_general_ci&parseTime=True&loc=Local`
 // Postgres: `host=localhost port=5432 user=root password=secret dbname=test connect_timeout=10 sslmode=disable`
+// The default `MaxOpenConns` is 20.
+// The default `MaxIdleConns` is 10.
+// The default `ConnMaxLifetime` is 60s.
 func RegisterDB(name string, driver Driver, dsn string, options ...DBOption) error {
 	driverName := ""
 

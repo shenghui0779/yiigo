@@ -191,7 +191,13 @@ var (
 	redisMap sync.Map
 )
 
-// RegisterRedis register a redis
+// RegisterRedis register a redis.
+// The default `ConnTimeout` is 10s.
+// The default `ReadTimeout` is 10s.
+// The default `WriteTimeout` is 10s.
+// The default `PoolSize` is 10.
+// The default `PoolLimit` is 20.
+// The default `IdleTimeout` is 60s.
 func RegisterRedis(name, addr string, options ...RedisOption) {
 	o := &redisOptions{
 		connTimeout:  10 * time.Second,

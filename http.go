@@ -26,6 +26,7 @@ var errCookieFileNotFound = errors.New("cookie file not found")
 type httpClientOptions struct {
 	dialTimeout           time.Duration
 	dialKeepAlive         time.Duration
+	fallbackDelay         time.Duration
 	maxConnsPerHost       int
 	maxIdleConnsPerHost   int
 	maxIdleConns          int
@@ -66,6 +67,15 @@ func WithHTTPDialTimeout(d time.Duration) HTTPClientOption {
 func WithHTTPDialKeepAlive(d time.Duration) HTTPClientOption {
 	return newFuncHTTPOption(func(o *httpClientOptions) error {
 		o.dialKeepAlive = d
+
+		return nil
+	})
+}
+
+// WithHTTPDialFallbackDelay specifies the `FallbackDelay` to net.Dialer.
+func WithHTTPDialFallbackDelay(d time.Duration) HTTPClientOption {
+	return newFuncHTTPOption(func(o *httpClientOptions) error {
+		o.fallbackDelay = d
 
 		return nil
 	})
@@ -432,7 +442,6 @@ var defaultHTTPClient = &HTTPClient{
 			DialContext: (&net.Dialer{
 				Timeout:   30 * time.Second,
 				KeepAlive: 60 * time.Second,
-				DualStack: true,
 			}).DialContext,
 			MaxIdleConnsPerHost:   10,
 			MaxIdleConns:          100,
@@ -468,7 +477,6 @@ func NewHTTPClient(options ...HTTPClientOption) (*HTTPClient, error) {
 		DialContext: (&net.Dialer{
 			Timeout:   o.dialTimeout,
 			KeepAlive: o.dialKeepAlive,
-			DualStack: true,
 		}).DialContext,
 		MaxConnsPerHost:       o.maxConnsPerHost,
 		MaxIdleConnsPerHost:   o.maxIdleConnsPerHost,
