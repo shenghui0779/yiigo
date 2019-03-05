@@ -192,6 +192,7 @@ var (
 )
 
 // RegisterRedis register a redis.
+//
 // The default `ConnTimeout` is 10s.
 // The default `ReadTimeout` is 10s.
 // The default `WriteTimeout` is 10s.
