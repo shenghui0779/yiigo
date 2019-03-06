@@ -1,4 +1,4 @@
-// Package yiigo 简单易用的 Golang 辅助库
+// Package yiigo 简单易用的轻量级 Golang 辅助库
 //
 // 基本使用如下：
 //
