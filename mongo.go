@@ -114,18 +114,22 @@ func WithMongoHeartbeatInterval(d time.Duration) MongoOption {
 
 // WithRetryWrites specifies the `RetryWrites` to mongo.
 // RetryWrites specifies whether the client has retryable writes enabled.
-func WithRetryWrites() MongoOption {
+func WithRetryWrites(b bool) MongoOption {
 	return newFuncMongoOption(func(o *mongoOptions) {
-		o.retryWrites = true
+		if b {
+			o.retryWrites = true
+		}
 	})
 }
 
 // WithDirect specifies the `Direct` to mongo.
 // Direct specifies whether the driver should connect directly to the server instead of
 // auto-discovering other servers in the cluster.
-func WithDirect() MongoOption {
+func WithDirect(b bool) MongoOption {
 	return newFuncMongoOption(func(o *mongoOptions) {
-		o.direct = true
+		if b {
+			o.direct = true
+		}
 	})
 }
 

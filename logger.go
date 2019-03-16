@@ -7,7 +7,7 @@ import (
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	lumberjack "gopkg.in/natefinch/lumberjack.v2"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 var (
@@ -21,6 +21,7 @@ type logOptions struct {
 	maxAge     int
 	maxBackups int
 	compress   bool
+	debug      bool
 }
 
 // LogOption configures how we set up the logger
@@ -75,9 +76,20 @@ func WithLogMaxBackups(n int) LogOption {
 // WithLogCompress specifies the `Compress` to logger.
 // Compress determines if the rotated log files should be compressed
 // using gzip.
-func WithLogCompress() LogOption {
+func WithLogCompress(b bool) LogOption {
 	return newFuncLogOption(func(o *logOptions) {
-		o.compress = true
+		if b {
+			o.compress = true
+		}
+	})
+}
+
+// WithLogDebug specifies the `Debug` mode to logger.
+func WithLogDebug(b bool) LogOption {
+	return newFuncLogOption(func(o *logOptions) {
+		if b {
+			o.debug = true
+		}
 	})
 }
 
@@ -89,6 +101,17 @@ func initLogger(logfile string, options ...LogOption) *zap.Logger {
 		for _, option := range options {
 			option.apply(o)
 		}
+	}
+
+	if o.debug {
+		cfg := zap.NewDevelopmentConfig()
+
+		cfg.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
+		cfg.EncoderConfig.EncodeTime = MyTimeEncoder
+
+		l, _ := cfg.Build()
+
+		return l
 	}
 
 	w := zapcore.AddSync(&lumberjack.Logger{
