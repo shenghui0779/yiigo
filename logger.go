@@ -138,8 +138,8 @@ func initLogger(logfile string, options ...LogOption) *zap.Logger {
 }
 
 // RegisterLogger register logger
-func RegisterLogger(name, logfile string, options ...LogOption) {
-	logger := initLogger(logfile, options...)
+func RegisterLogger(name, file string, options ...LogOption) {
+	logger := initLogger(file, options...)
 
 	logMap.Store(name, logger)
 
