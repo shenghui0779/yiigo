@@ -78,18 +78,14 @@ func WithLogMaxBackups(n int) LogOption {
 // using gzip.
 func WithLogCompress(b bool) LogOption {
 	return newFuncLogOption(func(o *logOptions) {
-		if b {
-			o.compress = true
-		}
+		o.compress = b
 	})
 }
 
 // WithLogDebug specifies the `Debug` mode to logger.
 func WithLogDebug(b bool) LogOption {
 	return newFuncLogOption(func(o *logOptions) {
-		if b {
-			o.debug = true
-		}
+		o.debug = b
 	})
 }
 

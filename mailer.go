@@ -25,7 +25,7 @@ type emailOptions struct {
 	contentType string
 }
 
-// EMailOption configures how we set up the db
+// EMailOption configures how we set up the email
 type EMailOption interface {
 	apply(options *emailOptions)
 }
@@ -41,6 +41,27 @@ func (fo *funcEMailOption) apply(o *emailOptions) {
 
 func newFuncEMailOption(f func(options *emailOptions)) *funcEMailOption {
 	return &funcEMailOption{f: f}
+}
+
+// WithEMailCharset specifies the `Charset` to email.
+func WithEMailCharset(s string) EMailOption {
+	return newFuncEMailOption(func(o *emailOptions) {
+		o.charset = s
+	})
+}
+
+// WithEMailEncoding specifies the `Encoding` to email.
+func WithEMailEncoding(e gomail.Encoding) EMailOption {
+	return newFuncEMailOption(func(o *emailOptions) {
+		o.encoding = e
+	})
+}
+
+// WithEMailContentType specifies the `ContentType` to email.
+func WithEMailContentType(s string) EMailOption {
+	return newFuncEMailOption(func(o *emailOptions) {
+		o.contentType = s
+	})
 }
 
 // EMailDialer email dialer
@@ -96,27 +117,6 @@ var (
 	Mailer    *EMailDialer
 	mailerMap sync.Map
 )
-
-// WithEMailCharset specifies the `Charset` to email.
-func WithEMailCharset(s string) EMailOption {
-	return newFuncEMailOption(func(o *emailOptions) {
-		o.charset = s
-	})
-}
-
-// WithEMailEncoding specifies the `Encoding` to email.
-func WithEMailEncoding(e gomail.Encoding) EMailOption {
-	return newFuncEMailOption(func(o *emailOptions) {
-		o.encoding = e
-	})
-}
-
-// WithEMailContentType specifies the `ContentType` to email.
-func WithEMailContentType(s string) EMailOption {
-	return newFuncEMailOption(func(o *emailOptions) {
-		o.contentType = s
-	})
-}
 
 // RegisterMailer register a mailer
 func RegisterMailer(name, host string, port int, account, password string) {

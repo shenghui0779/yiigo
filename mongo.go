@@ -116,9 +116,7 @@ func WithMongoHeartbeatInterval(d time.Duration) MongoOption {
 // RetryWrites specifies whether the client has retryable writes enabled.
 func WithRetryWrites(b bool) MongoOption {
 	return newFuncMongoOption(func(o *mongoOptions) {
-		if b {
-			o.retryWrites = true
-		}
+		o.retryWrites = b
 	})
 }
 
@@ -127,9 +125,7 @@ func WithRetryWrites(b bool) MongoOption {
 // auto-discovering other servers in the cluster.
 func WithDirect(b bool) MongoOption {
 	return newFuncMongoOption(func(o *mongoOptions) {
-		if b {
-			o.direct = true
-		}
+		o.direct = b
 	})
 }
 

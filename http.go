@@ -233,9 +233,7 @@ func WithRequestCookieFile(file string) HTTPRequestOption {
 // WithRequestCookies specifies http requested with cookies.
 func WithRequestCookies(b bool) HTTPRequestOption {
 	return newFuncHTTPRequestOption(func(o *httpRequestOptions) error {
-		if b {
-			o.withCookies = true
-		}
+		o.withCookies = b
 
 		return nil
 	})
@@ -244,9 +242,7 @@ func WithRequestCookies(b bool) HTTPRequestOption {
 // WithRequestCookieSave specifies save the http response cookies.
 func WithRequestCookieSave(b bool) HTTPRequestOption {
 	return newFuncHTTPRequestOption(func(o *httpRequestOptions) error {
-		if b {
-			o.cookieSave = true
-		}
+		o.cookieSave = b
 
 		return nil
 	})
@@ -255,9 +251,7 @@ func WithRequestCookieSave(b bool) HTTPRequestOption {
 // WithRequestCookieReplace specifies replace the old http response cookies.
 func WithRequestCookieReplace(b bool) HTTPRequestOption {
 	return newFuncHTTPRequestOption(func(o *httpRequestOptions) error {
-		if b {
-			o.cookieReplace = true
-		}
+		o.cookieReplace = b
 
 		return nil
 	})
@@ -268,9 +262,7 @@ func WithRequestCookieReplace(b bool) HTTPRequestOption {
 // request and reading its response (for clients).
 func WithRequestDisableKeepAlive(b bool) HTTPRequestOption {
 	return newFuncHTTPRequestOption(func(o *httpRequestOptions) error {
-		if b {
-			o.disableKeepAlive = true
-		}
+		o.disableKeepAlive = b
 
 		return nil
 	})
