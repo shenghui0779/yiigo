@@ -6,6 +6,9 @@ import (
 	"time"
 )
 
+// AsDefault alias for "default"
+const AsDefault = "default"
+
 // X is a convenient alias for a map[string]interface{}.
 type X map[string]interface{}
 

@@ -18,8 +18,6 @@ type Driver int
 const (
 	MySQL    Driver = 1
 	Postgres Driver = 2
-	// AsDefault alias as "default"
-	AsDefault = "default"
 )
 
 var (
