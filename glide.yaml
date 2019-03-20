@@ -5,6 +5,7 @@ import:
   subpackages:
   - redis
 - package: github.com/jmoiron/sqlx
+- package: github.com/lib/pq
 - package: github.com/pelletier/go-toml
 - package: go.mongodb.org/mongo-driver
   subpackages:
