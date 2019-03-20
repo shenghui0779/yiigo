@@ -352,12 +352,12 @@ func singleInsertWithMap(driver Driver, table string, data X) (string, []interfa
 		for k, v := range data {
 			bindIndex++
 
-			columns = append(columns, fmt.Sprintf("`%s`", k))
+			columns = append(columns, fmt.Sprintf(`"%s"`, k))
 			placeholders = append(placeholders, fmt.Sprintf("$%d", bindIndex))
 			binds = append(binds, v)
 		}
 
-		sql = fmt.Sprintf("INSERT INTO `%s` (%s) VALUES (%s) RETURNING `id`", table, strings.Join(columns, ", "), strings.Join(placeholders, ", "))
+		sql = fmt.Sprintf(`INSERT INTO "%s" (%s) VALUES (%s) RETURNING "id"`, table, strings.Join(columns, ", "), strings.Join(placeholders, ", "))
 	}
 
 	return sql, binds
@@ -397,12 +397,12 @@ func singleInsertWithStruct(driver Driver, table string, v reflect.Value) (strin
 				column = t.Field(i).Name
 			}
 
-			columns = append(columns, fmt.Sprintf("`%s`", column))
+			columns = append(columns, fmt.Sprintf(`"%s"`, column))
 			placeholders = append(placeholders, fmt.Sprintf("$%d", i+1))
 			binds = append(binds, v.Field(i).Interface())
 		}
 
-		sql = fmt.Sprintf("INSERT INTO `%s` (%s) VALUES (%s) RETURNING `id`", table, strings.Join(columns, ", "), strings.Join(placeholders, ", "))
+		sql = fmt.Sprintf(`INSERT INTO "%s" (%s) VALUES (%s) RETURNING "id"`, table, strings.Join(columns, ", "), strings.Join(placeholders, ", "))
 	}
 
 	return sql, binds
@@ -418,13 +418,14 @@ func batchInsertWithMap(driver Driver, table string, data []X, count int) (strin
 	sql := ""
 	binds := make([]interface{}, 0, fieldNum*count)
 
-	for k := range data[0] {
-		fields = append(fields, k)
-		columns = append(columns, fmt.Sprintf("`%s`", k))
-	}
-
 	switch driver {
 	case MySQL:
+		for k := range data[0] {
+			fields = append(fields, k)
+
+			columns = append(columns, fmt.Sprintf("`%s`", k))
+		}
+
 		for _, x := range data {
 			phrs := make([]string, 0, fieldNum)
 
@@ -438,6 +439,12 @@ func batchInsertWithMap(driver Driver, table string, data []X, count int) (strin
 
 		sql = fmt.Sprintf("INSERT INTO `%s` (%s) VALUES %s", table, strings.Join(columns, ", "), strings.Join(placeholders, ", "))
 	case Postgres:
+		for k := range data[0] {
+			fields = append(fields, k)
+
+			columns = append(columns, fmt.Sprintf(`"%s"`, k))
+		}
+
 		bindIndex := 0
 
 		for _, x := range data {
@@ -453,7 +460,7 @@ func batchInsertWithMap(driver Driver, table string, data []X, count int) (strin
 			placeholders = append(placeholders, fmt.Sprintf("(%s)", strings.Join(phrs, ", ")))
 		}
 
-		sql = fmt.Sprintf("INSERT INTO `%s` (%s) VALUES %s", table, strings.Join(columns, ", "), strings.Join(placeholders, ", "))
+		sql = fmt.Sprintf(`INSERT INTO "%s" (%s) VALUES %s`, table, strings.Join(columns, ", "), strings.Join(placeholders, ", "))
 	}
 
 	return sql, binds
@@ -510,7 +517,7 @@ func batchInsertWithStruct(driver Driver, table string, v reflect.Value, count i
 						column = t.Field(j).Name
 					}
 
-					columns = append(columns, fmt.Sprintf("`%s`", column))
+					columns = append(columns, fmt.Sprintf(`"%s"`, column))
 				}
 
 				bindIndex++
@@ -522,7 +529,7 @@ func batchInsertWithStruct(driver Driver, table string, v reflect.Value, count i
 			placeholders = append(placeholders, fmt.Sprintf("(%s)", strings.Join(phrs, ", ")))
 		}
 
-		sql = fmt.Sprintf("INSERT INTO `%s` (%s) VALUES %s", table, strings.Join(columns, ", "), strings.Join(placeholders, ", "))
+		sql = fmt.Sprintf(`INSERT INTO "%s" (%s) VALUES %s`, table, strings.Join(columns, ", "), strings.Join(placeholders, ", "))
 	}
 
 	return sql, binds
@@ -568,7 +575,7 @@ func updateWithMap(driver Driver, query string, data X, args ...interface{}) (st
 		for k, v := range data {
 			bindIndex++
 
-			sets = append(sets, fmt.Sprintf("`%s` = $%d", k, bindIndex))
+			sets = append(sets, fmt.Sprintf(`"%s" = $%d`, k, bindIndex))
 			binds = append(binds, v)
 		}
 
@@ -631,7 +638,7 @@ func updateWithStruct(driver Driver, query string, v reflect.Value, args ...inte
 				column = t.Field(i).Name
 			}
 
-			sets = append(sets, fmt.Sprintf("`%s` = $%d", column, i+1))
+			sets = append(sets, fmt.Sprintf(`"%s" = $%d`, column, i+1))
 			binds = append(binds, v.Field(i).Interface())
 		}
 

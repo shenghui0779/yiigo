@@ -140,7 +140,7 @@ func TestPGInsertSQL(t *testing.T) {
 					Age:  29,
 				},
 			},
-			want:  "INSERT INTO `person` (`id`, `name`, `age`) VALUES ($1, $2, $3) RETURNING `id`",
+			want:  `INSERT INTO "person" ("id", "name", "age") VALUES ($1, $2, $3) RETURNING "id"`,
 			want1: []interface{}{1, "IIInsomnia", 29},
 		},
 		{
@@ -160,7 +160,7 @@ func TestPGInsertSQL(t *testing.T) {
 					},
 				},
 			},
-			want:  "INSERT INTO `person` (`id`, `name`, `age`) VALUES ($1, $2, $3), ($4, $5, $6)",
+			want:  `INSERT INTO "person" ("id", "name", "age") VALUES ($1, $2, $3), ($4, $5, $6)`,
 			want1: []interface{}{1, "IIInsomnia", 29, 2, "test", 20},
 		},
 	}
@@ -196,14 +196,14 @@ func TestPGUpdateSQL(t *testing.T) {
 		{
 			name: "t1",
 			args: args{
-				query: "UPDATE `person` SET $1 WHERE `id` = $2",
+				query: `UPDATE "person" SET $1 WHERE "id" = $2`,
 				data: &Person{
 					Name: "IIInsomnia",
 					Age:  29,
 				},
 				args: []interface{}{1},
 			},
-			want:  "UPDATE `person` SET `name` = $1, `age` = $2 WHERE `id` = $3",
+			want:  `UPDATE "person" SET "name" = $1, "age" = $2 WHERE "id" = $3`,
 			want1: []interface{}{"IIInsomnia", 29, 1},
 		},
 	}
