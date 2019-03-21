@@ -53,7 +53,7 @@ func TestSearchInt64s(t *testing.T) {
 	}
 }
 
-func TestInSliceInt(t *testing.T) {
+func TestInInts(t *testing.T) {
 	type args struct {
 		x int
 		a []int
@@ -74,14 +74,70 @@ func TestInSliceInt(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := InSliceInt(tt.args.x, tt.args.a); got != tt.want {
-				t.Errorf("InSliceInt() = %v, want %v", got, tt.want)
+			if got := InInts(tt.args.x, tt.args.a...); got != tt.want {
+				t.Errorf("InInts() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
-func TestInSliceInt64(t *testing.T) {
+func TestInInt32s(t *testing.T) {
+	type args struct {
+		x int32
+		a []int32
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			name: "t1",
+			args: args{
+				x: 4,
+				a: []int32{2, 4, 6, 7, 1, 3},
+			},
+			want: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := InInt32s(tt.args.x, tt.args.a...); got != tt.want {
+				t.Errorf("InInt32s() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestInUint32s(t *testing.T) {
+	type args struct {
+		x uint32
+		a []uint32
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			name: "t1",
+			args: args{
+				x: 4,
+				a: []uint32{2, 4, 6, 7, 1, 3},
+			},
+			want: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := InUint32s(tt.args.x, tt.args.a...); got != tt.want {
+				t.Errorf("InUint32s() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestInInt64s(t *testing.T) {
 	type args struct {
 		x int64
 		a []int64
@@ -102,14 +158,42 @@ func TestInSliceInt64(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := InSliceInt64(tt.args.x, tt.args.a); got != tt.want {
-				t.Errorf("InSliceInt64() = %v, want %v", got, tt.want)
+			if got := InInt64s(tt.args.x, tt.args.a...); got != tt.want {
+				t.Errorf("InInt64s() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
-func TestInSliceFloat64(t *testing.T) {
+func TestInUint64s(t *testing.T) {
+	type args struct {
+		x uint64
+		a []uint64
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			name: "t1",
+			args: args{
+				x: 4,
+				a: []uint64{5, 2, 4, 7, 6, 1},
+			},
+			want: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := InUint64s(tt.args.x, tt.args.a...); got != tt.want {
+				t.Errorf("InUint64s() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestInFloat64s(t *testing.T) {
 	type args struct {
 		x float64
 		a []float64
@@ -130,14 +214,14 @@ func TestInSliceFloat64(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := InSliceFloat64(tt.args.x, tt.args.a); got != tt.want {
-				t.Errorf("InSliceFloat64() = %v, want %v", got, tt.want)
+			if got := InFloat64s(tt.args.x, tt.args.a...); got != tt.want {
+				t.Errorf("InFloat64s() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
-func TestInSliceString(t *testing.T) {
+func TestInStrings(t *testing.T) {
 	type args struct {
 		x string
 		a []string
@@ -158,14 +242,14 @@ func TestInSliceString(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := InSliceString(tt.args.x, tt.args.a); got != tt.want {
-				t.Errorf("InSliceString() = %v, want %v", got, tt.want)
+			if got := InStrings(tt.args.x, tt.args.a...); got != tt.want {
+				t.Errorf("InStrings() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
-func TestUniqueInt(t *testing.T) {
+func TestUniqueInts(t *testing.T) {
 	type args struct {
 		a []int
 	}
@@ -182,14 +266,62 @@ func TestUniqueInt(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := UniqueInt(tt.args.a); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("UniqueInt() = %v, want %v", got, tt.want)
+			if got := UniqueInts(tt.args.a); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("UniqueInts() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
-func TestUniqueInt64(t *testing.T) {
+func TestUniqueInt32s(t *testing.T) {
+	type args struct {
+		a []int32
+	}
+	tests := []struct {
+		name string
+		args args
+		want []int32
+	}{
+		{
+			name: "t1",
+			args: args{a: []int32{3, 4, 5, 7, 5, 4, 3, 2}},
+			want: []int32{3, 4, 5, 7, 2},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := UniqueInt32s(tt.args.a); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("UniqueInt32s() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestUniqueUint32s(t *testing.T) {
+	type args struct {
+		a []uint32
+	}
+	tests := []struct {
+		name string
+		args args
+		want []uint32
+	}{
+		{
+			name: "t1",
+			args: args{a: []uint32{3, 4, 5, 7, 5, 4, 3, 2}},
+			want: []uint32{3, 4, 5, 7, 2},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := UniqueUint32s(tt.args.a); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("UniqueUint32s() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestUniqueInt64s(t *testing.T) {
 	type args struct {
 		a []int64
 	}
@@ -206,14 +338,38 @@ func TestUniqueInt64(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := UniqueInt64(tt.args.a); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("UniqueInt64() = %v, want %v", got, tt.want)
+			if got := UniqueInt64s(tt.args.a); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("UniqueInt64s() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
-func TestUniqueFloat64(t *testing.T) {
+func TestUniqueUint64s(t *testing.T) {
+	type args struct {
+		a []uint64
+	}
+	tests := []struct {
+		name string
+		args args
+		want []uint64
+	}{
+		{
+			name: "t1",
+			args: args{a: []uint64{3, 4, 5, 7, 5, 4, 3, 2}},
+			want: []uint64{3, 4, 5, 7, 2},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := UniqueUint64s(tt.args.a); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("UniqueUint64s() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestUniqueFloat64s(t *testing.T) {
 	type args struct {
 		a []float64
 	}
@@ -230,14 +386,14 @@ func TestUniqueFloat64(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := UniqueFloat64(tt.args.a); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("UniqueFloat64() = %v, want %v", got, tt.want)
+			if got := UniqueFloat64s(tt.args.a); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("UniqueFloat64s() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
-func TestUniqueString(t *testing.T) {
+func TestUniqueStrings(t *testing.T) {
 	type args struct {
 		a []string
 	}
@@ -254,8 +410,8 @@ func TestUniqueString(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := UniqueString(tt.args.a); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("UniqueString() = %v, want %v", got, tt.want)
+			if got := UniqueStrings(tt.args.a); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("UniqueStrings() = %v, want %v", got, tt.want)
 			}
 		})
 	}

@@ -27,8 +27,8 @@ func SearchInt64s(a []int64, x int64) int {
 	return sort.Search(len(a), func(i int) bool { return a[i] >= x })
 }
 
-// InSliceInt checks if x exists in a slice of ints and returns TRUE if x is found.
-func InSliceInt(x int, a []int) bool {
+// InInts checks if x exists in a slice of ints and returns TRUE if x is found.
+func InInts(x int, a ...int) bool {
 	if len(a) == 0 {
 		return false
 	}
@@ -42,8 +42,8 @@ func InSliceInt(x int, a []int) bool {
 	return false
 }
 
-// InSliceInt64 checks if x exists in a slice of int64s and returns TRUE if x is found.
-func InSliceInt64(x int64, a []int64) bool {
+// InInt32s checks if x exists in a slice of int32s and returns TRUE if x is found.
+func InInt32s(x int32, a ...int32) bool {
 	if len(a) == 0 {
 		return false
 	}
@@ -57,8 +57,8 @@ func InSliceInt64(x int64, a []int64) bool {
 	return false
 }
 
-// InSliceFloat64 checks if x exists in a slice of float64s and returns TRUE if x is found.
-func InSliceFloat64(x float64, a []float64) bool {
+// InUint32s checks if x exists in a slice of uint32s and returns TRUE if x is found.
+func InUint32s(x uint32, a ...uint32) bool {
 	if len(a) == 0 {
 		return false
 	}
@@ -72,8 +72,8 @@ func InSliceFloat64(x float64, a []float64) bool {
 	return false
 }
 
-// InSliceString checks if x exists in a slice of strings and returns TRUE if x is found.
-func InSliceString(x string, a []string) bool {
+// InInt64s checks if x exists in a slice of int64s and returns TRUE if x is found.
+func InInt64s(x int64, a ...int64) bool {
 	if len(a) == 0 {
 		return false
 	}
@@ -87,9 +87,54 @@ func InSliceString(x string, a []string) bool {
 	return false
 }
 
-// UniqueInt takes an input slice of ints and
+// InUint64s checks if x exists in a slice of uint64s and returns TRUE if x is found.
+func InUint64s(x uint64, a ...uint64) bool {
+	if len(a) == 0 {
+		return false
+	}
+
+	for _, v := range a {
+		if x == v {
+			return true
+		}
+	}
+
+	return false
+}
+
+// InFloat64s checks if x exists in a slice of float64s and returns TRUE if x is found.
+func InFloat64s(x float64, a ...float64) bool {
+	if len(a) == 0 {
+		return false
+	}
+
+	for _, v := range a {
+		if x == v {
+			return true
+		}
+	}
+
+	return false
+}
+
+// InStrings checks if x exists in a slice of strings and returns TRUE if x is found.
+func InStrings(x string, a ...string) bool {
+	if len(a) == 0 {
+		return false
+	}
+
+	for _, v := range a {
+		if x == v {
+			return true
+		}
+	}
+
+	return false
+}
+
+// UniqueInts takes an input slice of ints and
 // returns a new slice of ints without duplicate values.
-func UniqueInt(a []int) []int {
+func UniqueInts(a []int) []int {
 	l := len(a)
 
 	if l <= 1 {
@@ -103,9 +148,41 @@ func UniqueInt(a []int) []int {
 	return uniqueIntByMap(a, l)
 }
 
-// UniqueInt64 takes an input slice of int64s and
+// UniqueInt32s takes an input slice of int32s and
+// returns a new slice of int32s without duplicate values.
+func UniqueInt32s(a []int32) []int32 {
+	l := len(a)
+
+	if l <= 1 {
+		return a
+	}
+
+	if l < uniqueNumberThreshold {
+		return uniqueInt32ByLoop(a, l)
+	}
+
+	return uniqueInt32ByMap(a, l)
+}
+
+// UniqueUint32s takes an input slice of uint32s and
+// returns a new slice of uint32s without duplicate values.
+func UniqueUint32s(a []uint32) []uint32 {
+	l := len(a)
+
+	if l <= 1 {
+		return a
+	}
+
+	if l < uniqueNumberThreshold {
+		return uniqueUint32ByLoop(a, l)
+	}
+
+	return uniqueUint32ByMap(a, l)
+}
+
+// UniqueInt64s takes an input slice of int64s and
 // returns a new slice of int64s without duplicate values.
-func UniqueInt64(a []int64) []int64 {
+func UniqueInt64s(a []int64) []int64 {
 	l := len(a)
 
 	if l <= 1 {
@@ -119,9 +196,25 @@ func UniqueInt64(a []int64) []int64 {
 	return uniqueInt64ByMap(a, l)
 }
 
-// UniqueFloat64 takes an input slice of float64s and
+// UniqueUint64s takes an input slice of uint64s and
+// returns a new slice of uint64s without duplicate values.
+func UniqueUint64s(a []uint64) []uint64 {
+	l := len(a)
+
+	if l <= 1 {
+		return a
+	}
+
+	if l < uniqueNumberThreshold {
+		return uniqueUint64ByLoop(a, l)
+	}
+
+	return uniqueUint64ByMap(a, l)
+}
+
+// UniqueFloat64s takes an input slice of float64s and
 // returns a new slice of float64s without duplicate values.
-func UniqueFloat64(a []float64) []float64 {
+func UniqueFloat64s(a []float64) []float64 {
 	l := len(a)
 
 	if l <= 1 {
@@ -135,9 +228,9 @@ func UniqueFloat64(a []float64) []float64 {
 	return uniqueFloat64ByMap(a, l)
 }
 
-// UniqueString takes an input slice of strings and
+// UniqueStrings takes an input slice of strings and
 // returns a new slice of strings without duplicate values.
-func UniqueString(a []string) []string {
+func UniqueStrings(a []string) []string {
 	l := len(a)
 
 	if l <= 1 {
@@ -186,6 +279,76 @@ func uniqueIntByMap(a []int, l int) []int {
 	return r
 }
 
+func uniqueInt32ByLoop(a []int32, l int) []int32 {
+	r := make([]int32, 0, l)
+
+	for _, v := range a {
+		exist := false
+
+		for _, u := range r {
+			if v == u {
+				exist = true
+				break
+			}
+		}
+
+		if !exist {
+			r = append(r, v)
+		}
+	}
+
+	return r
+}
+
+func uniqueInt32ByMap(a []int32, l int) []int32 {
+	r := make([]int32, 0, l)
+	m := make(map[int32]byte, l)
+
+	for _, v := range a {
+		if _, ok := m[v]; !ok {
+			m[v] = 0
+			r = append(r, v)
+		}
+	}
+
+	return r
+}
+
+func uniqueUint32ByLoop(a []uint32, l int) []uint32 {
+	r := make([]uint32, 0, l)
+
+	for _, v := range a {
+		exist := false
+
+		for _, u := range r {
+			if v == u {
+				exist = true
+				break
+			}
+		}
+
+		if !exist {
+			r = append(r, v)
+		}
+	}
+
+	return r
+}
+
+func uniqueUint32ByMap(a []uint32, l int) []uint32 {
+	r := make([]uint32, 0, l)
+	m := make(map[uint32]byte, l)
+
+	for _, v := range a {
+		if _, ok := m[v]; !ok {
+			m[v] = 0
+			r = append(r, v)
+		}
+	}
+
+	return r
+}
+
 func uniqueInt64ByLoop(a []int64, l int) []int64 {
 	r := make([]int64, 0, l)
 
@@ -210,6 +373,41 @@ func uniqueInt64ByLoop(a []int64, l int) []int64 {
 func uniqueInt64ByMap(a []int64, l int) []int64 {
 	r := make([]int64, 0, l)
 	m := make(map[int64]byte, l)
+
+	for _, v := range a {
+		if _, ok := m[v]; !ok {
+			m[v] = 0
+			r = append(r, v)
+		}
+	}
+
+	return r
+}
+
+func uniqueUint64ByLoop(a []uint64, l int) []uint64 {
+	r := make([]uint64, 0, l)
+
+	for _, v := range a {
+		exist := false
+
+		for _, u := range r {
+			if v == u {
+				exist = true
+				break
+			}
+		}
+
+		if !exist {
+			r = append(r, v)
+		}
+	}
+
+	return r
+}
+
+func uniqueUint64ByMap(a []uint64, l int) []uint64 {
+	r := make([]uint64, 0, l)
+	m := make(map[uint64]byte, l)
 
 	for _, v := range a {
 		if _, ok := m[v]; !ok {
