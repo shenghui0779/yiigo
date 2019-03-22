@@ -1,6 +1,9 @@
 package yiigo
 
-import "sort"
+import (
+	"reflect"
+	"sort"
+)
 
 const (
 	uniqueNumberThreshold = 1024
@@ -28,12 +31,12 @@ func SearchInt64s(a []int64, x int64) int {
 }
 
 // InInts checks if x exists in a slice of ints and returns TRUE if x is found.
-func InInts(x int, a ...int) bool {
-	if len(a) == 0 {
+func InInts(x int, y ...int) bool {
+	if len(y) == 0 {
 		return false
 	}
 
-	for _, v := range a {
+	for _, v := range y {
 		if x == v {
 			return true
 		}
@@ -43,12 +46,12 @@ func InInts(x int, a ...int) bool {
 }
 
 // InInt32s checks if x exists in a slice of int32s and returns TRUE if x is found.
-func InInt32s(x int32, a ...int32) bool {
-	if len(a) == 0 {
+func InInt32s(x int32, y ...int32) bool {
+	if len(y) == 0 {
 		return false
 	}
 
-	for _, v := range a {
+	for _, v := range y {
 		if x == v {
 			return true
 		}
@@ -58,12 +61,12 @@ func InInt32s(x int32, a ...int32) bool {
 }
 
 // InUint32s checks if x exists in a slice of uint32s and returns TRUE if x is found.
-func InUint32s(x uint32, a ...uint32) bool {
-	if len(a) == 0 {
+func InUint32s(x uint32, y ...uint32) bool {
+	if len(y) == 0 {
 		return false
 	}
 
-	for _, v := range a {
+	for _, v := range y {
 		if x == v {
 			return true
 		}
@@ -73,12 +76,12 @@ func InUint32s(x uint32, a ...uint32) bool {
 }
 
 // InInt64s checks if x exists in a slice of int64s and returns TRUE if x is found.
-func InInt64s(x int64, a ...int64) bool {
-	if len(a) == 0 {
+func InInt64s(x int64, y ...int64) bool {
+	if len(y) == 0 {
 		return false
 	}
 
-	for _, v := range a {
+	for _, v := range y {
 		if x == v {
 			return true
 		}
@@ -88,12 +91,12 @@ func InInt64s(x int64, a ...int64) bool {
 }
 
 // InUint64s checks if x exists in a slice of uint64s and returns TRUE if x is found.
-func InUint64s(x uint64, a ...uint64) bool {
-	if len(a) == 0 {
+func InUint64s(x uint64, y ...uint64) bool {
+	if len(y) == 0 {
 		return false
 	}
 
-	for _, v := range a {
+	for _, v := range y {
 		if x == v {
 			return true
 		}
@@ -103,12 +106,12 @@ func InUint64s(x uint64, a ...uint64) bool {
 }
 
 // InFloat64s checks if x exists in a slice of float64s and returns TRUE if x is found.
-func InFloat64s(x float64, a ...float64) bool {
-	if len(a) == 0 {
+func InFloat64s(x float64, y ...float64) bool {
+	if len(y) == 0 {
 		return false
 	}
 
-	for _, v := range a {
+	for _, v := range y {
 		if x == v {
 			return true
 		}
@@ -118,13 +121,28 @@ func InFloat64s(x float64, a ...float64) bool {
 }
 
 // InStrings checks if x exists in a slice of strings and returns TRUE if x is found.
-func InStrings(x string, a ...string) bool {
-	if len(a) == 0 {
+func InStrings(x string, y ...string) bool {
+	if len(y) == 0 {
 		return false
 	}
 
-	for _, v := range a {
+	for _, v := range y {
 		if x == v {
+			return true
+		}
+	}
+
+	return false
+}
+
+// InArray checks if x exists in a slice and returns TRUE if x is found.
+func InArray(x interface{}, y ...interface{}) bool {
+	if len(y) == 0 {
+		return false
+	}
+
+	for _, v := range y {
+		if reflect.DeepEqual(x, v) {
 			return true
 		}
 	}

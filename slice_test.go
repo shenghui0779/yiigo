@@ -56,7 +56,7 @@ func TestSearchInt64s(t *testing.T) {
 func TestInInts(t *testing.T) {
 	type args struct {
 		x int
-		a []int
+		y []int
 	}
 	tests := []struct {
 		name string
@@ -67,14 +67,14 @@ func TestInInts(t *testing.T) {
 			name: "t1",
 			args: args{
 				x: 4,
-				a: []int{2, 4, 6, 7, 1, 3},
+				y: []int{2, 4, 6, 7, 1, 3},
 			},
 			want: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := InInts(tt.args.x, tt.args.a...); got != tt.want {
+			if got := InInts(tt.args.x, tt.args.y...); got != tt.want {
 				t.Errorf("InInts() = %v, want %v", got, tt.want)
 			}
 		})
@@ -84,7 +84,7 @@ func TestInInts(t *testing.T) {
 func TestInInt32s(t *testing.T) {
 	type args struct {
 		x int32
-		a []int32
+		y []int32
 	}
 	tests := []struct {
 		name string
@@ -95,14 +95,14 @@ func TestInInt32s(t *testing.T) {
 			name: "t1",
 			args: args{
 				x: 4,
-				a: []int32{2, 4, 6, 7, 1, 3},
+				y: []int32{2, 4, 6, 7, 1, 3},
 			},
 			want: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := InInt32s(tt.args.x, tt.args.a...); got != tt.want {
+			if got := InInt32s(tt.args.x, tt.args.y...); got != tt.want {
 				t.Errorf("InInt32s() = %v, want %v", got, tt.want)
 			}
 		})
@@ -112,7 +112,7 @@ func TestInInt32s(t *testing.T) {
 func TestInUint32s(t *testing.T) {
 	type args struct {
 		x uint32
-		a []uint32
+		y []uint32
 	}
 	tests := []struct {
 		name string
@@ -123,14 +123,14 @@ func TestInUint32s(t *testing.T) {
 			name: "t1",
 			args: args{
 				x: 4,
-				a: []uint32{2, 4, 6, 7, 1, 3},
+				y: []uint32{2, 4, 6, 7, 1, 3},
 			},
 			want: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := InUint32s(tt.args.x, tt.args.a...); got != tt.want {
+			if got := InUint32s(tt.args.x, tt.args.y...); got != tt.want {
 				t.Errorf("InUint32s() = %v, want %v", got, tt.want)
 			}
 		})
@@ -140,7 +140,7 @@ func TestInUint32s(t *testing.T) {
 func TestInInt64s(t *testing.T) {
 	type args struct {
 		x int64
-		a []int64
+		y []int64
 	}
 	tests := []struct {
 		name string
@@ -151,14 +151,14 @@ func TestInInt64s(t *testing.T) {
 			name: "t1",
 			args: args{
 				x: 4,
-				a: []int64{5, 2, 4, 7, 6, 1},
+				y: []int64{5, 2, 4, 7, 6, 1},
 			},
 			want: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := InInt64s(tt.args.x, tt.args.a...); got != tt.want {
+			if got := InInt64s(tt.args.x, tt.args.y...); got != tt.want {
 				t.Errorf("InInt64s() = %v, want %v", got, tt.want)
 			}
 		})
@@ -168,7 +168,7 @@ func TestInInt64s(t *testing.T) {
 func TestInUint64s(t *testing.T) {
 	type args struct {
 		x uint64
-		a []uint64
+		y []uint64
 	}
 	tests := []struct {
 		name string
@@ -179,14 +179,14 @@ func TestInUint64s(t *testing.T) {
 			name: "t1",
 			args: args{
 				x: 4,
-				a: []uint64{5, 2, 4, 7, 6, 1},
+				y: []uint64{5, 2, 4, 7, 6, 1},
 			},
 			want: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := InUint64s(tt.args.x, tt.args.a...); got != tt.want {
+			if got := InUint64s(tt.args.x, tt.args.y...); got != tt.want {
 				t.Errorf("InUint64s() = %v, want %v", got, tt.want)
 			}
 		})
@@ -196,7 +196,7 @@ func TestInUint64s(t *testing.T) {
 func TestInFloat64s(t *testing.T) {
 	type args struct {
 		x float64
-		a []float64
+		y []float64
 	}
 	tests := []struct {
 		name string
@@ -207,14 +207,14 @@ func TestInFloat64s(t *testing.T) {
 			name: "t1",
 			args: args{
 				x: 4.4,
-				a: []float64{2.3, 4.4, 6.7, 7.2, 1.9, 3.5},
+				y: []float64{2.3, 4.4, 6.7, 7.2, 1.9, 3.5},
 			},
 			want: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := InFloat64s(tt.args.x, tt.args.a...); got != tt.want {
+			if got := InFloat64s(tt.args.x, tt.args.y...); got != tt.want {
 				t.Errorf("InFloat64s() = %v, want %v", got, tt.want)
 			}
 		})
@@ -224,7 +224,7 @@ func TestInFloat64s(t *testing.T) {
 func TestInStrings(t *testing.T) {
 	type args struct {
 		x string
-		a []string
+		y []string
 	}
 	tests := []struct {
 		name string
@@ -235,15 +235,43 @@ func TestInStrings(t *testing.T) {
 			name: "t1",
 			args: args{
 				x: "iiinsomnia",
-				a: []string{"hello", "test", "iiinsomnia", "yiigo", "world"},
+				y: []string{"hello", "test", "iiinsomnia", "yiigo", "world"},
 			},
 			want: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := InStrings(tt.args.x, tt.args.a...); got != tt.want {
+			if got := InStrings(tt.args.x, tt.args.y...); got != tt.want {
 				t.Errorf("InStrings() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestInArray(t *testing.T) {
+	type args struct {
+		x interface{}
+		y []interface{}
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			name: "t1",
+			args: args{
+				x: "iiinsomnia",
+				y: []interface{}{1, "test", "iiinsomnia", 2.9, true},
+			},
+			want: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := InArray(tt.args.x, tt.args.y...); got != tt.want {
+				t.Errorf("InArray() = %v, want %v", got, tt.want)
 			}
 		})
 	}
