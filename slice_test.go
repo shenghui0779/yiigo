@@ -277,7 +277,7 @@ func TestInArray(t *testing.T) {
 	}
 }
 
-func TestUniqueInts(t *testing.T) {
+func TestIntsUnique(t *testing.T) {
 	type args struct {
 		a []int
 	}
@@ -294,14 +294,14 @@ func TestUniqueInts(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := UniqueInts(tt.args.a); !reflect.DeepEqual(got, tt.want) {
+			if got := IntsUnique(tt.args.a); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("UniqueInts() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
-func TestUniqueInt32s(t *testing.T) {
+func TestInt32sUnique(t *testing.T) {
 	type args struct {
 		a []int32
 	}
@@ -318,14 +318,14 @@ func TestUniqueInt32s(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := UniqueInt32s(tt.args.a); !reflect.DeepEqual(got, tt.want) {
+			if got := Int32sUnique(tt.args.a); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("UniqueInt32s() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
-func TestUniqueUint32s(t *testing.T) {
+func TestUint32sUnique(t *testing.T) {
 	type args struct {
 		a []uint32
 	}
@@ -342,14 +342,14 @@ func TestUniqueUint32s(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := UniqueUint32s(tt.args.a); !reflect.DeepEqual(got, tt.want) {
+			if got := Uint32sUnique(tt.args.a); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("UniqueUint32s() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
-func TestUniqueInt64s(t *testing.T) {
+func TestInt64sUnique(t *testing.T) {
 	type args struct {
 		a []int64
 	}
@@ -366,14 +366,14 @@ func TestUniqueInt64s(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := UniqueInt64s(tt.args.a); !reflect.DeepEqual(got, tt.want) {
+			if got := Int64sUnique(tt.args.a); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("UniqueInt64s() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
-func TestUniqueUint64s(t *testing.T) {
+func TestUint64sUnique(t *testing.T) {
 	type args struct {
 		a []uint64
 	}
@@ -390,14 +390,14 @@ func TestUniqueUint64s(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := UniqueUint64s(tt.args.a); !reflect.DeepEqual(got, tt.want) {
+			if got := Uint64sUnique(tt.args.a); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("UniqueUint64s() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
-func TestUniqueFloat64s(t *testing.T) {
+func TestFloat64sUnique(t *testing.T) {
 	type args struct {
 		a []float64
 	}
@@ -414,14 +414,14 @@ func TestUniqueFloat64s(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := UniqueFloat64s(tt.args.a); !reflect.DeepEqual(got, tt.want) {
+			if got := Float64sUnique(tt.args.a); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("UniqueFloat64s() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
-func TestUniqueStrings(t *testing.T) {
+func TestStringsUnique(t *testing.T) {
 	type args struct {
 		a []string
 	}
@@ -438,7 +438,7 @@ func TestUniqueStrings(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := UniqueStrings(tt.args.a); !reflect.DeepEqual(got, tt.want) {
+			if got := StringsUnique(tt.args.a); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("UniqueStrings() = %v, want %v", got, tt.want)
 			}
 		})
