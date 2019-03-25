@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	toml "github.com/pelletier/go-toml"
+	"github.com/pelletier/go-toml"
 )
 
 type env struct {
@@ -154,7 +154,7 @@ func (e *env) Ints(key string, defaultValue ...int) []int {
 	ev := e.Get(key)
 
 	if ev == nil {
-		return []int{}
+		return defaultValue
 	}
 
 	v := reflect.Indirect(reflect.ValueOf(ev))
@@ -182,6 +182,90 @@ func (e *env) Ints(key string, defaultValue ...int) []int {
 		case string:
 			n, _ := strconv.Atoi(t)
 			result = append(result, n)
+		case bool:
+			if t {
+				result = append(result, 1)
+			} else {
+				result = append(result, 0)
+			}
+		default:
+			result = append(result, 0)
+		}
+	}
+
+	return result
+}
+
+// Int32 returns a value of int32.
+func (e *env) Int32(key string, defaultValue ...int32) int32 {
+	var dv int32
+
+	if len(defaultValue) > 0 {
+		dv = defaultValue[0]
+	}
+
+	ev := e.Get(key)
+
+	if ev == nil {
+		return dv
+	}
+
+	switch t := ev.(type) {
+	case int64:
+		return int32(t)
+	case uint64:
+		return int32(t)
+	case float64:
+		return int32(t)
+	case string:
+		v, _ := strconv.ParseInt(t, 0, 0)
+
+		return int32(v)
+	case bool:
+		if t {
+			return 1
+		}
+
+		return 0
+	default:
+		return 0
+	}
+}
+
+// Int32s returns a value of []int32.
+func (e *env) Int32s(key string, defaultValue ...int32) []int32 {
+	ev := e.Get(key)
+
+	if ev == nil {
+		return defaultValue
+	}
+
+	v := reflect.Indirect(reflect.ValueOf(ev))
+
+	if v.Kind() != reflect.Slice {
+		return defaultValue
+	}
+
+	l := v.Len()
+
+	result := make([]int32, 0, l)
+
+	if l == 0 {
+		return result
+	}
+
+	for i := 0; i < l; i++ {
+		switch t := v.Index(i).Interface().(type) {
+		case int64:
+			result = append(result, int32(t))
+		case uint64:
+			result = append(result, int32(t))
+		case float64:
+			result = append(result, int32(t))
+		case string:
+			v, _ := strconv.ParseInt(t, 0, 0)
+
+			result = append(result, int32(v))
 		case bool:
 			if t {
 				result = append(result, 1)

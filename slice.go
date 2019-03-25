@@ -161,6 +161,7 @@ func IntsUnique(a []int) []int {
 
 	r := make([]int, 0, l)
 
+	// remove duplicates with loop
 	if l < numberUniqueThreshold {
 		for _, v := range a {
 			exist := false
@@ -180,6 +181,7 @@ func IntsUnique(a []int) []int {
 		return r
 	}
 
+	// remove duplicates with map
 	m := make(map[int]byte, l)
 
 	for _, v := range a {
@@ -203,6 +205,7 @@ func Int32sUnique(a []int32) []int32 {
 
 	r := make([]int32, 0, l)
 
+	// remove duplicates with loop
 	if l < numberUniqueThreshold {
 		for _, v := range a {
 			exist := false
@@ -222,6 +225,7 @@ func Int32sUnique(a []int32) []int32 {
 		return r
 	}
 
+	// remove duplicates with map
 	m := make(map[int32]byte, l)
 
 	for _, v := range a {
@@ -245,6 +249,7 @@ func Uint32sUnique(a []uint32) []uint32 {
 
 	r := make([]uint32, 0, l)
 
+	// remove duplicates with loop
 	if l < numberUniqueThreshold {
 		for _, v := range a {
 			exist := false
@@ -264,6 +269,7 @@ func Uint32sUnique(a []uint32) []uint32 {
 		return r
 	}
 
+	// remove duplicates with map
 	m := make(map[uint32]byte, l)
 
 	for _, v := range a {
@@ -287,6 +293,7 @@ func Int64sUnique(a []int64) []int64 {
 
 	r := make([]int64, 0, l)
 
+	// remove duplicates with loop
 	if l < numberUniqueThreshold {
 		for _, v := range a {
 			exist := false
@@ -306,6 +313,7 @@ func Int64sUnique(a []int64) []int64 {
 		return r
 	}
 
+	// remove duplicates with map
 	m := make(map[int64]byte, l)
 
 	for _, v := range a {
@@ -329,6 +337,7 @@ func Uint64sUnique(a []uint64) []uint64 {
 
 	r := make([]uint64, 0, l)
 
+	// remove duplicates with loop
 	if l < numberUniqueThreshold {
 		for _, v := range a {
 			exist := false
@@ -348,6 +357,7 @@ func Uint64sUnique(a []uint64) []uint64 {
 		return r
 	}
 
+	// remove duplicates with map
 	m := make(map[uint64]byte, l)
 
 	for _, v := range a {
@@ -371,6 +381,7 @@ func Float64sUnique(a []float64) []float64 {
 
 	r := make([]float64, 0, l)
 
+	// remove duplicates with loop
 	if l < numberUniqueThreshold {
 		for _, v := range a {
 			exist := false
@@ -390,6 +401,7 @@ func Float64sUnique(a []float64) []float64 {
 		return r
 	}
 
+	// remove duplicates with map
 	m := make(map[float64]byte, l)
 
 	for _, v := range a {
@@ -413,6 +425,7 @@ func StringsUnique(a []string) []string {
 
 	r := make([]string, 0, l)
 
+	// remove duplicates with loop
 	if l < stringUniqueThreshold {
 		for _, v := range a {
 			exist := false
@@ -432,6 +445,7 @@ func StringsUnique(a []string) []string {
 		return r
 	}
 
+	// remove duplicates with map
 	m := make(map[string]byte, l)
 
 	for _, v := range a {
