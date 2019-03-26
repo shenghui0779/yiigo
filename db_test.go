@@ -13,9 +13,10 @@ func TestInsertSQL(t *testing.T) {
 		data  interface{}
 	}
 	type Person struct {
-		ID   int    `db:"id"`
-		Name string `db:"name"`
-		Age  int    `db:"age"`
+		ID     int    `db:"id"`
+		Name   string `db:"name"`
+		Gender string `db:"gender"`
+		Age    int    `db:"age"`
 	}
 	tests := []struct {
 		name  string
@@ -28,13 +29,14 @@ func TestInsertSQL(t *testing.T) {
 			args: args{
 				table: "person",
 				data: &Person{
-					ID:   1,
-					Name: "IIInsomnia",
-					Age:  29,
+					ID:     1,
+					Name:   "IIInsomnia",
+					Gender: "M",
+					Age:    29,
 				},
 			},
-			want:  "INSERT INTO `person` (`id`, `name`, `age`) VALUES (?, ?, ?)",
-			want1: []interface{}{1, "IIInsomnia", 29},
+			want:  "INSERT INTO `person` (`id`, `name`, `gender`, `age`) VALUES (?, ?, ?, ?)",
+			want1: []interface{}{1, "IIInsomnia", "M", 29},
 		},
 		{
 			name: "t2",
@@ -42,19 +44,21 @@ func TestInsertSQL(t *testing.T) {
 				table: "person",
 				data: []*Person{
 					{
-						ID:   1,
-						Name: "IIInsomnia",
-						Age:  29,
+						ID:     1,
+						Name:   "IIInsomnia",
+						Gender: "M",
+						Age:    29,
 					},
 					{
-						ID:   2,
-						Name: "test",
-						Age:  20,
+						ID:     2,
+						Name:   "test",
+						Gender: "W",
+						Age:    20,
 					},
 				},
 			},
-			want:  "INSERT INTO `person` (`id`, `name`, `age`) VALUES (?, ?, ?), (?, ?, ?)",
-			want1: []interface{}{1, "IIInsomnia", 29, 2, "test", 20},
+			want:  "INSERT INTO `person` (`id`, `name`, `gender`, `age`) VALUES (?, ?, ?, ?), (?, ?, ?, ?)",
+			want1: []interface{}{1, "IIInsomnia", "M", 29, 2, "test", "W", 20},
 		},
 	}
 
@@ -78,8 +82,9 @@ func TestUpdateSQL(t *testing.T) {
 		args  []interface{}
 	}
 	type Person struct {
-		Name string `db:"name"`
-		Age  int    `db:"age"`
+		Name   string `db:"name"`
+		Gender string `db:"gender"`
+		Age    int    `db:"age"`
 	}
 	tests := []struct {
 		name  string
@@ -92,13 +97,14 @@ func TestUpdateSQL(t *testing.T) {
 			args: args{
 				query: "UPDATE `person` SET ? WHERE `id` = ?",
 				data: &Person{
-					Name: "IIInsomnia",
-					Age:  29,
+					Name:   "IIInsomnia",
+					Gender: "M",
+					Age:    29,
 				},
 				args: []interface{}{1},
 			},
-			want:  "UPDATE `person` SET `name` = ?, `age` = ? WHERE `id` = ?",
-			want1: []interface{}{"IIInsomnia", 29, 1},
+			want:  "UPDATE `person` SET `name` = ?, `gender` = ?, `age` = ? WHERE `id` = ?",
+			want1: []interface{}{"IIInsomnia", "M", 29, 1},
 		},
 	}
 	for _, tt := range tests {
@@ -120,9 +126,10 @@ func TestPGInsertSQL(t *testing.T) {
 		data  interface{}
 	}
 	type Person struct {
-		ID   int    `db:"id"`
-		Name string `db:"name"`
-		Age  int    `db:"age"`
+		ID     int    `db:"id"`
+		Name   string `db:"name"`
+		Gender string `db:"gender"`
+		Age    int    `db:"age"`
 	}
 	tests := []struct {
 		name  string
@@ -135,13 +142,14 @@ func TestPGInsertSQL(t *testing.T) {
 			args: args{
 				table: "person",
 				data: &Person{
-					ID:   1,
-					Name: "IIInsomnia",
-					Age:  29,
+					ID:     1,
+					Name:   "IIInsomnia",
+					Gender: "M",
+					Age:    29,
 				},
 			},
-			want:  `INSERT INTO "person" ("id", "name", "age") VALUES ($1, $2, $3) RETURNING "id"`,
-			want1: []interface{}{1, "IIInsomnia", 29},
+			want:  `INSERT INTO "person" ("id", "name", "gender", "age") VALUES ($1, $2, $3, $4) RETURNING "id"`,
+			want1: []interface{}{1, "IIInsomnia", "M", 29},
 		},
 		{
 			name: "t2",
@@ -149,19 +157,21 @@ func TestPGInsertSQL(t *testing.T) {
 				table: "person",
 				data: []*Person{
 					{
-						ID:   1,
-						Name: "IIInsomnia",
-						Age:  29,
+						ID:     1,
+						Name:   "IIInsomnia",
+						Gender: "M",
+						Age:    29,
 					},
 					{
-						ID:   2,
-						Name: "test",
-						Age:  20,
+						ID:     2,
+						Name:   "test",
+						Gender: "W",
+						Age:    20,
 					},
 				},
 			},
-			want:  `INSERT INTO "person" ("id", "name", "age") VALUES ($1, $2, $3), ($4, $5, $6)`,
-			want1: []interface{}{1, "IIInsomnia", 29, 2, "test", 20},
+			want:  `INSERT INTO "person" ("id", "name", "gender", "age") VALUES ($1, $2, $3, $4), ($5, $6, $7, $8)`,
+			want1: []interface{}{1, "IIInsomnia", "M", 29, 2, "test", "W", 20},
 		},
 	}
 	for _, tt := range tests {
@@ -184,8 +194,9 @@ func TestPGUpdateSQL(t *testing.T) {
 		args  []interface{}
 	}
 	type Person struct {
-		Name string `db:"name"`
-		Age  int    `db:"age"`
+		Name   string `db:"name"`
+		Gender string `db:"gender"`
+		Age    int    `db:"age"`
 	}
 	tests := []struct {
 		name  string
@@ -198,13 +209,14 @@ func TestPGUpdateSQL(t *testing.T) {
 			args: args{
 				query: `UPDATE "person" SET $1 WHERE "id" = $2`,
 				data: &Person{
-					Name: "IIInsomnia",
-					Age:  29,
+					Name:   "IIInsomnia",
+					Gender: "M",
+					Age:    29,
 				},
 				args: []interface{}{1},
 			},
-			want:  `UPDATE "person" SET "name" = $1, "age" = $2 WHERE "id" = $3`,
-			want1: []interface{}{"IIInsomnia", 29, 1},
+			want:  `UPDATE "person" SET "name" = $1, "gender" = $2, "age" = $3 WHERE "id" = $4`,
+			want1: []interface{}{"IIInsomnia", "M", 29, 1},
 		},
 	}
 	for _, tt := range tests {
