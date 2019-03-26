@@ -177,10 +177,8 @@ func UseDB(name string) *sqlx.DB {
 // InsertSQL returns mysql insert sql and binds.
 // param data expects: `struct`, `*struct`, `[]struct`, `[]*struct`, `yiigo.X`, `[]yiigo.X`.
 func InsertSQL(table string, data interface{}) (string, []interface{}) {
-	var (
-		sql   string
-		binds []interface{}
-	)
+	sql := ""
+	binds := make([]interface{}, 0)
 
 	v := reflect.Indirect(reflect.ValueOf(data))
 
@@ -192,29 +190,33 @@ func InsertSQL(table string, data interface{}) (string, []interface{}) {
 	case reflect.Struct:
 		sql, binds = singleInsertWithStruct(MySQL, table, v)
 	case reflect.Slice:
-		if count := v.Len(); count > 0 {
-			e := v.Type().Elem()
+		count := v.Len()
 
-			switch e.Kind() {
-			case reflect.Map:
-				x, ok := data.([]X)
+		if count == 0 {
+			return sql, binds
+		}
 
-				if !ok {
-					panic(errInsertInvalidType)
-				}
+		e := v.Type().Elem()
 
-				sql, binds = batchInsertWithMap(MySQL, table, x, count)
-			case reflect.Struct:
-				sql, binds = batchInsertWithStruct(MySQL, table, v, count)
-			case reflect.Ptr:
-				if e.Elem().Kind() != reflect.Struct {
-					panic(errInsertInvalidType)
-				}
+		switch e.Kind() {
+		case reflect.Map:
+			x, ok := data.([]X)
 
-				sql, binds = batchInsertWithStruct(MySQL, table, v, count)
-			default:
+			if !ok {
 				panic(errInsertInvalidType)
 			}
+
+			sql, binds = batchInsertWithMap(MySQL, table, x, count)
+		case reflect.Struct:
+			sql, binds = batchInsertWithStruct(MySQL, table, v, count)
+		case reflect.Ptr:
+			if e.Elem().Kind() != reflect.Struct {
+				panic(errInsertInvalidType)
+			}
+
+			sql, binds = batchInsertWithStruct(MySQL, table, v, count)
+		default:
+			panic(errInsertInvalidType)
 		}
 	default:
 		panic(errInsertInvalidType)
@@ -227,10 +229,8 @@ func InsertSQL(table string, data interface{}) (string, []interface{}) {
 // param query expects eg: "UPDATE `table` SET ? WHERE `id` = ?".
 // param data expects: `struct`, `*struct`, `yiigo.X`.
 func UpdateSQL(query string, data interface{}, args ...interface{}) (string, []interface{}) {
-	var (
-		sql   string
-		binds []interface{}
-	)
+	sql := ""
+	binds := make([]interface{}, 0)
 
 	v := reflect.Indirect(reflect.ValueOf(data))
 
@@ -255,10 +255,8 @@ func UpdateSQL(query string, data interface{}, args ...interface{}) (string, []i
 // PGInsertSQL returns postgres insert sql and binds.
 // param data expects: `struct`, `*struct`, `[]struct`, `[]*struct`, `yiigo.X`, `[]yiigo.X`.
 func PGInsertSQL(table string, data interface{}) (string, []interface{}) {
-	var (
-		sql   string
-		binds []interface{}
-	)
+	sql := ""
+	binds := make([]interface{}, 0)
 
 	v := reflect.Indirect(reflect.ValueOf(data))
 
@@ -270,29 +268,33 @@ func PGInsertSQL(table string, data interface{}) (string, []interface{}) {
 	case reflect.Struct:
 		sql, binds = singleInsertWithStruct(Postgres, table, v)
 	case reflect.Slice:
-		if count := v.Len(); count > 0 {
-			e := v.Type().Elem()
+		count := v.Len()
 
-			switch e.Kind() {
-			case reflect.Map:
-				x, ok := data.([]X)
+		if count == 0 {
+			return sql, binds
+		}
 
-				if !ok {
-					panic(errInsertInvalidType)
-				}
+		e := v.Type().Elem()
 
-				sql, binds = batchInsertWithMap(Postgres, table, x, count)
-			case reflect.Struct:
-				sql, binds = batchInsertWithStruct(Postgres, table, v, count)
-			case reflect.Ptr:
-				if e.Elem().Kind() != reflect.Struct {
-					panic(errInsertInvalidType)
-				}
+		switch e.Kind() {
+		case reflect.Map:
+			x, ok := data.([]X)
 
-				sql, binds = batchInsertWithStruct(Postgres, table, v, count)
-			default:
+			if !ok {
 				panic(errInsertInvalidType)
 			}
+
+			sql, binds = batchInsertWithMap(Postgres, table, x, count)
+		case reflect.Struct:
+			sql, binds = batchInsertWithStruct(Postgres, table, v, count)
+		case reflect.Ptr:
+			if e.Elem().Kind() != reflect.Struct {
+				panic(errInsertInvalidType)
+			}
+
+			sql, binds = batchInsertWithStruct(Postgres, table, v, count)
+		default:
+			panic(errInsertInvalidType)
 		}
 	default:
 		panic(errInsertInvalidType)
@@ -305,10 +307,8 @@ func PGInsertSQL(table string, data interface{}) (string, []interface{}) {
 // param query expects eg: "UPDATE `table` SET $1 WHERE `id` = $2".
 // param data expects: `struct`, `*struct`, `yiigo.X`.
 func PGUpdateSQL(query string, data interface{}, args ...interface{}) (string, []interface{}) {
-	var (
-		sql   string
-		binds []interface{}
-	)
+	sql := ""
+	binds := make([]interface{}, 0)
 
 	v := reflect.Indirect(reflect.ValueOf(data))
 
@@ -379,6 +379,10 @@ func singleInsertWithStruct(driver Driver, table string, v reflect.Value) (strin
 		for i := 0; i < fieldNum; i++ {
 			column := t.Field(i).Tag.Get("db")
 
+			if column == "-" {
+				continue
+			}
+
 			if column == "" {
 				column = t.Field(i).Name
 			}
@@ -390,15 +394,23 @@ func singleInsertWithStruct(driver Driver, table string, v reflect.Value) (strin
 
 		sql = fmt.Sprintf("INSERT INTO `%s` (%s) VALUES (%s)", table, strings.Join(columns, ", "), strings.Join(placeholders, ", "))
 	case Postgres:
+		bindIndex := 0
+
 		for i := 0; i < fieldNum; i++ {
 			column := t.Field(i).Tag.Get("db")
+
+			if column == "-" {
+				continue
+			}
+
+			bindIndex++
 
 			if column == "" {
 				column = t.Field(i).Name
 			}
 
 			columns = append(columns, fmt.Sprintf(`"%s"`, column))
-			placeholders = append(placeholders, fmt.Sprintf("$%d", i+1))
+			placeholders = append(placeholders, fmt.Sprintf("$%d", bindIndex))
 			binds = append(binds, v.Field(i).Interface())
 		}
 
@@ -487,6 +499,10 @@ func batchInsertWithStruct(driver Driver, table string, v reflect.Value, count i
 			for j := 0; j < fieldNum; j++ {
 				column := t.Field(j).Tag.Get("db")
 
+				if column == "-" {
+					continue
+				}
+
 				if i == 0 {
 					if column == "" {
 						column = t.Field(j).Name
@@ -512,6 +528,12 @@ func batchInsertWithStruct(driver Driver, table string, v reflect.Value, count i
 			for j := 0; j < fieldNum; j++ {
 				column := t.Field(j).Tag.Get("db")
 
+				if column == "-" {
+					continue
+				}
+
+				bindIndex++
+
 				if i == 0 {
 					if column == "" {
 						column = t.Field(j).Name
@@ -519,8 +541,6 @@ func batchInsertWithStruct(driver Driver, table string, v reflect.Value, count i
 
 					columns = append(columns, fmt.Sprintf(`"%s"`, column))
 				}
-
-				bindIndex++
 
 				phrs = append(phrs, fmt.Sprintf("$%d", bindIndex))
 				binds = append(binds, reflect.Indirect(v.Index(i)).Field(j).Interface())
@@ -536,19 +556,15 @@ func batchInsertWithStruct(driver Driver, table string, v reflect.Value, count i
 }
 
 func updateWithMap(driver Driver, query string, data X, args ...interface{}) (string, []interface{}) {
-	var (
-		sql   string
-		binds []interface{}
-	)
-
 	dataLen := len(data)
+	argsLen := len(args)
 
+	sql := ""
 	sets := make([]string, 0, dataLen)
+	binds := make([]interface{}, 0, dataLen+argsLen)
 
 	switch driver {
 	case MySQL:
-		binds = make([]interface{}, 0, dataLen+len(args))
-
 		for k, v := range data {
 			sets = append(sets, fmt.Sprintf("`%s` = ?", k))
 			binds = append(binds, v)
@@ -557,7 +573,14 @@ func updateWithMap(driver Driver, query string, data X, args ...interface{}) (st
 		sql = strings.Replace(query, "?", strings.Join(sets, ", "), 1)
 		binds = append(binds, args...)
 	case Postgres:
-		argsLen := len(args)
+		bindIndex := 0
+
+		for k, v := range data {
+			bindIndex++
+
+			sets = append(sets, fmt.Sprintf(`"%s" = $%d`, k, bindIndex))
+			binds = append(binds, v)
+		}
 
 		oldnew := make([]string, 0, argsLen*2)
 
@@ -568,17 +591,6 @@ func updateWithMap(driver Driver, query string, data X, args ...interface{}) (st
 		r := strings.NewReplacer(oldnew...)
 		query = r.Replace(query)
 
-		binds = make([]interface{}, 0, dataLen+argsLen)
-
-		bindIndex := 0
-
-		for k, v := range data {
-			bindIndex++
-
-			sets = append(sets, fmt.Sprintf(`"%s" = $%d`, k, bindIndex))
-			binds = append(binds, v)
-		}
-
 		sql = strings.Replace(query, "$1", strings.Join(sets, ", "), 1)
 		binds = append(binds, args...)
 	}
@@ -587,23 +599,23 @@ func updateWithMap(driver Driver, query string, data X, args ...interface{}) (st
 }
 
 func updateWithStruct(driver Driver, query string, v reflect.Value, args ...interface{}) (string, []interface{}) {
-	var (
-		sql   string
-		binds []interface{}
-	)
-
 	fieldNum := v.NumField()
+	argsLen := len(args)
 
+	sql := ""
 	sets := make([]string, 0, fieldNum)
+	binds := make([]interface{}, 0, fieldNum+argsLen)
+
+	t := v.Type()
 
 	switch driver {
 	case MySQL:
-		binds = make([]interface{}, 0, fieldNum+len(args))
-
-		t := v.Type()
-
 		for i := 0; i < fieldNum; i++ {
 			column := t.Field(i).Tag.Get("db")
+
+			if column == "-" {
+				continue
+			}
 
 			if column == "" {
 				column = t.Field(i).Name
@@ -616,34 +628,35 @@ func updateWithStruct(driver Driver, query string, v reflect.Value, args ...inte
 		sql = strings.Replace(query, "?", strings.Join(sets, ", "), 1)
 		binds = append(binds, args...)
 	case Postgres:
-		argsLen := len(args)
-
-		oldnew := make([]string, 0, argsLen*2)
-
-		for i := 1; i <= argsLen; i++ {
-			oldnew = append(oldnew, fmt.Sprintf("$%d", i+1), fmt.Sprintf("$%d", fieldNum+i))
-		}
-
-		r := strings.NewReplacer(oldnew...)
-		query = r.Replace(query)
-
-		binds = make([]interface{}, 0, fieldNum+argsLen)
-
-		t := v.Type()
+		bindIndex := 0
 
 		for i := 0; i < fieldNum; i++ {
 			column := t.Field(i).Tag.Get("db")
+
+			if column == "-" {
+				continue
+			}
+
+			bindIndex++
 
 			if column == "" {
 				column = t.Field(i).Name
 			}
 
-			sets = append(sets, fmt.Sprintf(`"%s" = $%d`, column, i+1))
+			sets = append(sets, fmt.Sprintf(`"%s" = $%d`, column, bindIndex))
 			binds = append(binds, v.Field(i).Interface())
 		}
 
-		sql = strings.Replace(query, "$1", strings.Join(sets, ", "), 1)
+		oldnew := make([]string, 0, argsLen*2)
 
+		for i := 1; i <= argsLen; i++ {
+			oldnew = append(oldnew, fmt.Sprintf("$%d", i+1), fmt.Sprintf("$%d", bindIndex+i))
+		}
+
+		r := strings.NewReplacer(oldnew...)
+		query = r.Replace(query)
+
+		sql = strings.Replace(query, "$1", strings.Join(sets, ", "), 1)
 		binds = append(binds, args...)
 	}
 
