@@ -1,7 +1,7 @@
 package yiigo
 
 import (
-	"math/big"
+	"math"
 	"net"
 	"time"
 )
@@ -28,23 +28,21 @@ func Date(timestamp int64, format ...string) string {
 }
 
 // IP2Long converts a string containing an (IPv4) Internet Protocol dotted address into a long integer.
-func IP2Long(ip string) int64 {
+func IP2Long(ip string) uint32 {
 	ipv4 := net.ParseIP(ip).To4()
 
 	if ipv4 == nil {
 		return 0
 	}
 
-	ret := big.NewInt(0)
-	ret.SetBytes(ipv4)
-
-	return ret.Int64()
+	return uint32(ipv4[0])<<24 | uint32(ipv4[1])<<16 | uint32(ipv4[2])<<8 | uint32(ipv4[3])
 }
 
 // Long2IP converts an long integer address into a string in (IPv4) Internet standard dotted format.
-func Long2IP(ip int64) string {
-	ret := big.NewInt(ip)
-	ipv4 := net.IP(ret.Bytes())
+func Long2IP(ip uint32) string {
+	if ip > math.MaxUint32 {
+		return ""
+	}
 
-	return ipv4.String()
+	return net.IPv4(byte(ip>>24), byte(ip>>16), byte(ip>>8), byte(ip)).String()
 }

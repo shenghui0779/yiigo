@@ -37,7 +37,7 @@ func TestIP2Long(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want int64
+		want uint32
 	}{
 		{
 			name: "t1",
@@ -56,7 +56,7 @@ func TestIP2Long(t *testing.T) {
 
 func TestLong2IP(t *testing.T) {
 	type args struct {
-		ip int64
+		ip uint32
 	}
 	tests := []struct {
 		name string

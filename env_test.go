@@ -14,7 +14,7 @@ import (
 // time = "2016-03-19 15:03:19"
 // amount = 100
 // hosts = [ "127.0.0.1", "192.168.1.1", "192.168.1.80" ]
-// ports = [ 50001, 50002, 50003 ]
+// ports = [ 80, 81, 82 ]
 // weight = 50.6
 // prices = [ 23.5, 46.7, 45.9 ]
 
@@ -131,9 +131,9 @@ func Test_env_Ints(t *testing.T) {
 			name: "t1",
 			args: args{
 				key:          "app.ports",
-				defaultValue: []int{10086},
+				defaultValue: []int{88},
 			},
-			want: []int{50001, 50002, 50003},
+			want: []int{80, 81, 82},
 		},
 	}
 
@@ -146,6 +146,341 @@ func Test_env_Ints(t *testing.T) {
 
 			if got := Env.Ints(tt.args.key, tt.args.defaultValue...); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("env.Ints() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_env_Uint(t *testing.T) {
+	type args struct {
+		key          string
+		defaultValue []uint
+	}
+	tests := []struct {
+		name string
+		args args
+		want uint
+	}{
+		{
+			name: "t1",
+			args: args{
+				key:          "app.amount",
+				defaultValue: []uint{0},
+			},
+			want: 100,
+		},
+	}
+
+	if err := UseEnv("env.toml"); err != nil {
+		t.Error(err)
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := Env.Uint(tt.args.key, tt.args.defaultValue...); got != tt.want {
+				t.Errorf("env.Uint() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_env_Uints(t *testing.T) {
+	type args struct {
+		key          string
+		defaultValue []uint
+	}
+	tests := []struct {
+		name string
+		args args
+		want []uint
+	}{
+		{
+			name: "t1",
+			args: args{
+				key:          "app.ports",
+				defaultValue: []uint{88},
+			},
+			want: []uint{80, 81, 82},
+		},
+	}
+
+	if err := UseEnv("env.toml"); err != nil {
+		t.Error(err)
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			if got := Env.Uints(tt.args.key, tt.args.defaultValue...); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("env.Uints() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_env_Int8(t *testing.T) {
+	type args struct {
+		key          string
+		defaultValue []int8
+	}
+	tests := []struct {
+		name string
+		args args
+		want int8
+	}{
+		{
+			name: "t1",
+			args: args{
+				key:          "app.amount",
+				defaultValue: []int8{0},
+			},
+			want: 100,
+		},
+	}
+
+	if err := UseEnv("env.toml"); err != nil {
+		t.Error(err)
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := Env.Int8(tt.args.key, tt.args.defaultValue...); got != tt.want {
+				t.Errorf("env.Int8() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_env_Int8s(t *testing.T) {
+	type args struct {
+		key          string
+		defaultValue []int8
+	}
+	tests := []struct {
+		name string
+		args args
+		want []int8
+	}{
+		{
+			name: "t1",
+			args: args{
+				key:          "app.ports",
+				defaultValue: []int8{88},
+			},
+			want: []int8{80, 81, 82},
+		},
+	}
+
+	if err := UseEnv("env.toml"); err != nil {
+		t.Error(err)
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			if got := Env.Int8s(tt.args.key, tt.args.defaultValue...); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("env.Int8s() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_env_Uint8(t *testing.T) {
+	type args struct {
+		key          string
+		defaultValue []uint8
+	}
+	tests := []struct {
+		name string
+		args args
+		want uint8
+	}{
+		{
+			name: "t1",
+			args: args{
+				key:          "app.amount",
+				defaultValue: []uint8{0},
+			},
+			want: 100,
+		},
+	}
+
+	if err := UseEnv("env.toml"); err != nil {
+		t.Error(err)
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := Env.Uint8(tt.args.key, tt.args.defaultValue...); got != tt.want {
+				t.Errorf("env.Uint8() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_env_Uint8s(t *testing.T) {
+	type args struct {
+		key          string
+		defaultValue []uint8
+	}
+	tests := []struct {
+		name string
+		args args
+		want []uint8
+	}{
+		{
+			name: "t1",
+			args: args{
+				key:          "app.ports",
+				defaultValue: []uint8{88},
+			},
+			want: []uint8{80, 81, 82},
+		},
+	}
+
+	if err := UseEnv("env.toml"); err != nil {
+		t.Error(err)
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			if got := Env.Uint8s(tt.args.key, tt.args.defaultValue...); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("env.Uint8s() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_env_Int16(t *testing.T) {
+	type args struct {
+		key          string
+		defaultValue []int16
+	}
+	tests := []struct {
+		name string
+		args args
+		want int16
+	}{
+		{
+			name: "t1",
+			args: args{
+				key:          "app.amount",
+				defaultValue: []int16{0},
+			},
+			want: 100,
+		},
+	}
+
+	if err := UseEnv("env.toml"); err != nil {
+		t.Error(err)
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := Env.Int16(tt.args.key, tt.args.defaultValue...); got != tt.want {
+				t.Errorf("env.Int16() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_env_Int16s(t *testing.T) {
+	type args struct {
+		key          string
+		defaultValue []int16
+	}
+	tests := []struct {
+		name string
+		args args
+		want []int16
+	}{
+		{
+			name: "t1",
+			args: args{
+				key:          "app.ports",
+				defaultValue: []int16{88},
+			},
+			want: []int16{80, 81, 82},
+		},
+	}
+
+	if err := UseEnv("env.toml"); err != nil {
+		t.Error(err)
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			if got := Env.Int16s(tt.args.key, tt.args.defaultValue...); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("env.Int16s() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_env_Uint16(t *testing.T) {
+	type args struct {
+		key          string
+		defaultValue []uint16
+	}
+	tests := []struct {
+		name string
+		args args
+		want uint16
+	}{
+		{
+			name: "t1",
+			args: args{
+				key:          "app.amount",
+				defaultValue: []uint16{0},
+			},
+			want: 100,
+		},
+	}
+
+	if err := UseEnv("env.toml"); err != nil {
+		t.Error(err)
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := Env.Uint16(tt.args.key, tt.args.defaultValue...); got != tt.want {
+				t.Errorf("env.Uint16() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_env_Uint16s(t *testing.T) {
+	type args struct {
+		key          string
+		defaultValue []uint16
+	}
+	tests := []struct {
+		name string
+		args args
+		want []uint16
+	}{
+		{
+			name: "t1",
+			args: args{
+				key:          "app.ports",
+				defaultValue: []uint16{88},
+			},
+			want: []uint16{80, 81, 82},
+		},
+	}
+
+	if err := UseEnv("env.toml"); err != nil {
+		t.Error(err)
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			if got := Env.Uint16s(tt.args.key, tt.args.defaultValue...); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("env.Uint16s() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -198,9 +533,9 @@ func Test_env_Int32s(t *testing.T) {
 			name: "t1",
 			args: args{
 				key:          "app.ports",
-				defaultValue: []int32{10086},
+				defaultValue: []int32{88},
 			},
-			want: []int32{50001, 50002, 50003},
+			want: []int32{80, 81, 82},
 		},
 	}
 
@@ -213,6 +548,73 @@ func Test_env_Int32s(t *testing.T) {
 
 			if got := Env.Int32s(tt.args.key, tt.args.defaultValue...); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("env.Int32s() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_env_Uint32(t *testing.T) {
+	type args struct {
+		key          string
+		defaultValue []uint32
+	}
+	tests := []struct {
+		name string
+		args args
+		want uint32
+	}{
+		{
+			name: "t1",
+			args: args{
+				key:          "app.amount",
+				defaultValue: []uint32{0},
+			},
+			want: 100,
+		},
+	}
+
+	if err := UseEnv("env.toml"); err != nil {
+		t.Error(err)
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := Env.Uint32(tt.args.key, tt.args.defaultValue...); got != tt.want {
+				t.Errorf("env.Uint32() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_env_Uint32s(t *testing.T) {
+	type args struct {
+		key          string
+		defaultValue []uint32
+	}
+	tests := []struct {
+		name string
+		args args
+		want []uint32
+	}{
+		{
+			name: "t1",
+			args: args{
+				key:          "app.ports",
+				defaultValue: []uint32{88},
+			},
+			want: []uint32{80, 81, 82},
+		},
+	}
+
+	if err := UseEnv("env.toml"); err != nil {
+		t.Error(err)
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			if got := Env.Uint32s(tt.args.key, tt.args.defaultValue...); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("env.Uint32s() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -265,9 +667,9 @@ func Test_env_Int64s(t *testing.T) {
 			name: "t1",
 			args: args{
 				key:          "app.ports",
-				defaultValue: []int64{10086},
+				defaultValue: []int64{88},
 			},
-			want: []int64{50001, 50002, 50003},
+			want: []int64{80, 81, 82},
 		},
 	}
 
@@ -279,6 +681,73 @@ func Test_env_Int64s(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := Env.Int64s(tt.args.key, tt.args.defaultValue...); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("env.Int64s() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_env_Uint64(t *testing.T) {
+	type args struct {
+		key          string
+		defaultValue []uint64
+	}
+	tests := []struct {
+		name string
+		args args
+		want uint64
+	}{
+		{
+			name: "t1",
+			args: args{
+				key:          "app.amount",
+				defaultValue: []uint64{0},
+			},
+			want: 100,
+		},
+	}
+
+	if err := UseEnv("env.toml"); err != nil {
+		t.Error(err)
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := Env.Uint64(tt.args.key, tt.args.defaultValue...); got != tt.want {
+				t.Errorf("env.Uint64() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_env_Uint64s(t *testing.T) {
+	type args struct {
+		key          string
+		defaultValue []uint64
+	}
+	tests := []struct {
+		name string
+		args args
+		want []uint64
+	}{
+		{
+			name: "t1",
+			args: args{
+				key:          "app.ports",
+				defaultValue: []uint64{88},
+			},
+			want: []uint64{80, 81, 82},
+		},
+	}
+
+	if err := UseEnv("env.toml"); err != nil {
+		t.Error(err)
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			if got := Env.Uint64s(tt.args.key, tt.args.defaultValue...); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("env.Uint64s() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -436,7 +905,7 @@ func Test_env_Map(t *testing.T) {
 				"time":   "2016-03-19 15:03:19",
 				"amount": int64(100),
 				"hosts":  []interface{}{"127.0.0.1", "192.168.1.1", "192.168.1.80"},
-				"ports":  []interface{}{int64(50001), int64(50002), int64(50003)},
+				"ports":  []interface{}{int64(80), int64(81), int64(82)},
 				"weight": 50.6,
 				"prices": []interface{}{23.5, 46.7, 45.9},
 			},
