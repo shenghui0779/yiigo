@@ -40,6 +40,8 @@ func Test_env_String(t *testing.T) {
 
 	if err := UseEnv("env.toml"); err != nil {
 		t.Error(err)
+
+		return
 	}
 
 	for _, tt := range tests {
@@ -73,6 +75,8 @@ func Test_env_Strings(t *testing.T) {
 
 	if err := UseEnv("env.toml"); err != nil {
 		t.Error(err)
+
+		return
 	}
 
 	for _, tt := range tests {
@@ -106,6 +110,8 @@ func Test_env_Int(t *testing.T) {
 
 	if err := UseEnv("env.toml"); err != nil {
 		t.Error(err)
+
+		return
 	}
 
 	for _, tt := range tests {
@@ -139,6 +145,8 @@ func Test_env_Ints(t *testing.T) {
 
 	if err := UseEnv("env.toml"); err != nil {
 		t.Error(err)
+
+		return
 	}
 
 	for _, tt := range tests {
@@ -173,6 +181,8 @@ func Test_env_Uint(t *testing.T) {
 
 	if err := UseEnv("env.toml"); err != nil {
 		t.Error(err)
+
+		return
 	}
 
 	for _, tt := range tests {
@@ -206,6 +216,8 @@ func Test_env_Uints(t *testing.T) {
 
 	if err := UseEnv("env.toml"); err != nil {
 		t.Error(err)
+
+		return
 	}
 
 	for _, tt := range tests {
@@ -240,6 +252,8 @@ func Test_env_Int8(t *testing.T) {
 
 	if err := UseEnv("env.toml"); err != nil {
 		t.Error(err)
+
+		return
 	}
 
 	for _, tt := range tests {
@@ -273,6 +287,8 @@ func Test_env_Int8s(t *testing.T) {
 
 	if err := UseEnv("env.toml"); err != nil {
 		t.Error(err)
+
+		return
 	}
 
 	for _, tt := range tests {
@@ -307,6 +323,8 @@ func Test_env_Uint8(t *testing.T) {
 
 	if err := UseEnv("env.toml"); err != nil {
 		t.Error(err)
+
+		return
 	}
 
 	for _, tt := range tests {
@@ -340,6 +358,8 @@ func Test_env_Uint8s(t *testing.T) {
 
 	if err := UseEnv("env.toml"); err != nil {
 		t.Error(err)
+
+		return
 	}
 
 	for _, tt := range tests {
@@ -374,6 +394,8 @@ func Test_env_Int16(t *testing.T) {
 
 	if err := UseEnv("env.toml"); err != nil {
 		t.Error(err)
+
+		return
 	}
 
 	for _, tt := range tests {
@@ -407,6 +429,8 @@ func Test_env_Int16s(t *testing.T) {
 
 	if err := UseEnv("env.toml"); err != nil {
 		t.Error(err)
+
+		return
 	}
 
 	for _, tt := range tests {
@@ -441,6 +465,8 @@ func Test_env_Uint16(t *testing.T) {
 
 	if err := UseEnv("env.toml"); err != nil {
 		t.Error(err)
+
+		return
 	}
 
 	for _, tt := range tests {
@@ -474,6 +500,8 @@ func Test_env_Uint16s(t *testing.T) {
 
 	if err := UseEnv("env.toml"); err != nil {
 		t.Error(err)
+
+		return
 	}
 
 	for _, tt := range tests {
@@ -508,6 +536,8 @@ func Test_env_Int32(t *testing.T) {
 
 	if err := UseEnv("env.toml"); err != nil {
 		t.Error(err)
+
+		return
 	}
 
 	for _, tt := range tests {
@@ -541,6 +571,8 @@ func Test_env_Int32s(t *testing.T) {
 
 	if err := UseEnv("env.toml"); err != nil {
 		t.Error(err)
+
+		return
 	}
 
 	for _, tt := range tests {
@@ -575,6 +607,8 @@ func Test_env_Uint32(t *testing.T) {
 
 	if err := UseEnv("env.toml"); err != nil {
 		t.Error(err)
+
+		return
 	}
 
 	for _, tt := range tests {
@@ -608,6 +642,8 @@ func Test_env_Uint32s(t *testing.T) {
 
 	if err := UseEnv("env.toml"); err != nil {
 		t.Error(err)
+
+		return
 	}
 
 	for _, tt := range tests {
@@ -642,6 +678,8 @@ func Test_env_Int64(t *testing.T) {
 
 	if err := UseEnv("env.toml"); err != nil {
 		t.Error(err)
+
+		return
 	}
 
 	for _, tt := range tests {
@@ -675,6 +713,8 @@ func Test_env_Int64s(t *testing.T) {
 
 	if err := UseEnv("env.toml"); err != nil {
 		t.Error(err)
+
+		return
 	}
 
 	for _, tt := range tests {
@@ -708,6 +748,8 @@ func Test_env_Uint64(t *testing.T) {
 
 	if err := UseEnv("env.toml"); err != nil {
 		t.Error(err)
+
+		return
 	}
 
 	for _, tt := range tests {
@@ -741,6 +783,8 @@ func Test_env_Uint64s(t *testing.T) {
 
 	if err := UseEnv("env.toml"); err != nil {
 		t.Error(err)
+
+		return
 	}
 
 	for _, tt := range tests {
@@ -775,6 +819,8 @@ func Test_env_Float64(t *testing.T) {
 
 	if err := UseEnv("env.toml"); err != nil {
 		t.Error(err)
+
+		return
 	}
 
 	for _, tt := range tests {
@@ -808,6 +854,8 @@ func Test_env_Float64s(t *testing.T) {
 
 	if err := UseEnv("env.toml"); err != nil {
 		t.Error(err)
+
+		return
 	}
 
 	for _, tt := range tests {
@@ -841,6 +889,8 @@ func Test_env_Bool(t *testing.T) {
 
 	if err := UseEnv("env.toml"); err != nil {
 		t.Error(err)
+
+		return
 	}
 
 	for _, tt := range tests {
@@ -876,6 +926,8 @@ func Test_env_Time(t *testing.T) {
 
 	if err := UseEnv("env.toml"); err != nil {
 		t.Error(err)
+
+		return
 	}
 
 	for _, tt := range tests {
@@ -914,6 +966,8 @@ func Test_env_Map(t *testing.T) {
 
 	if err := UseEnv("env.toml"); err != nil {
 		t.Error(err)
+
+		return
 	}
 
 	for _, tt := range tests {
@@ -957,6 +1011,8 @@ func Test_env_Unmarshal(t *testing.T) {
 
 	if err := UseEnv("env.toml"); err != nil {
 		t.Error(err)
+
+		return
 	}
 
 	for _, tt := range tests {
