@@ -533,13 +533,13 @@ func mkCookieFile(path string) error {
 }
 
 // getCookie get http saved cookies
-func getCookies(file string) ([]*http.Cookie, error) {
-	if file == "" {
+func getCookies(cookieFile string) ([]*http.Cookie, error) {
+	if cookieFile == "" {
 		return nil, errCookieFileNotFound
 	}
 
 	cookieM := make(map[string]*http.Cookie)
-	content, err := ioutil.ReadFile(file)
+	content, err := ioutil.ReadFile(cookieFile)
 
 	if err != nil {
 		return nil, err
@@ -559,19 +559,19 @@ func getCookies(file string) ([]*http.Cookie, error) {
 }
 
 // saveCookie save http cookies
-func saveCookie(cookies []*http.Cookie, file string, replace bool) error {
+func saveCookie(cookies []*http.Cookie, cookieFile string, replace bool) error {
 	if len(cookies) == 0 {
 		return nil
 	}
 
-	if file == "" {
+	if cookieFile == "" {
 		return errCookieFileNotFound
 	}
 
 	cookieM := make(map[string]*http.Cookie)
 
 	if !replace {
-		content, err := ioutil.ReadFile(file)
+		content, err := ioutil.ReadFile(cookieFile)
 
 		if err != nil {
 			return err
@@ -594,5 +594,5 @@ func saveCookie(cookies []*http.Cookie, file string, replace bool) error {
 		return err
 	}
 
-	return ioutil.WriteFile(file, b, 0777)
+	return ioutil.WriteFile(cookieFile, b, os.ModePerm)
 }
