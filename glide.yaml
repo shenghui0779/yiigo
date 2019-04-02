@@ -20,3 +20,14 @@ import:
 - package: vitess.io/vitess
   subpackages:
   - go/pools
+- package: google.golang.org/appengine
+  repo: https://github.com/golang/appengine.git
+- package: golang.org/x/net
+  repo: https://github.com/golang/net.git
+- package: golang.org/x/sync
+  repo: https://github.com/golang/sync.git
+- package: golang.org/x/crypto
+  repo: https://github.com/golang/crypto.git
+- package: golang.org/x/text
+  repo: https://github.com/golang/text.git
+
