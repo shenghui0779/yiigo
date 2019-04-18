@@ -6,8 +6,8 @@ import (
 	"crypto/cipher"
 )
 
-// AESEncrypt AES encrypt, use `CBC` mode.
-func AESEncrypt(data, key []byte, iv ...byte) ([]byte, error) {
+// AESCBCEncrypt AES CBC encrypt
+func AESCBCEncrypt(data, key []byte, iv ...byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 
 	if err != nil {
@@ -30,8 +30,8 @@ func AESEncrypt(data, key []byte, iv ...byte) ([]byte, error) {
 	return encryptedData, nil
 }
 
-// AESDecrypt AES decrypt, use `CBC` mode.
-func AESDecrypt(encryptedData, key []byte, iv ...byte) ([]byte, error) {
+// AESCBCDecrypt AES CBC decrypt
+func AESCBCDecrypt(encryptedData, key []byte, iv ...byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 
 	if err != nil {

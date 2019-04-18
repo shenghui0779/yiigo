@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestCryptoAES(t *testing.T) {
+func TestAESCBCCrypt(t *testing.T) {
 	type args struct {
 		data []byte
 		key  []byte
@@ -21,7 +21,7 @@ func TestCryptoAES(t *testing.T) {
 			name: "t1",
 			args: args{
 				data: []byte("IIInsomnia"),
-				key:  []byte("0123456789abcdef"),
+				key:  []byte("1234567890abcdef"),
 			},
 			want:    "IIInsomnia",
 			wantErr: false,
@@ -29,18 +29,18 @@ func TestCryptoAES(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			aesData, err := AESEncrypt(tt.args.data, tt.args.key, tt.args.iv...)
+			aesData, err := AESCBCEncrypt(tt.args.data, tt.args.key, tt.args.iv...)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("AESEncrypt() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("AESCBCEncrypt() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			got, err := AESDecrypt(aesData, tt.args.key, tt.args.iv...)
+			got, err := AESCBCDecrypt(aesData, tt.args.key, tt.args.iv...)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("AESDecrypt() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("AESCBCDecrypt() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(string(got), tt.want) {
-				t.Errorf("AESDecrypt() = %v, want %v", got, tt.want)
+				t.Errorf("AESCBCDecrypt() = %v, want %v", got, tt.want)
 			}
 		})
 	}
