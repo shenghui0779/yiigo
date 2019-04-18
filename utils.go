@@ -1,6 +1,7 @@
 package yiigo
 
 import (
+	"encoding/xml"
 	"math"
 	"net"
 	"time"
@@ -11,6 +12,16 @@ const AsDefault = "default"
 
 // X is a convenient alias for a map[string]interface{}.
 type X map[string]interface{}
+
+// CDATA XML CDATA section which is defined as blocks of text that are not parsed by the parser, but are otherwise recognized as markup.
+type CDATA string
+
+// MarshalXML encodes the receiver as zero or more XML elements.
+func (c CDATA) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+	return e.EncodeElement(struct {
+		string `xml:",cdata"`
+	}{string(c)}, start)
+}
 
 // Date format a local time/date and
 // returns a string formatted according to the given format string using the given timestamp of int64.
