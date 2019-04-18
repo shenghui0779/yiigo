@@ -7,7 +7,7 @@ import (
 )
 
 // AESCBCEncrypt AES CBC encrypt
-func AESCBCEncrypt(data, key []byte, iv ...byte) ([]byte, error) {
+func AESCBCEncrypt(plainText, key []byte, iv ...byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 
 	if err != nil {
@@ -16,22 +16,22 @@ func AESCBCEncrypt(data, key []byte, iv ...byte) ([]byte, error) {
 
 	blockSize := block.BlockSize()
 
-	data = PKCS7Padding(data, blockSize)
+	plainText = PKCS7Padding(plainText, blockSize)
 
-	encryptedData := make([]byte, len(data))
+	cipherText := make([]byte, len(plainText))
 
 	if len(iv) == 0 {
 		iv = key[:blockSize]
 	}
 
 	blockMode := cipher.NewCBCEncrypter(block, iv)
-	blockMode.CryptBlocks(encryptedData, data)
+	blockMode.CryptBlocks(cipherText, plainText)
 
-	return encryptedData, nil
+	return cipherText, nil
 }
 
 // AESCBCDecrypt AES CBC decrypt
-func AESCBCDecrypt(encryptedData, key []byte, iv ...byte) ([]byte, error) {
+func AESCBCDecrypt(cipherText, key []byte, iv ...byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 
 	if err != nil {
@@ -40,16 +40,16 @@ func AESCBCDecrypt(encryptedData, key []byte, iv ...byte) ([]byte, error) {
 
 	blockSize := block.BlockSize()
 
-	decryptedData := make([]byte, len(encryptedData))
+	plainText := make([]byte, len(cipherText))
 
 	if len(iv) == 0 {
 		iv = key[:blockSize]
 	}
 
 	blockMode := cipher.NewCBCDecrypter(block, iv)
-	blockMode.CryptBlocks(decryptedData, encryptedData)
+	blockMode.CryptBlocks(plainText, cipherText)
 
-	return PKCS7UnPadding(decryptedData), nil
+	return PKCS7UnPadding(plainText), nil
 }
 
 // PKCS7Padding PKCS7 padding
