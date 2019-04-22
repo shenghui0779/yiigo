@@ -66,7 +66,7 @@ func PKCS7UnPadding(plainText []byte, blockSize int) []byte {
 	l := len(plainText)
 	unpadding := int(plainText[l-1])
 
-	if unpadding < 1 || unpadding > blockSize {
+	if unpadding < 0 || unpadding > blockSize {
 		unpadding = 0
 	}
 
