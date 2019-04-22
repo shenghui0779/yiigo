@@ -48,7 +48,7 @@ func AESCBCDecrypt(cipherText, key []byte, iv ...byte) ([]byte, error) {
 	return PKCS7UnPadding(plainText, len(key)), nil
 }
 
-// PKCS7Padding PKCS7 padding
+// PKCS7Padding PKCS#7 padding
 func PKCS7Padding(cipherText []byte, blockSize int) []byte {
 	padding := blockSize - len(cipherText)%blockSize
 
@@ -61,7 +61,7 @@ func PKCS7Padding(cipherText []byte, blockSize int) []byte {
 	return append(cipherText, padText...)
 }
 
-// PKCS7UnPadding PKCS7 unpadding
+// PKCS7UnPadding PKCS#7 unpadding
 func PKCS7UnPadding(plainText []byte, blockSize int) []byte {
 	l := len(plainText)
 	unpadding := int(plainText[l-1])
