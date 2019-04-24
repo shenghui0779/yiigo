@@ -1,8 +1,8 @@
 # yiigo
 
 [![golang](https://img.shields.io/badge/Language-Go-green.svg?style=flat)](https://golang.org)
-[![GoDoc](https://godoc.org/github.com/IIInsomnia/yiigo?status.svg)](https://godoc.org/github.com/IIInsomnia/yiigo)
-[![GitHub release](https://img.shields.io/github/release/IIInsomnia/yiigo.svg)](https://github.com/IIInsomnia/yiigo/releases/latest)
+[![GoDoc](https://godoc.org/github.com/iiinsomnia/yiigo?status.svg)](https://godoc.org/github.com/iiinsomnia/yiigo)
+[![GitHub release](https://img.shields.io/github/release/IIInsomnia/yiigo.svg)](https://github.com/iiinsomnia/yiigo/releases/latest)
 [![MIT license](http://img.shields.io/badge/license-MIT-brightgreen.svg)](http://opensource.org/licenses/MIT)
 
 简单易用的轻量级 Golang 辅助库，让 Golang 开发更简单
@@ -118,8 +118,8 @@ yiigo.UseLogger("foo").Info("hello world")
 
 ## 文档
 
-- [API Reference](https://godoc.org/github.com/IIInsomnia/yiigo)
-- [Example](https://github.com/IIInsomnia/yiigo-example)
+- [API Reference](https://godoc.org/github.com/iiinsomnia/yiigo)
+- [Example](https://github.com/iiinsomnia/yiigo-example)
 
 ## 说明
 
