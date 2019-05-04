@@ -3,8 +3,6 @@ package yiigo
 import (
 	"reflect"
 	"testing"
-
-	_ "github.com/go-sql-driver/mysql"
 )
 
 func TestInsertSQL(t *testing.T) {

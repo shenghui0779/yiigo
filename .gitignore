@@ -3,3 +3,4 @@
 vendor
 go.sum
 glide.lock
+env.toml
