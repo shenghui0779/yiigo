@@ -27,9 +27,9 @@ type httpClientOptions struct {
 	dialTimeout           time.Duration
 	dialKeepAlive         time.Duration
 	fallbackDelay         time.Duration
-	maxConnsPerHost       int
 	maxIdleConnsPerHost   int
 	maxIdleConns          int
+	maxConnsPerHost       int
 	idleConnTimeout       time.Duration
 	sslCertificates       []tls.Certificate
 	tlsHandshakeTimeout   time.Duration
@@ -446,6 +446,7 @@ var defaultHTTPClient = &HTTPClient{
 			MaxIdleConnsPerHost:   10,
 			MaxIdleConns:          100,
 			IdleConnTimeout:       60 * time.Second,
+			MaxConnsPerHost:       1000,
 			TLSHandshakeTimeout:   10 * time.Second,
 			ExpectContinueTimeout: 1 * time.Second,
 		},
@@ -459,6 +460,7 @@ func NewHTTPClient(options ...HTTPClientOption) (*HTTPClient, error) {
 		dialKeepAlive:         60 * time.Second,
 		maxIdleConnsPerHost:   10,
 		maxIdleConns:          100,
+		maxConnsPerHost:       1000,
 		idleConnTimeout:       60 * time.Second,
 		tlsHandshakeTimeout:   10 * time.Second,
 		expectContinueTimeout: 1 * time.Second,
