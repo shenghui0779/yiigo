@@ -434,8 +434,8 @@ func (h *HTTPClient) Post(url string, body []byte, options ...HTTPRequestOption)
 	return b, nil
 }
 
-// defaultHTTPClient default http client
-var defaultHTTPClient = &HTTPClient{
+// DefaultHTTPClient default http client
+var DefaultHTTPClient = &HTTPClient{
 	client: &http.Client{
 		Transport: &http.Transport{
 			Proxy: http.ProxyFromEnvironment,
@@ -505,12 +505,12 @@ func NewHTTPClient(options ...HTTPClientOption) (*HTTPClient, error) {
 
 // HTTPGet http get request
 func HTTPGet(url string, options ...HTTPRequestOption) ([]byte, error) {
-	return defaultHTTPClient.Get(url, options...)
+	return DefaultHTTPClient.Get(url, options...)
 }
 
 // HTTPPost http post request
 func HTTPPost(url string, body []byte, options ...HTTPRequestOption) ([]byte, error) {
-	return defaultHTTPClient.Post(url, body, options...)
+	return DefaultHTTPClient.Post(url, body, options...)
 }
 
 // mkCookieFile create cookie file
