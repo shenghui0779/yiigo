@@ -130,7 +130,7 @@ func initLogger(logfile string, options ...LogOption) *zap.Logger {
 		zap.DebugLevel,
 	)
 
-	return zap.New(core, zap.AddCaller())
+	return zap.New(core, zap.AddCaller(), zap.AddStacktrace(zapcore.ErrorLevel))
 }
 
 // RegisterLogger register logger
