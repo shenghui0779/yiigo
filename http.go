@@ -27,8 +27,8 @@ type httpClientOptions struct {
 	dialTimeout           time.Duration
 	dialKeepAlive         time.Duration
 	fallbackDelay         time.Duration
-	maxIdleConnsPerHost   int
 	maxIdleConns          int
+	maxIdleConnsPerHost   int
 	maxConnsPerHost       int
 	idleConnTimeout       time.Duration
 	sslCertificates       []tls.Certificate
@@ -81,10 +81,10 @@ func WithHTTPDialFallbackDelay(d time.Duration) HTTPClientOption {
 	})
 }
 
-// WithHTTPMaxConnsPerHost specifies the `MaxConnsPerHost` to http client.
-func WithHTTPMaxConnsPerHost(n int) HTTPClientOption {
+// WithHTTPMaxIdleConns specifies the `MaxIdleConns` to http client.
+func WithHTTPMaxIdleConns(n int) HTTPClientOption {
 	return newFuncHTTPOption(func(o *httpClientOptions) error {
-		o.maxConnsPerHost = n
+		o.maxIdleConns = n
 
 		return nil
 	})
@@ -99,10 +99,10 @@ func WithHTTPMaxIdleConnsPerHost(n int) HTTPClientOption {
 	})
 }
 
-// WithHTTPMaxIdleConns specifies the `MaxIdleConns` to http client.
-func WithHTTPMaxIdleConns(n int) HTTPClientOption {
+// WithHTTPMaxConnsPerHost specifies the `MaxConnsPerHost` to http client.
+func WithHTTPMaxConnsPerHost(n int) HTTPClientOption {
 	return newFuncHTTPOption(func(o *httpClientOptions) error {
-		o.maxIdleConns = n
+		o.maxConnsPerHost = n
 
 		return nil
 	})
@@ -443,10 +443,10 @@ var DefaultHTTPClient = &HTTPClient{
 				Timeout:   30 * time.Second,
 				KeepAlive: 60 * time.Second,
 			}).DialContext,
-			MaxIdleConnsPerHost:   10,
-			MaxIdleConns:          100,
-			IdleConnTimeout:       60 * time.Second,
+			MaxIdleConns:          0,
+			MaxIdleConnsPerHost:   1000,
 			MaxConnsPerHost:       1000,
+			IdleConnTimeout:       60 * time.Second,
 			TLSHandshakeTimeout:   10 * time.Second,
 			ExpectContinueTimeout: 1 * time.Second,
 		},
@@ -458,8 +458,8 @@ func NewHTTPClient(options ...HTTPClientOption) (*HTTPClient, error) {
 	o := &httpClientOptions{
 		dialTimeout:           30 * time.Second,
 		dialKeepAlive:         60 * time.Second,
-		maxIdleConnsPerHost:   10,
-		maxIdleConns:          100,
+		maxIdleConns:          0,
+		maxIdleConnsPerHost:   1000,
 		maxConnsPerHost:       1000,
 		idleConnTimeout:       60 * time.Second,
 		tlsHandshakeTimeout:   10 * time.Second,
