@@ -1,8 +1,8 @@
-// Package yiigo 简单易用的轻量级 Golang 辅助库
+// Package yiigo makes Golang development easier !
 //
-// 基本使用如下：
+// Basic usage
 //
-// MySQL:
+// MySQL
 //
 //    // default db
 //    yiigo.RegisterDB("default", yiigo.MySQL, "root:root@tcp(localhost:3306)/test")
@@ -14,7 +14,7 @@
 //
 //    yiigo.UseDB("foo").Get(&User{}, "SELECT * FROM `user` WHERE `id` = ?", 1)
 //
-// MongoDB:
+// MongoDB
 //
 //    // default mongodb
 //    yiigo.RegisterMongoDB("default", "mongodb://localhost:27017")
@@ -28,7 +28,7 @@
 //    ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 //    yiigo.UseMongo("foo").Database("test").Collection("numbers").InsertOne(ctx, bson.M{"name": "pi", "value": 3.14159})
 //
-// Redis:
+// Redis
 //
 //    // default redis
 //    yiigo.RegisterRedis("default", "localhost:6379")
