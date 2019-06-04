@@ -11,8 +11,8 @@
 
 - Support [MySQL](https://github.com/go-sql-driver/mysql)
 - Support [PostgreSQL](https://github.com/lib/pq)
-- Support [mongodb](https://github.com/mongodb/mongo-go-driver)
-- Support [redis](https://github.com/gomodule/redigo)
+- Support [MongoDB](https://github.com/mongodb/mongo-go-driver)
+- Support [Redis](https://github.com/gomodule/redigo)
 - Use [gomail](https://github.com/go-gomail/gomail) for email sending
 - Use [toml](https://github.com/pelletier/go-toml) for configuration
 - Use [sqlx](https://github.com/jmoiron/sqlx) for SQL executing
