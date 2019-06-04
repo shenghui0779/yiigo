@@ -17,14 +17,17 @@
 - 支持 [toml](https://github.com/pelletier/go-toml) 文件配置
 - 采用 [sqlx](https://github.com/jmoiron/sqlx) 处理SQL查询
 - 采用 [zap](https://github.com/uber-go/zap) 日志记录
+## Requirements
 
-## 获取
+Go1.11+
+
+## Installation
 
 ```sh
 go get github.com/iiinsomnia/yiigo
 ```
 
-## 使用
+## Usage
 
 #### MySQL
 
@@ -119,14 +122,12 @@ yiigo.UseLogger("foo").Info("hello world")
 ## 文档
 
 - [API Reference](https://godoc.org/github.com/iiinsomnia/yiigo)
+- [toml](https://github.com/toml-lang/toml)
 - [Example](https://github.com/iiinsomnia/yiigo-example)
 
 ## 说明
 
 - 支持 Go1.11+
 - 配置文件相关语法参考 [toml](https://github.com/toml-lang/toml)
-- 爬虫可能需要的两个库：
-    1. 页面 DOM 处理：[goquery](https://github.com/PuerkitoBio/goquery)
-    2. GBK 转 UTF8：[iconv](https://github.com/qiniu/iconv)
 
 **Enjoy 😊**
