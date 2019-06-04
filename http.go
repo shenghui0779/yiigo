@@ -1,18 +1,14 @@
 package yiigo
 
 import (
-	"bytes"
 	"context"
 	"crypto/tls"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net"
 	"net/http"
-	"os"
-	"path/filepath"
 	"time"
 )
 
@@ -126,101 +122,49 @@ func WithHTTPExpectContinueTimeout(d time.Duration) HTTPClientOption {
 
 // httpRequestOptions http request options
 type httpRequestOptions struct {
-	headers          map[string]string
-	cookieFile       string
-	withCookies      bool
-	cookieSave       bool
-	cookieReplace    bool
-	disableKeepAlive bool
-	timeout          time.Duration
+	headers map[string]string
+	close   bool
+	timeout time.Duration
 }
 
 // HTTPRequestOption configures how we set up the http request
 type HTTPRequestOption interface {
-	apply(*httpRequestOptions) error
+	apply(*httpRequestOptions)
 }
 
 // funcHTTPRequestOption implements request option
 type funcHTTPRequestOption struct {
-	f func(*httpRequestOptions) error
+	f func(*httpRequestOptions)
 }
 
-func (fo *funcHTTPRequestOption) apply(r *httpRequestOptions) error {
-	return fo.f(r)
+func (fo *funcHTTPRequestOption) apply(r *httpRequestOptions) {
+	fo.f(r)
 }
 
-func newFuncHTTPRequestOption(f func(*httpRequestOptions) error) *funcHTTPRequestOption {
+func newFuncHTTPRequestOption(f func(*httpRequestOptions)) *funcHTTPRequestOption {
 	return &funcHTTPRequestOption{f: f}
 }
 
 // WithRequestHeader specifies the headers to http request.
 func WithRequestHeader(key, value string) HTTPRequestOption {
-	return newFuncHTTPRequestOption(func(o *httpRequestOptions) error {
+	return newFuncHTTPRequestOption(func(o *httpRequestOptions) {
 		o.headers[key] = value
-
-		return nil
 	})
 }
 
-// WithRequestCookieFile specifies the file which to save http response cookies.
-func WithRequestCookieFile(file string) HTTPRequestOption {
-	return newFuncHTTPRequestOption(func(o *httpRequestOptions) error {
-		path, err := filepath.Abs(file)
-
-		if err != nil {
-			return err
-		}
-
-		o.cookieFile = path
-
-		return mkCookieFile(path)
-	})
-}
-
-// WithRequestCookies specifies http requested with cookies.
-func WithRequestCookies(b bool) HTTPRequestOption {
-	return newFuncHTTPRequestOption(func(o *httpRequestOptions) error {
-		o.withCookies = b
-
-		return nil
-	})
-}
-
-// WithRequestCookieSave specifies save the http response cookies.
-func WithRequestCookieSave(b bool) HTTPRequestOption {
-	return newFuncHTTPRequestOption(func(o *httpRequestOptions) error {
-		o.cookieSave = b
-
-		return nil
-	})
-}
-
-// WithRequestCookieReplace specifies replace the old http response cookies.
-func WithRequestCookieReplace(b bool) HTTPRequestOption {
-	return newFuncHTTPRequestOption(func(o *httpRequestOptions) error {
-		o.cookieReplace = b
-
-		return nil
-	})
-}
-
-// WithRequestDisableKeepAlive specifies close the connection after
+// WithRequestClose specifies close the connection after
 // replying to this request (for servers) or after sending this
 // request and reading its response (for clients).
-func WithRequestDisableKeepAlive(b bool) HTTPRequestOption {
-	return newFuncHTTPRequestOption(func(o *httpRequestOptions) error {
-		o.disableKeepAlive = b
-
-		return nil
+func WithRequestClose(b bool) HTTPRequestOption {
+	return newFuncHTTPRequestOption(func(o *httpRequestOptions) {
+		o.close = b
 	})
 }
 
 // WithRequestTimeout specifies the timeout to http request.
 func WithRequestTimeout(d time.Duration) HTTPRequestOption {
-	return newFuncHTTPRequestOption(func(o *httpRequestOptions) error {
+	return newFuncHTTPRequestOption(func(o *httpRequestOptions) {
 		o.timeout = d
-
-		return nil
 	})
 }
 
@@ -244,9 +188,7 @@ func (h *HTTPClient) Get(url string, options ...HTTPRequestOption) ([]byte, erro
 
 	if len(options) > 0 {
 		for _, option := range options {
-			if err := option.apply(o); err != nil {
-				return nil, err
-			}
+			option.apply(o)
 		}
 	}
 
@@ -256,19 +198,7 @@ func (h *HTTPClient) Get(url string, options ...HTTPRequestOption) ([]byte, erro
 		}
 	}
 
-	if o.withCookies {
-		cookies, err := getCookies(o.cookieFile)
-
-		if err != nil {
-			return nil, err
-		}
-
-		for _, c := range cookies {
-			req.AddCookie(c)
-		}
-	}
-
-	if o.disableKeepAlive {
+	if o.close {
 		req.Close = true
 	}
 
@@ -283,12 +213,6 @@ func (h *HTTPClient) Get(url string, options ...HTTPRequestOption) ([]byte, erro
 	}
 
 	defer resp.Body.Close()
-
-	if o.cookieSave {
-		if err := saveCookie(resp.Cookies(), o.cookieFile, o.cookieReplace); err != nil {
-			return nil, err
-		}
-	}
 
 	if resp.StatusCode != http.StatusOK {
 		io.Copy(ioutil.Discard, resp.Body)
@@ -306,8 +230,8 @@ func (h *HTTPClient) Get(url string, options ...HTTPRequestOption) ([]byte, erro
 }
 
 // Post http post request
-func (h *HTTPClient) Post(url string, body []byte, options ...HTTPRequestOption) ([]byte, error) {
-	req, err := http.NewRequest("POST", url, bytes.NewReader(body))
+func (h *HTTPClient) Post(url string, body io.Reader, options ...HTTPRequestOption) ([]byte, error) {
+	req, err := http.NewRequest("POST", url, body)
 
 	if err != nil {
 		return nil, err
@@ -320,9 +244,7 @@ func (h *HTTPClient) Post(url string, body []byte, options ...HTTPRequestOption)
 
 	if len(options) > 0 {
 		for _, option := range options {
-			if err := option.apply(o); err != nil {
-				return nil, err
-			}
+			option.apply(o)
 		}
 	}
 
@@ -332,19 +254,7 @@ func (h *HTTPClient) Post(url string, body []byte, options ...HTTPRequestOption)
 		}
 	}
 
-	if o.withCookies {
-		cookies, err := getCookies(o.cookieFile)
-
-		if err != nil {
-			return nil, err
-		}
-
-		for _, c := range cookies {
-			req.AddCookie(c)
-		}
-	}
-
-	if o.disableKeepAlive {
+	if o.close {
 		req.Close = true
 	}
 
@@ -359,12 +269,6 @@ func (h *HTTPClient) Post(url string, body []byte, options ...HTTPRequestOption)
 	}
 
 	defer resp.Body.Close()
-
-	if o.cookieSave {
-		if err := saveCookie(resp.Cookies(), o.cookieFile, o.cookieReplace); err != nil {
-			return nil, err
-		}
-	}
 
 	if resp.StatusCode != http.StatusOK {
 		io.Copy(ioutil.Discard, resp.Body)
@@ -449,92 +353,6 @@ func HTTPGet(url string, options ...HTTPRequestOption) ([]byte, error) {
 }
 
 // HTTPPost http post request
-func HTTPPost(url string, body []byte, options ...HTTPRequestOption) ([]byte, error) {
+func HTTPPost(url string, body io.Reader, options ...HTTPRequestOption) ([]byte, error) {
 	return defaultHTTPClient.Post(url, body, options...)
-}
-
-// mkCookieFile create cookie file
-func mkCookieFile(path string) error {
-	dir := filepath.Dir(path)
-
-	// make dir if not exsit
-	if _, err := os.Stat(dir); err != nil && os.IsNotExist(err) {
-		if err := os.MkdirAll(dir, os.ModePerm); err != nil {
-			return err
-		}
-	}
-
-	// create file if not exsit
-	if _, err := os.Stat(path); err != nil && os.IsNotExist(err) {
-		if _, err := os.Create(path); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-// getCookie get http saved cookies
-func getCookies(cookieFile string) ([]*http.Cookie, error) {
-	if cookieFile == "" {
-		return nil, errCookieFileNotFound
-	}
-
-	cookieM := make(map[string]*http.Cookie)
-	content, err := ioutil.ReadFile(cookieFile)
-
-	if err != nil {
-		return nil, err
-	}
-
-	if err := json.Unmarshal(content, &cookieM); err != nil {
-		return nil, err
-	}
-
-	cookies := make([]*http.Cookie, 0, len(cookieM))
-
-	for _, v := range cookieM {
-		cookies = append(cookies, v)
-	}
-
-	return cookies, nil
-}
-
-// saveCookie save http cookies
-func saveCookie(cookies []*http.Cookie, cookieFile string, replace bool) error {
-	if len(cookies) == 0 {
-		return nil
-	}
-
-	if cookieFile == "" {
-		return errCookieFileNotFound
-	}
-
-	cookieM := make(map[string]*http.Cookie)
-
-	if !replace {
-		content, err := ioutil.ReadFile(cookieFile)
-
-		if err != nil {
-			return err
-		}
-
-		if len(content) > 0 {
-			if err := json.Unmarshal(content, &cookieM); err != nil {
-				return err
-			}
-		}
-	}
-
-	for _, c := range cookies {
-		cookieM[c.Name] = c
-	}
-
-	b, err := json.Marshal(cookieM)
-
-	if err != nil {
-		return err
-	}
-
-	return ioutil.WriteFile(cookieFile, b, os.ModePerm)
 }
