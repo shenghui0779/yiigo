@@ -5,7 +5,7 @@
 [![GitHub release](https://img.shields.io/github/release/IIInsomnia/yiigo.svg)](https://github.com/iiinsomnia/yiigo/releases/latest)
 [![MIT license](http://img.shields.io/badge/license-MIT-brightgreen.svg)](http://opensource.org/licenses/MIT)
 
-a simple and light Golang library which makes Golang development easier !
+a simple and light library which makes Golang development easier !
 
 ## Features
 
