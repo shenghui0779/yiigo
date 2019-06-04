@@ -122,7 +122,7 @@ yiigo.UseLogger("foo").Info("hello world")
 ## Documentation
 
 - [API Reference](https://godoc.org/github.com/iiinsomnia/yiigo)
-- [toml](https://github.com/toml-lang/toml)
+- [TOML](https://github.com/toml-lang/toml)
 - [Example](https://github.com/iiinsomnia/yiigo-example)
 
 **Enjoy 😊**
