@@ -7,16 +7,16 @@
 
 简单易用的轻量级 Golang 辅助库，让 Golang 开发更简单
 
-## 特点
+## Features
 
-- 支持多 [MySQL](https://github.com/go-sql-driver/mysql) 连接
-- 支持多 [PostgreSQL](https://github.com/lib/pq) 连接
-- 支持多 [mongo](https://github.com/mongodb/mongo-go-driver) 连接
-- 支持多 [redis](https://github.com/gomodule/redigo) 连接
-- 支持 [gomail](https://github.com/go-gomail/gomail) 邮件发送
-- 支持 [toml](https://github.com/pelletier/go-toml) 文件配置
-- 采用 [sqlx](https://github.com/jmoiron/sqlx) 处理SQL查询
-- 采用 [zap](https://github.com/uber-go/zap) 日志记录
+- Support [MySQL](https://github.com/go-sql-driver/mysql)
+- Support [PostgreSQL](https://github.com/lib/pq)
+- Support [mongodb](https://github.com/mongodb/mongo-go-driver)
+- Support [redis](https://github.com/gomodule/redigo)
+- Support [gomail](https://github.com/go-gomail/gomail)
+- Support [toml](https://github.com/pelletier/go-toml)
+- Use [sqlx](https://github.com/jmoiron/sqlx) for SQL executing
+- Use [zap](https://github.com/uber-go/zap) for logging
 ## Requirements
 
 Go1.11+
@@ -119,15 +119,10 @@ yiigo.RegisterLogger("foo", "foo.log")
 yiigo.UseLogger("foo").Info("hello world")
 ```
 
-## 文档
+## Documentation
 
 - [API Reference](https://godoc.org/github.com/iiinsomnia/yiigo)
 - [toml](https://github.com/toml-lang/toml)
 - [Example](https://github.com/iiinsomnia/yiigo-example)
-
-## 说明
-
-- 支持 Go1.11+
-- 配置文件相关语法参考 [toml](https://github.com/toml-lang/toml)
 
 **Enjoy 😊**
