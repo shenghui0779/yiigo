@@ -57,7 +57,7 @@
 //
 //    conn.Do("SET", "test_key", "hello world")
 //
-// Config:
+// Config
 //
 //    // env.toml
 //    //
@@ -72,7 +72,7 @@
 //    yiigo.Env.GetInt("app.port", 12345)
 //    yiigo.Env.GetString("app.env", "dev")
 //
-// Logger:
+// Logger
 //
 //    // default logger
 //    yiigo.RegisterLogger("default", "app.log")
