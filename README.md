@@ -19,7 +19,7 @@ A simple and light library which makes Golang development easier !
 - Use [zap](https://github.com/uber-go/zap) for logging
 ## Requirements
 
-Go1.11+
+`Go1.11+`
 
 ## Installation
 
