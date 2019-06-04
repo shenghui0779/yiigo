@@ -197,12 +197,14 @@ func (h *HTTPClient) Get(url string, options ...HTTPRequestOption) ([]byte, erro
 		}
 	}
 
+	// headers
 	if len(o.headers) > 0 {
 		for k, v := range o.headers {
 			req.Header.Set(k, v)
 		}
 	}
 
+	// cookies
 	if len(o.cookies) > 0 {
 		for _, v := range o.cookies {
 			req.AddCookie(v)
@@ -259,12 +261,14 @@ func (h *HTTPClient) Post(url string, body []byte, options ...HTTPRequestOption)
 		}
 	}
 
+	// headers
 	if len(o.headers) > 0 {
 		for k, v := range o.headers {
 			req.Header.Set(k, v)
 		}
 	}
 
+	// cookies
 	if len(o.cookies) > 0 {
 		for _, v := range o.cookies {
 			req.AddCookie(v)
