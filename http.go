@@ -1,9 +1,9 @@
 package yiigo
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -14,9 +14,6 @@ import (
 
 // defaultHTTPTimeout default http request timeout
 const defaultHTTPTimeout = 10 * time.Second
-
-// errCookieFileNotFound cookie file not found error
-var errCookieFileNotFound = errors.New("cookie file not found")
 
 // httpClientOptions http client options
 type httpClientOptions struct {
@@ -244,8 +241,8 @@ func (h *HTTPClient) Get(url string, options ...HTTPRequestOption) ([]byte, erro
 }
 
 // Post http post request
-func (h *HTTPClient) Post(url string, body io.Reader, options ...HTTPRequestOption) ([]byte, error) {
-	req, err := http.NewRequest("POST", url, body)
+func (h *HTTPClient) Post(url string, body []byte, options ...HTTPRequestOption) ([]byte, error) {
+	req, err := http.NewRequest("POST", url, bytes.NewReader(body))
 
 	if err != nil {
 		return nil, err
@@ -373,6 +370,6 @@ func HTTPGet(url string, options ...HTTPRequestOption) ([]byte, error) {
 }
 
 // HTTPPost http post request
-func HTTPPost(url string, body io.Reader, options ...HTTPRequestOption) ([]byte, error) {
+func HTTPPost(url string, body []byte, options ...HTTPRequestOption) ([]byte, error) {
 	return defaultHTTPClient.Post(url, body, options...)
 }
