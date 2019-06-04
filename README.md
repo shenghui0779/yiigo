@@ -13,8 +13,8 @@
 - Support [PostgreSQL](https://github.com/lib/pq)
 - Support [mongodb](https://github.com/mongodb/mongo-go-driver)
 - Support [redis](https://github.com/gomodule/redigo)
-- Support [gomail](https://github.com/go-gomail/gomail)
-- Support [toml](https://github.com/pelletier/go-toml)
+- Use [gomail](https://github.com/go-gomail/gomail) for email sending
+- Use [toml](https://github.com/pelletier/go-toml) for configuration
 - Use [sqlx](https://github.com/jmoiron/sqlx) for SQL executing
 - Use [zap](https://github.com/uber-go/zap) for logging
 ## Requirements
