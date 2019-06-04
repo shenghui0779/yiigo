@@ -31,149 +31,96 @@ type httpClientOptions struct {
 	maxIdleConnsPerHost   int
 	maxConnsPerHost       int
 	idleConnTimeout       time.Duration
-	sslCertificates       []tls.Certificate
+	tlsConfig             *tls.Config
 	tlsHandshakeTimeout   time.Duration
 	expectContinueTimeout time.Duration
 }
 
 // HTTPClientOption configures how we set up the http client
 type HTTPClientOption interface {
-	apply(options *httpClientOptions) error
+	apply(options *httpClientOptions)
 }
 
 // funcHTTPClientOption implements http client option
 type funcHTTPClientOption struct {
-	f func(options *httpClientOptions) error
+	f func(options *httpClientOptions)
 }
 
-func (fo *funcHTTPClientOption) apply(o *httpClientOptions) error {
-	return fo.f(o)
+func (fo *funcHTTPClientOption) apply(o *httpClientOptions) {
+	fo.f(o)
 }
 
-func newFuncHTTPOption(f func(options *httpClientOptions) error) *funcHTTPClientOption {
+func newFuncHTTPOption(f func(options *httpClientOptions)) *funcHTTPClientOption {
 	return &funcHTTPClientOption{f: f}
 }
 
 // WithHTTPDialTimeout specifies the `DialTimeout` to net.Dialer.
 func WithHTTPDialTimeout(d time.Duration) HTTPClientOption {
-	return newFuncHTTPOption(func(o *httpClientOptions) error {
+	return newFuncHTTPOption(func(o *httpClientOptions) {
 		o.dialTimeout = d
-
-		return nil
 	})
 }
 
 // WithHTTPDialKeepAlive specifies the `KeepAlive` to net.Dialer.
 func WithHTTPDialKeepAlive(d time.Duration) HTTPClientOption {
-	return newFuncHTTPOption(func(o *httpClientOptions) error {
+	return newFuncHTTPOption(func(o *httpClientOptions) {
 		o.dialKeepAlive = d
-
-		return nil
 	})
 }
 
 // WithHTTPDialFallbackDelay specifies the `FallbackDelay` to net.Dialer.
 func WithHTTPDialFallbackDelay(d time.Duration) HTTPClientOption {
-	return newFuncHTTPOption(func(o *httpClientOptions) error {
+	return newFuncHTTPOption(func(o *httpClientOptions) {
 		o.fallbackDelay = d
-
-		return nil
 	})
 }
 
 // WithHTTPMaxIdleConns specifies the `MaxIdleConns` to http client.
 func WithHTTPMaxIdleConns(n int) HTTPClientOption {
-	return newFuncHTTPOption(func(o *httpClientOptions) error {
+	return newFuncHTTPOption(func(o *httpClientOptions) {
 		o.maxIdleConns = n
-
-		return nil
 	})
 }
 
 // WithHTTPMaxIdleConnsPerHost specifies the `MaxIdleConnsPerHost` to http client.
 func WithHTTPMaxIdleConnsPerHost(n int) HTTPClientOption {
-	return newFuncHTTPOption(func(o *httpClientOptions) error {
+	return newFuncHTTPOption(func(o *httpClientOptions) {
 		o.maxIdleConnsPerHost = n
-
-		return nil
 	})
 }
 
 // WithHTTPMaxConnsPerHost specifies the `MaxConnsPerHost` to http client.
 func WithHTTPMaxConnsPerHost(n int) HTTPClientOption {
-	return newFuncHTTPOption(func(o *httpClientOptions) error {
+	return newFuncHTTPOption(func(o *httpClientOptions) {
 		o.maxConnsPerHost = n
-
-		return nil
 	})
 }
 
 // WithHTTPIdleConnTimeout specifies the `IdleConnTimeout` to http client.
 func WithHTTPIdleConnTimeout(d time.Duration) HTTPClientOption {
-	return newFuncHTTPOption(func(o *httpClientOptions) error {
+	return newFuncHTTPOption(func(o *httpClientOptions) {
 		o.idleConnTimeout = d
-
-		return nil
 	})
 }
 
 // WithHTTPSSLCertFile specifies the TLS with cert file to http client.
-func WithHTTPSSLCertFile(certFile, keyFile string) HTTPClientOption {
-	return newFuncHTTPOption(func(o *httpClientOptions) error {
-		certFilePath, err := filepath.Abs(certFile)
-
-		if err != nil {
-			return err
-		}
-
-		keyFilePath, err := filepath.Abs(keyFile)
-
-		if err != nil {
-			return err
-		}
-
-		cert, err := tls.LoadX509KeyPair(certFilePath, keyFilePath)
-
-		if err != nil {
-			return err
-		}
-
-		o.sslCertificates = []tls.Certificate{cert}
-
-		return nil
-	})
-}
-
-// WithHTTPSSLCertBlock specifies the TLS with cert pem block to http client.
-func WithHTTPSSLCertBlock(certPEMBlock, keyPEMBlock []byte) HTTPClientOption {
-	return newFuncHTTPOption(func(o *httpClientOptions) error {
-		cert, err := tls.X509KeyPair(certPEMBlock, keyPEMBlock)
-
-		if err != nil {
-			return err
-		}
-
-		o.sslCertificates = []tls.Certificate{cert}
-
-		return nil
+func WithHTTPTLSConfig(c *tls.Config) HTTPClientOption {
+	return newFuncHTTPOption(func(o *httpClientOptions) {
+		o.tlsConfig = c
 	})
 }
 
 // WithHTTPTLSHandshakeTimeout specifies the `TLSHandshakeTimeout` to http client.
 func WithHTTPTLSHandshakeTimeout(d time.Duration) HTTPClientOption {
-	return newFuncHTTPOption(func(o *httpClientOptions) error {
+	return newFuncHTTPOption(func(o *httpClientOptions) {
 		o.tlsHandshakeTimeout = d
-
-		return nil
 	})
 }
 
 // WithHTTPExpectContinueTimeout specifies the `ExpectContinueTimeout` to http client.
 func WithHTTPExpectContinueTimeout(d time.Duration) HTTPClientOption {
-	return newFuncHTTPOption(func(o *httpClientOptions) error {
+	return newFuncHTTPOption(func(o *httpClientOptions) {
 		o.expectContinueTimeout = d
-
-		return nil
 	})
 }
 
@@ -434,8 +381,8 @@ func (h *HTTPClient) Post(url string, body []byte, options ...HTTPRequestOption)
 	return b, nil
 }
 
-// DefaultHTTPClient default http client
-var DefaultHTTPClient = &HTTPClient{
+// defaultHTTPClient default http client
+var defaultHTTPClient = &HTTPClient{
 	client: &http.Client{
 		Transport: &http.Transport{
 			Proxy: http.ProxyFromEnvironment,
@@ -454,7 +401,7 @@ var DefaultHTTPClient = &HTTPClient{
 }
 
 // NewHTTPClient returns a new http client
-func NewHTTPClient(options ...HTTPClientOption) (*HTTPClient, error) {
+func NewHTTPClient(options ...HTTPClientOption) *HTTPClient {
 	o := &httpClientOptions{
 		dialTimeout:           30 * time.Second,
 		dialKeepAlive:         60 * time.Second,
@@ -468,9 +415,7 @@ func NewHTTPClient(options ...HTTPClientOption) (*HTTPClient, error) {
 
 	if len(options) > 0 {
 		for _, option := range options {
-			if err := option.apply(o); err != nil {
-				return nil, err
-			}
+			option.apply(o)
 		}
 	}
 
@@ -484,14 +429,9 @@ func NewHTTPClient(options ...HTTPClientOption) (*HTTPClient, error) {
 		MaxIdleConnsPerHost:   o.maxIdleConnsPerHost,
 		MaxIdleConns:          o.maxIdleConns,
 		IdleConnTimeout:       o.idleConnTimeout,
+		TLSClientConfig:       o.tlsConfig,
 		TLSHandshakeTimeout:   o.tlsHandshakeTimeout,
 		ExpectContinueTimeout: o.expectContinueTimeout,
-	}
-
-	if len(o.sslCertificates) > 0 {
-		t.TLSClientConfig = &tls.Config{
-			Certificates: o.sslCertificates,
-		}
 	}
 
 	c := &HTTPClient{
@@ -500,17 +440,17 @@ func NewHTTPClient(options ...HTTPClientOption) (*HTTPClient, error) {
 		},
 	}
 
-	return c, nil
+	return c
 }
 
 // HTTPGet http get request
 func HTTPGet(url string, options ...HTTPRequestOption) ([]byte, error) {
-	return DefaultHTTPClient.Get(url, options...)
+	return defaultHTTPClient.Get(url, options...)
 }
 
 // HTTPPost http post request
 func HTTPPost(url string, body []byte, options ...HTTPRequestOption) ([]byte, error) {
-	return DefaultHTTPClient.Post(url, body, options...)
+	return defaultHTTPClient.Post(url, body, options...)
 }
 
 // mkCookieFile create cookie file
