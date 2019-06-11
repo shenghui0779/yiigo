@@ -1174,13 +1174,13 @@ func (e *env) Unmarshal(key string, dest interface{}) error {
 		return ErrEnvNil
 	}
 
-	if v, ok := i.(*toml.Tree); ok {
-		err := v.Unmarshal(dest)
+	v, ok := i.(*toml.Tree)
 
-		return err
+	if !ok {
+		return errors.New("yiigo: invalid config of toml")
 	}
 
-	return errors.New("yiigo: env config is not a tree of toml")
+	return v.Unmarshal(dest)
 }
 
 // Get returns the value at key in the env Tree.
