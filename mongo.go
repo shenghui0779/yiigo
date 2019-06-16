@@ -17,7 +17,9 @@ import (
 // Mode indicates the user's preference on reads.
 type Mode int
 
+// Define Mode ENUM value
 const (
+	ErrMode            Mode = 0 // error mode, and will not set the mode value
 	Primary            Mode = 1 // Default mode. All operations read from the current replica set primary.
 	PrimaryPreferred   Mode = 2 // Read from the primary if available. Read from the secondary otherwise.
 	Secondary          Mode = 3 // Read from one of the nearest secondary members of the replica set.
@@ -28,7 +30,9 @@ const (
 // Concern for replica sets and replica set shards determines which data to return from a query.
 type Concern int
 
+// Define Concern ENUM value
 const (
+	ErrConcern   Concern = 0 // error concern, and will do not set the concern value
 	Local        Concern = 1 // the query should return the instance’s most recent data.
 	Available    Concern = 2 // the query should return data from the instance with no guarantee that the data has been written to a majority of the replica set members (i.e. may be rolled back).
 	Majority     Concern = 3 // the query should return the instance’s most recent data acknowledged as having been written to a majority of members in the replica set.
@@ -58,55 +62,40 @@ type mongoOptions struct {
 }
 
 // MongoOption configures how we set up the mongo
-type MongoOption interface {
-	apply(options *mongoOptions)
-}
-
-// funcMongoOption implements mongo option
-type funcMongoOption struct {
-	f func(options *mongoOptions)
-}
-
-func (fo *funcMongoOption) apply(o *mongoOptions) {
-	fo.f(o)
-}
-
-func newFuncMongoOption(f func(options *mongoOptions)) *funcMongoOption {
-	return &funcMongoOption{f: f}
-}
+type MongoOption func(options *mongoOptions)
 
 // WithMongoAppName specifies the `AppName` to mongo.
 // AppName sets the client application name.
 // This value is used by MongoDB when it logs connection information and profile information, such as slow queries.
 func WithMongoAppName(s string) MongoOption {
-	return newFuncMongoOption(func(o *mongoOptions) {
+	return func(o *mongoOptions) {
 		o.appName = s
-	})
+	}
 }
 
 // WithMongoConnTimeout specifies the `ConnTimeout` to mongo.
 // ConnectTimeout sets the timeout for an initial connection to a server.
 func WithMongoConnTimeout(d time.Duration) MongoOption {
-	return newFuncMongoOption(func(o *mongoOptions) {
+	return func(o *mongoOptions) {
 		o.connTimeout = d
-	})
+	}
 }
 
 // WithMongoPoolSize specifies the `PoolSize` to mongo.
 // MaxPoolSize sets the max size of a server's connection pool.
 func WithMongoPoolSize(n int) MongoOption {
-	return newFuncMongoOption(func(o *mongoOptions) {
+	return func(o *mongoOptions) {
 		o.poolSize = n
-	})
+	}
 }
 
 // WithMongoMaxConnIdleTime specifies the `MaxConnIdleTime` to mongo.
 // MaxConnIdleTime sets the maximum number of milliseconds that a connection can remain idle
 // in a connection pool before being removed and closed.
 func WithMongoMaxConnIdleTime(d time.Duration) MongoOption {
-	return newFuncMongoOption(func(o *mongoOptions) {
+	return func(o *mongoOptions) {
 		o.maxConnIdleTime = d
-	})
+	}
 }
 
 // WithMongoLocalThreshold specifies the `LocalThreshold` to mongo.
@@ -114,115 +103,115 @@ func WithMongoMaxConnIdleTime(d time.Duration) MongoOption {
 // round-trip time. If a server's roundtrip time is more than LocalThreshold slower than the
 // the fastest, the driver will not send queries to that server.
 func WithMongoLocalThreshold(d time.Duration) MongoOption {
-	return newFuncMongoOption(func(o *mongoOptions) {
+	return func(o *mongoOptions) {
 		o.localThreshold = d
-	})
+	}
 }
 
 // WithMongoServerSelectionTimeout specifies the `ServerSelectionTimeout` to mongo.
 // ServerSelectionTimeout sets a timeout in milliseconds to block for server selection.
 func WithMongoServerSelectionTimeout(d time.Duration) MongoOption {
-	return newFuncMongoOption(func(o *mongoOptions) {
+	return func(o *mongoOptions) {
 		o.serverSelectionTimeout = d
-	})
+	}
 }
 
 // WithMongoSocketTimeout specifies the `SocketTimeout` to mongo.
 // SocketTimeout sets the time in milliseconds to attempt to send or receive on a socket
 // before the attempt times out.
 func WithMongoSocketTimeout(d time.Duration) MongoOption {
-	return newFuncMongoOption(func(o *mongoOptions) {
+	return func(o *mongoOptions) {
 		o.socketTimeout = d
-	})
+	}
 }
 
 // WithMongoHeartbeatInterval specifies the `HeartbeatInterval` to mongo.
 // HeartbeatInterval sets the interval to wait between server monitoring checks.
 func WithMongoHeartbeatInterval(d time.Duration) MongoOption {
-	return newFuncMongoOption(func(o *mongoOptions) {
+	return func(o *mongoOptions) {
 		o.heartbeatInterval = d
-	})
+	}
 }
 
 // WithMongoCompressors specifies the `Compressors` to mongo.
 // Compressors sets the compressors that can be used when communicating with a server.
 func WithMongoCompressors(s ...string) MongoOption {
-	return newFuncMongoOption(func(o *mongoOptions) {
+	return func(o *mongoOptions) {
 		o.compressors = s
-	})
+	}
 }
 
 // WithMongoHosts specifies the `Hosts` to mongo.
 // Hosts sets the initial list of addresses from which to discover the rest of the cluster.
 func WithMongoHosts(s ...string) MongoOption {
-	return newFuncMongoOption(func(o *mongoOptions) {
+	return func(o *mongoOptions) {
 		o.hosts = s
-	})
+	}
 }
 
 // WithMongoReplicaSet specifies the `ReplicaSet` to mongo.
 // ReplicaSet sets the name of the replica set of the cluster.
 func WithMongoReplicaSet(s string) MongoOption {
-	return newFuncMongoOption(func(o *mongoOptions) {
+	return func(o *mongoOptions) {
 		o.replicaSet = s
-	})
+	}
 }
 
 // WithMongoRetryWrites specifies the `RetryWrites` to mongo.
 // RetryWrites sets whether the client has retryable writes enabled.
 func WithMongoRetryWrites(b bool) MongoOption {
-	return newFuncMongoOption(func(o *mongoOptions) {
+	return func(o *mongoOptions) {
 		o.retryWrites = b
-	})
+	}
 }
 
 // WithMongoDirect specifies the `Direct` to mongo.
 // Direct sets whether the driver should connect directly to the server instead of
 // auto-discovering other servers in the cluster.
 func WithMongoDirect(b bool) MongoOption {
-	return newFuncMongoOption(func(o *mongoOptions) {
+	return func(o *mongoOptions) {
 		o.direct = b
-	})
+	}
 }
 
 // WithMongoMode specifies the `Mode` to mongo.
 // Mode sets the read preference.
 func WithMongoMode(m Mode) MongoOption {
-	return newFuncMongoOption(func(o *mongoOptions) {
+	return func(o *mongoOptions) {
 		o.mode = m
-	})
+	}
 }
 
 // WithMongoReadConcern specifies the `ReadConcern` to mongo.
 // ReadConcern sets the read concern.
 func WithMongoReadConcern(c Concern) MongoOption {
-	return newFuncMongoOption(func(o *mongoOptions) {
+	return func(o *mongoOptions) {
 		o.readConcern = c
-	})
+	}
 }
 
 // WithMongoWriteConcern specifies the `WriteConcern` to mongo.
 // WriteConcern sets the write concern.
 func WithMongoWriteConcern(c ...writeconcern.Option) MongoOption {
-	return newFuncMongoOption(func(o *mongoOptions) {
+	return func(o *mongoOptions) {
 		o.writeConcern = c
-	})
+	}
 }
 
 // WithMongoTLSConfig specifies the `TLSConfig` to mongo.
 // SetTLSConfig sets the tls.Config.
 func WithMongoTLSConfig(c *tls.Config) MongoOption {
-	return newFuncMongoOption(func(o *mongoOptions) {
+	return func(o *mongoOptions) {
 		o.tlsConfig = c
-	})
+	}
 }
 
 // WithMongoZlibLevel specifies the `ZlibLevel` to mongo.
 // ZlibLevel sets the level for the zlib compressor.
 func WithMongoZlibLevel(l int) MongoOption {
-	return newFuncMongoOption(func(o *mongoOptions) {
+	return func(o *mongoOptions) {
 		o.zlibLevel = l
-	})
+	}
 }
 
 var (
@@ -238,10 +227,8 @@ func mongoDial(dsn string, mgoOptions ...MongoOption) (*mongo.Client, error) {
 		maxConnIdleTime: 60 * time.Second,
 	}
 
-	if len(mgoOptions) > 0 {
-		for _, option := range mgoOptions {
-			option.apply(o)
-		}
+	for _, option := range mgoOptions {
+		option(o)
 	}
 
 	clientOptions := options.Client()
@@ -291,7 +278,7 @@ func mongoDial(dsn string, mgoOptions ...MongoOption) (*mongo.Client, error) {
 		clientOptions.SetDirect(true)
 	}
 
-	if o.mode != 0 {
+	if o.mode != ErrMode {
 		switch o.mode {
 		case Primary:
 			clientOptions.SetReadPreference(readpref.Primary())
@@ -306,7 +293,7 @@ func mongoDial(dsn string, mgoOptions ...MongoOption) (*mongo.Client, error) {
 		}
 	}
 
-	if o.readConcern != 0 {
+	if o.readConcern != ErrConcern {
 		switch o.readConcern {
 		case Local:
 			clientOptions.SetReadConcern(readconcern.Local())
@@ -338,7 +325,9 @@ func mongoDial(dsn string, mgoOptions ...MongoOption) (*mongo.Client, error) {
 		return nil, err
 	}
 
-	ctx, _ := context.WithTimeout(context.TODO(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.TODO(), 10*time.Second)
+	defer cancel()
+
 	client, err := mongo.Connect(ctx, clientOptions)
 
 	return client, err
