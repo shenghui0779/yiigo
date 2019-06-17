@@ -124,11 +124,7 @@ func initLogger(logfile string, options ...LogOption) *zap.Logger {
 	cfg.EncodeTime = MyTimeEncoder
 	cfg.EncodeCaller = zapcore.FullCallerEncoder
 
-	core := zapcore.NewCore(
-		zapcore.NewJSONEncoder(cfg),
-		w,
-		zap.DebugLevel,
-	)
+	core := zapcore.NewCore(zapcore.NewJSONEncoder(cfg), w, zap.DebugLevel)
 
 	return zap.New(core, zap.AddCaller(), zap.AddStacktrace(zapcore.ErrorLevel))
 }
@@ -156,6 +152,6 @@ func UseLogger(name string) *zap.Logger {
 }
 
 // MyTimeEncoder zap time encoder.
-func MyTimeEncoder(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
-	enc.AppendString(t.Format("2006-01-02 15:04:05"))
+func MyTimeEncoder(t time.Time, e zapcore.PrimitiveArrayEncoder) {
+	e.AppendString(t.Format("2006-01-02 15:04:05"))
 }
