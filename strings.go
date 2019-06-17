@@ -28,7 +28,7 @@ func SHA1(s string) string {
 }
 
 // Hash Generate a hash value, expects: MD5, SHA1, SHA224, SHA256, SHA384, SHA512.
-func Hash(t string, s string) string {
+func Hash(t, s string) string {
 	var h hash.Hash
 
 	switch strings.ToUpper(t) {
