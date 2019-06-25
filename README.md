@@ -24,7 +24,7 @@ A simple and light library which makes Golang development easier !
 ## Installation
 
 ```sh
-go get github.com/iiinsomnia/yiigo
+go get github.com/iiinsomnia/yiigo/v3
 ```
 
 ## Usage
