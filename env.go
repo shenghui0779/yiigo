@@ -227,7 +227,7 @@ func (e *env) Uint(key string, defaultValue ...uint) uint {
 
 		return uint(t)
 	case string:
-		v, _ := strconv.ParseUint(t, 0, 0)
+		v, _ := strconv.ParseUint(t, 10, 0)
 
 		return uint(v)
 	case bool:
@@ -278,7 +278,7 @@ func (e *env) Uints(key string, defaultValue ...uint) []uint {
 				r = uint(t)
 			}
 		case string:
-			n, _ := strconv.ParseUint(t, 0, 0)
+			n, _ := strconv.ParseUint(t, 10, 0)
 			r = uint(n)
 		case bool:
 			if t {
@@ -314,7 +314,7 @@ func (e *env) Int8(key string, defaultValue ...int8) int8 {
 	case float64:
 		return int8(t)
 	case string:
-		v, _ := strconv.ParseInt(t, 0, 0)
+		v, _ := strconv.ParseInt(t, 10, 8)
 
 		return int8(v)
 	case bool:
@@ -361,7 +361,7 @@ func (e *env) Int8s(key string, defaultValue ...int8) []int8 {
 		case float64:
 			r = int8(t)
 		case string:
-			v, _ := strconv.ParseInt(t, 0, 0)
+			v, _ := strconv.ParseInt(t, 10, 8)
 
 			r = int8(v)
 		case bool:
@@ -406,7 +406,7 @@ func (e *env) Uint8(key string, defaultValue ...uint8) uint8 {
 
 		return uint8(t)
 	case string:
-		v, _ := strconv.ParseUint(t, 0, 0)
+		v, _ := strconv.ParseUint(t, 10, 8)
 
 		return uint8(v)
 	case bool:
@@ -457,7 +457,7 @@ func (e *env) Uint8s(key string, defaultValue ...uint8) []uint8 {
 				r = uint8(t)
 			}
 		case string:
-			n, _ := strconv.ParseUint(t, 0, 0)
+			n, _ := strconv.ParseUint(t, 10, 8)
 			r = uint8(n)
 		case bool:
 			if t {
@@ -493,7 +493,7 @@ func (e *env) Int16(key string, defaultValue ...int16) int16 {
 	case float64:
 		return int16(t)
 	case string:
-		v, _ := strconv.ParseInt(t, 0, 0)
+		v, _ := strconv.ParseInt(t, 10, 16)
 
 		return int16(v)
 	case bool:
@@ -540,7 +540,7 @@ func (e *env) Int16s(key string, defaultValue ...int16) []int16 {
 		case float64:
 			r = int16(t)
 		case string:
-			v, _ := strconv.ParseInt(t, 0, 0)
+			v, _ := strconv.ParseInt(t, 10, 16)
 			r = int16(v)
 		case bool:
 			if t {
@@ -584,7 +584,7 @@ func (e *env) Uint16(key string, defaultValue ...uint16) uint16 {
 
 		return uint16(t)
 	case string:
-		v, _ := strconv.ParseUint(t, 0, 0)
+		v, _ := strconv.ParseUint(t, 10, 16)
 
 		return uint16(v)
 	case bool:
@@ -635,7 +635,7 @@ func (e *env) Uint16s(key string, defaultValue ...uint16) []uint16 {
 				r = uint16(t)
 			}
 		case string:
-			n, _ := strconv.ParseUint(t, 0, 0)
+			n, _ := strconv.ParseUint(t, 10, 16)
 			r = uint16(n)
 		case bool:
 			if t {
@@ -671,7 +671,7 @@ func (e *env) Int32(key string, defaultValue ...int32) int32 {
 	case float64:
 		return int32(t)
 	case string:
-		v, _ := strconv.ParseInt(t, 0, 0)
+		v, _ := strconv.ParseInt(t, 10, 32)
 
 		return int32(v)
 	case bool:
@@ -718,7 +718,7 @@ func (e *env) Int32s(key string, defaultValue ...int32) []int32 {
 		case float64:
 			r = int32(t)
 		case string:
-			v, _ := strconv.ParseInt(t, 0, 0)
+			v, _ := strconv.ParseInt(t, 10, 32)
 
 			r = int32(v)
 		case bool:
@@ -763,7 +763,7 @@ func (e *env) Uint32(key string, defaultValue ...uint32) uint32 {
 
 		return uint32(t)
 	case string:
-		v, _ := strconv.ParseUint(t, 0, 0)
+		v, _ := strconv.ParseUint(t, 10, 32)
 
 		return uint32(v)
 	case bool:
@@ -814,7 +814,7 @@ func (e *env) Uint32s(key string, defaultValue ...uint32) []uint32 {
 				r = uint32(t)
 			}
 		case string:
-			n, _ := strconv.ParseUint(t, 0, 0)
+			n, _ := strconv.ParseUint(t, 10, 32)
 			r = uint32(n)
 		case bool:
 			if t {
@@ -850,7 +850,7 @@ func (e *env) Int64(key string, defaultValue ...int64) int64 {
 	case float64:
 		return int64(t)
 	case string:
-		v, _ := strconv.ParseInt(t, 0, 0)
+		v, _ := strconv.ParseInt(t, 10, 64)
 
 		return v
 	case bool:
@@ -940,7 +940,7 @@ func (e *env) Uint64(key string, defaultValue ...uint64) uint64 {
 
 		return uint64(t)
 	case string:
-		v, _ := strconv.ParseUint(t, 0, 0)
+		v, _ := strconv.ParseUint(t, 10, 64)
 
 		return v
 	case bool:
@@ -991,7 +991,7 @@ func (e *env) Uint64s(key string, defaultValue ...uint64) []uint64 {
 				r = uint64(t)
 			}
 		case string:
-			r, _ = strconv.ParseUint(t, 0, 0)
+			r, _ = strconv.ParseUint(t, 10, 64)
 		case bool:
 			if t {
 				r = 1

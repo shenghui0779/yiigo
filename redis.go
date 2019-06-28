@@ -11,14 +11,15 @@ import (
 )
 
 type redisOptions struct {
-	password     string
-	database     int
-	connTimeout  time.Duration
-	readTimeout  time.Duration
-	writeTimeout time.Duration
-	poolSize     int
-	poolLimit    int
-	idleTimeout  time.Duration
+	password           string
+	database           int
+	connTimeout        time.Duration
+	readTimeout        time.Duration
+	writeTimeout       time.Duration
+	poolSize           int
+	poolLimit          int
+	idleTimeout        time.Duration
+	prefillParallelism int
 }
 
 // RedisOption configures how we set up the db
@@ -95,6 +96,14 @@ func WithRedisIdleTimeout(d time.Duration) RedisOption {
 	})
 }
 
+// WithRedisPrefillParallelism specifies the `PrefillParallelism` to redis.
+// A non-zero value of prefillParallelism causes the pool to be pre-filled.
+func WithRedisPrefillParallelism(n int) RedisOption {
+	return newFuncRedisOption(func(o *redisOptions) {
+		o.prefillParallelism = n
+	})
+}
+
 // RedisConn redis connection resource
 type RedisConn struct {
 	redis.Conn
@@ -145,7 +154,7 @@ func (r *RedisPoolResource) init() {
 		return RedisConn{conn}, nil
 	}
 
-	r.pool = pools.NewResourcePool(df, r.options.poolSize, r.options.poolLimit, r.options.idleTimeout)
+	r.pool = pools.NewResourcePool(df, r.options.poolSize, r.options.poolLimit, r.options.idleTimeout, r.options.prefillParallelism)
 }
 
 // Get get a connection resource from the pool.
@@ -199,6 +208,7 @@ var (
 // The default `PoolSize` is 10.
 // The default `PoolLimit` is 20.
 // The default `IdleTimeout` is 60s.
+// The default `PrefillParallelism` is 0.
 func RegisterRedis(name, addr string, options ...RedisOption) {
 	o := &redisOptions{
 		connTimeout:  10 * time.Second,

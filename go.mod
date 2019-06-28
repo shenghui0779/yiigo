@@ -18,14 +18,14 @@ require (
 	github.com/uber/jaeger-lib v2.0.0+incompatible // indirect
 	github.com/xdg/scram v0.0.0-20180814205039-7eeb5667e42c // indirect
 	github.com/xdg/stringprep v1.0.0 // indirect
-	go.mongodb.org/mongo-driver v1.0.1-0.20190614202820-2b8bc9cb7b8f
+	go.mongodb.org/mongo-driver v1.0.1-0.20190626181015-60e65d0f2639
 	go.uber.org/atomic v1.4.0 // indirect
 	go.uber.org/multierr v1.1.0 // indirect
-	go.uber.org/zap v1.10.1-0.20190430155229-8a2ee5670ced
+	go.uber.org/zap v1.10.1-0.20190619185213-853ac185800f
 	golang.org/x/net v0.0.0-20190603091049-60506f45cf65 // indirect
 	golang.org/x/sync v0.0.0-20190423024810-112230192c58 // indirect
 	google.golang.org/grpc v1.21.1 // indirect
 	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0-20170531160350-a96e63847dc3
-	vitess.io/vitess v3.0.0-rc.3.0.20190616035427-640588c28bd3+incompatible
+	vitess.io/vitess v3.0.0-rc.3.0.20190627164814-8e2f781e1e3b+incompatible
 )
