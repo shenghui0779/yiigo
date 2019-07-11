@@ -19,6 +19,7 @@ type redisOptions struct {
 	poolSize           int
 	poolLimit          int
 	idleTimeout        time.Duration
+	waitTimeout        time.Duration
 	prefillParallelism int
 }
 
@@ -96,6 +97,14 @@ func WithRedisIdleTimeout(d time.Duration) RedisOption {
 	})
 }
 
+// WithRedisWaitTimeout specifies the `WaitTimeout` to redis.
+// A timeout of 0 means an indefinite wait.
+func WithRedisWaitTimeout(d time.Duration) RedisOption {
+	return newFuncRedisOption(func(o *redisOptions) {
+		o.writeTimeout = d
+	})
+}
+
 // WithRedisPrefillParallelism specifies the `PrefillParallelism` to redis.
 // A non-zero value of prefillParallelism causes the pool to be pre-filled.
 func WithRedisPrefillParallelism(n int) RedisOption {
@@ -163,7 +172,17 @@ func (r *RedisPoolResource) Get() (RedisConn, error) {
 		r.init()
 	}
 
-	resource, err := r.pool.Get(context.TODO())
+	ctx := context.TODO()
+
+	if r.options.writeTimeout != 0 {
+		c, cancel := context.WithTimeout(ctx, r.options.waitTimeout)
+
+		defer cancel()
+
+		ctx = c
+	}
+
+	resource, err := r.pool.Get(ctx)
 
 	if err != nil {
 		return RedisConn{}, err
@@ -208,6 +227,7 @@ var (
 // The default `PoolSize` is 10.
 // The default `PoolLimit` is 20.
 // The default `IdleTimeout` is 60s.
+// The default `WaitTimeout` is 10s.
 // The default `PrefillParallelism` is 0.
 func RegisterRedis(name, addr string, options ...RedisOption) {
 	o := &redisOptions{
@@ -217,6 +237,7 @@ func RegisterRedis(name, addr string, options ...RedisOption) {
 		poolSize:     10,
 		poolLimit:    20,
 		idleTimeout:  60 * time.Second,
+		waitTimeout:  10 * time.Second,
 	}
 
 	if len(options) > 0 {

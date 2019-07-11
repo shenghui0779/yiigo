@@ -5,7 +5,7 @@ go 1.12
 require (
 	github.com/go-sql-driver/mysql v1.4.1-0.20190510102335-877a9775f068
 	github.com/go-stack/stack v1.8.0 // indirect
-	github.com/golang/protobuf v1.3.1 // indirect
+	github.com/golang/protobuf v1.3.2 // indirect
 	github.com/golang/snappy v0.0.1 // indirect
 	github.com/gomodule/redigo v1.7.1-0.20190322064113-39e2c31b7ca3
 	github.com/jmoiron/sqlx v1.2.1-0.20190426154859-38398a30ed85
@@ -18,14 +18,13 @@ require (
 	github.com/uber/jaeger-lib v2.0.0+incompatible // indirect
 	github.com/xdg/scram v0.0.0-20180814205039-7eeb5667e42c // indirect
 	github.com/xdg/stringprep v1.0.0 // indirect
-	go.mongodb.org/mongo-driver v1.0.1-0.20190626181015-60e65d0f2639
+	go.mongodb.org/mongo-driver v1.0.1-0.20190710142414-1cde213101cb
 	go.uber.org/atomic v1.4.0 // indirect
 	go.uber.org/multierr v1.1.0 // indirect
-	go.uber.org/zap v1.10.1-0.20190619185213-853ac185800f
-	golang.org/x/net v0.0.0-20190603091049-60506f45cf65 // indirect
-	golang.org/x/sync v0.0.0-20190423024810-112230192c58 // indirect
-	google.golang.org/grpc v1.21.1 // indirect
+	go.uber.org/zap v1.10.1-0.20190709142728-9a9fa7d4b5f0
+	golang.org/x/net v0.0.0-20190628185345-da137c7871d7 // indirect
+	google.golang.org/grpc v1.22.0 // indirect
 	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0-20170531160350-a96e63847dc3
-	vitess.io/vitess v3.0.0-rc.3.0.20190627164814-8e2f781e1e3b+incompatible
+	vitess.io/vitess v3.0.0-rc.3.0.20190708184458-44f156dd1920+incompatible
 )
