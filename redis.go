@@ -101,7 +101,7 @@ func WithRedisIdleTimeout(d time.Duration) RedisOption {
 // A timeout of 0 means an indefinite wait.
 func WithRedisWaitTimeout(d time.Duration) RedisOption {
 	return newFuncRedisOption(func(o *redisOptions) {
-		o.writeTimeout = d
+		o.waitTimeout = d
 	})
 }
 
@@ -174,7 +174,7 @@ func (r *RedisPoolResource) Get() (RedisConn, error) {
 
 	ctx := context.TODO()
 
-	if r.options.writeTimeout != 0 {
+	if r.options.waitTimeout != 0 {
 		c, cancel := context.WithTimeout(ctx, r.options.waitTimeout)
 
 		defer cancel()
