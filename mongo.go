@@ -338,7 +338,7 @@ func mongoDial(dsn string, mgoOptions ...MongoOption) (*mongo.Client, error) {
 		return nil, err
 	}
 
-	ctx, cancel := context.WithTimeout(context.TODO(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.TODO(), o.connTimeout)
 
 	defer cancel()
 
