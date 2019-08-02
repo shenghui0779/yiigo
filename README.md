@@ -102,9 +102,9 @@ conn.Do("SET", "test_key", "hello world")
 
 yiigo.UseEnv("env.toml")
 
-yiigo.Env.GetBool("app.debug", true)
-yiigo.Env.GetInt("app.port", 12345)
-yiigo.Env.GetString("app.env", "dev")
+yiigo.Env.Bool("app.debug", true)
+yiigo.Env.Int("app.port", 12345)
+yiigo.Env.String("app.env", "dev")
 ```
 
 #### Logger
