@@ -164,8 +164,14 @@ func RegisterDB(name string, driver Driver, dsn string, options ...DBOption) err
 }
 
 // UseDB returns a db.
-func UseDB(name string) *sqlx.DB {
-	v, ok := dbmap.Load(name)
+func UseDB(name ...string) *sqlx.DB {
+	k := AsDefault
+
+	if len(name) != 0 {
+		k = name[0]
+	}
+
+	v, ok := dbmap.Load(k)
 
 	if !ok {
 		panic(fmt.Errorf("yiigo: db.%s is not registered", name))

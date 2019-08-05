@@ -261,8 +261,14 @@ func RegisterRedis(name, addr string, options ...RedisOption) {
 }
 
 // UseRedis returns a redis pool.
-func UseRedis(name string) *RedisPoolResource {
-	v, ok := redisMap.Load(name)
+func UseRedis(name ...string) *RedisPoolResource {
+	k := AsDefault
+
+	if len(name) != 0 {
+		k = name[0]
+	}
+
+	v, ok := redisMap.Load(k)
 
 	if !ok {
 		panic(fmt.Errorf("yiigo: redis.%s is not registered", name))

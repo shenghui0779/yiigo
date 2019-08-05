@@ -369,8 +369,14 @@ func RegisterMongoDB(name, dsn string, options ...MongoOption) error {
 }
 
 // UseMongo returns a mongo client.
-func UseMongo(name string) *mongo.Client {
-	v, ok := mgoMap.Load(name)
+func UseMongo(name ...string) *mongo.Client {
+	k := AsDefault
+
+	if len(name) != 0 {
+		k = name[0]
+	}
+
+	v, ok := mgoMap.Load(k)
 
 	if !ok {
 		panic(fmt.Errorf("yiigo: mongo.%s is not registered", name))
