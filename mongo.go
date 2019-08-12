@@ -252,7 +252,7 @@ func mongoDial(dsn string, mgoOptions ...MongoOption) (*mongo.Client, error) {
 
 	clientOptions.ApplyURI(dsn)
 	clientOptions.SetConnectTimeout(o.connTimeout)
-	clientOptions.SetMaxPoolSize(uint16(o.poolSize))
+	clientOptions.SetMaxPoolSize(uint64(o.poolSize))
 	clientOptions.SetMaxConnIdleTime(o.maxConnIdleTime)
 
 	if o.localThreshold != 0 {
