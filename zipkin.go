@@ -532,7 +532,7 @@ func (z *ZipkinClient) Post(ctx context.Context, url string, body []byte, option
 
 	defer cancel()
 
-	resp, err := z.client.DoWithAppSpan(req.WithContext(zipkinCtx), fmt.Sprintf("%s:%s", req.Method, req.URL.Path))
+	resp, err := z.client.DoWithAppSpan(req.WithContext(ctx), fmt.Sprintf("%s:%s", req.Method, req.URL.Path))
 
 	if err != nil {
 		return nil, err
