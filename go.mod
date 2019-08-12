@@ -12,7 +12,7 @@ require (
 	github.com/lib/pq v1.2.0
 	github.com/opentracing-contrib/go-grpc v0.0.0-20180928155321-4b5a12d3ff02 // indirect
 	github.com/opentracing/opentracing-go v1.1.0 // indirect
-	github.com/openzipkin/zipkin-go v0.1.8-0.20190731130944-b1a353815477 // indirect
+	github.com/openzipkin/zipkin-go v0.1.8-0.20190731130944-b1a353815477
 	github.com/pelletier/go-toml v1.4.1-0.20190725070617-84da2c4a25c5
 	github.com/pkg/errors v0.8.1 // indirect
 	github.com/uber/jaeger-client-go v2.16.0+incompatible // indirect
