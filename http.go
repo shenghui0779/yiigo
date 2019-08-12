@@ -384,6 +384,7 @@ func NewHTTPClient(options ...HTTPClientOption) *HTTPClient {
 		client: &http.Client{
 			Transport: t,
 		},
+		timeout: o.defaultTimeout,
 	}
 
 	return c
