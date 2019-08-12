@@ -412,6 +412,19 @@ func (z *ZipkinClient) Get(ctx context.Context, url string, options ...HTTPReque
 		}
 	}
 
+	// zipkin span
+	span := zipkin.SpanOrNoopFromContext(ctx)
+
+	defer span.Finish()
+
+	span.Tag("request_id", strconv.FormatInt(time.Now().UnixNano(), 36))
+
+	if len(o.zipkinSpanTags) > 0 {
+		for k, v := range o.zipkinSpanTags {
+			span.Tag(k, v)
+		}
+	}
+
 	req, err := http.NewRequest("GET", url, nil)
 
 	if err != nil {
@@ -436,27 +449,12 @@ func (z *ZipkinClient) Get(ctx context.Context, url string, options ...HTTPReque
 		req.Close = true
 	}
 
-	// timeout
-	c, cancel := context.WithTimeout(context.TODO(), o.timeout)
+	// zipkin ctx & timeout
+	ctx, cancel := context.WithTimeout(zipkin.NewContext(req.Context(), span), o.timeout)
 
 	defer cancel()
 
-	// zipkin span
-	span := zipkin.SpanOrNoopFromContext(ctx)
-
-	defer span.Finish()
-
-	span.Tag("request_id", strconv.FormatInt(time.Now().UnixNano(), 36))
-
-	if len(o.zipkinSpanTags) > 0 {
-		for k, v := range o.zipkinSpanTags {
-			span.Tag(k, v)
-		}
-	}
-
-	zipkinCtx := zipkin.NewContext(req.WithContext(c).Context(), span)
-
-	resp, err := z.client.DoWithAppSpan(req.WithContext(zipkinCtx), fmt.Sprintf("%s:%s", req.Method, req.URL.Path))
+	resp, err := z.client.DoWithAppSpan(req.WithContext(ctx), fmt.Sprintf("%s:%s", req.Method, req.URL.Path))
 
 	if err != nil {
 		return nil, err
@@ -492,6 +490,19 @@ func (z *ZipkinClient) Post(ctx context.Context, url string, body []byte, option
 		}
 	}
 
+	// zipkin span
+	span := zipkin.SpanOrNoopFromContext(ctx)
+
+	defer span.Finish()
+
+	span.Tag("request_id", strconv.FormatInt(time.Now().UnixNano(), 36))
+
+	if len(o.zipkinSpanTags) > 0 {
+		for k, v := range o.zipkinSpanTags {
+			span.Tag(k, v)
+		}
+	}
+
 	req, err := http.NewRequest("POST", url, bytes.NewReader(body))
 
 	if err != nil {
@@ -516,25 +527,10 @@ func (z *ZipkinClient) Post(ctx context.Context, url string, body []byte, option
 		req.Close = true
 	}
 
-	// timeout
-	c, cancel := context.WithTimeout(context.TODO(), o.timeout)
+	// zipkin ctx & timeout
+	ctx, cancel := context.WithTimeout(zipkin.NewContext(req.Context(), span), o.timeout)
 
 	defer cancel()
-
-	// zipkin span
-	span := zipkin.SpanOrNoopFromContext(ctx)
-
-	defer span.Finish()
-
-	span.Tag("request_id", strconv.FormatInt(time.Now().UnixNano(), 36))
-
-	if len(o.zipkinSpanTags) > 0 {
-		for k, v := range o.zipkinSpanTags {
-			span.Tag(k, v)
-		}
-	}
-
-	zipkinCtx := zipkin.NewContext(req.WithContext(c).Context(), span)
 
 	resp, err := z.client.DoWithAppSpan(req.WithContext(zipkinCtx), fmt.Sprintf("%s:%s", req.Method, req.URL.Path))
 
