@@ -37,7 +37,7 @@ func (fo *funcRedisOption) apply(o *redisOptions) {
 	fo.f(o)
 }
 
-func newFuncRedisOption(f func(options *redisOptions)) *funcRedisOption {
+func newFuncRedisOption(f func(o *redisOptions)) *funcRedisOption {
 	return &funcRedisOption{f: f}
 }
 

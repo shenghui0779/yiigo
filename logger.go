@@ -38,7 +38,7 @@ func (fo *funcLogOption) apply(o *logOptions) {
 	fo.f(o)
 }
 
-func newFuncLogOption(f func(options *logOptions)) *funcLogOption {
+func newFuncLogOption(f func(o *logOptions)) *funcLogOption {
 	return &funcLogOption{f: f}
 }
 

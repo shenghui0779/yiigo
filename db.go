@@ -21,15 +21,6 @@ const (
 	Postgres Driver = 2
 )
 
-var (
-	// DB default db connection
-	DB    *sqlx.DB
-	dbmap sync.Map
-)
-
-var errInsertInvalidType = errors.New("yiigo: invalid data type of InsertSQL() / PGInsertSQL(), expects: struct, *struct, []struct, []*struct, yiigo.X, []yiigo.X")
-var errUpdateInvalidType = errors.New("yiigo: invalid data type of UpdateSQL() / PGUpdateSQL(), expects: struct, *struct, yiigo.X")
-
 // dbOptions db options
 type dbOptions struct {
 	maxOpenConns    int
@@ -51,7 +42,7 @@ func (fo *funcDBOption) apply(o *dbOptions) {
 	fo.f(o)
 }
 
-func newFuncDBOption(f func(options *dbOptions)) *funcDBOption {
+func newFuncDBOption(f func(o *dbOptions)) *funcDBOption {
 	return &funcDBOption{f: f}
 }
 
@@ -98,6 +89,12 @@ func WithDBConnMaxLifetime(d time.Duration) DBOption {
 		o.connMaxLifetime = d
 	})
 }
+
+var (
+	// DB default db connection
+	DB    *sqlx.DB
+	dbmap sync.Map
+)
 
 func dbDial(driverName, dsn string, options ...DBOption) (*sqlx.DB, error) {
 	o := &dbOptions{
@@ -179,6 +176,11 @@ func UseDB(name ...string) *sqlx.DB {
 
 	return v.(*sqlx.DB)
 }
+
+var (
+	errInsertInvalidType = errors.New("yiigo: invalid data type of InsertSQL() / PGInsertSQL(), expects: struct, *struct, []struct, []*struct, yiigo.X, []yiigo.X")
+	errUpdateInvalidType = errors.New("yiigo: invalid data type of UpdateSQL() / PGUpdateSQL(), expects: struct, *struct, yiigo.X")
+)
 
 // InsertSQL returns mysql insert sql and binds.
 // param data expects: `struct`, `*struct`, `[]struct`, `[]*struct`, `yiigo.X`, `[]yiigo.X`.

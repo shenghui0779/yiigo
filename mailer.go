@@ -39,7 +39,7 @@ func (fo *funcEMailOption) apply(o *emailOptions) {
 	fo.f(o)
 }
 
-func newFuncEMailOption(f func(options *emailOptions)) *funcEMailOption {
+func newFuncEMailOption(f func(o *emailOptions)) *funcEMailOption {
 	return &funcEMailOption{f: f}
 }
 

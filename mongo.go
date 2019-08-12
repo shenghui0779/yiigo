@@ -71,7 +71,7 @@ func (fo *funcMongoOption) apply(o *mongoOptions) {
 	fo.f(o)
 }
 
-func newFuncMongoOption(f func(options *mongoOptions)) *funcMongoOption {
+func newFuncMongoOption(f func(o *mongoOptions)) *funcMongoOption {
 	return &funcMongoOption{f: f}
 }
 

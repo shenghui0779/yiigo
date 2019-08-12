@@ -27,6 +27,7 @@ type httpClientOptions struct {
 	tlsConfig             *tls.Config
 	tlsHandshakeTimeout   time.Duration
 	expectContinueTimeout time.Duration
+	defaultTimeout        time.Duration
 }
 
 // HTTPClientOption configures how we set up the http client
@@ -43,7 +44,7 @@ func (fo *funcHTTPClientOption) apply(o *httpClientOptions) {
 	fo.f(o)
 }
 
-func newFuncHTTPOption(f func(options *httpClientOptions)) *funcHTTPClientOption {
+func newFuncHTTPOption(f func(o *httpClientOptions)) *funcHTTPClientOption {
 	return &funcHTTPClientOption{f: f}
 }
 
@@ -117,12 +118,20 @@ func WithHTTPExpectContinueTimeout(d time.Duration) HTTPClientOption {
 	})
 }
 
+// WithHTTPDefaultTimeout specifies the `DefaultTimeout` to http client.
+func WithHTTPDefaultTimeout(d time.Duration) HTTPClientOption {
+	return newFuncHTTPOption(func(o *httpClientOptions) {
+		o.defaultTimeout = d
+	})
+}
+
 // httpRequestOptions http request options
 type httpRequestOptions struct {
-	headers map[string]string
-	cookies []*http.Cookie
-	close   bool
-	timeout time.Duration
+	headers        map[string]string
+	cookies        []*http.Cookie
+	close          bool
+	timeout        time.Duration
+	zipkinSpanTags map[string]string
 }
 
 // HTTPRequestOption configures how we set up the http request
@@ -135,8 +144,8 @@ type funcHTTPRequestOption struct {
 	f func(*httpRequestOptions)
 }
 
-func (fo *funcHTTPRequestOption) apply(r *httpRequestOptions) {
-	fo.f(r)
+func (fo *funcHTTPRequestOption) apply(o *httpRequestOptions) {
+	fo.f(o)
 }
 
 func newFuncHTTPRequestOption(f func(*httpRequestOptions)) *funcHTTPRequestOption {
@@ -173,28 +182,36 @@ func WithRequestTimeout(d time.Duration) HTTPRequestOption {
 	})
 }
 
+// WithZipkinSpanTag specifies the zipkin span tag to zipkin http request.
+func WithZipkinSpanTag(key, value string) HTTPRequestOption {
+	return newFuncHTTPRequestOption(func(o *httpRequestOptions) {
+		o.zipkinSpanTags[key] = value
+	})
+}
+
 // HTTPClient http client
 type HTTPClient struct {
-	client *http.Client
+	client  *http.Client
+	timeout time.Duration
 }
 
 // Get http get request
 func (h *HTTPClient) Get(url string, options ...HTTPRequestOption) ([]byte, error) {
-	req, err := http.NewRequest("GET", url, nil)
-
-	if err != nil {
-		return nil, err
-	}
-
 	o := &httpRequestOptions{
 		headers: make(map[string]string),
-		timeout: defaultHTTPTimeout,
+		timeout: h.timeout,
 	}
 
 	if len(options) > 0 {
 		for _, option := range options {
 			option.apply(o)
 		}
+	}
+
+	req, err := http.NewRequest("GET", url, nil)
+
+	if err != nil {
+		return nil, err
 	}
 
 	// headers
@@ -215,6 +232,7 @@ func (h *HTTPClient) Get(url string, options ...HTTPRequestOption) ([]byte, erro
 		req.Close = true
 	}
 
+	// timeout
 	ctx, cancel := context.WithTimeout(context.TODO(), o.timeout)
 
 	defer cancel()
@@ -244,21 +262,21 @@ func (h *HTTPClient) Get(url string, options ...HTTPRequestOption) ([]byte, erro
 
 // Post http post request
 func (h *HTTPClient) Post(url string, body []byte, options ...HTTPRequestOption) ([]byte, error) {
-	req, err := http.NewRequest("POST", url, bytes.NewReader(body))
-
-	if err != nil {
-		return nil, err
-	}
-
 	o := &httpRequestOptions{
 		headers: make(map[string]string),
-		timeout: defaultHTTPTimeout,
+		timeout: h.timeout,
 	}
 
 	if len(options) > 0 {
 		for _, option := range options {
 			option.apply(o)
 		}
+	}
+
+	req, err := http.NewRequest("POST", url, bytes.NewReader(body))
+
+	if err != nil {
+		return nil, err
 	}
 
 	// headers
@@ -279,6 +297,7 @@ func (h *HTTPClient) Post(url string, body []byte, options ...HTTPRequestOption)
 		req.Close = true
 	}
 
+	// timeout
 	ctx, cancel := context.WithTimeout(context.TODO(), o.timeout)
 
 	defer cancel()
@@ -323,6 +342,7 @@ var defaultHTTPClient = &HTTPClient{
 			ExpectContinueTimeout: 1 * time.Second,
 		},
 	},
+	timeout: defaultHTTPTimeout,
 }
 
 // NewHTTPClient returns a new http client
@@ -336,6 +356,7 @@ func NewHTTPClient(options ...HTTPClientOption) *HTTPClient {
 		idleConnTimeout:       60 * time.Second,
 		tlsHandshakeTimeout:   10 * time.Second,
 		expectContinueTimeout: 1 * time.Second,
+		defaultTimeout:        defaultHTTPTimeout,
 	}
 
 	if len(options) > 0 {
