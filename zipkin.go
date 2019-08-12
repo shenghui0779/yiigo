@@ -30,7 +30,7 @@ type zipkinTracerOptions struct {
 	tracerSharedSpans          bool
 	tracerUnsampledNoop        bool
 	// reporter options
-	reporterHTTPClient      *HTTPClient
+	reporterHTTPClient      *http.Client
 	reporterBatchInterval   time.Duration
 	reporterBatchSize       int
 	reporterMaxBacklog      int
@@ -136,7 +136,7 @@ func WithZipkinTracerUnsampledNoop(b bool) ZipkinTracerOption {
 }
 
 // WithZipkinReporterHTTPClient specifies the `Client` to zipkin reporter.
-func WithZipkinReporterHTTPClient(c *HTTPClient) ZipkinTracerOption {
+func WithZipkinReporterHTTPClient(c *http.Client) ZipkinTracerOption {
 	return newFuncZipkinTracerOption(func(o *zipkinTracerOptions) error {
 		o.reporterHTTPClient = c
 
@@ -204,8 +204,6 @@ func NewZipkinTracer(reportURL string, options ...ZipkinTracerOption) (*zipkin.T
 		// zipkin tracer default options
 		tracerDefaultTags: make(map[string]string),
 		tracerSharedSpans: true,
-		// zipkin reporter default options
-		reporterHTTPClient: defaultHTTPClient,
 	}
 
 	if len(options) > 0 {
@@ -258,10 +256,9 @@ func buildZipkinTracerOptions(o *zipkinTracerOptions) []zipkin.TracerOption {
 func buildZipkinReporterOptions(o *zipkinTracerOptions) []zipkinHTTPReporter.ReporterOption {
 	options := make([]zipkinHTTPReporter.ReporterOption, 0, 7)
 
-	client := o.reporterHTTPClient.client
-	client.Timeout = o.reporterHTTPClient.timeout
-
-	options = append(options, zipkinHTTPReporter.Client(client))
+	if o.reporterHTTPClient != nil {
+		options = append(options, zipkinHTTPReporter.Client(o.reporterHTTPClient))
+	}
 
 	if o.reporterBatchInterval != 0 {
 		options = append(options, zipkinHTTPReporter.BatchInterval(o.reporterBatchInterval))
