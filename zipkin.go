@@ -234,9 +234,7 @@ func buildZipkinTracerOptions(o *zipkinTracerOptions) []zipkin.TracerOption {
 		options = append(options, zipkin.WithTags(o.tracerDefaultTags))
 	}
 
-	if o.tracerExtractFailurePolicy != 0 {
-		options = append(options, zipkin.WithExtractFailurePolicy(o.tracerExtractFailurePolicy))
-	}
+	options = append(options, zipkin.WithExtractFailurePolicy(o.tracerExtractFailurePolicy))
 
 	if o.tracerSampler != nil {
 		options = append(options, zipkin.WithSampler(o.tracerSampler))
@@ -250,17 +248,9 @@ func buildZipkinTracerOptions(o *zipkinTracerOptions) []zipkin.TracerOption {
 		options = append(options, zipkin.WithLocalEndpoint(o.tracerEndpoint))
 	}
 
-	if o.tracerNoop {
-		options = append(options, zipkin.WithNoopTracer(true))
-	}
-
-	if o.tracerSharedSpans {
-		options = append(options, zipkin.WithSharedSpans(true))
-	}
-
-	if o.tracerUnsampledNoop {
-		options = append(options, zipkin.WithNoopSpan(true))
-	}
+	options = append(options, zipkin.WithNoopTracer(o.tracerNoop))
+	options = append(options, zipkin.WithSharedSpans(o.tracerSharedSpans))
+	options = append(options, zipkin.WithNoopSpan(o.tracerUnsampledNoop))
 
 	return options
 }
@@ -604,9 +594,7 @@ func buildZipkinClientOptions(o *zipkinClientOptions) []zipkinHTTP.ClientOption 
 		options = append(options, zipkinHTTP.ClientTags(o.clientTags))
 	}
 
-	if o.clientTrace {
-		options = append(options, zipkinHTTP.ClientTrace(true))
-	}
+	options = append(options, zipkinHTTP.ClientTrace(o.clientTrace))
 
 	if v := buildZipkinTransportOptions(o); len(v) > 0 {
 		options = append(options, zipkinHTTP.TransportOptions(v...))
@@ -626,9 +614,7 @@ func buildZipkinTransportOptions(o *zipkinClientOptions) []zipkinHTTP.TransportO
 		options = append(options, zipkinHTTP.TransportTags(o.transportTags))
 	}
 
-	if o.transportTrace {
-		options = append(options, zipkinHTTP.TransportTrace(true))
-	}
+	options = append(options, zipkinHTTP.TransportTrace(o.transportTrace))
 
 	if o.transportErrHandler != nil {
 		options = append(options, zipkinHTTP.TransportErrHandler(o.transportErrHandler))
