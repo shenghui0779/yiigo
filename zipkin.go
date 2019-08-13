@@ -482,11 +482,11 @@ func (z *ZipkinClient) Get(ctx context.Context, url string, options ...HTTPReque
 	}
 
 	// zipkin ctx & timeout
-	ctx, cancel := context.WithTimeout(zipkin.NewContext(req.Context(), span), o.timeout)
+	c, cancel := context.WithTimeout(zipkin.NewContext(req.Context(), span), o.timeout)
 
 	defer cancel()
 
-	resp, err := z.client.DoWithAppSpan(req.WithContext(ctx), fmt.Sprintf("%s:%s", req.Method, req.URL.Path))
+	resp, err := z.client.DoWithAppSpan(req.WithContext(c), fmt.Sprintf("%s:%s", req.Method, req.URL.Path))
 
 	if err != nil {
 		return nil, err
@@ -560,11 +560,11 @@ func (z *ZipkinClient) Post(ctx context.Context, url string, body []byte, option
 	}
 
 	// zipkin ctx & timeout
-	ctx, cancel := context.WithTimeout(zipkin.NewContext(req.Context(), span), o.timeout)
+	c, cancel := context.WithTimeout(zipkin.NewContext(req.Context(), span), o.timeout)
 
 	defer cancel()
 
-	resp, err := z.client.DoWithAppSpan(req.WithContext(ctx), fmt.Sprintf("%s:%s", req.Method, req.URL.Path))
+	resp, err := z.client.DoWithAppSpan(req.WithContext(c), fmt.Sprintf("%s:%s", req.Method, req.URL.Path))
 
 	if err != nil {
 		return nil, err

@@ -233,7 +233,7 @@ func (h *HTTPClient) Get(url string, options ...HTTPRequestOption) ([]byte, erro
 	}
 
 	// timeout
-	ctx, cancel := context.WithTimeout(context.TODO(), o.timeout)
+	ctx, cancel := context.WithTimeout(req.Context(), o.timeout)
 
 	defer cancel()
 
@@ -298,7 +298,7 @@ func (h *HTTPClient) Post(url string, body []byte, options ...HTTPRequestOption)
 	}
 
 	// timeout
-	ctx, cancel := context.WithTimeout(context.TODO(), o.timeout)
+	ctx, cancel := context.WithTimeout(req.Context(), o.timeout)
 
 	defer cancel()
 
