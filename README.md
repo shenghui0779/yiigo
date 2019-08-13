@@ -121,7 +121,7 @@ if err != nil {
     log.Fatal(err)
 }
 
-client, err = yiigo.NewZipkinClient(tracer)
+client, err := yiigo.NewZipkinClient(tracer)
 
 if err != nil {
     log.Fatal(err)
