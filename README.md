@@ -69,7 +69,7 @@ yiigo.RegisterRedis("default", "localhost:6379")
 conn, err := yiigo.Redis.Get()
 
 if err != nil {
-	log.Fatal(err)
+    log.Fatal(err)
 }
 
 defer yiigo.Redis.Put(conn)
@@ -83,7 +83,7 @@ foo := yiigo.UseRedis("foo")
 conn, err := foo.Get()
 
 if err != nil {
-	log.Fatal(err)
+    log.Fatal(err)
 }
 
 defer foo.Put(conn)
