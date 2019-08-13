@@ -36,7 +36,7 @@
 //    conn, err := yiigo.Redis.Get()
 //
 //    if err != nil {
-// 	     log.Fatal(err)
+//        log.Fatal(err)
 //    }
 //
 //    defer yiigo.Redis.Put(conn)
@@ -50,7 +50,7 @@
 //    conn, err := foo.Get()
 //
 //    if err != nil {
-// 	     log.Fatal(err)
+//        log.Fatal(err)
 //    }
 //
 //    defer foo.Put(conn)
