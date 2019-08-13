@@ -75,32 +75,32 @@
 //
 // Zipkin
 //
-// tracer, err := yiigo.NewZipkinTracer("http://localhost:9411/api/v2/spans",
-//    yiigo.WithZipkinTracerEndpoint("zipkin-test", "localhost"),
-//    yiigo.WithZipkinTracerSharedSpans(false),
-//    yiigo.WithZipkinTracerSamplerMod(1),
-// )
+//    tracer, err := yiigo.NewZipkinTracer("http://localhost:9411/api/v2/spans",
+//        yiigo.WithZipkinTracerEndpoint("zipkin-test", "localhost"),
+//        yiigo.WithZipkinTracerSharedSpans(false),
+//        yiigo.WithZipkinTracerSamplerMod(1),
+//    )
 //
-// if err != nil {
-//    log.Fatal(err)
-// }
+//    if err != nil {
+//        log.Fatal(err)
+//    }
 //
-// client, err := yiigo.NewZipkinClient(tracer)
+//    client, err := yiigo.NewZipkinClient(tracer)
 //
-// if err != nil {
-//    log.Fatal(err)
-// }
+//    if err != nil {
+//        log.Fatal(err)
+//    }
 //
-// b, err := client.Get(context.Background(), "url...",
-//    yiigo.WithRequestHeader("Content-Type", "application/json"),
-//    yiigo.WithRequestTimeout(5*time.Second),
-// )
+//    b, err := client.Get(context.Background(), "url...",
+//        yiigo.WithRequestHeader("Content-Type", "application/json"),
+//        yiigo.WithRequestTimeout(5*time.Second),
+//    )
 //
-// if err != nil {
-//    log.Fatal(err)
-// }
+//    if err != nil {
+//        log.Fatal(err)
+//    }
 //
-// fmt.Println(string(b))
+//    fmt.Println(string(b))
 //
 // Logger
 //
