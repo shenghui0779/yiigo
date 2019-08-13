@@ -16,6 +16,7 @@ import (
 	"github.com/openzipkin/zipkin-go/idgenerator"
 	zipkinHTTP "github.com/openzipkin/zipkin-go/middleware/http"
 	"github.com/openzipkin/zipkin-go/model"
+	"github.com/openzipkin/zipkin-go/propagation/b3"
 	"github.com/openzipkin/zipkin-go/reporter"
 	zipkinHTTPReporter "github.com/openzipkin/zipkin-go/reporter/http"
 )
@@ -434,8 +435,9 @@ type ZipkinClient struct {
 // Get zipkin get request
 func (z *ZipkinClient) Get(ctx context.Context, url string, options ...HTTPRequestOption) ([]byte, error) {
 	o := &httpRequestOptions{
-		headers: make(map[string]string),
-		timeout: z.timeout,
+		headers:        make(map[string]string),
+		timeout:        z.timeout,
+		zipkinSpanTags: make(map[string]string),
 	}
 
 	if len(options) > 0 {
@@ -512,8 +514,9 @@ func (z *ZipkinClient) Get(ctx context.Context, url string, options ...HTTPReque
 // Post zipkin post request
 func (z *ZipkinClient) Post(ctx context.Context, url string, body []byte, options ...HTTPRequestOption) ([]byte, error) {
 	o := &httpRequestOptions{
-		headers: make(map[string]string),
-		timeout: z.timeout,
+		headers:        make(map[string]string),
+		timeout:        z.timeout,
+		zipkinSpanTags: make(map[string]string),
 	}
 
 	if len(options) > 0 {
@@ -695,4 +698,30 @@ func buildZipkinTransportOptions(o *zipkinClientOptions) []zipkinHTTP.TransportO
 	}
 
 	return options
+}
+
+// StartWithZipkin returns a new zipkin span
+func StartWithZipkin(t *zipkin.Tracer, req *http.Request) zipkin.Span {
+	// try to extract B3 Headers from upstream
+	sc := t.Extract(b3.ExtractHTTP(req))
+
+	endpoint, _ := zipkin.NewEndpoint("", req.RemoteAddr)
+
+	// create Span using SpanContext if found
+	sp := t.StartSpan(fmt.Sprintf("%s:%s", req.Method, req.URL.Path),
+		zipkin.Kind(model.Server),
+		zipkin.Parent(sc),
+		zipkin.StartTime(time.Now()),
+		zipkin.RemoteEndpoint(endpoint),
+	)
+
+	// tag typical HTTP request items
+	zipkin.TagHTTPMethod.Set(sp, req.Method)
+	zipkin.TagHTTPPath.Set(sp, req.URL.Path)
+
+	if req.ContentLength > 0 {
+		zipkin.TagHTTPRequestSize.Set(sp, strconv.FormatInt(req.ContentLength, 10))
+	}
+
+	return sp
 }
