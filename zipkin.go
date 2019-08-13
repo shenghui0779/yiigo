@@ -136,8 +136,8 @@ func WithZipkinTracerUnsampledNoop(b bool) ZipkinTracerOption {
 	})
 }
 
-// WithZipkinReporterHTTPClient specifies the `Client` to zipkin reporter.
-func WithZipkinReporterHTTPClient(options ...HTTPClientOption) ZipkinTracerOption {
+// WithZipkinReporterClient specifies the `Client` to zipkin reporter.
+func WithZipkinReporterClient(options ...HTTPClientOption) ZipkinTracerOption {
 	return newFuncZipkinTracerOption(func(o *zipkinTracerOptions) error {
 		o.reporterClientOptions = options
 
@@ -145,7 +145,7 @@ func WithZipkinReporterHTTPClient(options ...HTTPClientOption) ZipkinTracerOptio
 	})
 }
 
-// WithZipkinReporterHTTPClient specifies the `BatchInterval` to zipkin reporter.
+// WithZipkinReporterBatchInterval specifies the `BatchInterval` to zipkin reporter.
 func WithZipkinReporterBatchInterval(t time.Duration) ZipkinTracerOption {
 	return newFuncZipkinTracerOption(func(o *zipkinTracerOptions) error {
 		o.reporterBatchInterval = t
@@ -154,7 +154,7 @@ func WithZipkinReporterBatchInterval(t time.Duration) ZipkinTracerOption {
 	})
 }
 
-// WithZipkinReporterHTTPClient specifies the `BatchSize` to zipkin reporter.
+// WithZipkinReporterBatchSize specifies the `BatchSize` to zipkin reporter.
 func WithZipkinReporterBatchSize(i int) ZipkinTracerOption {
 	return newFuncZipkinTracerOption(func(o *zipkinTracerOptions) error {
 		o.reporterBatchSize = i
@@ -163,7 +163,7 @@ func WithZipkinReporterBatchSize(i int) ZipkinTracerOption {
 	})
 }
 
-// WithZipkinReporterHTTPClient specifies the `MaxBacklog` to zipkin reporter.
+// WithZipkinReporterMaxBacklog specifies the `MaxBacklog` to zipkin reporter.
 func WithZipkinReporterMaxBacklog(i int) ZipkinTracerOption {
 	return newFuncZipkinTracerOption(func(o *zipkinTracerOptions) error {
 		o.reporterMaxBacklog = i
@@ -172,7 +172,7 @@ func WithZipkinReporterMaxBacklog(i int) ZipkinTracerOption {
 	})
 }
 
-// WithZipkinReporterHTTPClient specifies the `RequestCallback` to zipkin reporter.
+// WithZipkinReporterRequestCallback specifies the `RequestCallback` to zipkin reporter.
 func WithZipkinReporterRequestCallback(fn zipkinHTTPReporter.RequestCallbackFn) ZipkinTracerOption {
 	return newFuncZipkinTracerOption(func(o *zipkinTracerOptions) error {
 		o.reporterRequestCallback = fn
@@ -181,7 +181,7 @@ func WithZipkinReporterRequestCallback(fn zipkinHTTPReporter.RequestCallbackFn) 
 	})
 }
 
-// WithZipkinReporterHTTPClient specifies the `Logger` to zipkin reporter.
+// WithZipkinReporterLogger specifies the `Logger` to zipkin reporter.
 func WithZipkinReporterLogger(l *log.Logger) ZipkinTracerOption {
 	return newFuncZipkinTracerOption(func(o *zipkinTracerOptions) error {
 		o.reporterLogger = l
@@ -190,7 +190,7 @@ func WithZipkinReporterLogger(l *log.Logger) ZipkinTracerOption {
 	})
 }
 
-// WithZipkinReporterHTTPClient specifies the `Serializer` to zipkin reporter.
+// WithZipkinReporterSerializer specifies the `Serializer` to zipkin reporter.
 func WithZipkinReporterSerializer(s reporter.SpanSerializer) ZipkinTracerOption {
 	return newFuncZipkinTracerOption(func(o *zipkinTracerOptions) error {
 		o.reporterSerializer = s
