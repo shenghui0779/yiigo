@@ -129,7 +129,7 @@ if err != nil {
 
 b, err := client.Get(context.Background(), "url...",
     yiigo.WithRequestHeader("Content-Type", "application/json"),
-    yiigo.WithRequestTimeout(time.Second),
+    yiigo.WithRequestTimeout(5*time.Second),
 )
 
 if err != nil {
