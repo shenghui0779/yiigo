@@ -590,7 +590,7 @@ func (z *ZipkinClient) Post(ctx context.Context, url string, body []byte, option
 	return b, nil
 }
 
-// NewZipkinClient returns a zipin client
+// NewZipkinClient returns a new zipin client
 func NewZipkinClient(t *zipkin.Tracer, options ...ZipkinClientOption) (*ZipkinClient, error) {
 	o := &zipkinClientOptions{
 		clientTags:    make(map[string]string),
