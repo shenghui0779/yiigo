@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"net"
 	"net/http"
 	"strconv"
 	"time"
@@ -30,7 +31,7 @@ type zipkinTracerOptions struct {
 	tracerSharedSpans          bool
 	tracerUnsampledNoop        bool
 	// reporter options
-	reporterHTTPClient      *http.Client
+	reporterClientOptions   []HTTPClientOption
 	reporterBatchInterval   time.Duration
 	reporterBatchSize       int
 	reporterMaxBacklog      int
@@ -136,9 +137,9 @@ func WithZipkinTracerUnsampledNoop(b bool) ZipkinTracerOption {
 }
 
 // WithZipkinReporterHTTPClient specifies the `Client` to zipkin reporter.
-func WithZipkinReporterHTTPClient(c *http.Client) ZipkinTracerOption {
+func WithZipkinReporterHTTPClient(options ...HTTPClientOption) ZipkinTracerOption {
 	return newFuncZipkinTracerOption(func(o *zipkinTracerOptions) error {
-		o.reporterHTTPClient = c
+		o.reporterClientOptions = options
 
 		return nil
 	})
@@ -254,44 +255,78 @@ func buildZipkinTracerOptions(o *zipkinTracerOptions) []zipkin.TracerOption {
 }
 
 func buildZipkinReporterOptions(o *zipkinTracerOptions) []zipkinHTTPReporter.ReporterOption {
-	options := make([]zipkinHTTPReporter.ReporterOption, 0, 7)
+	reporterOptions := make([]zipkinHTTPReporter.ReporterOption, 0, 7)
 
-	if o.reporterHTTPClient != nil {
-		options = append(options, zipkinHTTPReporter.Client(o.reporterHTTPClient))
+	clientOptions := &httpClientOptions{
+		dialTimeout:           30 * time.Second,
+		dialKeepAlive:         60 * time.Second,
+		maxIdleConns:          0,
+		maxIdleConnsPerHost:   1000,
+		maxConnsPerHost:       1000,
+		idleConnTimeout:       60 * time.Second,
+		tlsHandshakeTimeout:   10 * time.Second,
+		expectContinueTimeout: 1 * time.Second,
+		defaultTimeout:        defaultHTTPTimeout,
 	}
 
+	if len(o.reporterClientOptions) > 0 {
+		for _, option := range o.reporterClientOptions {
+			option.apply(clientOptions)
+		}
+	}
+
+	client := &http.Client{
+		Transport: &http.Transport{
+			Proxy: http.ProxyFromEnvironment,
+			DialContext: (&net.Dialer{
+				Timeout:   clientOptions.dialTimeout,
+				KeepAlive: clientOptions.dialKeepAlive,
+			}).DialContext,
+			MaxConnsPerHost:       clientOptions.maxConnsPerHost,
+			MaxIdleConnsPerHost:   clientOptions.maxIdleConnsPerHost,
+			MaxIdleConns:          clientOptions.maxIdleConns,
+			IdleConnTimeout:       clientOptions.idleConnTimeout,
+			TLSClientConfig:       clientOptions.tlsConfig,
+			TLSHandshakeTimeout:   clientOptions.tlsHandshakeTimeout,
+			ExpectContinueTimeout: clientOptions.expectContinueTimeout,
+		},
+		Timeout: clientOptions.defaultTimeout,
+	}
+
+	reporterOptions = append(reporterOptions, zipkinHTTPReporter.Client(client))
+
 	if o.reporterBatchInterval != 0 {
-		options = append(options, zipkinHTTPReporter.BatchInterval(o.reporterBatchInterval))
+		reporterOptions = append(reporterOptions, zipkinHTTPReporter.BatchInterval(o.reporterBatchInterval))
 	}
 
 	if o.reporterBatchSize != 0 {
-		options = append(options, zipkinHTTPReporter.BatchSize(o.reporterBatchSize))
+		reporterOptions = append(reporterOptions, zipkinHTTPReporter.BatchSize(o.reporterBatchSize))
 	}
 
 	if o.reporterMaxBacklog != 0 {
-		options = append(options, zipkinHTTPReporter.MaxBacklog(o.reporterMaxBacklog))
+		reporterOptions = append(reporterOptions, zipkinHTTPReporter.MaxBacklog(o.reporterMaxBacklog))
 	}
 
 	if o.reporterRequestCallback != nil {
-		options = append(options, zipkinHTTPReporter.RequestCallback(o.reporterRequestCallback))
+		reporterOptions = append(reporterOptions, zipkinHTTPReporter.RequestCallback(o.reporterRequestCallback))
 	}
 
 	if o.reporterLogger != nil {
-		options = append(options, zipkinHTTPReporter.Logger(o.reporterLogger))
+		reporterOptions = append(reporterOptions, zipkinHTTPReporter.Logger(o.reporterLogger))
 	}
 
 	if o.reporterSerializer != nil {
-		options = append(options, zipkinHTTPReporter.Serializer(o.reporterSerializer))
+		reporterOptions = append(reporterOptions, zipkinHTTPReporter.Serializer(o.reporterSerializer))
 	}
 
-	return options
+	return reporterOptions
 }
 
 type zipkinClientOptions struct {
 	// zipkin client options
-	httpClient  *HTTPClient
-	clientTrace bool
-	clientTags  map[string]string
+	clientOptions []HTTPClientOption
+	clientTrace   bool
+	clientTags    map[string]string
 	// zipkin transport options
 	roundTripper               http.RoundTripper
 	transportTrace             bool
@@ -321,9 +356,9 @@ func newFuncZipkinClientOption(f func(o *zipkinClientOptions)) *funcZipkinClient
 }
 
 // WithZipkinHTTPClient specifies the `Client` to zipkin client.
-func WithZipkinHTTPClient(c *HTTPClient) ZipkinClientOption {
+func WithZipkinHTTPClient(options ...HTTPClientOption) ZipkinClientOption {
 	return newFuncZipkinClientOption(func(o *zipkinClientOptions) {
-		o.httpClient = c
+		o.clientOptions = options
 	})
 }
 
@@ -447,11 +482,11 @@ func (z *ZipkinClient) Get(ctx context.Context, url string, options ...HTTPReque
 	}
 
 	// zipkin ctx & timeout
-	ctx, cancel := context.WithTimeout(zipkin.NewContext(req.Context(), span), o.timeout)
+	c, cancel := context.WithTimeout(zipkin.NewContext(req.Context(), span), o.timeout)
 
 	defer cancel()
 
-	resp, err := z.client.DoWithAppSpan(req.WithContext(ctx), fmt.Sprintf("%s:%s", req.Method, req.URL.Path))
+	resp, err := z.client.DoWithAppSpan(req.WithContext(c), fmt.Sprintf("%s:%s", req.Method, req.URL.Path))
 
 	if err != nil {
 		return nil, err
@@ -525,11 +560,11 @@ func (z *ZipkinClient) Post(ctx context.Context, url string, body []byte, option
 	}
 
 	// zipkin ctx & timeout
-	ctx, cancel := context.WithTimeout(zipkin.NewContext(req.Context(), span), o.timeout)
+	c, cancel := context.WithTimeout(zipkin.NewContext(req.Context(), span), o.timeout)
 
 	defer cancel()
 
-	resp, err := z.client.DoWithAppSpan(req.WithContext(ctx), fmt.Sprintf("%s:%s", req.Method, req.URL.Path))
+	resp, err := z.client.DoWithAppSpan(req.WithContext(c), fmt.Sprintf("%s:%s", req.Method, req.URL.Path))
 
 	if err != nil {
 		return nil, err
@@ -555,7 +590,6 @@ func (z *ZipkinClient) Post(ctx context.Context, url string, body []byte, option
 // NewZipkinClient returns a zipin client
 func NewZipkinClient(t *zipkin.Tracer, options ...ZipkinClientOption) (*ZipkinClient, error) {
 	o := &zipkinClientOptions{
-		httpClient:    defaultHTTPClient,
 		clientTags:    make(map[string]string),
 		transportTags: make(map[string]string),
 	}
@@ -566,7 +600,42 @@ func NewZipkinClient(t *zipkin.Tracer, options ...ZipkinClientOption) (*ZipkinCl
 		}
 	}
 
-	zipkinClient, err := zipkinHTTP.NewClient(t, buildZipkinClientOptions(o)...)
+	clientOptions := &httpClientOptions{
+		dialTimeout:           30 * time.Second,
+		dialKeepAlive:         60 * time.Second,
+		maxIdleConns:          0,
+		maxIdleConnsPerHost:   1000,
+		maxConnsPerHost:       1000,
+		idleConnTimeout:       60 * time.Second,
+		tlsHandshakeTimeout:   10 * time.Second,
+		expectContinueTimeout: 1 * time.Second,
+		defaultTimeout:        defaultHTTPTimeout,
+	}
+
+	if len(o.clientOptions) > 0 {
+		for _, option := range o.clientOptions {
+			option.apply(clientOptions)
+		}
+	}
+
+	client := &http.Client{
+		Transport: &http.Transport{
+			Proxy: http.ProxyFromEnvironment,
+			DialContext: (&net.Dialer{
+				Timeout:   clientOptions.dialTimeout,
+				KeepAlive: clientOptions.dialKeepAlive,
+			}).DialContext,
+			MaxConnsPerHost:       clientOptions.maxConnsPerHost,
+			MaxIdleConnsPerHost:   clientOptions.maxIdleConnsPerHost,
+			MaxIdleConns:          clientOptions.maxIdleConns,
+			IdleConnTimeout:       clientOptions.idleConnTimeout,
+			TLSClientConfig:       clientOptions.tlsConfig,
+			TLSHandshakeTimeout:   clientOptions.tlsHandshakeTimeout,
+			ExpectContinueTimeout: clientOptions.expectContinueTimeout,
+		},
+	}
+
+	zipkinClient, err := zipkinHTTP.NewClient(t, buildZipkinClientOptions(client, o)...)
 
 	if err != nil {
 		return nil, err
@@ -574,14 +643,14 @@ func NewZipkinClient(t *zipkin.Tracer, options ...ZipkinClientOption) (*ZipkinCl
 
 	return &ZipkinClient{
 		client:  zipkinClient,
-		timeout: o.httpClient.timeout,
+		timeout: clientOptions.defaultTimeout,
 	}, nil
 }
 
-func buildZipkinClientOptions(o *zipkinClientOptions) []zipkinHTTP.ClientOption {
+func buildZipkinClientOptions(c *http.Client, o *zipkinClientOptions) []zipkinHTTP.ClientOption {
 	options := make([]zipkinHTTP.ClientOption, 0, 4)
 
-	options = append(options, zipkinHTTP.WithClient(o.httpClient.client))
+	options = append(options, zipkinHTTP.WithClient(c))
 
 	if len(o.clientTags) > 0 {
 		options = append(options, zipkinHTTP.ClientTags(o.clientTags))

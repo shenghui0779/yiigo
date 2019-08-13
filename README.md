@@ -13,6 +13,7 @@ A simple and light library which makes Golang development easier !
 - Support [PostgreSQL](https://github.com/lib/pq)
 - Support [MongoDB](https://github.com/mongodb/mongo-go-driver)
 - Support [Redis](https://github.com/gomodule/redigo)
+- Support [Zipkin](https://github.com/openzipkin/zipkin-go)
 - Use [gomail](https://github.com/go-gomail/gomail) for email sending
 - Use [toml](https://github.com/pelletier/go-toml) for configuration
 - Use [sqlx](https://github.com/jmoiron/sqlx) for SQL executing
@@ -105,6 +106,37 @@ yiigo.UseEnv("env.toml")
 yiigo.Env.Bool("app.debug", true)
 yiigo.Env.Int("app.port", 12345)
 yiigo.Env.String("app.env", "dev")
+```
+
+#### Zipkin
+
+```go
+tracer, err := yiigo.NewZipkinTracer("http://localhost:9411/api/v2/spans",
+    yiigo.WithZipkinTracerEndpoint("zipkin-test", "localhost"),
+    yiigo.WithZipkinTracerSharedSpans(false),
+    yiigo.WithZipkinTracerSamplerMod(1),
+)
+
+if err != nil {
+    log.Fatal(err)
+}
+
+client, err := yiigo.NewZipkinClient(tracer)
+
+if err != nil {
+    log.Fatal(err)
+}
+
+b, err := client.Get(context.Background(), "url...",
+    yiigo.WithRequestHeader("Content-Type", "application/json"),
+    yiigo.WithRequestTimeout(5*time.Second),
+)
+
+if err != nil {
+    log.Fatal(err)
+}
+
+fmt.Println(string(b))
 ```
 
 #### Logger
