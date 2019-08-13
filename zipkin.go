@@ -434,8 +434,9 @@ type ZipkinClient struct {
 // Get zipkin get request
 func (z *ZipkinClient) Get(ctx context.Context, url string, options ...HTTPRequestOption) ([]byte, error) {
 	o := &httpRequestOptions{
-		headers: make(map[string]string),
-		timeout: z.timeout,
+		headers:        make(map[string]string),
+		timeout:        z.timeout,
+		zipkinSpanTags: make(map[string]string),
 	}
 
 	if len(options) > 0 {
@@ -512,8 +513,9 @@ func (z *ZipkinClient) Get(ctx context.Context, url string, options ...HTTPReque
 // Post zipkin post request
 func (z *ZipkinClient) Post(ctx context.Context, url string, body []byte, options ...HTTPRequestOption) ([]byte, error) {
 	o := &httpRequestOptions{
-		headers: make(map[string]string),
-		timeout: z.timeout,
+		headers:        make(map[string]string),
+		timeout:        z.timeout,
+		zipkinSpanTags: make(map[string]string),
 	}
 
 	if len(options) > 0 {
