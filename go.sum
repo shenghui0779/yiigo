@@ -31,8 +31,8 @@ github.com/hpcloud/tail v1.0.0/go.mod h1:ab1qPbhIpdTxEkNHXyeSf5vhxWSCs/tWer42PpO
 github.com/jmoiron/sqlx v1.2.1-0.20190426154859-38398a30ed85 h1:M3C5MxZHP36CMRk0c0XWgtnixXDIEh8RE1cnnjCbjzw=
 github.com/jmoiron/sqlx v1.2.1-0.20190426154859-38398a30ed85/go.mod h1:1FEQNm3xlJgrMD+FBdI9+xvCksHtbpVBBw5dYhBSsks=
 github.com/lib/pq v1.0.0/go.mod h1:5WUZQaWbwv1U+lTReE5YruASi9Al49XbQIvNi/34Woo=
-github.com/lib/pq v1.2.0 h1:LXpIM/LZ5xGFhOpXAQUIMM1HdyqzVYM13zNdjCEEcA0=
-github.com/lib/pq v1.2.0/go.mod h1:5WUZQaWbwv1U+lTReE5YruASi9Al49XbQIvNi/34Woo=
+github.com/lib/pq v1.2.1-0.20190813065522-78223426e7c6 h1:if356M8w/zWY48HrTmJX6TldJGAX/lr6jXi0hM6EvJA=
+github.com/lib/pq v1.2.1-0.20190813065522-78223426e7c6/go.mod h1:5WUZQaWbwv1U+lTReE5YruASi9Al49XbQIvNi/34Woo=
 github.com/lyft/protoc-gen-validate v0.0.13/go.mod h1:XbGvPuh87YZc5TdIa2/I4pLk0QoUACkjt2znoq26NVQ=
 github.com/mattn/go-sqlite3 v1.9.0/go.mod h1:FPy6KqzDD04eiIsT53CuJW3U88zkxoIYsOqkbpncsNc=
 github.com/onsi/ginkgo v1.6.0/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=
@@ -60,8 +60,8 @@ github.com/xdg/scram v0.0.0-20180814205039-7eeb5667e42c h1:u40Z8hqBAAQyv+vATcGgV
 github.com/xdg/scram v0.0.0-20180814205039-7eeb5667e42c/go.mod h1:lB8K/P019DLNhemzwFU4jHLhdvlE6uDZjXFejJXr49I=
 github.com/xdg/stringprep v1.0.0 h1:d9X0esnoa3dFsV0FG35rAT0RIhYFlPq7MiP+DW89La0=
 github.com/xdg/stringprep v1.0.0/go.mod h1:Jhud4/sHMO4oL310DaZAKk9ZaJ08SJfe+sJh0HrGL1Y=
-go.mongodb.org/mongo-driver v1.0.1-0.20190809204654-b7b20d0967c7 h1:+qKsjyEwkCvX6pSf0qyo4CDTEkURAXXak4Ra6RftqWo=
-go.mongodb.org/mongo-driver v1.0.1-0.20190809204654-b7b20d0967c7/go.mod h1:u7ryQJ+DOzQmeO7zB6MHyr8jkEQvC8vH7qLUO4lqsUM=
+go.mongodb.org/mongo-driver v1.1.1-0.20190813151753-b10ab43bc552 h1:homREX8C54YAzG914152NSLgOE/jG8Dm9IgUOGBAMpY=
+go.mongodb.org/mongo-driver v1.1.1-0.20190813151753-b10ab43bc552/go.mod h1:u7ryQJ+DOzQmeO7zB6MHyr8jkEQvC8vH7qLUO4lqsUM=
 go.uber.org/atomic v1.4.0 h1:cxzIVoETapQEqDhQu3QfnvXAV4AlzcvUCxkVUFw3+EU=
 go.uber.org/atomic v1.4.0/go.mod h1:gD2HeocX3+yG+ygLZcrzQJaqmWj9AIm7n08wl/qW/PE=
 go.uber.org/multierr v1.1.0 h1:HoEmRHQPVSqub6w2z2d2EOVs2fjyFRGyofhKuyDq0QI=
@@ -98,5 +98,5 @@ gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7/go.mod h1:dt/ZhP58zS4L8KSrWD
 gopkg.in/yaml.v2 v2.2.1/go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI=
 gopkg.in/yaml.v2 v2.2.2/go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI=
 honnef.co/go/tools v0.0.0-20190102054323-c2f93a96b099/go.mod h1:rf3lG4BRIbNafJWhAfAdb/ePZxsR/4RtNHQocxwk9r4=
-vitess.io/vitess v3.0.0-rc.3.0.20190812035050-b9d707fbc435+incompatible h1:yoHvJPAanl5TTcP7NC8Tws/s1j2P5fQxgGdC647+4Io=
-vitess.io/vitess v3.0.0-rc.3.0.20190812035050-b9d707fbc435+incompatible/go.mod h1:h4qvkyNYTOC0xI+vcidSWoka0gQAZc9ZPHbkHo48gP0=
+vitess.io/vitess v3.0.0-rc.3.0.20190813191758-4602af69310e+incompatible h1:bxuNyecMSyrnR/Ex8X2y0UGm5uYejZV5Nyi1dpGa7oY=
+vitess.io/vitess v3.0.0-rc.3.0.20190813191758-4602af69310e+incompatible/go.mod h1:h4qvkyNYTOC0xI+vcidSWoka0gQAZc9ZPHbkHo48gP0=
