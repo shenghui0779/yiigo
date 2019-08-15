@@ -43,19 +43,19 @@ type zipkinTracerOptions struct {
 
 // ZipkinTracerOption configures how we set up the zipkin tracer
 type ZipkinTracerOption interface {
-	apply(options *zipkinTracerOptions) error
+	apply(*zipkinTracerOptions) error
 }
 
 // funcZipkinTracerOption implements zipkin tracer option
 type funcZipkinTracerOption struct {
-	f func(options *zipkinTracerOptions) error
+	f func(*zipkinTracerOptions) error
 }
 
 func (fo *funcZipkinTracerOption) apply(o *zipkinTracerOptions) error {
 	return fo.f(o)
 }
 
-func newFuncZipkinTracerOption(f func(o *zipkinTracerOptions) error) *funcZipkinTracerOption {
+func newFuncZipkinTracerOption(f func(*zipkinTracerOptions) error) *funcZipkinTracerOption {
 	return &funcZipkinTracerOption{f: f}
 }
 
@@ -340,19 +340,19 @@ type zipkinClientOptions struct {
 
 // ZipkinClientOption configures how we set up the zipkin client
 type ZipkinClientOption interface {
-	apply(options *zipkinClientOptions)
+	apply(*zipkinClientOptions)
 }
 
 // funcZipkinClientOption implements zipkin client option
 type funcZipkinClientOption struct {
-	f func(options *zipkinClientOptions)
+	f func(*zipkinClientOptions)
 }
 
 func (fo *funcZipkinClientOption) apply(o *zipkinClientOptions) {
 	fo.f(o)
 }
 
-func newFuncZipkinClientOption(f func(o *zipkinClientOptions)) *funcZipkinClientOption {
+func newFuncZipkinClientOption(f func(*zipkinClientOptions)) *funcZipkinClientOption {
 	return &funcZipkinClientOption{f: f}
 }
 

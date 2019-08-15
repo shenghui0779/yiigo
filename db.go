@@ -30,19 +30,19 @@ type dbOptions struct {
 
 // DBOption configures how we set up the db
 type DBOption interface {
-	apply(options *dbOptions)
+	apply(*dbOptions)
 }
 
 // funcDBOption implements db option
 type funcDBOption struct {
-	f func(options *dbOptions)
+	f func(*dbOptions)
 }
 
 func (fo *funcDBOption) apply(o *dbOptions) {
 	fo.f(o)
 }
 
-func newFuncDBOption(f func(o *dbOptions)) *funcDBOption {
+func newFuncDBOption(f func(*dbOptions)) *funcDBOption {
 	return &funcDBOption{f: f}
 }
 

@@ -25,19 +25,19 @@ type redisOptions struct {
 
 // RedisOption configures how we set up the db
 type RedisOption interface {
-	apply(options *redisOptions)
+	apply(*redisOptions)
 }
 
 // funcRedisOption implements redis option
 type funcRedisOption struct {
-	f func(options *redisOptions)
+	f func(*redisOptions)
 }
 
 func (fo *funcRedisOption) apply(o *redisOptions) {
 	fo.f(o)
 }
 
-func newFuncRedisOption(f func(o *redisOptions)) *funcRedisOption {
+func newFuncRedisOption(f func(*redisOptions)) *funcRedisOption {
 	return &funcRedisOption{f: f}
 }
 

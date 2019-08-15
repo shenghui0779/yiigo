@@ -26,19 +26,19 @@ type logOptions struct {
 
 // LogOption configures how we set up the logger
 type LogOption interface {
-	apply(options *logOptions)
+	apply(*logOptions)
 }
 
 // funcLogOption implements db option
 type funcLogOption struct {
-	f func(options *logOptions)
+	f func(*logOptions)
 }
 
 func (fo *funcLogOption) apply(o *logOptions) {
 	fo.f(o)
 }
 
-func newFuncLogOption(f func(o *logOptions)) *funcLogOption {
+func newFuncLogOption(f func(*logOptions)) *funcLogOption {
 	return &funcLogOption{f: f}
 }
 

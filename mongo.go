@@ -59,19 +59,19 @@ type mongoOptions struct {
 
 // MongoOption configures how we set up the mongo
 type MongoOption interface {
-	apply(options *mongoOptions)
+	apply(*mongoOptions)
 }
 
 // funcMongoOption implements mongo option
 type funcMongoOption struct {
-	f func(options *mongoOptions)
+	f func(*mongoOptions)
 }
 
 func (fo *funcMongoOption) apply(o *mongoOptions) {
 	fo.f(o)
 }
 
-func newFuncMongoOption(f func(o *mongoOptions)) *funcMongoOption {
+func newFuncMongoOption(f func(*mongoOptions)) *funcMongoOption {
 	return &funcMongoOption{f: f}
 }
 

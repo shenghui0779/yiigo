@@ -27,19 +27,19 @@ type emailOptions struct {
 
 // EMailOption configures how we set up the email
 type EMailOption interface {
-	apply(options *emailOptions)
+	apply(*emailOptions)
 }
 
 // funcEMailOption implements email option
 type funcEMailOption struct {
-	f func(options *emailOptions)
+	f func(*emailOptions)
 }
 
 func (fo *funcEMailOption) apply(o *emailOptions) {
 	fo.f(o)
 }
 
-func newFuncEMailOption(f func(o *emailOptions)) *funcEMailOption {
+func newFuncEMailOption(f func(*emailOptions)) *funcEMailOption {
 	return &funcEMailOption{f: f}
 }
 

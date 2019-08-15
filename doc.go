@@ -5,7 +5,7 @@
 // MySQL
 //
 //    // default db
-//    yiigo.RegisterDB("default", yiigo.MySQL, "root:root@tcp(localhost:3306)/test")
+//    yiigo.RegisterDB(yiigo.AsDefault, yiigo.MySQL, "root:root@tcp(localhost:3306)/test")
 //
 //    yiigo.DB.Get(&User{}, "SELECT * FROM `user` WHERE `id` = ?", 1)
 //
@@ -17,7 +17,7 @@
 // MongoDB
 //
 //    // default mongodb
-//    yiigo.RegisterMongoDB("default", "mongodb://localhost:27017")
+//    yiigo.RegisterMongoDB(yiigo.AsDefault, "mongodb://localhost:27017")
 //
 //    ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 //    yiigo.Mongo.Database("test").Collection("numbers").InsertOne(ctx, bson.M{"name": "pi", "value": 3.14159})
@@ -31,7 +31,7 @@
 // Redis
 //
 //    // default redis
-//    yiigo.RegisterRedis("default", "localhost:6379")
+//    yiigo.RegisterRedis(yiigo.AsDefault, "localhost:6379")
 //
 //    conn, err := yiigo.Redis.Get()
 //
@@ -105,7 +105,7 @@
 // Logger
 //
 //    // default logger
-//    yiigo.RegisterLogger("default", "app.log")
+//    yiigo.RegisterLogger(yiigo.AsDefault, "app.log")
 //    yiigo.Logger.Info("hello world")
 //
 //    // other logger

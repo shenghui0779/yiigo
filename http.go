@@ -32,19 +32,19 @@ type httpClientOptions struct {
 
 // HTTPClientOption configures how we set up the http client
 type HTTPClientOption interface {
-	apply(options *httpClientOptions)
+	apply(*httpClientOptions)
 }
 
 // funcHTTPClientOption implements http client option
 type funcHTTPClientOption struct {
-	f func(options *httpClientOptions)
+	f func(*httpClientOptions)
 }
 
 func (fo *funcHTTPClientOption) apply(o *httpClientOptions) {
 	fo.f(o)
 }
 
-func newFuncHTTPOption(f func(o *httpClientOptions)) *funcHTTPClientOption {
+func newFuncHTTPOption(f func(*httpClientOptions)) *funcHTTPClientOption {
 	return &funcHTTPClientOption{f: f}
 }
 
