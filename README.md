@@ -18,6 +18,7 @@ A simple and light library which makes Golang development easier !
 - Use [toml](https://github.com/pelletier/go-toml) for configuration
 - Use [sqlx](https://github.com/jmoiron/sqlx) for SQL executing
 - Use [zap](https://github.com/uber-go/zap) for logging
+
 ## Requirements
 
 `Go1.11+`
