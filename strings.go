@@ -2,6 +2,7 @@ package yiigo
 
 import (
 	"bytes"
+	"crypto/hmac"
 	"crypto/md5"
 	"crypto/sha1"
 	"crypto/sha256"
@@ -51,6 +52,32 @@ func Hash(t, s string) string {
 	h.Write([]byte(s))
 
 	return hex.EncodeToString(h.Sum(nil))
+}
+
+// HMAC Generate a keyed hash value, expects: MD5, SHA1, SHA224, SHA256, SHA384, SHA512.
+func HMAC(t, s, key string) string {
+	var mac hash.Hash
+
+	switch strings.ToUpper(t) {
+	case "MD5":
+		mac = hmac.New(md5.New, []byte(key))
+	case "SHA1":
+		mac = hmac.New(sha1.New, []byte(key))
+	case "SHA224":
+		mac = hmac.New(sha256.New224, []byte(key))
+	case "SHA256":
+		mac = hmac.New(sha256.New, []byte(key))
+	case "SHA384":
+		mac = hmac.New(sha512.New384, []byte(key))
+	case "SHA512":
+		mac = hmac.New(sha512.New, []byte(key))
+	default:
+		return s
+	}
+
+	mac.Write([]byte(s))
+
+	return hex.EncodeToString(mac.Sum(nil))
 }
 
 // AddSlashes returns a string with backslashes added before characters that need to be escaped.
