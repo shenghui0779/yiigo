@@ -399,9 +399,7 @@ func (z *ZipkinTracer) HTTPClient(options ...ZipkinHTTPClientOption) (*ZipkinHTT
 // use as below:
 //
 // span := yiigo.ZTracer.Start(r)
-//
 // defer span.Finish()
-//
 // ctx := zipkin.NewContext(r.Context(), span)
 func (z *ZipkinTracer) Start(req *http.Request) zipkin.Span {
 	// try to extract B3 Headers from upstream
