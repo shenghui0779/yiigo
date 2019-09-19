@@ -331,7 +331,7 @@ type ZipkinTracer struct {
 	tracer *zipkin.Tracer
 }
 
-// HTTPClient returns a zipkin http client
+// HTTPClient returns a new zipkin http client
 func (z *ZipkinTracer) HTTPClient(options ...ZipkinHTTPClientOption) (*ZipkinHTTPClient, error) {
 	o := &zipkinHTTPClientOptions{
 		httpClientOptions:   make([]HTTPClientOption, 0),
@@ -395,6 +395,14 @@ func (z *ZipkinTracer) HTTPClient(options ...ZipkinHTTPClientOption) (*ZipkinHTT
 }
 
 // Start returns a new zipkin span
+//
+// use as below:
+//
+// span := yiigo.ZTracer.Start(r)
+//
+// defer span.Finish()
+//
+// ctx := zipkin.NewContext(r.Context(), span)
 func (z *ZipkinTracer) Start(req *http.Request) zipkin.Span {
 	// try to extract B3 Headers from upstream
 	sc := z.tracer.Extract(b3.ExtractHTTP(req))
@@ -425,6 +433,7 @@ var (
 	zipkinMap sync.Map
 )
 
+// RegisterZipkinTracer register a zipkin tracer
 func RegisterZipkinTracer(name string, r reporter.Reporter, options ...zipkin.TracerOption) error {
 	t, err := zipkin.NewTracer(r, options...)
 
@@ -443,6 +452,7 @@ func RegisterZipkinTracer(name string, r reporter.Reporter, options ...zipkin.Tr
 	return nil
 }
 
+// UseZipkinTracer returns a zipkin tracer
 func UseZipkinTracer(name ...string) *ZipkinTracer {
 	k := AsDefault
 
