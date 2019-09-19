@@ -112,17 +112,15 @@ yiigo.Env.String("app.env", "dev")
 #### Zipkin
 
 ```go
-tracer, err := yiigo.NewZipkinTracer("http://localhost:9411/api/v2/spans",
-    yiigo.WithZipkinTracerEndpoint("zipkin-test", "localhost"),
-    yiigo.WithZipkinTracerSharedSpans(false),
-    yiigo.WithZipkinTracerSamplerMod(1),
-)
+reporter := yiigo.NewZipkinHTTPReporter("http://localhost:9411/api/v2/spans")
+
+err := yiigo.RegisterZipkinTracer(yiigo.AsDefault, reporter)
 
 if err != nil {
     log.Fatal(err)
 }
 
-client, err := yiigo.NewZipkinClient(tracer)
+client, err := yiigo.ZTracer.HTTPClient()
 
 if err != nil {
     log.Fatal(err)
