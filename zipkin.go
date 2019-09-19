@@ -6,14 +6,13 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"net"
 	"net/http"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/openzipkin/zipkin-go"
-	"github.com/openzipkin/zipkin-go/idgenerator"
 	zipkinHTTP "github.com/openzipkin/zipkin-go/middleware/http"
 	"github.com/openzipkin/zipkin-go/model"
 	"github.com/openzipkin/zipkin-go/propagation/b3"
@@ -21,242 +20,61 @@ import (
 	zipkinHTTPReporter "github.com/openzipkin/zipkin-go/reporter/http"
 )
 
-type zipkinTracerOptions struct {
-	// tracer options
-	tracerDefaultTags          map[string]string
-	tracerExtractFailurePolicy zipkin.ExtractFailurePolicy
-	tracerSampler              zipkin.Sampler
-	tracerIDGenerator          idgenerator.IDGenerator
-	tracerEndpoint             *model.Endpoint
-	tracerNoop                 bool
-	tracerSharedSpans          bool
-	tracerUnsampledNoop        bool
-	// reporter options
-	reporterClientOptions   []HTTPClientOption
-	reporterBatchInterval   time.Duration
-	reporterBatchSize       int
-	reporterMaxBacklog      int
-	reporterRequestCallback zipkinHTTPReporter.RequestCallbackFn
-	reporterLogger          *log.Logger
-	reporterSerializer      reporter.SpanSerializer
+type zipkinReporterOptions struct {
+	clientOptions   []HTTPClientOption
+	reporterOptions []zipkinHTTPReporter.ReporterOption
 }
 
-// ZipkinTracerOption configures how we set up the zipkin tracer
-type ZipkinTracerOption interface {
-	apply(*zipkinTracerOptions) error
+// ZipkinReporterOption configures how we set up the zipkin reporter
+type ZipkinReporterOption interface {
+	apply(*zipkinReporterOptions) error
 }
 
-// funcZipkinTracerOption implements zipkin tracer option
-type funcZipkinTracerOption struct {
-	f func(*zipkinTracerOptions) error
+// funcZipkinReporterOption implements zipkin reporter option
+type funcZipkinReporterOption struct {
+	f func(*zipkinReporterOptions) error
 }
 
-func (fo *funcZipkinTracerOption) apply(o *zipkinTracerOptions) error {
+func (fo *funcZipkinReporterOption) apply(o *zipkinReporterOptions) error {
 	return fo.f(o)
 }
 
-func newFuncZipkinTracerOption(f func(*zipkinTracerOptions) error) *funcZipkinTracerOption {
-	return &funcZipkinTracerOption{f: f}
-}
-
-// WithZipkinTracerTag specifies the `Tags` to zipkin tracer.
-func WithZipkinTracerTag(key, value string) ZipkinTracerOption {
-	return newFuncZipkinTracerOption(func(o *zipkinTracerOptions) error {
-		o.tracerDefaultTags[key] = value
-
-		return nil
-	})
-}
-
-// WithZipkinTracerExtractFailurePolicy specifies the `ExtractFailurePolicy` to zipkin tracer.
-func WithZipkinTracerExtractFailurePolicy(p zipkin.ExtractFailurePolicy) ZipkinTracerOption {
-	return newFuncZipkinTracerOption(func(o *zipkinTracerOptions) error {
-		o.tracerExtractFailurePolicy = p
-
-		return nil
-	})
-}
-
-// WithZipkinTracerSamplerMod specifies the `Sampler` to zipkin tracer.
-func WithZipkinTracerSamplerMod(m int) ZipkinTracerOption {
-	return newFuncZipkinTracerOption(func(o *zipkinTracerOptions) error {
-		o.tracerSampler = zipkin.NewModuloSampler(uint64(m))
-
-		return nil
-	})
-}
-
-// WithZipkinTracerIDGenerator specifies the `IDGenerator` to zipkin tracer.
-func WithZipkinTracerIDGenerator(g idgenerator.IDGenerator) ZipkinTracerOption {
-	return newFuncZipkinTracerOption(func(o *zipkinTracerOptions) error {
-		o.tracerIDGenerator = g
-
-		return nil
-	})
-}
-
-// WithZipkinTracerEndpoint specifies the `Endpoint` to zipkin tracer.
-func WithZipkinTracerEndpoint(name, host string) ZipkinTracerOption {
-	return newFuncZipkinTracerOption(func(o *zipkinTracerOptions) error {
-		endpoint, err := zipkin.NewEndpoint(name, host)
-
-		if err != nil {
-			return err
-		}
-
-		o.tracerEndpoint = endpoint
-
-		return nil
-	})
-}
-
-// WithZipkinTracerNoop specifies the `Noop` to zipkin tracer.
-func WithZipkinTracerNoop(b bool) ZipkinTracerOption {
-	return newFuncZipkinTracerOption(func(o *zipkinTracerOptions) error {
-		o.tracerNoop = b
-
-		return nil
-	})
-}
-
-// WithZipkinTracerSharedSpans specifies the `SharedSpans` to zipkin tracer.
-func WithZipkinTracerSharedSpans(b bool) ZipkinTracerOption {
-	return newFuncZipkinTracerOption(func(o *zipkinTracerOptions) error {
-		o.tracerSharedSpans = b
-
-		return nil
-	})
-}
-
-// WithZipkinTracerUnsampledNoop specifies the `UnsampledNoop` to zipkin tracer.
-func WithZipkinTracerUnsampledNoop(b bool) ZipkinTracerOption {
-	return newFuncZipkinTracerOption(func(o *zipkinTracerOptions) error {
-		o.tracerUnsampledNoop = b
-
-		return nil
-	})
+func newFuncZipkinReporterOption(f func(*zipkinReporterOptions) error) *funcZipkinReporterOption {
+	return &funcZipkinReporterOption{f: f}
 }
 
 // WithZipkinReporterClient specifies the `Client` to zipkin reporter.
-func WithZipkinReporterClient(options ...HTTPClientOption) ZipkinTracerOption {
-	return newFuncZipkinTracerOption(func(o *zipkinTracerOptions) error {
-		o.reporterClientOptions = options
+func WithZipkinReporterClient(options ...HTTPClientOption) ZipkinReporterOption {
+	return newFuncZipkinReporterOption(func(o *zipkinReporterOptions) error {
+		o.clientOptions = options
 
 		return nil
 	})
 }
 
-// WithZipkinReporterBatchInterval specifies the `BatchInterval` to zipkin reporter.
-func WithZipkinReporterBatchInterval(t time.Duration) ZipkinTracerOption {
-	return newFuncZipkinTracerOption(func(o *zipkinTracerOptions) error {
-		o.reporterBatchInterval = t
+// WithZipkinReporterOptions specifies the `Options` to zipkin reporter.
+func WithZipkinReporterOptions(options ...zipkinHTTPReporter.ReporterOption) ZipkinReporterOption {
+	return newFuncZipkinReporterOption(func(o *zipkinReporterOptions) error {
+		o.reporterOptions = options
 
 		return nil
 	})
 }
 
-// WithZipkinReporterBatchSize specifies the `BatchSize` to zipkin reporter.
-func WithZipkinReporterBatchSize(i int) ZipkinTracerOption {
-	return newFuncZipkinTracerOption(func(o *zipkinTracerOptions) error {
-		o.reporterBatchSize = i
-
-		return nil
-	})
-}
-
-// WithZipkinReporterMaxBacklog specifies the `MaxBacklog` to zipkin reporter.
-func WithZipkinReporterMaxBacklog(i int) ZipkinTracerOption {
-	return newFuncZipkinTracerOption(func(o *zipkinTracerOptions) error {
-		o.reporterMaxBacklog = i
-
-		return nil
-	})
-}
-
-// WithZipkinReporterRequestCallback specifies the `RequestCallback` to zipkin reporter.
-func WithZipkinReporterRequestCallback(fn zipkinHTTPReporter.RequestCallbackFn) ZipkinTracerOption {
-	return newFuncZipkinTracerOption(func(o *zipkinTracerOptions) error {
-		o.reporterRequestCallback = fn
-
-		return nil
-	})
-}
-
-// WithZipkinReporterLogger specifies the `Logger` to zipkin reporter.
-func WithZipkinReporterLogger(l *log.Logger) ZipkinTracerOption {
-	return newFuncZipkinTracerOption(func(o *zipkinTracerOptions) error {
-		o.reporterLogger = l
-
-		return nil
-	})
-}
-
-// WithZipkinReporterSerializer specifies the `Serializer` to zipkin reporter.
-func WithZipkinReporterSerializer(s reporter.SpanSerializer) ZipkinTracerOption {
-	return newFuncZipkinTracerOption(func(o *zipkinTracerOptions) error {
-		o.reporterSerializer = s
-
-		return nil
-	})
-}
-
-// NewZipkinTracer returns a new zipin tracer
-func NewZipkinTracer(reportURL string, options ...ZipkinTracerOption) (*zipkin.Tracer, error) {
-	o := &zipkinTracerOptions{
-		// zipkin tracer default options
-		tracerDefaultTags: make(map[string]string),
-		tracerSharedSpans: true,
+// NewZipkinHTTPReporter returns a new zipin http reporter
+func NewZipkinHTTPReporter(url string, options ...ZipkinReporterOption) reporter.Reporter {
+	o := &zipkinReporterOptions{
+		clientOptions:   make([]HTTPClientOption, 0),
+		reporterOptions: make([]zipkinHTTPReporter.ReporterOption, 0),
 	}
 
 	if len(options) > 0 {
 		for _, option := range options {
 			if err := option.apply(o); err != nil {
-				return nil, err
+				return nil
 			}
 		}
 	}
-
-	r := zipkinHTTPReporter.NewReporter(reportURL, buildZipkinReporterOptions(o)...)
-
-	tracer, err := zipkin.NewTracer(r, buildZipkinTracerOptions(o)...)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return tracer, nil
-}
-
-func buildZipkinTracerOptions(o *zipkinTracerOptions) []zipkin.TracerOption {
-	options := make([]zipkin.TracerOption, 0, 8)
-
-	if len(o.tracerDefaultTags) > 0 {
-		options = append(options, zipkin.WithTags(o.tracerDefaultTags))
-	}
-
-	options = append(options, zipkin.WithExtractFailurePolicy(o.tracerExtractFailurePolicy))
-
-	if o.tracerSampler != nil {
-		options = append(options, zipkin.WithSampler(o.tracerSampler))
-	}
-
-	if o.tracerIDGenerator != nil {
-		options = append(options, zipkin.WithIDGenerator(o.tracerIDGenerator))
-	}
-
-	if o.tracerEndpoint != nil {
-		options = append(options, zipkin.WithLocalEndpoint(o.tracerEndpoint))
-	}
-
-	options = append(options, zipkin.WithNoopTracer(o.tracerNoop))
-	options = append(options, zipkin.WithSharedSpans(o.tracerSharedSpans))
-	options = append(options, zipkin.WithNoopSpan(o.tracerUnsampledNoop))
-
-	return options
-}
-
-func buildZipkinReporterOptions(o *zipkinTracerOptions) []zipkinHTTPReporter.ReporterOption {
-	reporterOptions := make([]zipkinHTTPReporter.ReporterOption, 0, 7)
 
 	clientOptions := &httpClientOptions{
 		dialTimeout:           30 * time.Second,
@@ -270,8 +88,8 @@ func buildZipkinReporterOptions(o *zipkinTracerOptions) []zipkinHTTPReporter.Rep
 		defaultTimeout:        defaultHTTPTimeout,
 	}
 
-	if len(o.reporterClientOptions) > 0 {
-		for _, option := range o.reporterClientOptions {
+	if len(o.clientOptions) > 0 {
+		for _, option := range o.clientOptions {
 			option.apply(clientOptions)
 		}
 	}
@@ -294,146 +112,64 @@ func buildZipkinReporterOptions(o *zipkinTracerOptions) []zipkinHTTPReporter.Rep
 		Timeout: clientOptions.defaultTimeout,
 	}
 
-	reporterOptions = append(reporterOptions, zipkinHTTPReporter.Client(client))
+	o.reporterOptions = append(o.reporterOptions, zipkinHTTPReporter.Client(client))
 
-	if o.reporterBatchInterval != 0 {
-		reporterOptions = append(reporterOptions, zipkinHTTPReporter.BatchInterval(o.reporterBatchInterval))
-	}
-
-	if o.reporterBatchSize != 0 {
-		reporterOptions = append(reporterOptions, zipkinHTTPReporter.BatchSize(o.reporterBatchSize))
-	}
-
-	if o.reporterMaxBacklog != 0 {
-		reporterOptions = append(reporterOptions, zipkinHTTPReporter.MaxBacklog(o.reporterMaxBacklog))
-	}
-
-	if o.reporterRequestCallback != nil {
-		reporterOptions = append(reporterOptions, zipkinHTTPReporter.RequestCallback(o.reporterRequestCallback))
-	}
-
-	if o.reporterLogger != nil {
-		reporterOptions = append(reporterOptions, zipkinHTTPReporter.Logger(o.reporterLogger))
-	}
-
-	if o.reporterSerializer != nil {
-		reporterOptions = append(reporterOptions, zipkinHTTPReporter.Serializer(o.reporterSerializer))
-	}
-
-	return reporterOptions
+	return zipkinHTTPReporter.NewReporter(url, o.reporterOptions...)
 }
 
-type zipkinClientOptions struct {
-	// zipkin client options
-	clientOptions []HTTPClientOption
-	clientTrace   bool
-	clientTags    map[string]string
-	// zipkin transport options
-	roundTripper               http.RoundTripper
-	transportTrace             bool
-	transportTags              map[string]string
-	transportErrHandler        zipkinHTTP.ErrHandler
-	transportErrResponseReader zipkinHTTP.ErrResponseReader
-	transportLogger            *log.Logger
-	transportRequestSampler    zipkinHTTP.RequestSamplerFunc
+type zipkinHTTPClientOptions struct {
+	httpClientOptions   []HTTPClientOption
+	zipkinClientOptions []zipkinHTTP.ClientOption
+	transportOptions    []zipkinHTTP.TransportOption
 }
 
-// ZipkinClientOption configures how we set up the zipkin client
-type ZipkinClientOption interface {
-	apply(*zipkinClientOptions)
+// ZipkinHTTPClientOption configures how we set up the zipkin http client
+type ZipkinHTTPClientOption interface {
+	apply(*zipkinHTTPClientOptions)
 }
 
 // funcZipkinClientOption implements zipkin client option
 type funcZipkinClientOption struct {
-	f func(*zipkinClientOptions)
+	f func(*zipkinHTTPClientOptions)
 }
 
-func (fo *funcZipkinClientOption) apply(o *zipkinClientOptions) {
+func (fo *funcZipkinClientOption) apply(o *zipkinHTTPClientOptions) {
 	fo.f(o)
 }
 
-func newFuncZipkinClientOption(f func(*zipkinClientOptions)) *funcZipkinClientOption {
+func newFuncZipkinClientOption(f func(*zipkinHTTPClientOptions)) *funcZipkinClientOption {
 	return &funcZipkinClientOption{f: f}
 }
 
-// WithZipkinHTTPClient specifies the `Client` to zipkin client.
-func WithZipkinHTTPClient(options ...HTTPClientOption) ZipkinClientOption {
-	return newFuncZipkinClientOption(func(o *zipkinClientOptions) {
-		o.clientOptions = options
+// WithZipkinHTTPClient specifies the `Client` to zipkin http client.
+func WithZipkinHTTPClient(options ...HTTPClientOption) ZipkinHTTPClientOption {
+	return newFuncZipkinClientOption(func(o *zipkinHTTPClientOptions) {
+		o.httpClientOptions = options
 	})
 }
 
-// WithZipkinClientTrace specifies the `HttpTrace` to zipkin client.
-func WithZipkinClientTrace(b bool) ZipkinClientOption {
-	return newFuncZipkinClientOption(func(o *zipkinClientOptions) {
-		o.clientTrace = b
+// WithZipkinClientOptions specifies the `Options` to zipkin http client.
+func WithZipkinClientOptions(options ...zipkinHTTP.ClientOption) ZipkinHTTPClientOption {
+	return newFuncZipkinClientOption(func(o *zipkinHTTPClientOptions) {
+		o.zipkinClientOptions = options
 	})
 }
 
-// WithZipkinClientTag specifies the `Tags` to zipkin client.
-func WithZipkinClientTag(key, value string) ZipkinClientOption {
-	return newFuncZipkinClientOption(func(o *zipkinClientOptions) {
-		o.clientTags[key] = value
+// WithZipkinHTTPTransport specifies the `Transport` to zipkin http client transport.
+func WithZipkinHTTPTransport(options ...zipkinHTTP.TransportOption) ZipkinHTTPClientOption {
+	return newFuncZipkinClientOption(func(o *zipkinHTTPClientOptions) {
+		o.transportOptions = options
 	})
 }
 
-// WithZipkinRoundTripper specifies the `RoundTripper` to zipkin transport.
-func WithZipkinRoundTripper(rt http.RoundTripper) ZipkinClientOption {
-	return newFuncZipkinClientOption(func(o *zipkinClientOptions) {
-		o.roundTripper = rt
-	})
-}
-
-// WithZipkinTransportTrace specifies the `HttpTrace` to zipkin transport.
-func WithZipkinTransportTrace(b bool) ZipkinClientOption {
-	return newFuncZipkinClientOption(func(o *zipkinClientOptions) {
-		o.transportTrace = b
-	})
-}
-
-// WithZipkinTransportTag specifies the `Tags` to zipkin transport.
-func WithZipkinTransportTag(key, value string) ZipkinClientOption {
-	return newFuncZipkinClientOption(func(o *zipkinClientOptions) {
-		o.transportTags[key] = value
-	})
-}
-
-// WithZipkinTransportErrHandler specifies the `ErrHandler` to zipkin transport.
-func WithZipkinTransportErrHandler(fn zipkinHTTP.ErrHandler) ZipkinClientOption {
-	return newFuncZipkinClientOption(func(o *zipkinClientOptions) {
-		o.transportErrHandler = fn
-	})
-}
-
-// WithZipkinTransportErrResponseReader specifies the `ErrResponseReader` to zipkin transport.
-func WithZipkinTransportErrResponseReader(fn zipkinHTTP.ErrResponseReader) ZipkinClientOption {
-	return newFuncZipkinClientOption(func(o *zipkinClientOptions) {
-		o.transportErrResponseReader = fn
-	})
-}
-
-// WithZipkinTransportLogger specifies the `Logger` to zipkin transport.
-func WithZipkinTransportLogger(l *log.Logger) ZipkinClientOption {
-	return newFuncZipkinClientOption(func(o *zipkinClientOptions) {
-		o.transportLogger = l
-	})
-}
-
-// WithZipkinTransportRequestSampler specifies the `RequestSampler` to zipkin transport.
-func WithZipkinTransportRequestSampler(fn zipkinHTTP.RequestSamplerFunc) ZipkinClientOption {
-	return newFuncZipkinClientOption(func(o *zipkinClientOptions) {
-		o.transportRequestSampler = fn
-	})
-}
-
-// ZipkinClient zipkin client
-type ZipkinClient struct {
+// ZipkinHTTPClient zipkin http client
+type ZipkinHTTPClient struct {
 	client  *zipkinHTTP.Client
 	timeout time.Duration
 }
 
-// Get zipkin get request
-func (z *ZipkinClient) Get(ctx context.Context, url string, options ...HTTPRequestOption) ([]byte, error) {
+// Get zipkin http get request
+func (z *ZipkinHTTPClient) Get(ctx context.Context, url string, options ...HTTPRequestOption) ([]byte, error) {
 	o := &httpRequestOptions{
 		headers:        make(map[string]string),
 		timeout:        z.timeout,
@@ -511,8 +247,8 @@ func (z *ZipkinClient) Get(ctx context.Context, url string, options ...HTTPReque
 	return b, nil
 }
 
-// Post zipkin post request
-func (z *ZipkinClient) Post(ctx context.Context, url string, body []byte, options ...HTTPRequestOption) ([]byte, error) {
+// Post zipkin http post request
+func (z *ZipkinHTTPClient) Post(ctx context.Context, url string, body []byte, options ...HTTPRequestOption) ([]byte, error) {
 	o := &httpRequestOptions{
 		headers:        make(map[string]string),
 		timeout:        z.timeout,
@@ -590,11 +326,17 @@ func (z *ZipkinClient) Post(ctx context.Context, url string, body []byte, option
 	return b, nil
 }
 
-// NewZipkinClient returns a new zipin client
-func NewZipkinClient(t *zipkin.Tracer, options ...ZipkinClientOption) (*ZipkinClient, error) {
-	o := &zipkinClientOptions{
-		clientTags:    make(map[string]string),
-		transportTags: make(map[string]string),
+// ZipkinTracer zipkin tracer
+type ZipkinTracer struct {
+	tracer *zipkin.Tracer
+}
+
+// HTTPClient returns a zipkin http client
+func (z *ZipkinTracer) HTTPClient(options ...ZipkinHTTPClientOption) (*ZipkinHTTPClient, error) {
+	o := &zipkinHTTPClientOptions{
+		httpClientOptions:   make([]HTTPClientOption, 0),
+		zipkinClientOptions: make([]zipkinHTTP.ClientOption, 0),
+		transportOptions:    make([]zipkinHTTP.TransportOption, 0),
 	}
 
 	if len(options) > 0 {
@@ -615,8 +357,8 @@ func NewZipkinClient(t *zipkin.Tracer, options ...ZipkinClientOption) (*ZipkinCl
 		defaultTimeout:        defaultHTTPTimeout,
 	}
 
-	if len(o.clientOptions) > 0 {
-		for _, option := range o.clientOptions {
+	if len(o.httpClientOptions) > 0 {
+		for _, option := range o.httpClientOptions {
 			option.apply(clientOptions)
 		}
 	}
@@ -638,77 +380,29 @@ func NewZipkinClient(t *zipkin.Tracer, options ...ZipkinClientOption) (*ZipkinCl
 		},
 	}
 
-	zipkinClient, err := zipkinHTTP.NewClient(t, buildZipkinClientOptions(client, o)...)
+	o.zipkinClientOptions = append(o.zipkinClientOptions, zipkinHTTP.WithClient(client), zipkinHTTP.TransportOptions(o.transportOptions...))
+
+	zipkinClient, err := zipkinHTTP.NewClient(z.tracer, o.zipkinClientOptions...)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return &ZipkinClient{
+	return &ZipkinHTTPClient{
 		client:  zipkinClient,
 		timeout: clientOptions.defaultTimeout,
 	}, nil
 }
 
-func buildZipkinClientOptions(c *http.Client, o *zipkinClientOptions) []zipkinHTTP.ClientOption {
-	options := make([]zipkinHTTP.ClientOption, 0, 4)
-
-	options = append(options, zipkinHTTP.WithClient(c))
-
-	if len(o.clientTags) > 0 {
-		options = append(options, zipkinHTTP.ClientTags(o.clientTags))
-	}
-
-	options = append(options, zipkinHTTP.ClientTrace(o.clientTrace))
-
-	if v := buildZipkinTransportOptions(o); len(v) > 0 {
-		options = append(options, zipkinHTTP.TransportOptions(v...))
-	}
-
-	return options
-}
-
-func buildZipkinTransportOptions(o *zipkinClientOptions) []zipkinHTTP.TransportOption {
-	options := make([]zipkinHTTP.TransportOption, 0, 7)
-
-	if o.roundTripper != nil {
-		options = append(options, zipkinHTTP.RoundTripper(o.roundTripper))
-	}
-
-	if len(o.transportTags) > 0 {
-		options = append(options, zipkinHTTP.TransportTags(o.transportTags))
-	}
-
-	options = append(options, zipkinHTTP.TransportTrace(o.transportTrace))
-
-	if o.transportErrHandler != nil {
-		options = append(options, zipkinHTTP.TransportErrHandler(o.transportErrHandler))
-	}
-
-	if o.transportErrResponseReader != nil {
-		options = append(options, zipkinHTTP.TransportErrResponseReader(o.transportErrResponseReader))
-	}
-
-	if o.transportLogger != nil {
-		options = append(options, zipkinHTTP.TransportLogger(o.transportLogger))
-	}
-
-	if o.transportRequestSampler != nil {
-		options = append(options, zipkinHTTP.TransportRequestSampler(o.transportRequestSampler))
-	}
-
-	return options
-}
-
-// StartWithZipkin returns a new zipkin span
-func StartWithZipkin(t *zipkin.Tracer, req *http.Request) zipkin.Span {
+// Start returns a new zipkin span
+func (z *ZipkinTracer) Start(req *http.Request) zipkin.Span {
 	// try to extract B3 Headers from upstream
-	sc := t.Extract(b3.ExtractHTTP(req))
+	sc := z.tracer.Extract(b3.ExtractHTTP(req))
 
 	endpoint, _ := zipkin.NewEndpoint("", req.RemoteAddr)
 
 	// create Span using SpanContext if found
-	sp := t.StartSpan(fmt.Sprintf("%s:%s", req.Method, req.URL.Path),
+	sp := z.tracer.StartSpan(fmt.Sprintf("%s:%s", req.Method, req.URL.Path),
 		zipkin.Kind(model.Server),
 		zipkin.Parent(sc),
 		zipkin.StartTime(time.Now()),
@@ -724,4 +418,43 @@ func StartWithZipkin(t *zipkin.Tracer, req *http.Request) zipkin.Span {
 	}
 
 	return sp
+}
+
+var (
+	ZTracer   *ZipkinTracer
+	zipkinMap sync.Map
+)
+
+func RegisterZipkinTracer(name string, r reporter.Reporter, options ...zipkin.TracerOption) error {
+	t, err := zipkin.NewTracer(r, options...)
+
+	if err != nil {
+		return err
+	}
+
+	ztracer := &ZipkinTracer{tracer: t}
+
+	zipkinMap.Store(name, ztracer)
+
+	if name == AsDefault {
+		ZTracer = ztracer
+	}
+
+	return nil
+}
+
+func UseZipkinTracer(name ...string) *ZipkinTracer {
+	k := AsDefault
+
+	if len(name) != 0 {
+		k = name[0]
+	}
+
+	v, ok := zipkinMap.Load(k)
+
+	if !ok {
+		panic(fmt.Errorf("yiigo: zipkin.%s is not registered", name))
+	}
+
+	return v.(*ZipkinTracer)
 }
