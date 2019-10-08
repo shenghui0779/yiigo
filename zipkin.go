@@ -3,6 +3,7 @@ package yiigo
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -427,8 +428,8 @@ func (z *ZipkinTracer) Start(req *http.Request) zipkin.Span {
 }
 
 var (
-	ZTracer   *ZipkinTracer
-	zipkinMap sync.Map
+	defaultZTracer *ZipkinTracer
+	zipkinMap      sync.Map
 )
 
 // RegisterZipkinTracer register a zipkin tracer
@@ -444,24 +445,26 @@ func RegisterZipkinTracer(name string, r reporter.Reporter, options ...zipkin.Tr
 	zipkinMap.Store(name, ztracer)
 
 	if name == AsDefault {
-		ZTracer = ztracer
+		defaultZTracer = ztracer
 	}
 
 	return nil
 }
 
-// UseZipkinTracer returns a zipkin tracer
-func UseZipkinTracer(name ...string) *ZipkinTracer {
-	k := AsDefault
+// ZTracer returns a zipkin tracer
+func ZTracer(name ...string) *ZipkinTracer {
+	if len(name) == 0 || name[0] == AsDefault {
+		if defaultZTracer == nil {
+			panic(errors.New("yiigo: zipkin-tracer.default is not registered"))
+		}
 
-	if len(name) != 0 {
-		k = name[0]
+		return defaultZTracer
 	}
 
-	v, ok := zipkinMap.Load(k)
+	v, ok := zipkinMap.Load(name[0])
 
 	if !ok {
-		panic(fmt.Errorf("yiigo: zipkin.%s is not registered", name))
+		panic(fmt.Errorf("yiigo: zipkin-tracer.%s is not registered", name[0]))
 	}
 
 	return v.(*ZipkinTracer)

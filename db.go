@@ -100,11 +100,10 @@ func WithDBDebug(b bool) DBOption {
 }
 
 var (
-	// DB default db connection
-	DB    *sqlx.DB
-	dbmap sync.Map
-	Orm   *gorm.DB
-	ormap sync.Map
+	defaultDB  *sqlx.DB
+	dbmap      sync.Map
+	defaultOrm *gorm.DB
+	ormap      sync.Map
 )
 
 func dbDial(driverName, dsn string, options ...DBOption) (*gorm.DB, error) {
@@ -170,42 +169,46 @@ func RegisterDB(name string, driver DBDriver, dsn string, options ...DBOption) e
 	ormap.Store(name, orm)
 
 	if name == AsDefault {
-		DB = db
-		Orm = orm
+		defaultDB = db
+		defaultOrm = orm
 	}
 
 	return nil
 }
 
-// UseDB returns a db.
-func UseDB(name ...string) *sqlx.DB {
-	k := AsDefault
+// DB returns a db.
+func DB(name ...string) *sqlx.DB {
+	if len(name) == 0 || name[0] == AsDefault {
+		if defaultDB == nil {
+			panic(errors.New("yiigo: db.default is not registered"))
+		}
 
-	if len(name) != 0 {
-		k = name[0]
+		return defaultDB
 	}
 
-	v, ok := dbmap.Load(k)
+	v, ok := dbmap.Load(name[0])
 
 	if !ok {
-		panic(fmt.Errorf("yiigo: db.%s is not registered", name))
+		panic(fmt.Errorf("yiigo: db.%s is not registered", name[0]))
 	}
 
 	return v.(*sqlx.DB)
 }
 
-// UseOrm returns an orm.
-func UseOrm(name ...string) *gorm.DB {
-	k := AsDefault
+// Orm returns an orm.
+func Orm(name ...string) *gorm.DB {
+	if len(name) == 0 || name[0] == AsDefault {
+		if defaultOrm == nil {
+			panic(errors.New("yiigo: db.default is not registered"))
+		}
 
-	if len(name) != 0 {
-		k = name[0]
+		return defaultOrm
 	}
 
-	v, ok := ormap.Load(k)
+	v, ok := ormap.Load(name[0])
 
 	if !ok {
-		panic(fmt.Errorf("yiigo: db.%s is not registered", name))
+		panic(fmt.Errorf("yiigo: db.%s is not registered", name[0]))
 	}
 
 	return v.(*gorm.DB)

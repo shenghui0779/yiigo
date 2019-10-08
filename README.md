@@ -38,14 +38,14 @@ go get github.com/iiinsomnia/yiigo/v3
 // default db
 yiigo.RegisterDB(yiigo.AsDefault, yiigo.MySQL, "root:root@tcp(localhost:3306)/test")
 
-yiigo.DB.Get(&User{}, "SELECT * FROM `user` WHERE `id` = ?", 1)
-yiigo.Orm.First(&User{}, 1)
+yiigo.DB().Get(&User{}, "SELECT * FROM `user` WHERE `id` = ?", 1)
+yiigo.Orm().First(&User{}, 1)
 
 // other db
 yiigo.RegisterDB("foo", yiigo.MySQL, "root:root@tcp(localhost:3306)/foo")
 
-yiigo.UseDB("foo").Get(&User{}, "SELECT * FROM `user` WHERE `id` = ?", 1)
-yiigo.UseOrm("foo").First(&User{}, 1)
+yiigo.DB("foo").Get(&User{}, "SELECT * FROM `user` WHERE `id` = ?", 1)
+yiigo.Orm("foo").First(&User{}, 1)
 ```
 
 #### MongoDB
@@ -55,13 +55,13 @@ yiigo.UseOrm("foo").First(&User{}, 1)
 yiigo.RegisterMongoDB(yiigo.AsDefault, "mongodb://localhost:27017")
 
 ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
-yiigo.Mongo.Database("test").Collection("numbers").InsertOne(ctx, bson.M{"name": "pi", "value": 3.14159})
+yiigo.Mongo().Database("test").Collection("numbers").InsertOne(ctx, bson.M{"name": "pi", "value": 3.14159})
 
 // other mongodb
 yiigo.RegisterMongoDB("foo", "mongodb://localhost:27017")
 
 ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
-yiigo.UseMongo("foo").Database("test").Collection("numbers").InsertOne(ctx, bson.M{"name": "pi", "value": 3.14159})
+yiigo.Mongo("foo").Database("test").Collection("numbers").InsertOne(ctx, bson.M{"name": "pi", "value": 3.14159})
 ```
 
 #### Redis
@@ -70,27 +70,26 @@ yiigo.UseMongo("foo").Database("test").Collection("numbers").InsertOne(ctx, bson
 // default redis
 yiigo.RegisterRedis(yiigo.AsDefault, "localhost:6379")
 
-conn, err := yiigo.Redis.Get()
+conn, err := yiigo.Redis().Get()
 
 if err != nil {
     log.Fatal(err)
 }
 
-defer yiigo.Redis.Put(conn)
+defer yiigo.Redis().Put(conn)
 
 conn.Do("SET", "test_key", "hello world")
 
 // other redis
 yiigo.RegisterRedis("foo", "localhost:6379")
 
-foo := yiigo.UseRedis("foo")
-conn, err := foo.Get()
+conn, err := yiigo.Redis("foo").Get()
 
 if err != nil {
     log.Fatal(err)
 }
 
-defer foo.Put(conn)
+defer yiigo.Redis("foo").Put(conn)
 
 conn.Do("SET", "test_key", "hello world")
 ```
@@ -105,7 +104,7 @@ conn.Do("SET", "test_key", "hello world")
 // debug = true
 // port = 50001
 
-yiigo.UseEnv("env.toml")
+yiigo.SetEnvFile("env.toml")
 
 yiigo.Env.Bool("app.debug", true)
 yiigo.Env.Int("app.port", 12345)
@@ -123,7 +122,7 @@ if err != nil {
     log.Fatal(err)
 }
 
-client, err := yiigo.ZTracer.HTTPClient()
+client, err := yiigo.ZTracer().HTTPClient()
 
 if err != nil {
     log.Fatal(err)
@@ -146,11 +145,11 @@ fmt.Println(string(b))
 ```go
 // default logger
 yiigo.RegisterLogger(yiigo.AsDefault, "app.log")
-yiigo.Logger.Info("hello world")
+yiigo.Logger().Info("hello world")
 
 // other logger
 yiigo.RegisterLogger("foo", "foo.log")
-yiigo.UseLogger("foo").Info("hello world")
+yiigo.Logger("foo").Info("hello world")
 ```
 
 ## Documentation

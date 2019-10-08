@@ -1,6 +1,7 @@
 package yiigo
 
 import (
+	"errors"
 	"fmt"
 	"sync"
 
@@ -114,8 +115,8 @@ func (m *EMailDialer) Send(e *EMail, options ...EMailOption) error {
 }
 
 var (
-	Mailer    *EMailDialer
-	mailerMap sync.Map
+	defaultMailer *EMailDialer
+	mailerMap     sync.Map
 )
 
 // RegisterMailer register a mailer
@@ -125,16 +126,24 @@ func RegisterMailer(name, host string, port int, account, password string) {
 	mailerMap.Store(name, m)
 
 	if name == AsDefault {
-		Mailer = m
+		defaultMailer = m
 	}
 }
 
-// UseMailer returns a mailer
-func UseMailer(name string) *EMailDialer {
-	v, ok := mailerMap.Load(name)
+// Mailer returns a mailer
+func Mailer(name ...string) *EMailDialer {
+	if len(name) == 0 || name[0] == AsDefault {
+		if defaultMailer == nil {
+			panic(errors.New("yiigo: mailer.default is not registered"))
+		}
+
+		return defaultMailer
+	}
+
+	v, ok := mailerMap.Load(name[0])
 
 	if !ok {
-		panic(fmt.Errorf("yiigo: mailer.%s is not registered", name))
+		panic(fmt.Errorf("yiigo: mailer.%s is not registered", name[0]))
 	}
 
 	return v.(*EMailDialer)

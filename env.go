@@ -22,8 +22,8 @@ var Env *env
 // ErrEnvNil returned when config not found.
 var ErrEnvNil = errors.New("yiigo: env config not found")
 
-// UseEnv use `toml` config file.
-func UseEnv(file string) error {
+// SetEnvFile use `toml` config file.
+func SetEnvFile(file string) error {
 	path, err := filepath.Abs(file)
 
 	if err != nil {

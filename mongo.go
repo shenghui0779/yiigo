@@ -3,6 +3,7 @@ package yiigo
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -226,9 +227,8 @@ func WithMongoZlibLevel(l int) MongoOption {
 }
 
 var (
-	// Mongo default mongo client
-	Mongo  *mongo.Client
-	mgoMap sync.Map
+	defaultMongo *mongo.Client
+	mgoMap       sync.Map
 )
 
 func mongoDial(dsn string, mgoOptions ...MongoOption) (*mongo.Client, error) {
@@ -362,24 +362,26 @@ func RegisterMongoDB(name, dsn string, options ...MongoOption) error {
 	mgoMap.Store(name, client)
 
 	if name == AsDefault {
-		Mongo = client
+		defaultMongo = client
 	}
 
 	return nil
 }
 
-// UseMongo returns a mongo client.
-func UseMongo(name ...string) *mongo.Client {
-	k := AsDefault
+// Mongo returns a mongo client.
+func Mongo(name ...string) *mongo.Client {
+	if len(name) == 0 || name[0] == AsDefault {
+		if defaultMongo == nil {
+			panic(errors.New("yiigo: mongo.default is not registered"))
+		}
 
-	if len(name) != 0 {
-		k = name[0]
+		return defaultMongo
 	}
 
-	v, ok := mgoMap.Load(k)
+	v, ok := mgoMap.Load(name[0])
 
 	if !ok {
-		panic(fmt.Errorf("yiigo: mongo.%s is not registered", name))
+		panic(fmt.Errorf("yiigo: mongo.%s is not registered", name[0]))
 	}
 
 	return v.(*mongo.Client)

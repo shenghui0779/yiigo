@@ -2,6 +2,7 @@ package yiigo
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -214,9 +215,8 @@ func (r *RedisPoolResource) Put(rc RedisConn) {
 }
 
 var (
-	// Redis default redis connection pool
-	Redis    *RedisPoolResource
-	redisMap sync.Map
+	defaultRedis *RedisPoolResource
+	redisMap     sync.Map
 )
 
 // RegisterRedis register a redis.
@@ -256,22 +256,24 @@ func RegisterRedis(name, addr string, options ...RedisOption) {
 	redisMap.Store(name, poolResource)
 
 	if name == AsDefault {
-		Redis = poolResource
+		defaultRedis = poolResource
 	}
 }
 
-// UseRedis returns a redis pool.
-func UseRedis(name ...string) *RedisPoolResource {
-	k := AsDefault
+// Redis returns a redis pool.
+func Redis(name ...string) *RedisPoolResource {
+	if len(name) == 0 || name[0] == AsDefault {
+		if defaultRedis == nil {
+			panic(errors.New("yiigo: redis.default is not registered"))
+		}
 
-	if len(name) != 0 {
-		k = name[0]
+		return defaultRedis
 	}
 
-	v, ok := redisMap.Load(k)
+	v, ok := redisMap.Load(name[0])
 
 	if !ok {
-		panic(fmt.Errorf("yiigo: redis.%s is not registered", name))
+		panic(fmt.Errorf("yiigo: redis.%s is not registered", name[0]))
 	}
 
 	return v.(*RedisPoolResource)

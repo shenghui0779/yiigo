@@ -1,6 +1,7 @@
 package yiigo
 
 import (
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -11,9 +12,8 @@ import (
 )
 
 var (
-	// Logger default logger
-	Logger *zap.Logger
-	logMap sync.Map
+	defaultLogger *zap.Logger
+	loggerMap     sync.Map
 )
 
 type logOptions struct {
@@ -133,19 +133,27 @@ func initLogger(logfile string, options ...LogOption) *zap.Logger {
 func RegisterLogger(name, file string, options ...LogOption) {
 	logger := initLogger(file, options...)
 
-	logMap.Store(name, logger)
+	loggerMap.Store(name, logger)
 
 	if name == AsDefault {
-		Logger = logger
+		defaultLogger = logger
 	}
 }
 
-// UseLogger returns a logger
-func UseLogger(name string) *zap.Logger {
-	v, ok := logMap.Load(name)
+// Logger returns a logger
+func Logger(name ...string) *zap.Logger {
+	if len(name) == 0 || name[0] == AsDefault {
+		if defaultLogger == nil {
+			panic(errors.New("yiigo: logger.default is not registered"))
+		}
+
+		return defaultLogger
+	}
+
+	v, ok := loggerMap.Load(name[0])
 
 	if !ok {
-		panic(fmt.Errorf("yiigo: logger.%s is not registered", name))
+		panic(fmt.Errorf("yiigo: logger.%s is not registered", name[0]))
 	}
 
 	return v.(*zap.Logger)
