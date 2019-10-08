@@ -25,15 +25,15 @@ func (c CDATA) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 
 // Date format a local time/date and
 // returns a string formatted according to the given format string using the given timestamp of int64.
-// The default format is: 2006-01-02 15:04:05.
-func Date(timestamp int64, format ...string) string {
-	layout := "2006-01-02 15:04:05"
+// The default layout is: 2006-01-02 15:04:05.
+func Date(timestamp int64, layout ...string) string {
+	l := "2006-01-02 15:04:05"
 
-	if len(format) > 0 {
-		layout = format[0]
+	if len(layout) > 0 {
+		l = layout[0]
 	}
 
-	date := time.Unix(timestamp, 0).Format(layout)
+	date := time.Unix(timestamp, 0).Format(l)
 
 	return date
 }
