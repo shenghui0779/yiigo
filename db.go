@@ -27,6 +27,7 @@ type dbOptions struct {
 	maxOpenConns    int
 	maxIdleConns    int
 	connMaxLifetime time.Duration
+	debug           bool
 }
 
 // DBOption configures how we set up the db
@@ -91,6 +92,13 @@ func WithDBConnMaxLifetime(d time.Duration) DBOption {
 	})
 }
 
+// WithDBDebug specifies the `LogMod` to orm.
+func WithDBDebug(b bool) DBOption {
+	return newFuncDBOption(func(o *dbOptions) {
+		o.debug = b
+	})
+}
+
 var (
 	// DB default db connection
 	DB    *sqlx.DB
@@ -112,17 +120,21 @@ func dbDial(driverName, dsn string, options ...DBOption) (*gorm.DB, error) {
 		}
 	}
 
-	db, err := gorm.Open(driverName, dsn)
+	orm, err := gorm.Open(driverName, dsn)
 
 	if err != nil {
 		return nil, err
 	}
 
-	db.DB().SetMaxOpenConns(o.maxOpenConns)
-	db.DB().SetMaxIdleConns(o.maxIdleConns)
-	db.DB().SetConnMaxLifetime(o.connMaxLifetime)
+	if o.debug {
+		orm.LogMode(true)
+	}
 
-	return db, nil
+	orm.DB().SetMaxOpenConns(o.maxOpenConns)
+	orm.DB().SetMaxIdleConns(o.maxIdleConns)
+	orm.DB().SetConnMaxLifetime(o.connMaxLifetime)
+
+	return orm, nil
 }
 
 // RegisterDB register a db, the param `dsn` eg:
