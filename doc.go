@@ -67,7 +67,7 @@
 //    // debug = true
 //    // port = 50001
 //
-//    yiigo.UseEnv("env.toml")
+//    yiigo.SetEnvFile("env.toml")
 //
 //    yiigo.Env.GetBool("app.debug", true)
 //    yiigo.Env.GetInt("app.port", 12345)

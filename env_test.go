@@ -1,6 +1,7 @@
 package yiigo
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 	"time"
@@ -38,12 +39,6 @@ func Test_env_String(t *testing.T) {
 		},
 	}
 
-	if err := UseEnv("env.toml"); err != nil {
-		t.Error(err)
-
-		return
-	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := Env.String(tt.args.key, tt.args.defaultValue...); got != tt.want {
@@ -71,12 +66,6 @@ func Test_env_Strings(t *testing.T) {
 			},
 			want: []string{"127.0.0.1", "192.168.1.1", "192.168.1.80"},
 		},
-	}
-
-	if err := UseEnv("env.toml"); err != nil {
-		t.Error(err)
-
-		return
 	}
 
 	for _, tt := range tests {
@@ -108,12 +97,6 @@ func Test_env_Int(t *testing.T) {
 		},
 	}
 
-	if err := UseEnv("env.toml"); err != nil {
-		t.Error(err)
-
-		return
-	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := Env.Int(tt.args.key, tt.args.defaultValue...); got != tt.want {
@@ -141,12 +124,6 @@ func Test_env_Ints(t *testing.T) {
 			},
 			want: []int{80, 81, 82},
 		},
-	}
-
-	if err := UseEnv("env.toml"); err != nil {
-		t.Error(err)
-
-		return
 	}
 
 	for _, tt := range tests {
@@ -179,12 +156,6 @@ func Test_env_Uint(t *testing.T) {
 		},
 	}
 
-	if err := UseEnv("env.toml"); err != nil {
-		t.Error(err)
-
-		return
-	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := Env.Uint(tt.args.key, tt.args.defaultValue...); got != tt.want {
@@ -212,12 +183,6 @@ func Test_env_Uints(t *testing.T) {
 			},
 			want: []uint{80, 81, 82},
 		},
-	}
-
-	if err := UseEnv("env.toml"); err != nil {
-		t.Error(err)
-
-		return
 	}
 
 	for _, tt := range tests {
@@ -250,12 +215,6 @@ func Test_env_Int8(t *testing.T) {
 		},
 	}
 
-	if err := UseEnv("env.toml"); err != nil {
-		t.Error(err)
-
-		return
-	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := Env.Int8(tt.args.key, tt.args.defaultValue...); got != tt.want {
@@ -283,12 +242,6 @@ func Test_env_Int8s(t *testing.T) {
 			},
 			want: []int8{80, 81, 82},
 		},
-	}
-
-	if err := UseEnv("env.toml"); err != nil {
-		t.Error(err)
-
-		return
 	}
 
 	for _, tt := range tests {
@@ -321,12 +274,6 @@ func Test_env_Uint8(t *testing.T) {
 		},
 	}
 
-	if err := UseEnv("env.toml"); err != nil {
-		t.Error(err)
-
-		return
-	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := Env.Uint8(tt.args.key, tt.args.defaultValue...); got != tt.want {
@@ -354,12 +301,6 @@ func Test_env_Uint8s(t *testing.T) {
 			},
 			want: []uint8{80, 81, 82},
 		},
-	}
-
-	if err := UseEnv("env.toml"); err != nil {
-		t.Error(err)
-
-		return
 	}
 
 	for _, tt := range tests {
@@ -392,12 +333,6 @@ func Test_env_Int16(t *testing.T) {
 		},
 	}
 
-	if err := UseEnv("env.toml"); err != nil {
-		t.Error(err)
-
-		return
-	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := Env.Int16(tt.args.key, tt.args.defaultValue...); got != tt.want {
@@ -425,12 +360,6 @@ func Test_env_Int16s(t *testing.T) {
 			},
 			want: []int16{80, 81, 82},
 		},
-	}
-
-	if err := UseEnv("env.toml"); err != nil {
-		t.Error(err)
-
-		return
 	}
 
 	for _, tt := range tests {
@@ -463,12 +392,6 @@ func Test_env_Uint16(t *testing.T) {
 		},
 	}
 
-	if err := UseEnv("env.toml"); err != nil {
-		t.Error(err)
-
-		return
-	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := Env.Uint16(tt.args.key, tt.args.defaultValue...); got != tt.want {
@@ -496,12 +419,6 @@ func Test_env_Uint16s(t *testing.T) {
 			},
 			want: []uint16{80, 81, 82},
 		},
-	}
-
-	if err := UseEnv("env.toml"); err != nil {
-		t.Error(err)
-
-		return
 	}
 
 	for _, tt := range tests {
@@ -534,12 +451,6 @@ func Test_env_Int32(t *testing.T) {
 		},
 	}
 
-	if err := UseEnv("env.toml"); err != nil {
-		t.Error(err)
-
-		return
-	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := Env.Int32(tt.args.key, tt.args.defaultValue...); got != tt.want {
@@ -567,12 +478,6 @@ func Test_env_Int32s(t *testing.T) {
 			},
 			want: []int32{80, 81, 82},
 		},
-	}
-
-	if err := UseEnv("env.toml"); err != nil {
-		t.Error(err)
-
-		return
 	}
 
 	for _, tt := range tests {
@@ -605,12 +510,6 @@ func Test_env_Uint32(t *testing.T) {
 		},
 	}
 
-	if err := UseEnv("env.toml"); err != nil {
-		t.Error(err)
-
-		return
-	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := Env.Uint32(tt.args.key, tt.args.defaultValue...); got != tt.want {
@@ -638,12 +537,6 @@ func Test_env_Uint32s(t *testing.T) {
 			},
 			want: []uint32{80, 81, 82},
 		},
-	}
-
-	if err := UseEnv("env.toml"); err != nil {
-		t.Error(err)
-
-		return
 	}
 
 	for _, tt := range tests {
@@ -676,12 +569,6 @@ func Test_env_Int64(t *testing.T) {
 		},
 	}
 
-	if err := UseEnv("env.toml"); err != nil {
-		t.Error(err)
-
-		return
-	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := Env.Int64(tt.args.key, tt.args.defaultValue...); got != tt.want {
@@ -709,12 +596,6 @@ func Test_env_Int64s(t *testing.T) {
 			},
 			want: []int64{80, 81, 82},
 		},
-	}
-
-	if err := UseEnv("env.toml"); err != nil {
-		t.Error(err)
-
-		return
 	}
 
 	for _, tt := range tests {
@@ -746,12 +627,6 @@ func Test_env_Uint64(t *testing.T) {
 		},
 	}
 
-	if err := UseEnv("env.toml"); err != nil {
-		t.Error(err)
-
-		return
-	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := Env.Uint64(tt.args.key, tt.args.defaultValue...); got != tt.want {
@@ -779,12 +654,6 @@ func Test_env_Uint64s(t *testing.T) {
 			},
 			want: []uint64{80, 81, 82},
 		},
-	}
-
-	if err := UseEnv("env.toml"); err != nil {
-		t.Error(err)
-
-		return
 	}
 
 	for _, tt := range tests {
@@ -817,12 +686,6 @@ func Test_env_Float64(t *testing.T) {
 		},
 	}
 
-	if err := UseEnv("env.toml"); err != nil {
-		t.Error(err)
-
-		return
-	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := Env.Float64(tt.args.key, tt.args.defaultValue...); got != tt.want {
@@ -850,12 +713,6 @@ func Test_env_Float64s(t *testing.T) {
 			},
 			want: []float64{23.5, 46.7, 45.9},
 		},
-	}
-
-	if err := UseEnv("env.toml"); err != nil {
-		t.Error(err)
-
-		return
 	}
 
 	for _, tt := range tests {
@@ -887,12 +744,6 @@ func Test_env_Bool(t *testing.T) {
 		},
 	}
 
-	if err := UseEnv("env.toml"); err != nil {
-		t.Error(err)
-
-		return
-	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := Env.Bool(tt.args.key, tt.args.defaultValue...); got != tt.want {
@@ -922,12 +773,6 @@ func Test_env_Time(t *testing.T) {
 			},
 			want: time.Date(2016, 3, 19, 15, 3, 19, 0, time.UTC),
 		},
-	}
-
-	if err := UseEnv("env.toml"); err != nil {
-		t.Error(err)
-
-		return
 	}
 
 	for _, tt := range tests {
@@ -962,12 +807,6 @@ func Test_env_Map(t *testing.T) {
 				"prices": []interface{}{23.5, 46.7, 45.9},
 			},
 		},
-	}
-
-	if err := UseEnv("env.toml"); err != nil {
-		t.Error(err)
-
-		return
 	}
 
 	for _, tt := range tests {
@@ -1009,12 +848,6 @@ func Test_env_Unmarshal(t *testing.T) {
 		},
 	}
 
-	if err := UseEnv("env.toml"); err != nil {
-		t.Error(err)
-
-		return
-	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if err := Env.Unmarshal(tt.args.key, tt.args.dest); (err != nil) != tt.wantErr {
@@ -1022,4 +855,14 @@ func Test_env_Unmarshal(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestMain(m *testing.M) {
+	if err := SetEnvFile("env.toml"); err != nil {
+		fmt.Println(err)
+
+		return
+	}
+
+	m.Run()
 }
