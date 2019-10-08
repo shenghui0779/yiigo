@@ -221,13 +221,13 @@ var (
 
 // RegisterRedis register a redis.
 //
-// The default `ConnTimeout` is 10s.
-// The default `ReadTimeout` is 10s.
-// The default `WriteTimeout` is 10s.
-// The default `PoolSize` is 10.
-// The default `PoolLimit` is 20.
-// The default `IdleTimeout` is 60s.
-// The default `WaitTimeout` is 10s.
+// The default `ConnTimeout` is 10s;
+// The default `ReadTimeout` is 10s;
+// The default `WriteTimeout` is 10s;
+// The default `PoolSize` is 10;
+// The default `PoolLimit` is 20;
+// The default `IdleTimeout` is 60s;
+// The default `WaitTimeout` is 10s;
 // The default `PrefillParallelism` is 0.
 func RegisterRedis(name, addr string, options ...RedisOption) {
 	o := &redisOptions{

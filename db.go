@@ -131,8 +131,8 @@ func dbDial(driverName, dsn string, options ...DBOption) (*gorm.DB, error) {
 //
 // Postgres: `host=localhost port=5432 user=root password=secret dbname=test connect_timeout=10 sslmode=disable`.
 //
-// The default `MaxOpenConns` is 20.
-// The default `MaxIdleConns` is 10.
+// The default `MaxOpenConns` is 20;
+// The default `MaxIdleConns` is 10;
 // The default `ConnMaxLifetime` is 60s.
 func RegisterDB(name string, driver DBDriver, dsn string, options ...DBOption) error {
 	driverName := ""
