@@ -9,16 +9,17 @@ import (
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/jinzhu/gorm"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 )
 
-// Driver indicates the db drivers.
-type Driver int
+// DBDriver indicates the db drivers.
+type DBDriver int
 
 const (
-	MySQL    Driver = 1
-	Postgres Driver = 2
+	MySQL    DBDriver = 1
+	Postgres DBDriver = 2
 )
 
 // dbOptions db options
@@ -94,9 +95,11 @@ var (
 	// DB default db connection
 	DB    *sqlx.DB
 	dbmap sync.Map
+	Orm   *gorm.DB
+	ormap sync.Map
 )
 
-func dbDial(driverName, dsn string, options ...DBOption) (*sqlx.DB, error) {
+func dbDial(driverName, dsn string, options ...DBOption) (*gorm.DB, error) {
 	o := &dbOptions{
 		maxOpenConns:    20,
 		maxIdleConns:    10,
@@ -109,19 +112,15 @@ func dbDial(driverName, dsn string, options ...DBOption) (*sqlx.DB, error) {
 		}
 	}
 
-	db, err := sqlx.Connect(driverName, dsn)
+	db, err := gorm.Open(driverName, dsn)
 
 	if err != nil {
 		return nil, err
 	}
 
-	if err := db.Ping(); err != nil {
-		return nil, err
-	}
-
-	db.SetMaxOpenConns(o.maxOpenConns)
-	db.SetMaxIdleConns(o.maxIdleConns)
-	db.SetConnMaxLifetime(o.connMaxLifetime)
+	db.DB().SetMaxOpenConns(o.maxOpenConns)
+	db.DB().SetMaxIdleConns(o.maxIdleConns)
+	db.DB().SetConnMaxLifetime(o.connMaxLifetime)
 
 	return db, nil
 }
@@ -135,7 +134,7 @@ func dbDial(driverName, dsn string, options ...DBOption) (*sqlx.DB, error) {
 // The default `MaxOpenConns` is 20.
 // The default `MaxIdleConns` is 10.
 // The default `ConnMaxLifetime` is 60s.
-func RegisterDB(name string, driver Driver, dsn string, options ...DBOption) error {
+func RegisterDB(name string, driver DBDriver, dsn string, options ...DBOption) error {
 	driverName := ""
 
 	switch driver {
@@ -143,18 +142,24 @@ func RegisterDB(name string, driver Driver, dsn string, options ...DBOption) err
 		driverName = "mysql"
 	case Postgres:
 		driverName = "postgres"
+	default:
+		return errors.New("yiigo: invalid db driver")
 	}
 
-	db, err := dbDial(driverName, dsn, options...)
+	orm, err := dbDial(driverName, dsn, options...)
 
 	if err != nil {
 		return err
 	}
 
+	db := sqlx.NewDb(orm.DB(), driverName)
+
 	dbmap.Store(name, db)
+	ormap.Store(name, orm)
 
 	if name == AsDefault {
 		DB = db
+		Orm = orm
 	}
 
 	return nil
@@ -175,6 +180,23 @@ func UseDB(name ...string) *sqlx.DB {
 	}
 
 	return v.(*sqlx.DB)
+}
+
+// UseOrm returns an orm.
+func UseOrm(name ...string) *gorm.DB {
+	k := AsDefault
+
+	if len(name) != 0 {
+		k = name[0]
+	}
+
+	v, ok := ormap.Load(k)
+
+	if !ok {
+		panic(fmt.Errorf("yiigo: db.%s is not registered", name))
+	}
+
+	return v.(*gorm.DB)
 }
 
 var (
@@ -336,7 +358,7 @@ func PGUpdateSQL(query string, data interface{}, args ...interface{}) (string, [
 	return sql, binds
 }
 
-func singleInsertWithMap(driver Driver, table string, data X) (string, []interface{}) {
+func singleInsertWithMap(driver DBDriver, table string, data X) (string, []interface{}) {
 	fieldNum := len(data)
 
 	columns := make([]string, 0, fieldNum)
@@ -371,7 +393,7 @@ func singleInsertWithMap(driver Driver, table string, data X) (string, []interfa
 	return sql, binds
 }
 
-func singleInsertWithStruct(driver Driver, table string, v reflect.Value) (string, []interface{}) {
+func singleInsertWithStruct(driver DBDriver, table string, v reflect.Value) (string, []interface{}) {
 	fieldNum := v.NumField()
 
 	columns := make([]string, 0, fieldNum)
@@ -428,7 +450,7 @@ func singleInsertWithStruct(driver Driver, table string, v reflect.Value) (strin
 	return sql, binds
 }
 
-func batchInsertWithMap(driver Driver, table string, data []X, count int) (string, []interface{}) {
+func batchInsertWithMap(driver DBDriver, table string, data []X, count int) (string, []interface{}) {
 	fieldNum := len(data[0])
 
 	fields := make([]string, 0, fieldNum)
@@ -486,7 +508,7 @@ func batchInsertWithMap(driver Driver, table string, data []X, count int) (strin
 	return sql, binds
 }
 
-func batchInsertWithStruct(driver Driver, table string, v reflect.Value, count int) (string, []interface{}) {
+func batchInsertWithStruct(driver DBDriver, table string, v reflect.Value, count int) (string, []interface{}) {
 	first := reflect.Indirect(v.Index(0))
 
 	fieldNum := first.NumField()
@@ -563,7 +585,7 @@ func batchInsertWithStruct(driver Driver, table string, v reflect.Value, count i
 	return sql, binds
 }
 
-func updateWithMap(driver Driver, query string, data X, args ...interface{}) (string, []interface{}) {
+func updateWithMap(driver DBDriver, query string, data X, args ...interface{}) (string, []interface{}) {
 	dataLen := len(data)
 	argsLen := len(args)
 
@@ -606,7 +628,7 @@ func updateWithMap(driver Driver, query string, data X, args ...interface{}) (st
 	return sql, binds
 }
 
-func updateWithStruct(driver Driver, query string, v reflect.Value, args ...interface{}) (string, []interface{}) {
+func updateWithStruct(driver DBDriver, query string, v reflect.Value, args ...interface{}) (string, []interface{}) {
 	fieldNum := v.NumField()
 	argsLen := len(args)
 

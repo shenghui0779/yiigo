@@ -17,6 +17,7 @@ A simple and light library which makes Golang development easier !
 - Use [gomail](https://github.com/go-gomail/gomail) for email sending
 - Use [toml](https://github.com/pelletier/go-toml) for configuration
 - Use [sqlx](https://github.com/jmoiron/sqlx) for SQL executing
+- Use [gorm](https://gorm.io/) for ORM operating
 - Use [zap](https://github.com/uber-go/zap) for logging
 
 ## Requirements
@@ -38,11 +39,13 @@ go get github.com/iiinsomnia/yiigo/v3
 yiigo.RegisterDB(yiigo.AsDefault, yiigo.MySQL, "root:root@tcp(localhost:3306)/test")
 
 yiigo.DB.Get(&User{}, "SELECT * FROM `user` WHERE `id` = ?", 1)
+yiigo.Orm.First(&User{}, 1)
 
 // other db
 yiigo.RegisterDB("foo", yiigo.MySQL, "root:root@tcp(localhost:3306)/foo")
 
 yiigo.UseDB("foo").Get(&User{}, "SELECT * FROM `user` WHERE `id` = ?", 1)
+yiigo.UseOrm("foo").First(&User{}, 1)
 ```
 
 #### MongoDB
