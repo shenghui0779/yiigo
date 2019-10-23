@@ -12,92 +12,14 @@ import (
 	"github.com/jinzhu/gorm"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
+	"github.com/pelletier/go-toml"
+	"go.uber.org/zap"
 )
-
-// DBDriver indicates the db drivers.
-type DBDriver int
 
 const (
-	MySQL    DBDriver = 1
-	Postgres DBDriver = 2
+	MySQL    = "mysql"
+	Postgres = "postgres"
 )
-
-// dbOptions db options
-type dbOptions struct {
-	maxOpenConns    int
-	maxIdleConns    int
-	connMaxLifetime time.Duration
-	debug           bool
-}
-
-// DBOption configures how we set up the db
-type DBOption interface {
-	apply(*dbOptions)
-}
-
-// funcDBOption implements db option
-type funcDBOption struct {
-	f func(*dbOptions)
-}
-
-func (fo *funcDBOption) apply(o *dbOptions) {
-	fo.f(o)
-}
-
-func newFuncDBOption(f func(*dbOptions)) *funcDBOption {
-	return &funcDBOption{f: f}
-}
-
-// WithDBMaxOpenConns specifies the `MaxOpenConns` to db.
-// MaxOpenConns sets the maximum number of open connections to the database.
-//
-// If MaxIdleConns is greater than 0 and the new MaxOpenConns is less than
-// MaxIdleConns, then MaxIdleConns will be reduced to match the new
-// MaxOpenConns limit.
-//
-// If n <= 0, then there is no limit on the number of open connections.
-// The default is 0 (unlimited).
-func WithDBMaxOpenConns(n int) DBOption {
-	return newFuncDBOption(func(o *dbOptions) {
-		o.maxOpenConns = n
-	})
-}
-
-// WithDBMaxIdleConns specifies the `MaxIdleConns` to db.
-// MaxIdleConns sets the maximum number of connections in the idle
-// connection pool.
-//
-// If MaxOpenConns is greater than 0 but less than the new MaxIdleConns,
-// then the new MaxIdleConns will be reduced to match the MaxOpenConns limit.
-//
-// If n <= 0, no idle connections are retained.
-//
-// The default max idle connections is currently 2. This may change in
-// a future release.
-func WithDBMaxIdleConns(n int) DBOption {
-	return newFuncDBOption(func(o *dbOptions) {
-		o.maxIdleConns = n
-	})
-}
-
-// WithDBConnMaxLifetime specifies the `ConnMaxLifetime` to db.
-// ConnMaxLifetime sets the maximum amount of time a connection may be reused.
-//
-// Expired connections may be closed lazily before reuse.
-//
-// If d <= 0, connections are reused forever.
-func WithDBConnMaxLifetime(d time.Duration) DBOption {
-	return newFuncDBOption(func(o *dbOptions) {
-		o.connMaxLifetime = d
-	})
-}
-
-// WithDBDebug specifies the `LogMod` to orm.
-func WithDBDebug(b bool) DBOption {
-	return newFuncDBOption(func(o *dbOptions) {
-		o.debug = b
-	})
-}
 
 var (
 	defaultDB  *sqlx.DB
@@ -106,81 +28,85 @@ var (
 	ormap      sync.Map
 )
 
-func dbDial(driverName, dsn string, options ...DBOption) (*gorm.DB, error) {
-	o := &dbOptions{
-		maxOpenConns:    20,
-		maxIdleConns:    10,
-		connMaxLifetime: 60 * time.Second,
+type dbConf struct {
+	Driver          string `toml:"driver"`
+	Dsn             string `toml:"dsn"`
+	MaxOpenConns    int    `toml:"max_open_conns"`
+	MaxIdleConns    int    `toml:"max_idle_conns"`
+	ConnMaxLifetime int    `toml:"conn_max_lifetime"`
+}
+
+func dbDial(cfg *dbConf, debug bool) (*gorm.DB, error) {
+	if cfg.Driver != MySQL && cfg.Driver != Postgres {
+		return nil, fmt.Errorf("yiigo: invalid db driver: %s", cfg.Driver)
 	}
 
-	if len(options) > 0 {
-		for _, option := range options {
-			option.apply(o)
-		}
-	}
-
-	orm, err := gorm.Open(driverName, dsn)
+	orm, err := gorm.Open(cfg.Driver, cfg.Dsn)
 
 	if err != nil {
 		return nil, err
 	}
 
-	if o.debug {
+	if debug {
 		orm.LogMode(true)
 	}
 
-	orm.DB().SetMaxOpenConns(o.maxOpenConns)
-	orm.DB().SetMaxIdleConns(o.maxIdleConns)
-	orm.DB().SetConnMaxLifetime(o.connMaxLifetime)
+	orm.DB().SetMaxOpenConns(cfg.MaxOpenConns)
+	orm.DB().SetMaxIdleConns(cfg.MaxIdleConns)
+	orm.DB().SetConnMaxLifetime(time.Duration(cfg.ConnMaxLifetime) * time.Second)
 
 	return orm, nil
 }
 
-// RegisterDB register a db, the param `dsn` eg:
-//
-// MySQL: `username:password@tcp(localhost:3306)/dbname?timeout=10s&charset=utf8mb4&collation=utf8mb4_general_ci&parseTime=True&loc=Local`;
-//
-// Postgres: `host=localhost port=5432 user=root password=secret dbname=test connect_timeout=10 sslmode=disable`.
-//
-// The default `MaxOpenConns` is 20;
-// The default `MaxIdleConns` is 10;
-// The default `ConnMaxLifetime` is 60s.
-func RegisterDB(name string, driver DBDriver, dsn string, options ...DBOption) error {
-	driverName := ""
+func initDB(debug bool) {
+	tree, ok := env.Get("db").(*toml.Tree)
 
-	switch driver {
-	case MySQL:
-		driverName = "mysql"
-	case Postgres:
-		driverName = "postgres"
-	default:
-		return errors.New("yiigo: invalid db driver")
+	if !ok {
+		return
 	}
 
-	orm, err := dbDial(driverName, dsn, options...)
+	keys := tree.Keys()
 
-	if err != nil {
-		return err
+	if len(keys) == 0 {
+		return
 	}
 
-	db := sqlx.NewDb(orm.DB(), driverName)
+	for _, v := range keys {
+		node, ok := env.Get(v).(*toml.Tree)
 
-	dbmap.Store(name, db)
-	ormap.Store(name, orm)
+		if !ok {
+			continue
+		}
 
-	if name == AsDefault {
-		defaultDB = db
-		defaultOrm = orm
+		cfg := new(dbConf)
+
+		if err := node.Unmarshal(cfg); err != nil {
+			logger.Panic("yiigo: db init error", zap.String("name", v), zap.Error(err))
+		}
+
+		orm, err := dbDial(cfg, debug)
+
+		if err != nil {
+			logger.Panic("yiigo: db init error", zap.String("name", v), zap.Error(err))
+		}
+
+		db := sqlx.NewDb(orm.DB(), cfg.Driver)
+
+		if v == AsDefault {
+			defaultDB = db
+			defaultOrm = orm
+		}
+
+		dbmap.Store(v, db)
+		ormap.Store(v, orm)
 	}
-
-	return nil
 }
 
 // DB returns a db.
 func DB(name ...string) *sqlx.DB {
 	if len(name) == 0 || name[0] == AsDefault {
 		if defaultDB == nil {
-			panic(errors.New("yiigo: db.default is not registered"))
+			logger.Panic("yiigo: invalid db", zap.String("name", AsDefault))
 		}
 
 		return defaultDB
@@ -189,7 +115,7 @@ func DB(name ...string) *sqlx.DB {
 	v, ok := dbmap.Load(name[0])
 
 	if !ok {
-		panic(fmt.Errorf("yiigo: db.%s is not registered", name[0]))
+		logger.Panic("yiigo: invalid db", zap.String("name", name[0]))
 	}
 
 	return v.(*sqlx.DB)
@@ -199,7 +125,7 @@ func DB(name ...string) *sqlx.DB {
 func Orm(name ...string) *gorm.DB {
 	if len(name) == 0 || name[0] == AsDefault {
 		if defaultOrm == nil {
-			panic(errors.New("yiigo: db.default is not registered"))
+			logger.Panic("yiigo: invalid db", zap.String("name", AsDefault))
 		}
 
 		return defaultOrm
@@ -208,7 +134,7 @@ func Orm(name ...string) *gorm.DB {
 	v, ok := ormap.Load(name[0])
 
 	if !ok {
-		panic(fmt.Errorf("yiigo: db.%s is not registered", name[0]))
+		logger.Panic("yiigo: invalid db", zap.String("name", name[0]))
 	}
 
 	return v.(*gorm.DB)
@@ -373,7 +299,7 @@ func PGUpdateSQL(query string, data interface{}, args ...interface{}) (string, [
 	return sql, binds
 }
 
-func singleInsertWithMap(driver DBDriver, table string, data X) (string, []interface{}) {
+func singleInsertWithMap(driver string, table string, data X) (string, []interface{}) {
 	fieldNum := len(data)
 
 	columns := make([]string, 0, fieldNum)
@@ -408,7 +334,7 @@ func singleInsertWithMap(driver DBDriver, table string, data X) (string, []inter
 	return sql, binds
 }
 
-func singleInsertWithStruct(driver DBDriver, table string, v reflect.Value) (string, []interface{}) {
+func singleInsertWithStruct(driver string, table string, v reflect.Value) (string, []interface{}) {
 	fieldNum := v.NumField()
 
 	columns := make([]string, 0, fieldNum)
@@ -465,7 +391,7 @@ func singleInsertWithStruct(driver DBDriver, table string, v reflect.Value) (str
 	return sql, binds
 }
 
-func batchInsertWithMap(driver DBDriver, table string, data []X, count int) (string, []interface{}) {
+func batchInsertWithMap(driver string, table string, data []X, count int) (string, []interface{}) {
 	fieldNum := len(data[0])
 
 	fields := make([]string, 0, fieldNum)
@@ -523,7 +449,7 @@ func batchInsertWithMap(driver DBDriver, table string, data []X, count int) (str
 	return sql, binds
 }
 
-func batchInsertWithStruct(driver DBDriver, table string, v reflect.Value, count int) (string, []interface{}) {
+func batchInsertWithStruct(driver string, table string, v reflect.Value, count int) (string, []interface{}) {
 	first := reflect.Indirect(v.Index(0))
 
 	fieldNum := first.NumField()
@@ -600,7 +526,7 @@ func batchInsertWithStruct(driver DBDriver, table string, v reflect.Value, count
 	return sql, binds
 }
 
-func updateWithMap(driver DBDriver, query string, data X, args ...interface{}) (string, []interface{}) {
+func updateWithMap(driver string, query string, data X, args ...interface{}) (string, []interface{}) {
 	dataLen := len(data)
 	argsLen := len(args)
 
@@ -643,7 +569,7 @@ func updateWithMap(driver DBDriver, query string, data X, args ...interface{}) (
 	return sql, binds
 }
 
-func updateWithStruct(driver DBDriver, query string, v reflect.Value, args ...interface{}) (string, []interface{}) {
+func updateWithStruct(driver string, query string, v reflect.Value, args ...interface{}) (string, []interface{}) {
 	fieldNum := v.NumField()
 	argsLen := len(args)
 

@@ -2,116 +2,27 @@ package yiigo
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"sync"
 	"time"
 
 	"github.com/gomodule/redigo/redis"
+	"github.com/pelletier/go-toml"
+	"go.uber.org/zap"
 	"vitess.io/vitess/go/pools"
 )
 
-type redisOptions struct {
-	password           string
-	database           int
-	connTimeout        time.Duration
-	readTimeout        time.Duration
-	writeTimeout       time.Duration
-	poolSize           int
-	poolLimit          int
-	idleTimeout        time.Duration
-	waitTimeout        time.Duration
-	prefillParallelism int
-}
-
-// RedisOption configures how we set up the db
-type RedisOption interface {
-	apply(*redisOptions)
-}
-
-// funcRedisOption implements redis option
-type funcRedisOption struct {
-	f func(*redisOptions)
-}
-
-func (fo *funcRedisOption) apply(o *redisOptions) {
-	fo.f(o)
-}
-
-func newFuncRedisOption(f func(*redisOptions)) *funcRedisOption {
-	return &funcRedisOption{f: f}
-}
-
-// WithRedisPassword specifies the `Password` to redis.
-func WithRedisPassword(s string) RedisOption {
-	return newFuncRedisOption(func(o *redisOptions) {
-		o.password = s
-	})
-}
-
-// WithRedisDatabase specifies the `Database` to redis.
-func WithRedisDatabase(n int) RedisOption {
-	return newFuncRedisOption(func(o *redisOptions) {
-		o.database = n
-	})
-}
-
-// WithRedisConnTimeout specifies the `ConnTimeout` to redis.
-func WithRedisConnTimeout(d time.Duration) RedisOption {
-	return newFuncRedisOption(func(o *redisOptions) {
-		o.connTimeout = d
-	})
-}
-
-// WithRedisReadTimeout specifies the `ReadTimeout` to redis.
-func WithRedisReadTimeout(d time.Duration) RedisOption {
-	return newFuncRedisOption(func(o *redisOptions) {
-		o.readTimeout = d
-	})
-}
-
-// WithRedisWriteTimeout specifies the `WriteTimeout` to redis.
-func WithRedisWriteTimeout(d time.Duration) RedisOption {
-	return newFuncRedisOption(func(o *redisOptions) {
-		o.writeTimeout = d
-	})
-}
-
-// WithRedisPoolSize specifies the `PoolSize` to redis.
-func WithRedisPoolSize(n int) RedisOption {
-	return newFuncRedisOption(func(o *redisOptions) {
-		o.poolSize = n
-	})
-}
-
-// WithRedisPoolLimit specifies the `PoolLimit` to redis.
-func WithRedisPoolLimit(n int) RedisOption {
-	return newFuncRedisOption(func(o *redisOptions) {
-		o.poolLimit = n
-	})
-}
-
-// WithRedisIdleTimeout specifies the `IdleTimeout` to redis.
-func WithRedisIdleTimeout(d time.Duration) RedisOption {
-	return newFuncRedisOption(func(o *redisOptions) {
-		o.idleTimeout = d
-	})
-}
-
-// WithRedisWaitTimeout specifies the `WaitTimeout` to redis.
-// A timeout of 0 means an indefinite wait.
-func WithRedisWaitTimeout(d time.Duration) RedisOption {
-	return newFuncRedisOption(func(o *redisOptions) {
-		o.waitTimeout = d
-	})
-}
-
-// WithRedisPrefillParallelism specifies the `PrefillParallelism` to redis.
-// A non-zero value of prefillParallelism causes the pool to be pre-filled.
-func WithRedisPrefillParallelism(n int) RedisOption {
-	return newFuncRedisOption(func(o *redisOptions) {
-		o.prefillParallelism = n
-	})
+type redisConf struct {
+	Address            string `toml:"address"`
+	Password           string `toml:"password"`
+	Database           int    `toml:"database"`
+	ConnTimeout        int    `toml:"conn_timeout"`
+	ReadTimeout        int    `toml:"read_timeout"`
+	WriteTimeout       int    `toml:"write_timeout"`
+	PoolSize           int    `toml:"pool_size"`
+	PoolLimit          int    `toml:"pool_limit"`
+	IdleTimeout        int    `toml:"idle_timeout"`
+	WaitTimeout        int    `toml:"wait_timeout"`
+	PrefillParallelism int    `toml:"prefill_parallelism"`
 }
 
 // RedisConn redis connection resource
@@ -126,22 +37,21 @@ func (r RedisConn) Close() {
 
 // RedisPoolResource redis pool resource
 type RedisPoolResource struct {
-	addr    string
-	options *redisOptions
-	pool    *pools.ResourcePool
-	mutex   sync.Mutex
+	config *redisConf
+	pool   *pools.ResourcePool
+	mutex  sync.Mutex
 }
 
 func (r *RedisPoolResource) dial() (redis.Conn, error) {
 	dialOptions := []redis.DialOption{
-		redis.DialPassword(r.options.password),
-		redis.DialDatabase(r.options.database),
-		redis.DialConnectTimeout(r.options.connTimeout),
-		redis.DialReadTimeout(r.options.readTimeout),
-		redis.DialWriteTimeout(r.options.writeTimeout),
+		redis.DialPassword(r.config.Password),
+		redis.DialDatabase(r.config.Database),
+		redis.DialConnectTimeout(time.Duration(r.config.ConnTimeout) * time.Second),
+		redis.DialReadTimeout(time.Duration(r.config.ReadTimeout) * time.Second),
+		redis.DialWriteTimeout(time.Duration(r.config.WriteTimeout) * time.Second),
 	}
 
-	conn, err := redis.Dial("tcp", r.addr, dialOptions...)
+	conn, err := redis.Dial("tcp", r.config.Address, dialOptions...)
 
 	return conn, err
 }
@@ -164,7 +74,7 @@ func (r *RedisPoolResource) init() {
 		return RedisConn{conn}, nil
 	}
 
-	r.pool = pools.NewResourcePool(df, r.options.poolSize, r.options.poolLimit, r.options.idleTimeout, r.options.prefillParallelism)
+	r.pool = pools.NewResourcePool(df, r.config.PoolSize, r.config.PoolLimit, time.Duration(r.config.IdleTimeout)*time.Second, r.config.PrefillParallelism)
 }
 
 // Get get a connection resource from the pool.
@@ -175,8 +85,8 @@ func (r *RedisPoolResource) Get() (RedisConn, error) {
 
 	ctx := context.TODO()
 
-	if r.options.waitTimeout != 0 {
-		c, cancel := context.WithTimeout(ctx, r.options.waitTimeout)
+	if r.config.WaitTimeout != 0 {
+		c, cancel := context.WithTimeout(ctx, time.Duration(r.config.WaitTimeout)*time.Second)
 
 		defer cancel()
 
@@ -219,44 +129,41 @@ var (
 	redisMap     sync.Map
 )
 
-// RegisterRedis register a redis.
-//
-// The default `ConnTimeout` is 10s;
-// The default `ReadTimeout` is 10s;
-// The default `WriteTimeout` is 10s;
-// The default `PoolSize` is 10;
-// The default `PoolLimit` is 20;
-// The default `IdleTimeout` is 60s;
-// The default `WaitTimeout` is 10s;
-// The default `PrefillParallelism` is 0.
-func RegisterRedis(name, addr string, options ...RedisOption) {
-	o := &redisOptions{
-		connTimeout:  10 * time.Second,
-		readTimeout:  10 * time.Second,
-		writeTimeout: 10 * time.Second,
-		poolSize:     10,
-		poolLimit:    20,
-		idleTimeout:  60 * time.Second,
-		waitTimeout:  10 * time.Second,
+func initRedis() {
+	tree, ok := env.Get("redis").(*toml.Tree)
+
+	if !ok {
+		return
 	}
 
-	if len(options) > 0 {
-		for _, option := range options {
-			option.apply(o)
+	keys := tree.Keys()
+
+	if len(keys) == 0 {
+		return
+	}
+
+	for _, v := range keys {
+		node, ok := env.Get(v).(*toml.Tree)
+
+		if !ok {
+			continue
 		}
-	}
 
-	poolResource := &RedisPoolResource{
-		addr:    addr,
-		options: o,
-	}
+		cfg := new(redisConf)
 
-	poolResource.init()
+		if err := node.Unmarshal(cfg); err != nil {
+			logger.Panic("yiigo: redis init error", zap.String("name", v), zap.Error(err))
+		}
 
-	redisMap.Store(name, poolResource)
+		poolResource := &RedisPoolResource{config: cfg}
 
-	if name == AsDefault {
-		defaultRedis = poolResource
+		poolResource.init()
+
+		if v == AsDefault {
+			defaultRedis = poolResource
+		}
+
+		redisMap.Store(v, poolResource)
 	}
 }
 
@@ -264,7 +171,7 @@ func RegisterRedis(name, addr string, options ...RedisOption) {
 func Redis(name ...string) *RedisPoolResource {
 	if len(name) == 0 || name[0] == AsDefault {
 		if defaultRedis == nil {
-			panic(errors.New("yiigo: redis.default is not registered"))
+			logger.Panic("yiigo: invalid redis", zap.String("name", AsDefault))
 		}
 
 		return defaultRedis
@@ -273,7 +180,7 @@ func Redis(name ...string) *RedisPoolResource {
 	v, ok := redisMap.Load(name[0])
 
 	if !ok {
-		panic(fmt.Errorf("yiigo: redis.%s is not registered", name[0]))
+		logger.Panic("yiigo: invalid redis", zap.String("name", name[0]))
 	}
 
 	return v.(*RedisPoolResource)

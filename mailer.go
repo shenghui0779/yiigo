@@ -1,12 +1,17 @@
 package yiigo
 
 import (
-	"errors"
-	"fmt"
-	"sync"
-
+	"github.com/pelletier/go-toml"
+	"go.uber.org/zap"
 	"gopkg.in/gomail.v2"
 )
+
+type emailConfig struct {
+	Host     string `toml:"host"`
+	Port     int    `toml:"port"`
+	Username string `toml:"username"`
+	Password string `toml:"password"`
+}
 
 // EMail email
 type EMail struct {
@@ -114,37 +119,22 @@ func (m *EMailDialer) Send(e *EMail, options ...EMailOption) error {
 	return err
 }
 
-var (
-	defaultMailer *EMailDialer
-	mailerMap     sync.Map
-)
+var Mailer *EMailDialer
 
-// RegisterMailer register a mailer
-func RegisterMailer(name, host string, port int, account, password string) {
-	m := &EMailDialer{dialer: gomail.NewDialer(host, port, account, password)}
-
-	mailerMap.Store(name, m)
-
-	if name == AsDefault {
-		defaultMailer = m
-	}
-}
-
-// Mailer returns a mailer
-func Mailer(name ...string) *EMailDialer {
-	if len(name) == 0 || name[0] == AsDefault {
-		if defaultMailer == nil {
-			panic(errors.New("yiigo: mailer.default is not registered"))
-		}
-
-		return defaultMailer
-	}
-
-	v, ok := mailerMap.Load(name[0])
+func initMailer() {
+	node, ok := env.Get("email").(*toml.Tree)
 
 	if !ok {
-		panic(fmt.Errorf("yiigo: mailer.%s is not registered", name[0]))
+		return
 	}
 
-	return v.(*EMailDialer)
+	cfg := new(emailConfig)
+
+	if err := node.Unmarshal(cfg); err != nil {
+		logger.Error("yiigo: mailer init error", zap.Error(err))
+
+		return
+	}
+
+	Mailer = &EMailDialer{dialer: gomail.NewDialer(cfg.Host, cfg.Port, cfg.Username, cfg.Password)}
 }

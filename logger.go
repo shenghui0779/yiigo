@@ -1,105 +1,31 @@
 package yiigo
 
 import (
-	"errors"
-	"fmt"
 	"sync"
 	"time"
 
+	"github.com/pelletier/go-toml"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 var (
-	defaultLogger *zap.Logger
-	loggerMap     sync.Map
+	logger *zap.Logger
+	logMap sync.Map
 )
 
-type logOptions struct {
-	maxSize    int
-	maxAge     int
-	maxBackups int
-	compress   bool
-	debug      bool
+type logConf struct {
+	Path       string `toml:"path"`
+	MaxSize    int    `toml:"max_size"`
+	MaxBackups int    `toml:"max_backups"`
+	MaxAge     int    `toml:"max_age"`
+	Compress   bool   `toml:"compress"`
 }
 
-// LogOption configures how we set up the logger
-type LogOption interface {
-	apply(*logOptions)
-}
-
-// funcLogOption implements db option
-type funcLogOption struct {
-	f func(*logOptions)
-}
-
-func (fo *funcLogOption) apply(o *logOptions) {
-	fo.f(o)
-}
-
-func newFuncLogOption(f func(*logOptions)) *funcLogOption {
-	return &funcLogOption{f: f}
-}
-
-// WithLogMaxSize specifies the `MaxSize` to logger.
-// MaxSize is the maximum size in megabytes of the log file before it gets
-// rotated. It defaults to 100 megabytes.
-func WithLogMaxSize(n int) LogOption {
-	return newFuncLogOption(func(o *logOptions) {
-		o.maxSize = n
-	})
-}
-
-// WithLogMaxAge specifies the `MaxAge` to logger.
-// MaxAge is the maximum number of days to retain old log files based on the
-// timestamp encoded in their filename.  Note that a day is defined as 24
-// hours and may not exactly correspond to calendar days due to daylight
-// savings, leap seconds, etc. The default is not to remove old log files
-// based on age.
-func WithLogMaxAge(n int) LogOption {
-	return newFuncLogOption(func(o *logOptions) {
-		o.maxAge = n
-	})
-}
-
-// WithLogMaxBackups specifies the `MaxBackups` to logger.
-// MaxBackups is the maximum number of old log files to retain.  The default
-// is to retain all old log files (though MaxAge may still cause them to get
-// deleted.)
-func WithLogMaxBackups(n int) LogOption {
-	return newFuncLogOption(func(o *logOptions) {
-		o.maxBackups = n
-	})
-}
-
-// WithLogCompress specifies the `Compress` to logger.
-// Compress determines if the rotated log files should be compressed
-// using gzip.
-func WithLogCompress(b bool) LogOption {
-	return newFuncLogOption(func(o *logOptions) {
-		o.compress = b
-	})
-}
-
-// WithLogDebug specifies the `Debug` mode to logger.
-func WithLogDebug(b bool) LogOption {
-	return newFuncLogOption(func(o *logOptions) {
-		o.debug = b
-	})
-}
-
-// initLogger init logger, the default `MaxSize` is 500M.
-func initLogger(logfile string, options ...LogOption) *zap.Logger {
-	o := &logOptions{maxSize: 500}
-
-	if len(options) > 0 {
-		for _, option := range options {
-			option.apply(o)
-		}
-	}
-
-	if o.debug {
+// newLogger returns a new logger.
+func newLogger(cfg *logConf, debug bool) *zap.Logger {
+	if debug {
 		cfg := zap.NewDevelopmentConfig()
 
 		cfg.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
@@ -111,49 +37,74 @@ func initLogger(logfile string, options ...LogOption) *zap.Logger {
 	}
 
 	w := zapcore.AddSync(&lumberjack.Logger{
-		Filename:   logfile,
-		MaxSize:    o.maxSize,
-		MaxBackups: o.maxBackups,
-		MaxAge:     o.maxAge,
-		Compress:   o.compress,
+		Filename:   cfg.Path,
+		MaxSize:    cfg.MaxSize,
+		MaxBackups: cfg.MaxBackups,
+		MaxAge:     cfg.MaxAge,
+		Compress:   cfg.Compress,
 	})
 
-	cfg := zap.NewProductionEncoderConfig()
+	c := zap.NewProductionEncoderConfig()
 
-	cfg.TimeKey = "time"
-	cfg.EncodeTime = MyTimeEncoder
-	cfg.EncodeCaller = zapcore.FullCallerEncoder
+	c.TimeKey = "time"
+	c.EncodeTime = MyTimeEncoder
+	c.EncodeCaller = zapcore.FullCallerEncoder
 
-	core := zapcore.NewCore(zapcore.NewJSONEncoder(cfg), w, zap.DebugLevel)
+	core := zapcore.NewCore(zapcore.NewJSONEncoder(c), w, zap.DebugLevel)
 
 	return zap.New(core, zap.AddCaller(), zap.AddStacktrace(zapcore.ErrorLevel))
 }
 
-// RegisterLogger register logger
-func RegisterLogger(name, file string, options ...LogOption) {
-	logger := initLogger(file, options...)
+func initLogger(debug bool) {
+	tree, ok := env.Get("log").(*toml.Tree)
 
-	loggerMap.Store(name, logger)
+	if !ok {
+		return
+	}
 
-	if name == AsDefault {
-		defaultLogger = logger
+	keys := tree.Keys()
+
+	if len(keys) == 0 {
+		return
+	}
+
+	for _, v := range keys {
+		node, ok := env.Get(v).(*toml.Tree)
+
+		if !ok {
+			continue
+		}
+
+		cfg := &logConf{
+			Path:       "app.log",
+			MaxSize:    500,
+			MaxBackups: 0,
+			MaxAge:     0,
+			Compress:   true,
+		}
+
+		node.Unmarshal(cfg)
+
+		l := newLogger(cfg, debug)
+
+		if v == AsDefault {
+			logger = l
+		}
+
+		logMap.Store(v, l)
 	}
 }
 
 // Logger returns a logger
 func Logger(name ...string) *zap.Logger {
 	if len(name) == 0 || name[0] == AsDefault {
-		if defaultLogger == nil {
-			panic(errors.New("yiigo: logger.default is not registered"))
-		}
-
-		return defaultLogger
+		return logger
 	}
 
-	v, ok := loggerMap.Load(name[0])
+	v, ok := logMap.Load(name[0])
 
 	if !ok {
-		panic(fmt.Errorf("yiigo: logger.%s is not registered", name[0]))
+		return logger
 	}
 
 	return v.(*zap.Logger)

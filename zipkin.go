@@ -3,14 +3,12 @@ package yiigo
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net"
 	"net/http"
 	"strconv"
-	"sync"
 	"time"
 
 	"github.com/openzipkin/zipkin-go"
@@ -427,45 +425,13 @@ func (z *ZipkinTracer) Start(req *http.Request) zipkin.Span {
 	return sp
 }
 
-var (
-	defaultZTracer *ZipkinTracer
-	zipkinMap      sync.Map
-)
-
-// RegisterZipkinTracer register a zipkin tracer
-func RegisterZipkinTracer(name string, r reporter.Reporter, options ...zipkin.TracerOption) error {
+// NewZipkinTracer returns a zipkin tracer
+func NewZipkinTracer(r reporter.Reporter, options ...zipkin.TracerOption) (*ZipkinTracer, error) {
 	t, err := zipkin.NewTracer(r, options...)
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	ztracer := &ZipkinTracer{tracer: t}
-
-	zipkinMap.Store(name, ztracer)
-
-	if name == AsDefault {
-		defaultZTracer = ztracer
-	}
-
-	return nil
-}
-
-// ZTracer returns a zipkin tracer
-func ZTracer(name ...string) *ZipkinTracer {
-	if len(name) == 0 || name[0] == AsDefault {
-		if defaultZTracer == nil {
-			panic(errors.New("yiigo: zipkin-tracer.default is not registered"))
-		}
-
-		return defaultZTracer
-	}
-
-	v, ok := zipkinMap.Load(name[0])
-
-	if !ok {
-		panic(fmt.Errorf("yiigo: zipkin-tracer.%s is not registered", name[0]))
-	}
-
-	return v.(*ZipkinTracer)
+	return &ZipkinTracer{tracer: t}, nil
 }

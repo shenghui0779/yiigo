@@ -2,60 +2,37 @@ package yiigo
 
 import (
 	"errors"
+	"os"
 	"path/filepath"
 	"reflect"
 	"strconv"
-	"sync"
 	"time"
 
 	"github.com/pelletier/go-toml"
+	"go.uber.org/zap"
 )
 
-type env struct {
-	tree  *toml.Tree
-	mutex sync.RWMutex
-}
+// ErrConfigNil returned when config not found.
+var ErrConfigNil = errors.New("yiigo: config not found")
 
-// Env enviroment
-var Env *env
-
-// ErrEnvNil returned when config not found.
-var ErrEnvNil = errors.New("yiigo: env config not found")
-
-// SetEnvFile use `toml` config file.
-func SetEnvFile(file string) error {
-	path, err := filepath.Abs(file)
-
-	if err != nil {
-		return err
-	}
-
-	tomlTree, err := toml.LoadFile(path)
-
-	if err != nil {
-		return err
-	}
-
-	Env = &env{tree: tomlTree}
-
-	return nil
+// Env config value
+type EnvValue struct {
+	value interface{}
 }
 
 // String returns a value of string.
-func (e *env) String(key string, defaultValue ...string) string {
+func (e *EnvValue) String(defaultValue ...string) string {
 	dv := ""
 
 	if len(defaultValue) > 0 {
 		dv = defaultValue[0]
 	}
 
-	ev := e.Get(key)
-
-	if ev == nil {
+	if e.value == nil {
 		return dv
 	}
 
-	switch t := ev.(type) {
+	switch t := e.value.(type) {
 	case string:
 		return t
 	case int64:
@@ -72,14 +49,12 @@ func (e *env) String(key string, defaultValue ...string) string {
 }
 
 // Strings returns a value of []string.
-func (e *env) Strings(key string, defaultValue ...string) []string {
-	ev := e.Get(key)
-
-	if ev == nil {
+func (e *EnvValue) Strings(defaultValue ...string) []string {
+	if e.value == nil {
 		return defaultValue
 	}
 
-	v := reflect.Indirect(reflect.ValueOf(ev))
+	v := reflect.Indirect(reflect.ValueOf(e.value))
 
 	if v.Kind() != reflect.Slice {
 		return []string{}
@@ -116,20 +91,18 @@ func (e *env) Strings(key string, defaultValue ...string) []string {
 }
 
 // Int returns a value of int.
-func (e *env) Int(key string, defaultValue ...int) int {
+func (e *EnvValue) Int(defaultValue ...int) int {
 	dv := 0
 
 	if len(defaultValue) > 0 {
 		dv = defaultValue[0]
 	}
 
-	ev := e.Get(key)
-
-	if ev == nil {
+	if e.value == nil {
 		return dv
 	}
 
-	switch t := ev.(type) {
+	switch t := e.value.(type) {
 	case int64:
 		return int(t)
 	case uint64:
@@ -152,14 +125,12 @@ func (e *env) Int(key string, defaultValue ...int) int {
 }
 
 // Ints returns a value of []int.
-func (e *env) Ints(key string, defaultValue ...int) []int {
-	ev := e.Get(key)
-
-	if ev == nil {
+func (e *EnvValue) Ints(defaultValue ...int) []int {
+	if e.value == nil {
 		return defaultValue
 	}
 
-	v := reflect.Indirect(reflect.ValueOf(ev))
+	v := reflect.Indirect(reflect.ValueOf(e.value))
 
 	if v.Kind() != reflect.Slice {
 		return defaultValue
@@ -198,20 +169,18 @@ func (e *env) Ints(key string, defaultValue ...int) []int {
 }
 
 // Uint returns a value of uint.
-func (e *env) Uint(key string, defaultValue ...uint) uint {
+func (e *EnvValue) Uint(defaultValue ...uint) uint {
 	var dv uint = 0
 
 	if len(defaultValue) > 0 {
 		dv = defaultValue[0]
 	}
 
-	ev := e.Get(key)
-
-	if ev == nil {
+	if e.value == nil {
 		return dv
 	}
 
-	switch t := ev.(type) {
+	switch t := e.value.(type) {
 	case int64:
 		if t < 0 {
 			return 0
@@ -242,14 +211,12 @@ func (e *env) Uint(key string, defaultValue ...uint) uint {
 }
 
 // Uints returns a value of []uint.
-func (e *env) Uints(key string, defaultValue ...uint) []uint {
-	ev := e.Get(key)
-
-	if ev == nil {
+func (e *EnvValue) Uints(defaultValue ...uint) []uint {
+	if e.value == nil {
 		return defaultValue
 	}
 
-	v := reflect.Indirect(reflect.ValueOf(ev))
+	v := reflect.Indirect(reflect.ValueOf(e.value))
 
 	if v.Kind() != reflect.Slice {
 		return defaultValue
@@ -293,20 +260,18 @@ func (e *env) Uints(key string, defaultValue ...uint) []uint {
 }
 
 // Int8 returns a value of int8.
-func (e *env) Int8(key string, defaultValue ...int8) int8 {
+func (e *EnvValue) Int8(defaultValue ...int8) int8 {
 	var dv int8
 
 	if len(defaultValue) > 0 {
 		dv = defaultValue[0]
 	}
 
-	ev := e.Get(key)
-
-	if ev == nil {
+	if e.value == nil {
 		return dv
 	}
 
-	switch t := ev.(type) {
+	switch t := e.value.(type) {
 	case int64:
 		return int8(t)
 	case uint64:
@@ -329,14 +294,12 @@ func (e *env) Int8(key string, defaultValue ...int8) int8 {
 }
 
 // Int8s returns a value of []int8.
-func (e *env) Int8s(key string, defaultValue ...int8) []int8 {
-	ev := e.Get(key)
-
-	if ev == nil {
+func (e *EnvValue) Int8s(defaultValue ...int8) []int8 {
+	if e.value == nil {
 		return defaultValue
 	}
 
-	v := reflect.Indirect(reflect.ValueOf(ev))
+	v := reflect.Indirect(reflect.ValueOf(e.value))
 
 	if v.Kind() != reflect.Slice {
 		return defaultValue
@@ -377,20 +340,18 @@ func (e *env) Int8s(key string, defaultValue ...int8) []int8 {
 }
 
 // Uint8 returns a value of uint8.
-func (e *env) Uint8(key string, defaultValue ...uint8) uint8 {
+func (e *EnvValue) Uint8(defaultValue ...uint8) uint8 {
 	var dv uint8 = 0
 
 	if len(defaultValue) > 0 {
 		dv = defaultValue[0]
 	}
 
-	ev := e.Get(key)
-
-	if ev == nil {
+	if e.value == nil {
 		return dv
 	}
 
-	switch t := ev.(type) {
+	switch t := e.value.(type) {
 	case int64:
 		if t < 0 {
 			return 0
@@ -421,14 +382,12 @@ func (e *env) Uint8(key string, defaultValue ...uint8) uint8 {
 }
 
 // Uint8s returns a value of []uint8.
-func (e *env) Uint8s(key string, defaultValue ...uint8) []uint8 {
-	ev := e.Get(key)
-
-	if ev == nil {
+func (e *EnvValue) Uint8s(defaultValue ...uint8) []uint8 {
+	if e.value == nil {
 		return defaultValue
 	}
 
-	v := reflect.Indirect(reflect.ValueOf(ev))
+	v := reflect.Indirect(reflect.ValueOf(e.value))
 
 	if v.Kind() != reflect.Slice {
 		return defaultValue
@@ -472,20 +431,18 @@ func (e *env) Uint8s(key string, defaultValue ...uint8) []uint8 {
 }
 
 // Int16 returns a value of int16.
-func (e *env) Int16(key string, defaultValue ...int16) int16 {
+func (e *EnvValue) Int16(defaultValue ...int16) int16 {
 	var dv int16
 
 	if len(defaultValue) > 0 {
 		dv = defaultValue[0]
 	}
 
-	ev := e.Get(key)
-
-	if ev == nil {
+	if e.value == nil {
 		return dv
 	}
 
-	switch t := ev.(type) {
+	switch t := e.value.(type) {
 	case int64:
 		return int16(t)
 	case uint64:
@@ -508,14 +465,12 @@ func (e *env) Int16(key string, defaultValue ...int16) int16 {
 }
 
 // Int16s returns a value of []int16.
-func (e *env) Int16s(key string, defaultValue ...int16) []int16 {
-	ev := e.Get(key)
-
-	if ev == nil {
+func (e *EnvValue) Int16s(defaultValue ...int16) []int16 {
+	if e.value == nil {
 		return defaultValue
 	}
 
-	v := reflect.Indirect(reflect.ValueOf(ev))
+	v := reflect.Indirect(reflect.ValueOf(e.value))
 
 	if v.Kind() != reflect.Slice {
 		return defaultValue
@@ -555,20 +510,18 @@ func (e *env) Int16s(key string, defaultValue ...int16) []int16 {
 }
 
 // Uint16 returns a value of uint16.
-func (e *env) Uint16(key string, defaultValue ...uint16) uint16 {
+func (e *EnvValue) Uint16(defaultValue ...uint16) uint16 {
 	var dv uint16 = 0
 
 	if len(defaultValue) > 0 {
 		dv = defaultValue[0]
 	}
 
-	ev := e.Get(key)
-
-	if ev == nil {
+	if e.value == nil {
 		return dv
 	}
 
-	switch t := ev.(type) {
+	switch t := e.value.(type) {
 	case int64:
 		if t < 0 {
 			return 0
@@ -599,14 +552,12 @@ func (e *env) Uint16(key string, defaultValue ...uint16) uint16 {
 }
 
 // Uint16s returns a value of []uint16.
-func (e *env) Uint16s(key string, defaultValue ...uint16) []uint16 {
-	ev := e.Get(key)
-
-	if ev == nil {
+func (e *EnvValue) Uint16s(defaultValue ...uint16) []uint16 {
+	if e.value == nil {
 		return defaultValue
 	}
 
-	v := reflect.Indirect(reflect.ValueOf(ev))
+	v := reflect.Indirect(reflect.ValueOf(e.value))
 
 	if v.Kind() != reflect.Slice {
 		return defaultValue
@@ -650,20 +601,18 @@ func (e *env) Uint16s(key string, defaultValue ...uint16) []uint16 {
 }
 
 // Int32 returns a value of int32.
-func (e *env) Int32(key string, defaultValue ...int32) int32 {
+func (e *EnvValue) Int32(defaultValue ...int32) int32 {
 	var dv int32
 
 	if len(defaultValue) > 0 {
 		dv = defaultValue[0]
 	}
 
-	ev := e.Get(key)
-
-	if ev == nil {
+	if e.value == nil {
 		return dv
 	}
 
-	switch t := ev.(type) {
+	switch t := e.value.(type) {
 	case int64:
 		return int32(t)
 	case uint64:
@@ -686,14 +635,12 @@ func (e *env) Int32(key string, defaultValue ...int32) int32 {
 }
 
 // Int32s returns a value of []int32.
-func (e *env) Int32s(key string, defaultValue ...int32) []int32 {
-	ev := e.Get(key)
-
-	if ev == nil {
+func (e *EnvValue) Int32s(defaultValue ...int32) []int32 {
+	if e.value == nil {
 		return defaultValue
 	}
 
-	v := reflect.Indirect(reflect.ValueOf(ev))
+	v := reflect.Indirect(reflect.ValueOf(e.value))
 
 	if v.Kind() != reflect.Slice {
 		return defaultValue
@@ -734,20 +681,18 @@ func (e *env) Int32s(key string, defaultValue ...int32) []int32 {
 }
 
 // Uint32 returns a value of uint32.
-func (e *env) Uint32(key string, defaultValue ...uint32) uint32 {
+func (e *EnvValue) Uint32(defaultValue ...uint32) uint32 {
 	var dv uint32 = 0
 
 	if len(defaultValue) > 0 {
 		dv = defaultValue[0]
 	}
 
-	ev := e.Get(key)
-
-	if ev == nil {
+	if e.value == nil {
 		return dv
 	}
 
-	switch t := ev.(type) {
+	switch t := e.value.(type) {
 	case int64:
 		if t < 0 {
 			return 0
@@ -778,14 +723,12 @@ func (e *env) Uint32(key string, defaultValue ...uint32) uint32 {
 }
 
 // Uint32s returns a value of []uint32.
-func (e *env) Uint32s(key string, defaultValue ...uint32) []uint32 {
-	ev := e.Get(key)
-
-	if ev == nil {
+func (e *EnvValue) Uint32s(defaultValue ...uint32) []uint32 {
+	if e.value == nil {
 		return defaultValue
 	}
 
-	v := reflect.Indirect(reflect.ValueOf(ev))
+	v := reflect.Indirect(reflect.ValueOf(e.value))
 
 	if v.Kind() != reflect.Slice {
 		return defaultValue
@@ -829,20 +772,18 @@ func (e *env) Uint32s(key string, defaultValue ...uint32) []uint32 {
 }
 
 // Int64 returns a value of int64.
-func (e *env) Int64(key string, defaultValue ...int64) int64 {
+func (e *EnvValue) Int64(defaultValue ...int64) int64 {
 	var dv int64
 
 	if len(defaultValue) > 0 {
 		dv = defaultValue[0]
 	}
 
-	ev := e.Get(key)
-
-	if ev == nil {
+	if e.value == nil {
 		return dv
 	}
 
-	switch t := ev.(type) {
+	switch t := e.value.(type) {
 	case int64:
 		return t
 	case uint64:
@@ -865,14 +806,12 @@ func (e *env) Int64(key string, defaultValue ...int64) int64 {
 }
 
 // Int64s returns a value of []int64.
-func (e *env) Int64s(key string, defaultValue ...int64) []int64 {
-	ev := e.Get(key)
-
-	if ev == nil {
+func (e *EnvValue) Int64s(defaultValue ...int64) []int64 {
+	if e.value == nil {
 		return defaultValue
 	}
 
-	v := reflect.Indirect(reflect.ValueOf(ev))
+	v := reflect.Indirect(reflect.ValueOf(e.value))
 
 	if v.Kind() != reflect.Slice {
 		return []int64{}
@@ -911,20 +850,18 @@ func (e *env) Int64s(key string, defaultValue ...int64) []int64 {
 }
 
 // Uint64 returns a value of uint64.
-func (e *env) Uint64(key string, defaultValue ...uint64) uint64 {
+func (e *EnvValue) Uint64(defaultValue ...uint64) uint64 {
 	var dv uint64 = 0
 
 	if len(defaultValue) > 0 {
 		dv = defaultValue[0]
 	}
 
-	ev := e.Get(key)
-
-	if ev == nil {
+	if e.value == nil {
 		return dv
 	}
 
-	switch t := ev.(type) {
+	switch t := e.value.(type) {
 	case int64:
 		if t < 0 {
 			return 0
@@ -955,14 +892,12 @@ func (e *env) Uint64(key string, defaultValue ...uint64) uint64 {
 }
 
 // Uint64s returns a value of []uint64.
-func (e *env) Uint64s(key string, defaultValue ...uint64) []uint64 {
-	ev := e.Get(key)
-
-	if ev == nil {
+func (e *EnvValue) Uint64s(defaultValue ...uint64) []uint64 {
+	if e.value == nil {
 		return defaultValue
 	}
 
-	v := reflect.Indirect(reflect.ValueOf(ev))
+	v := reflect.Indirect(reflect.ValueOf(e.value))
 
 	if v.Kind() != reflect.Slice {
 		return defaultValue
@@ -1005,20 +940,18 @@ func (e *env) Uint64s(key string, defaultValue ...uint64) []uint64 {
 }
 
 // Float64 returns a value of float64.
-func (e *env) Float64(key string, defaultValue ...float64) float64 {
+func (e *EnvValue) Float64(defaultValue ...float64) float64 {
 	var dv float64
 
 	if len(defaultValue) > 0 {
 		dv = defaultValue[0]
 	}
 
-	ev := e.Get(key)
-
-	if ev == nil {
+	if e.value == nil {
 		return dv
 	}
 
-	switch t := ev.(type) {
+	switch t := e.value.(type) {
 	case float64:
 		return t
 	case int64:
@@ -1041,14 +974,12 @@ func (e *env) Float64(key string, defaultValue ...float64) float64 {
 }
 
 // Float64s returns a value of []float64.
-func (e *env) Float64s(key string, defaultValue ...float64) []float64 {
-	ev := e.Get(key)
-
-	if ev == nil {
+func (e *EnvValue) Float64s(defaultValue ...float64) []float64 {
+	if e.value == nil {
 		return defaultValue
 	}
 
-	v := reflect.Indirect(reflect.ValueOf(ev))
+	v := reflect.Indirect(reflect.ValueOf(e.value))
 
 	if v.Kind() != reflect.Slice {
 		return []float64{}
@@ -1087,20 +1018,18 @@ func (e *env) Float64s(key string, defaultValue ...float64) []float64 {
 }
 
 // Bool returns a value of bool.
-func (e *env) Bool(key string, defaultValue ...bool) bool {
+func (e *EnvValue) Bool(defaultValue ...bool) bool {
 	var dv bool
 
 	if len(defaultValue) > 0 {
 		dv = defaultValue[0]
 	}
 
-	ev := e.Get(key)
-
-	if ev == nil {
+	if e.value == nil {
 		return dv
 	}
 
-	switch t := ev.(type) {
+	switch t := e.value.(type) {
 	case bool:
 		return t
 	case int64:
@@ -1126,20 +1055,18 @@ func (e *env) Bool(key string, defaultValue ...bool) bool {
 
 // Time returns a value of time.Time.
 // Layout is required when the env value is a string.
-func (e *env) Time(key string, layout string, defaultValue ...time.Time) time.Time {
+func (e *EnvValue) Time(layout string, defaultValue ...time.Time) time.Time {
 	var dv time.Time
 
 	if len(defaultValue) > 0 {
 		dv = defaultValue[0]
 	}
 
-	ev := e.Get(key)
-
-	if ev == nil {
+	if e.value == nil {
 		return dv
 	}
 
-	switch t := ev.(type) {
+	switch t := e.value.(type) {
 	case time.Time:
 		return t
 	case string:
@@ -1156,10 +1083,14 @@ func (e *env) Time(key string, layout string, defaultValue ...time.Time) time.Ti
 }
 
 // Map returns a value of map[string]interface{}.
-func (e *env) Map(key string) map[string]interface{} {
+func (e *EnvValue) Map(key string) map[string]interface{} {
 	m := make(map[string]interface{})
 
-	if v, ok := e.Get(key).(*toml.Tree); ok {
+	if e.value == nil {
+		return m
+	}
+
+	if v, ok := e.value.(*toml.Tree); ok {
 		m = v.ToMap()
 	}
 
@@ -1167,26 +1098,77 @@ func (e *env) Map(key string) map[string]interface{} {
 }
 
 // Unmarshal attempts to unmarshal the Tree into a Go struct pointed by dest.
-func (e *env) Unmarshal(key string, dest interface{}) error {
-	i := e.Get(key)
-
-	if i == nil {
-		return ErrEnvNil
+func (e *EnvValue) Unmarshal(dest interface{}) error {
+	if e.value == nil {
+		return ErrConfigNil
 	}
 
-	v, ok := i.(*toml.Tree)
+	v, ok := e.value.(*toml.Tree)
 
 	if !ok {
-		return errors.New("yiigo: invalid config of toml")
+		return errors.New("yiigo: toml syntax error")
 	}
 
 	return v.Unmarshal(dest)
 }
 
-// Get returns the value at key in the env Tree.
-func (e *env) Get(key string) interface{} {
-	e.mutex.RLock()
-	defer e.mutex.RUnlock()
+var env *toml.Tree
 
-	return e.tree.Get(key)
+func loadConfigFile() {
+	path, err := filepath.Abs("env.toml")
+
+	if err != nil {
+		logger.Panic("yiigo: load config file error", zap.Error(err))
+	}
+
+	if _, err := os.Stat(path); err != nil {
+		if os.IsNotExist(err) {
+			f, err := os.Create(path)
+
+			if err != nil {
+				logger.Panic("yiigo: load config file error", zap.Error(err))
+			}
+
+			defer f.Close()
+
+			f.WriteString(`[app]
+env = "dev"
+debug = true
+		
+[db]
+			
+[mongo]
+		
+[redis]
+			
+[log]
+
+    [log.default]
+    path = "app.log"
+    max_size = 500
+    max_age = 0
+    max_backups = 0
+    compress = true
+
+[email]
+host = "smtp.exmail.qq.com"
+port = 25
+username = ""
+password = ""`)
+		}
+
+		if os.IsPermission(err) {
+			os.Chmod(path, os.ModePerm)
+		}
+	}
+
+	env, err = toml.LoadFile(path)
+
+	if err != nil {
+		logger.Panic("yiigo: load config file error", zap.Error(err))
+	}
+}
+
+func Env(key string) *EnvValue {
+	return &EnvValue{value: env.Get(key)}
 }
