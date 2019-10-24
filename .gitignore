@@ -1,4 +1,4 @@
 .vscode
 .idea
 vendor
-env.toml
+yiigo.toml

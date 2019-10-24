@@ -27,23 +27,120 @@ A simple and light library which makes Golang development easier !
 ## Installation
 
 ```sh
-go get github.com/iiinsomnia/yiigo/v3
+go get github.com/iiinsomnia/yiigo/v4
 ```
 
 ## Usage
+
+#### Config
+
+- config file
+
+```toml
+[app]
+env = "dev"
+debug = true
+
+[db]
+
+    [db.default]
+    driver = "mysql"
+    dsn = "username:password@tcp(localhost:3306)/dbname?timeout=10s&charset=utf8mb4&collation=utf8mb4_general_ci&parseTime=True&loc=Local"
+    # dsn = "host=localhost port=5432 user=root password=secret dbname=test connect_timeout=10 sslmode=disable" # pgsql
+    max_open_conns = 20
+    max_idle_conns = 10
+    conn_max_lifetime = 60 # 秒
+
+    [db.foo]
+    driver = "mysql"
+    dsn = "username:password@tcp(localhost:3306)/dbname?timeout=10s&charset=utf8mb4&collation=utf8mb4_general_ci&parseTime=True&loc=Local"
+    # dsn = "host=localhost port=5432 user=root password=secret dbname=test connect_timeout=10 sslmode=disable" # pgsql
+    max_open_conns = 20
+    max_idle_conns = 10
+    conn_max_lifetime = 60 # 秒
+
+[mongo]
+
+    [mongo.default]
+    dsn = "mongodb://username:password@localhost:27017"
+    connect_timeout = 10 # 秒
+    pool_size = 10
+    max_conn_idle_time = 60 # 秒
+    mode = "primary" # primary | primary_preferred | secondary | secondary_preferred | nearest
+
+    [mongo.foo]
+    dsn = "mongodb://username:password@localhost:27017"
+    connect_timeout = 10 # 秒
+    pool_size = 10
+    max_conn_idle_time = 60 # 秒
+    mode = "primary" # primary | primary_preferred | secondary | secondary_preferred | nearest
+
+[redis]
+
+    [redis.default]
+    address = "127.0.0.1:6379"
+    password = ""
+    database = 0
+    connect_timeout = 10 # 秒
+    read_timeout = 10 # 秒
+    write_timeout = 10 # 秒
+    pool_size = 10
+    pool_limit = 20
+    idle_timeout = 60 # 秒
+    wait_timeout = 10 # 秒
+    prefill_parallelism = 0
+
+    [redis.foo]
+    address = "127.0.0.1:6379"
+    password = ""
+    database = 0
+    connect_timeout = 10 # 秒
+    read_timeout = 10 # 秒
+    write_timeout = 10 # 秒
+    pool_size = 10
+    pool_limit = 20
+    idle_timeout = 60 # 秒
+    wait_timeout = 10 # 秒
+    prefill_parallelism = 0
+
+[log]
+
+    [log.default]
+    path = "app.log"
+    max_size = 500
+    max_age = 0
+    max_backups = 0
+    compress = true
+
+    [log.foo]
+    path = "foo.log"
+    max_size = 500
+    max_age = 0
+    max_backups = 0
+    compress = true
+
+[email]
+host = "smtp.exmail.qq.com"
+port = 25
+username = ""
+password = ""
+```
+
+- config usage
+
+```go
+yiigo.Env.Bool("app.debug", true)
+yiigo.Env.String("app.env", "dev")
+```
 
 #### MySQL
 
 ```go
 // default db
-yiigo.RegisterDB(yiigo.AsDefault, yiigo.MySQL, "root:root@tcp(localhost:3306)/test")
-
 yiigo.DB().Get(&User{}, "SELECT * FROM `user` WHERE `id` = ?", 1)
 yiigo.Orm().First(&User{}, 1)
 
 // other db
-yiigo.RegisterDB("foo", yiigo.MySQL, "root:root@tcp(localhost:3306)/foo")
-
 yiigo.DB("foo").Get(&User{}, "SELECT * FROM `user` WHERE `id` = ?", 1)
 yiigo.Orm("foo").First(&User{}, 1)
 ```
@@ -52,15 +149,17 @@ yiigo.Orm("foo").First(&User{}, 1)
 
 ```go
 // default mongodb
-yiigo.RegisterMongoDB(yiigo.AsDefault, "mongodb://localhost:27017")
+ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 
-ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+defer cancel()
+
 yiigo.Mongo().Database("test").Collection("numbers").InsertOne(ctx, bson.M{"name": "pi", "value": 3.14159})
 
 // other mongodb
-yiigo.RegisterMongoDB("foo", "mongodb://localhost:27017")
+ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 
-ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+defer cancel()
+
 yiigo.Mongo("foo").Database("test").Collection("numbers").InsertOne(ctx, bson.M{"name": "pi", "value": 3.14159})
 ```
 
@@ -68,8 +167,6 @@ yiigo.Mongo("foo").Database("test").Collection("numbers").InsertOne(ctx, bson.M{
 
 ```go
 // default redis
-yiigo.RegisterRedis(yiigo.AsDefault, "localhost:6379")
-
 conn, err := yiigo.Redis().Get()
 
 if err != nil {
@@ -81,8 +178,6 @@ defer yiigo.Redis().Put(conn)
 conn.Do("SET", "test_key", "hello world")
 
 // other redis
-yiigo.RegisterRedis("foo", "localhost:6379")
-
 conn, err := yiigo.Redis("foo").Get()
 
 if err != nil {
@@ -94,35 +189,18 @@ defer yiigo.Redis("foo").Put(conn)
 conn.Do("SET", "test_key", "hello world")
 ```
 
-#### Config
-
-```go
-// env.toml
-//
-// [app]
-// env = "dev"
-// debug = true
-// port = 50001
-
-yiigo.SetEnvFile("env.toml")
-
-yiigo.Env.Bool("app.debug", true)
-yiigo.Env.Int("app.port", 12345)
-yiigo.Env.String("app.env", "dev")
-```
-
 #### Zipkin
 
 ```go
 reporter := yiigo.NewZipkinHTTPReporter("http://localhost:9411/api/v2/spans")
 
-err := yiigo.RegisterZipkinTracer(yiigo.AsDefault, reporter)
+tracer, err := yiigo.NewZipkinTracer(yiigo.AsDefault, reporter)
 
 if err != nil {
     log.Fatal(err)
 }
 
-client, err := yiigo.ZTracer().HTTPClient()
+client, err := tracer.HTTPClient()
 
 if err != nil {
     log.Fatal(err)
@@ -144,11 +222,9 @@ fmt.Println(string(b))
 
 ```go
 // default logger
-yiigo.RegisterLogger(yiigo.AsDefault, "app.log")
 yiigo.Logger().Info("hello world")
 
 // other logger
-yiigo.RegisterLogger("foo", "foo.log")
 yiigo.Logger("foo").Info("hello world")
 ```
 
