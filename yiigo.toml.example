@@ -1,5 +1,5 @@
 [app]
-env = "dev"
+env = "dev" # dev | beta | prod
 debug = true
 
 [db]

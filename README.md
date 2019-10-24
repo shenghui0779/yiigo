@@ -34,11 +34,11 @@ go get github.com/iiinsomnia/yiigo/v4
 
 #### Config
 
-- config file
+- `yiigo.toml`
 
 ```toml
 [app]
-env = "dev"
+env = "dev" # dev | beta | prod
 debug = true
 
 [db]
