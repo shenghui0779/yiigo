@@ -2,6 +2,7 @@ package yiigo
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -164,6 +165,8 @@ func initRedis() {
 		}
 
 		redisMap.Store(v, poolResource)
+
+		logger.Info(fmt.Sprintf("yiigo: redis.%s is OK.", v))
 	}
 }
 

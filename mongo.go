@@ -2,6 +2,7 @@ package yiigo
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -105,6 +106,8 @@ func initMongoDB() {
 		}
 
 		mgoMap.Store(v, client)
+
+		logger.Info(fmt.Sprintf("yiigo: mongodb.%s is OK.", v))
 	}
 }
 

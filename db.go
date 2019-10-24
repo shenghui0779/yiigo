@@ -99,6 +99,8 @@ func initDB(debug bool) {
 
 		dbmap.Store(v, db)
 		ormap.Store(v, orm)
+
+		logger.Info(fmt.Sprintf("yiigo: db.%s is OK.", v))
 	}
 }
 
