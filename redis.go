@@ -131,7 +131,7 @@ var (
 )
 
 func initRedis() {
-	tree, ok := env.Get("redis").(*toml.Tree)
+	tree, ok := env.get("redis").(*toml.Tree)
 
 	if !ok {
 		return

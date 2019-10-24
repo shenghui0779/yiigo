@@ -59,7 +59,7 @@ func dbDial(cfg *dbConf, debug bool) (*gorm.DB, error) {
 }
 
 func initDB(debug bool) {
-	tree, ok := env.Get("db").(*toml.Tree)
+	tree, ok := env.get("db").(*toml.Tree)
 
 	if !ok {
 		return

@@ -122,7 +122,7 @@ func (m *EMailDialer) Send(e *EMail, options ...EMailOption) error {
 var Mailer *EMailDialer
 
 func initMailer() {
-	node, ok := env.Get("email").(*toml.Tree)
+	node, ok := env.get("email").(*toml.Tree)
 
 	if !ok {
 		return

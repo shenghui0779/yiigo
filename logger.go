@@ -56,7 +56,7 @@ func newLogger(cfg *logConf, debug bool) *zap.Logger {
 }
 
 func initLogger(debug bool) {
-	tree, ok := env.Get("log").(*toml.Tree)
+	tree, ok := env.get("log").(*toml.Tree)
 
 	if !ok {
 		return
