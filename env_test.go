@@ -1,7 +1,6 @@
 package yiigo
 
 import (
-	"fmt"
 	"reflect"
 	"testing"
 	"time"
@@ -41,7 +40,7 @@ func Test_env_String(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := Env.String(tt.args.key, tt.args.defaultValue...); got != tt.want {
+			if got := Env(tt.args.key).String(tt.args.defaultValue...); got != tt.want {
 				t.Errorf("env.String() = %v, want %v", got, tt.want)
 			}
 		})
@@ -70,7 +69,7 @@ func Test_env_Strings(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := Env.Strings(tt.args.key, tt.args.defaultValue...); !reflect.DeepEqual(got, tt.want) {
+			if got := Env(tt.args.key).Strings(tt.args.defaultValue...); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("env.Strings() = %v, want %v", got, tt.want)
 			}
 		})
@@ -99,7 +98,7 @@ func Test_env_Int(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := Env.Int(tt.args.key, tt.args.defaultValue...); got != tt.want {
+			if got := Env(tt.args.key).Int(tt.args.defaultValue...); got != tt.want {
 				t.Errorf("env.Int() = %v, want %v", got, tt.want)
 			}
 		})
@@ -129,7 +128,7 @@ func Test_env_Ints(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			if got := Env.Ints(tt.args.key, tt.args.defaultValue...); !reflect.DeepEqual(got, tt.want) {
+			if got := Env(tt.args.key).Ints(tt.args.defaultValue...); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("env.Ints() = %v, want %v", got, tt.want)
 			}
 		})
@@ -158,7 +157,7 @@ func Test_env_Uint(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := Env.Uint(tt.args.key, tt.args.defaultValue...); got != tt.want {
+			if got := Env(tt.args.key).Uint(tt.args.defaultValue...); got != tt.want {
 				t.Errorf("env.Uint() = %v, want %v", got, tt.want)
 			}
 		})
@@ -188,7 +187,7 @@ func Test_env_Uints(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			if got := Env.Uints(tt.args.key, tt.args.defaultValue...); !reflect.DeepEqual(got, tt.want) {
+			if got := Env(tt.args.key).Uints(tt.args.defaultValue...); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("env.Uints() = %v, want %v", got, tt.want)
 			}
 		})
@@ -217,7 +216,7 @@ func Test_env_Int8(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := Env.Int8(tt.args.key, tt.args.defaultValue...); got != tt.want {
+			if got := Env(tt.args.key).Int8(tt.args.defaultValue...); got != tt.want {
 				t.Errorf("env.Int8() = %v, want %v", got, tt.want)
 			}
 		})
@@ -247,7 +246,7 @@ func Test_env_Int8s(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			if got := Env.Int8s(tt.args.key, tt.args.defaultValue...); !reflect.DeepEqual(got, tt.want) {
+			if got := Env(tt.args.key).Int8s(tt.args.defaultValue...); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("env.Int8s() = %v, want %v", got, tt.want)
 			}
 		})
@@ -276,7 +275,7 @@ func Test_env_Uint8(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := Env.Uint8(tt.args.key, tt.args.defaultValue...); got != tt.want {
+			if got := Env(tt.args.key).Uint8(tt.args.defaultValue...); got != tt.want {
 				t.Errorf("env.Uint8() = %v, want %v", got, tt.want)
 			}
 		})
@@ -306,7 +305,7 @@ func Test_env_Uint8s(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			if got := Env.Uint8s(tt.args.key, tt.args.defaultValue...); !reflect.DeepEqual(got, tt.want) {
+			if got := Env(tt.args.key).Uint8s(tt.args.defaultValue...); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("env.Uint8s() = %v, want %v", got, tt.want)
 			}
 		})
@@ -335,7 +334,7 @@ func Test_env_Int16(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := Env.Int16(tt.args.key, tt.args.defaultValue...); got != tt.want {
+			if got := Env(tt.args.key).Int16(tt.args.defaultValue...); got != tt.want {
 				t.Errorf("env.Int16() = %v, want %v", got, tt.want)
 			}
 		})
@@ -365,7 +364,7 @@ func Test_env_Int16s(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			if got := Env.Int16s(tt.args.key, tt.args.defaultValue...); !reflect.DeepEqual(got, tt.want) {
+			if got := Env(tt.args.key).Int16s(tt.args.defaultValue...); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("env.Int16s() = %v, want %v", got, tt.want)
 			}
 		})
@@ -394,7 +393,7 @@ func Test_env_Uint16(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := Env.Uint16(tt.args.key, tt.args.defaultValue...); got != tt.want {
+			if got := Env(tt.args.key).Uint16(tt.args.defaultValue...); got != tt.want {
 				t.Errorf("env.Uint16() = %v, want %v", got, tt.want)
 			}
 		})
@@ -424,7 +423,7 @@ func Test_env_Uint16s(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			if got := Env.Uint16s(tt.args.key, tt.args.defaultValue...); !reflect.DeepEqual(got, tt.want) {
+			if got := Env(tt.args.key).Uint16s(tt.args.defaultValue...); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("env.Uint16s() = %v, want %v", got, tt.want)
 			}
 		})
@@ -453,7 +452,7 @@ func Test_env_Int32(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := Env.Int32(tt.args.key, tt.args.defaultValue...); got != tt.want {
+			if got := Env(tt.args.key).Int32(tt.args.defaultValue...); got != tt.want {
 				t.Errorf("env.Int32() = %v, want %v", got, tt.want)
 			}
 		})
@@ -483,7 +482,7 @@ func Test_env_Int32s(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			if got := Env.Int32s(tt.args.key, tt.args.defaultValue...); !reflect.DeepEqual(got, tt.want) {
+			if got := Env(tt.args.key).Int32s(tt.args.defaultValue...); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("env.Int32s() = %v, want %v", got, tt.want)
 			}
 		})
@@ -512,7 +511,7 @@ func Test_env_Uint32(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := Env.Uint32(tt.args.key, tt.args.defaultValue...); got != tt.want {
+			if got := Env(tt.args.key).Uint32(tt.args.defaultValue...); got != tt.want {
 				t.Errorf("env.Uint32() = %v, want %v", got, tt.want)
 			}
 		})
@@ -542,7 +541,7 @@ func Test_env_Uint32s(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			if got := Env.Uint32s(tt.args.key, tt.args.defaultValue...); !reflect.DeepEqual(got, tt.want) {
+			if got := Env(tt.args.key).Uint32s(tt.args.defaultValue...); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("env.Uint32s() = %v, want %v", got, tt.want)
 			}
 		})
@@ -571,7 +570,7 @@ func Test_env_Int64(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := Env.Int64(tt.args.key, tt.args.defaultValue...); got != tt.want {
+			if got := Env(tt.args.key).Int64(tt.args.defaultValue...); got != tt.want {
 				t.Errorf("env.Int64() = %v, want %v", got, tt.want)
 			}
 		})
@@ -600,7 +599,7 @@ func Test_env_Int64s(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := Env.Int64s(tt.args.key, tt.args.defaultValue...); !reflect.DeepEqual(got, tt.want) {
+			if got := Env(tt.args.key).Int64s(tt.args.defaultValue...); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("env.Int64s() = %v, want %v", got, tt.want)
 			}
 		})
@@ -629,7 +628,7 @@ func Test_env_Uint64(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := Env.Uint64(tt.args.key, tt.args.defaultValue...); got != tt.want {
+			if got := Env(tt.args.key).Uint64(tt.args.defaultValue...); got != tt.want {
 				t.Errorf("env.Uint64() = %v, want %v", got, tt.want)
 			}
 		})
@@ -659,7 +658,7 @@ func Test_env_Uint64s(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			if got := Env.Uint64s(tt.args.key, tt.args.defaultValue...); !reflect.DeepEqual(got, tt.want) {
+			if got := Env(tt.args.key).Uint64s(tt.args.defaultValue...); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("env.Uint64s() = %v, want %v", got, tt.want)
 			}
 		})
@@ -688,7 +687,7 @@ func Test_env_Float64(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := Env.Float64(tt.args.key, tt.args.defaultValue...); got != tt.want {
+			if got := Env(tt.args.key).Float64(tt.args.defaultValue...); got != tt.want {
 				t.Errorf("env.Float64() = %v, want %v", got, tt.want)
 			}
 		})
@@ -717,7 +716,7 @@ func Test_env_Float64s(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := Env.Float64s(tt.args.key, tt.args.defaultValue...); !reflect.DeepEqual(got, tt.want) {
+			if got := Env(tt.args.key).Float64s(tt.args.defaultValue...); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("env.Float64s() = %v, want %v", got, tt.want)
 			}
 		})
@@ -746,7 +745,7 @@ func Test_env_Bool(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := Env.Bool(tt.args.key, tt.args.defaultValue...); got != tt.want {
+			if got := Env(tt.args.key).Bool(tt.args.defaultValue...); got != tt.want {
 				t.Errorf("env.Bool() = %v, want %v", got, tt.want)
 			}
 		})
@@ -777,7 +776,7 @@ func Test_env_Time(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := Env.Time(tt.args.key, tt.args.layout, tt.args.defaultValue...); !reflect.DeepEqual(got, tt.want) {
+			if got := Env(tt.args.key).Time(tt.args.layout, tt.args.defaultValue...); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("env.Time() = %v, want %v", got, tt.want)
 			}
 		})
@@ -811,7 +810,7 @@ func Test_env_Map(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := Env.Map(tt.args.key); !reflect.DeepEqual(got, tt.want) {
+			if got := Env(tt.args.key).Map(tt.args.key); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("env.Map() = %v, want %v", got, tt.want)
 			}
 		})
@@ -850,19 +849,9 @@ func Test_env_Unmarshal(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := Env.Unmarshal(tt.args.key, tt.args.dest); (err != nil) != tt.wantErr {
+			if err := Env(tt.args.key).Unmarshal(tt.args.dest); (err != nil) != tt.wantErr {
 				t.Errorf("env.Unmarshal() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
-}
-
-func TestMain(m *testing.M) {
-	if err := SetEnvFile("env.toml"); err != nil {
-		fmt.Println(err)
-
-		return
-	}
-
-	m.Run()
 }

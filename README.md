@@ -194,7 +194,7 @@ conn.Do("SET", "test_key", "hello world")
 ```go
 reporter := yiigo.NewZipkinHTTPReporter("http://localhost:9411/api/v2/spans")
 
-tracer, err := yiigo.NewZipkinTracer(yiigo.AsDefault, reporter)
+tracer, err := yiigo.NewZipkinTracer(reporter)
 
 if err != nil {
     log.Fatal(err)
