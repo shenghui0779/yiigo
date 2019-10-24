@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-// env.toml
+// yiigo.toml
 //
 // [app]
 // env = "dev"
