@@ -143,7 +143,7 @@ func initRedis() {
 	}
 
 	for _, v := range keys {
-		node, ok := env.Get(v).(*toml.Tree)
+		node, ok := tree.Get(v).(*toml.Tree)
 
 		if !ok {
 			continue
