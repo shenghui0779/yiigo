@@ -104,7 +104,7 @@ func initDB(debug bool) {
 
 // DB returns a db.
 func DB(name ...string) *sqlx.DB {
-	if len(name) == 0 || name[0] == AsDefault {
+	if len(name) == 0 {
 		if defaultDB == nil {
 			logger.Panic("yiigo: invalid db", zap.String("name", AsDefault))
 		}

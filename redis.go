@@ -169,7 +169,7 @@ func initRedis() {
 
 // Redis returns a redis pool.
 func Redis(name ...string) *RedisPoolResource {
-	if len(name) == 0 || name[0] == AsDefault {
+	if len(name) == 0 {
 		if defaultRedis == nil {
 			logger.Panic("yiigo: invalid redis", zap.String("name", AsDefault))
 		}

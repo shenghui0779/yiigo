@@ -2,8 +2,6 @@ package yiigo
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"sync"
 	"time"
 
@@ -112,9 +110,9 @@ func initMongoDB() {
 
 // Mongo returns a mongo client.
 func Mongo(name ...string) *mongo.Client {
-	if len(name) == 0 || name[0] == AsDefault {
+	if len(name) == 0 {
 		if defaultMongo == nil {
-			panic(errors.New("yiigo: mongo.default is not registered"))
+			logger.Panic("yiigo: invalid mongodb", zap.String("name", AsDefault))
 		}
 
 		return defaultMongo
@@ -123,7 +121,7 @@ func Mongo(name ...string) *mongo.Client {
 	v, ok := mgoMap.Load(name[0])
 
 	if !ok {
-		panic(fmt.Errorf("yiigo: mongo.%s is not registered", name[0]))
+		logger.Panic("yiigo: invalid mongodb", zap.String("name", name[0]))
 	}
 
 	return v.(*mongo.Client)

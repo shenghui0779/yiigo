@@ -97,7 +97,7 @@ func initLogger(debug bool) {
 
 // Logger returns a logger
 func Logger(name ...string) *zap.Logger {
-	if len(name) == 0 || name[0] == AsDefault {
+	if len(name) == 0 {
 		return logger
 	}
 
