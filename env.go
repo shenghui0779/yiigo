@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/pelletier/go-toml"
@@ -14,6 +15,18 @@ import (
 
 // ErrConfigNil returned when config not found.
 var ErrConfigNil = errors.New("yiigo: config not found")
+
+type config struct {
+	tree  *toml.Tree
+	mutex sync.RWMutex
+}
+
+func (c *config) get(key string) interface{} {
+	c.mutex.RLock()
+	defer c.mutex.RUnlock()
+
+	return c.tree.Get(key)
+}
 
 // Env config value
 type EnvValue struct {
@@ -1112,7 +1125,7 @@ func (e *EnvValue) Unmarshal(dest interface{}) error {
 	return v.Unmarshal(dest)
 }
 
-var env *toml.Tree
+var env *config
 
 func loadConfigFile() {
 	path, err := filepath.Abs("yiigo.toml")
@@ -1162,13 +1175,15 @@ password = ""`)
 		}
 	}
 
-	env, err = toml.LoadFile(path)
+	t, err := toml.LoadFile(path)
 
 	if err != nil {
 		logger.Panic("yiigo: load config file error", zap.Error(err))
 	}
+
+	env = &config{tree: t}
 }
 
 func Env(key string) *EnvValue {
-	return &EnvValue{value: env.Get(key)}
+	return &EnvValue{value: env.get(key)}
 }
