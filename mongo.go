@@ -69,7 +69,7 @@ func mongoDial(cfg *mongoConfig) (*mongo.Client, error) {
 }
 
 func initMongoDB() {
-	tree, ok := env.Get("log").(*toml.Tree)
+	tree, ok := env.Get("mongo").(*toml.Tree)
 
 	if !ok {
 		return
