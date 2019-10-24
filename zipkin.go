@@ -402,7 +402,8 @@ func (z *ZipkinTracer) HTTPClient(options ...ZipkinHTTPClientOption) (*ZipkinHTT
 //
 // ... do something with span, eg: span.Tag()
 //
-// ctx := zipkin.NewContext(r.Context(), span)
+// ctx := zipkin.NewContext(req.Context(), span)
+// req = req.WithContext(ctx)
 func (z *ZipkinTracer) Start(req *http.Request) zipkin.Span {
 	// try to extract B3 Headers from upstream
 	sc := z.tracer.Extract(b3.ExtractHTTP(req))
