@@ -61,9 +61,9 @@
 //    // debug = true
 //    // port = 50001
 //
-//    yiigo.Env.GetBool("app.debug", true)
-//    yiigo.Env.GetInt("app.port", 12345)
-//    yiigo.Env.GetString("app.env", "dev")
+//    yiigo.Env("app.env").String()
+//    yiigo.Env("app.debug").Bool()
+//    yiigo.Env("app.port").Int()
 //
 //
 // Zipkin

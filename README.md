@@ -94,8 +94,8 @@ password = ""
 - config usage
 
 ```go
-yiigo.Env.Bool("app.debug", true)
-yiigo.Env.String("app.env", "dev")
+yiigo.Env("app.env").String()
+yiigo.Env("app.debug").Bool()
 ```
 
 #### MySQL
