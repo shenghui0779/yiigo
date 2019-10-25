@@ -2,6 +2,15 @@
 env = "dev" # dev | beta | prod
 debug = true
 
+[apollo]
+appid = "test"
+cluster = "default"
+address = "127.0.0.1:8080"
+cache_dir = "./"
+
+    [apollo.namespace]
+    # 自定义配置对应的namespace
+
 [db]
 
     [db.default]

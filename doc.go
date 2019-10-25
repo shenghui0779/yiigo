@@ -65,6 +65,18 @@
 //    yiigo.Env("app.debug").Bool()
 //    yiigo.Env("app.port").Int()
 //
+// Apollo
+//
+// type QiniuConfig struct {
+//    *yiigo.DefaultApolloConfig
+//    BucketName string `toml:"bucket_name"`
+// }
+//
+// var qiniu = &QiniuConfig{DefaultApolloConfig: yiigo.NewDefaultConfig("qiniu", "qiniu")}
+//
+// if err := yiigo.StartApollo(qiniu); err != nil {
+//    log.Fatal(err)
+// }
 //
 // Zipkin
 //

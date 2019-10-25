@@ -48,7 +48,7 @@ type apollo struct {
 	Cluster  string `toml:"cluster"`
 	Address  string `toml:"address"`
 	CacheDir string `toml:"cache_dir"`
-	isDev    bool   `toml:"-`
+	isDev    bool   `toml:"-"`
 }
 
 // Start start apollo

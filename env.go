@@ -933,7 +933,7 @@ func (e *EnvValue) Uint64s(defaultValue ...uint64) []uint64 {
 				r = uint64(t)
 			}
 		case uint64:
-			r = uint64(t)
+			r = t
 		case float64:
 			if t >= 0 {
 				r = uint64(t)
