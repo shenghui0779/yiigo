@@ -67,16 +67,16 @@
 //
 // Apollo
 //
-// type QiniuConfig struct {
-//    *yiigo.DefaultApolloConfig
-//    BucketName string `toml:"bucket_name"`
-// }
+//    type QiniuConfig struct {
+//        *yiigo.DefaultApolloConfig
+//        BucketName string `toml:"bucket_name"`
+//    }
 //
-// var qiniu = &QiniuConfig{DefaultApolloConfig: yiigo.NewDefaultConfig("qiniu", "qiniu")}
+//    var qiniu = &QiniuConfig{DefaultApolloConfig: yiigo.NewDefaultConfig("qiniu", "qiniu")}
 //
-// if err := yiigo.StartApollo(qiniu); err != nil {
-//    log.Fatal(err)
-// }
+//    if err := yiigo.StartApollo(qiniu); err != nil {
+//        log.Fatal(err)
+//    }
 //
 // Zipkin
 //
