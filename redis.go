@@ -12,7 +12,7 @@ import (
 	"vitess.io/vitess/go/pools"
 )
 
-type redisConf struct {
+type redisConfig struct {
 	Address            string `toml:"address"`
 	Password           string `toml:"password"`
 	Database           int    `toml:"database"`
@@ -38,7 +38,7 @@ func (r RedisConn) Close() {
 
 // RedisPoolResource redis pool resource
 type RedisPoolResource struct {
-	config *redisConf
+	config *redisConfig
 	pool   *pools.ResourcePool
 	mutex  sync.Mutex
 }
@@ -150,7 +150,7 @@ func initRedis() {
 			continue
 		}
 
-		cfg := new(redisConf)
+		cfg := new(redisConfig)
 
 		if err := node.Unmarshal(cfg); err != nil {
 			logger.Panic("yiigo: redis init error", zap.String("name", v), zap.Error(err))

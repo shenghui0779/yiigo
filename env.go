@@ -1145,8 +1145,16 @@ func loadConfigFile() {
 			defer f.Close()
 
 			f.WriteString(`[app]
-env = "dev"
+env = "dev" # dev | beta | prod
 debug = true
+			
+[apollo]
+appid = "test"
+cluster = "default"
+address = "127.0.0.1:8080"
+cache_dir = "./"
+
+    [apollo.namespace]
 		
 [db]
 			

@@ -2,7 +2,7 @@ package yiigo
 
 func init() {
 	// init default logger
-	logger = newLogger(&logConf{
+	logger = newLogger(&logConfig{
 		Path:       "app.log",
 		MaxSize:    500,
 		MaxBackups: 0,

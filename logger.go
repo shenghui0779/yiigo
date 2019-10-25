@@ -15,7 +15,7 @@ var (
 	logMap sync.Map
 )
 
-type logConf struct {
+type logConfig struct {
 	Path       string `toml:"path"`
 	MaxSize    int    `toml:"max_size"`
 	MaxBackups int    `toml:"max_backups"`
@@ -24,7 +24,7 @@ type logConf struct {
 }
 
 // newLogger returns a new logger.
-func newLogger(cfg *logConf, debug bool) *zap.Logger {
+func newLogger(cfg *logConfig, debug bool) *zap.Logger {
 	if debug {
 		cfg := zap.NewDevelopmentConfig()
 
@@ -75,7 +75,7 @@ func initLogger(debug bool) {
 			continue
 		}
 
-		cfg := &logConf{
+		cfg := &logConfig{
 			Path:       "app.log",
 			MaxSize:    500,
 			MaxBackups: 0,

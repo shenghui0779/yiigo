@@ -5,7 +5,7 @@
 [![GitHub release](https://img.shields.io/github/release/IIInsomnia/yiigo.svg)](https://github.com/iiinsomnia/yiigo/releases/latest)
 [![MIT license](http://img.shields.io/badge/license-MIT-brightgreen.svg)](http://opensource.org/licenses/MIT)
 
-A simple and light library which makes Golang development easier !
+The best and the most wanted package for junior gophers, probably.
 
 ## Features
 
@@ -14,6 +14,7 @@ A simple and light library which makes Golang development easier !
 - Support [MongoDB](https://github.com/mongodb/mongo-go-driver)
 - Support [Redis](https://github.com/gomodule/redigo)
 - Support [Zipkin](https://github.com/openzipkin/zipkin-go)
+- Support [Apollo](https://github.com/philchia/agollo)
 - Use [gomail](https://github.com/go-gomail/gomail) for email sending
 - Use [toml](https://github.com/pelletier/go-toml) for configuration
 - Use [sqlx](https://github.com/jmoiron/sqlx) for SQL executing
@@ -40,6 +41,16 @@ go get github.com/iiinsomnia/yiigo/v4
 [app]
 env = "dev" # dev | beta | prod
 debug = true
+
+[apollo]
+app_id = "test"
+cluster = "default"
+address = "127.0.0.1:8080"
+cache_dir = "./"
+
+    [apollo.namespace]
+    # configkey = namespace
+
 
 [db]
 
@@ -96,6 +107,21 @@ password = ""
 ```go
 yiigo.Env("app.env").String()
 yiigo.Env("app.debug").Bool()
+```
+
+#### Apollo
+
+```go
+type QiniuConfig struct {
+    *yiigo.DefaultApolloConfig
+    BucketName string `toml:"bucket_name"`
+}
+
+var qiniu = &QiniuConfig{DefaultApolloConfig: yiigo.NewDefaultConfig("qiniu", "qiniu")}
+
+if err := yiigo.StartApollo(qiniu); err != nil {
+    log.Fatal(err)
+}
 ```
 
 #### MySQL

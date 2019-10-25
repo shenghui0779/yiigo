@@ -28,7 +28,7 @@ var (
 	ormap      sync.Map
 )
 
-type dbConf struct {
+type dbConfig struct {
 	Driver          string `toml:"driver"`
 	Dsn             string `toml:"dsn"`
 	MaxOpenConns    int    `toml:"max_open_conns"`
@@ -36,7 +36,7 @@ type dbConf struct {
 	ConnMaxLifetime int    `toml:"conn_max_lifetime"`
 }
 
-func dbDial(cfg *dbConf, debug bool) (*gorm.DB, error) {
+func dbDial(cfg *dbConfig, debug bool) (*gorm.DB, error) {
 	if cfg.Driver != MySQL && cfg.Driver != Postgres {
 		return nil, fmt.Errorf("yiigo: invalid db driver: %s", cfg.Driver)
 	}
@@ -78,7 +78,7 @@ func initDB(debug bool) {
 			continue
 		}
 
-		cfg := new(dbConf)
+		cfg := new(dbConfig)
 
 		if err := node.Unmarshal(cfg); err != nil {
 			logger.Panic("yiigo: db init error", zap.String("name", v), zap.Error(err))

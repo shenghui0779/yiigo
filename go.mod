@@ -11,6 +11,7 @@ require (
 	github.com/lib/pq v1.2.1-0.20191011153232-f91d3411e481
 	github.com/openzipkin/zipkin-go v0.2.2
 	github.com/pelletier/go-toml v1.5.1-0.20191021183128-5edf9acd3ea9
+	github.com/philchia/agollo v1.2.1-0.20190728085453-a95533fccea3
 	github.com/xdg/scram v0.0.0-20180814205039-7eeb5667e42c // indirect
 	github.com/xdg/stringprep v1.0.0 // indirect
 	go.mongodb.org/mongo-driver v1.1.1-0.20191023225712-3801c2046d36
