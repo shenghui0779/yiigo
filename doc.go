@@ -82,13 +82,22 @@
 //
 //    reporter := yiigo.NewZipkinHTTPReporter("http://localhost:9411/api/v2/spans")
 //
-//    tracer, err := yiigo.NewZipkinTracer(reporter)
+//    // sampler
+//    sampler := zipkin.NewModuloSampler(1)
+//    // endpoint
+//    endpoint, _ := zipkin.NewEndpoint("yiigo-zipkin", "localhost")
+//
+//    tracer, err := yiigo.NewZipkinTracer(reporter,
+//        zipkin.WithLocalEndpoint(endpoint),
+//        zipkin.WithSharedSpans(false),
+//        zipkin.WithSampler(sampler),
+//    )
 //
 //    if err != nil {
 //        log.Fatal(err)
 //    }
 //
-//    client, err := tracer.HTTPClient()
+//    client, err := tracer.HTTPClient(yiigo.WithZipkinClientOptions(zipkinHttp.ClientTrace(true)))
 //
 //    if err != nil {
 //        log.Fatal(err)
