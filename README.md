@@ -123,6 +123,8 @@ if err := yiigo.StartApollo(qiniu); err != nil {
 }
 ```
 
+> Notice! Configs readed from `yiigo.toml` when `app.env = "dev"`
+
 #### MySQL
 
 ```go

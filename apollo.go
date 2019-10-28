@@ -382,7 +382,8 @@ func (a *apollo) unmarshalConfig(c ApolloConfig, m map[string]string) {
 	}
 }
 
-// StartApollo start apollo
+// StartApollo start apollo with configs.
+// Notice! Configs readed from `yiigo.toml` when `app.env` = "dev"
 func StartApollo(cfgs ...ApolloConfig) error {
 	if len(cfgs) == 0 {
 		return ErrConfigNil

@@ -1136,15 +1136,8 @@ func loadConfigFile() {
 
 	if _, err := os.Stat(path); err != nil {
 		if os.IsNotExist(err) {
-			f, err := os.Create(path)
-
-			if err != nil {
-				logger.Panic("yiigo: load config file error", zap.Error(err))
-			}
-
-			defer f.Close()
-
-			f.WriteString(`[app]
+			if f, err := os.Create(path); err == nil {
+				f.WriteString(`[app]
 env = "dev" # dev | beta | prod
 debug = true
 			
@@ -1176,9 +1169,10 @@ host = "smtp.exmail.qq.com"
 port = 25
 username = ""
 password = ""`)
-		}
 
-		if os.IsPermission(err) {
+				f.Close()
+			}
+		} else if os.IsPermission(err) {
 			os.Chmod(path, os.ModePerm)
 		}
 	}
@@ -1192,6 +1186,7 @@ password = ""`)
 	env = &config{tree: t}
 }
 
+// Env returns an env value
 func Env(key string) *EnvValue {
 	return &EnvValue{value: env.get(key)}
 }
