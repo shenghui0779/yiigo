@@ -7,13 +7,13 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/philchia/agollo"
+	"github.com/philchia/agollo/v3"
 )
 
-// cfgM 配置映射存储
+// cfgM congif map
 var cfgM sync.Map
 
-// ApolloConfig 配置
+// ApolloConfig apollo config
 type ApolloConfig interface {
 	// Namespace return config namespace
 	Namespace() string
@@ -64,7 +64,7 @@ func (a *apollo) start(cfgs ...ApolloConfig) error {
 	conf := &agollo.Conf{
 		AppID:          a.AppID,
 		Cluster:        a.Cluster,
-		IP:             a.Address,
+		MetaAddr:       a.Address,
 		NameSpaceNames: namespaces,
 		CacheDir:       a.CacheDir,
 	}

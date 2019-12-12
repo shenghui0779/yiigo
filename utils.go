@@ -1,10 +1,21 @@
 package yiigo
 
 import (
+	"bytes"
 	"encoding/xml"
+	"errors"
 	"math"
 	"net"
+	"strings"
+	"sync"
 	"time"
+
+	"github.com/go-playground/locales/zh"
+	ut "github.com/go-playground/universal-translator"
+	"github.com/go-playground/validator/v10"
+	zhcn "github.com/go-playground/validator/v10/translations/zh"
+	"github.com/hashicorp/go-version"
+	"go.uber.org/zap"
 )
 
 // AsDefault alias for "default"
@@ -38,6 +49,30 @@ func Date(timestamp int64, layout ...string) string {
 	return date
 }
 
+// WeekAround returns the date of monday and sunday for current week
+func WeekAround() (monday, sunday string) {
+	now := time.Now()
+	offset := int(time.Monday - now.Weekday())
+
+	if offset > 0 {
+		offset = -6
+	}
+
+	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.Local)
+
+	monday = today.AddDate(0, 0, offset).Format("20060102")
+
+	offset = int(time.Sunday - now.Weekday())
+
+	if offset < 0 {
+		offset += 7
+	}
+
+	sunday = today.AddDate(0, 0, offset).Format("20060102")
+
+	return
+}
+
 // IP2Long converts a string containing an (IPv4) Internet Protocol dotted address into a long integer.
 func IP2Long(ip string) uint32 {
 	ipv4 := net.ParseIP(ip).To4()
@@ -56,4 +91,130 @@ func Long2IP(ip uint32) string {
 	}
 
 	return net.IPv4(byte(ip>>24), byte(ip>>16), byte(ip>>8), byte(ip)).String()
+}
+
+// BufferPool type of buffer pool
+type BufferPool struct {
+	pool sync.Pool
+}
+
+// Get return a buffer
+func (p *BufferPool) Get() *bytes.Buffer {
+	buf := p.pool.Get().(*bytes.Buffer)
+	buf.Reset()
+
+	return buf
+}
+
+// Put put a buffer to pool
+func (p *BufferPool) Put(buf *bytes.Buffer) {
+	p.pool.Put(buf)
+}
+
+// NewBufferPool returns a new buffer pool
+func NewBufferPool(cap int64) *BufferPool {
+	return &BufferPool{pool: sync.Pool{
+		New: func() interface{} {
+			return bytes.NewBuffer(make([]byte, 0, cap))
+		},
+	}}
+}
+
+// BufPool buffer pool
+var BufPool = NewBufferPool(4 << 10) // 4KB
+
+type ginValidator struct {
+	validator  *validator.Validate
+	translator ut.Translator
+}
+
+// ValidateStruct receives any kind of type, but only performed struct or pointer to struct type.
+func (v *ginValidator) ValidateStruct(obj interface{}) error {
+	if err := v.validator.Struct(obj); err != nil {
+		switch e := err.(type) {
+		case validator.ValidationErrors:
+			buf := BufPool.Get()
+			defer BufPool.Put(buf)
+
+			errM := e.Translate(v.translator)
+			l := len(errM) - 1
+
+			for _, v := range errM {
+				buf.WriteString(v)
+
+				if l > 0 {
+					buf.WriteString(";")
+					l--
+				}
+			}
+
+			return errors.New(buf.String())
+		default:
+			return e
+		}
+	}
+
+	return nil
+}
+
+// Engine returns the underlying validator engine which powers the default
+// Validator instance. This is useful if you want to register custom validations
+// or struct level validations. See validator GoDoc for more info -
+// https://godoc.org/gopkg.in/go-playground/validator.v10
+func (v *ginValidator) Engine() interface{} {
+	return v.validator
+}
+
+// NewGinValidator returns a validator for gin
+func NewGinValidator() *ginValidator {
+	zhCn := zh.New()
+	uniTrans := ut.New(zhCn)
+
+	validate := validator.New()
+	validate.SetTagName("valid")
+
+	translator, _ := uniTrans.GetTranslator("zh")
+
+	zhcn.RegisterDefaultTranslations(validate, translator)
+
+	return &ginValidator{
+		validator:  validate,
+		translator: translator,
+	}
+}
+
+// VersionCompage compare semantic versions range, support: >, >=, =, !=, <, <=, | (or), & (and)
+// eg: >2.0.0, >=1.0.0&<2.0.0, <2.0.0|>3.0.0, !=4.0.4
+func VersionCompage(rangeVer, curVer string) bool {
+	if rangeVer == "" || curVer == "" {
+		return true
+	}
+
+	semVer, err := version.NewVersion(curVer)
+
+	if err != nil {
+		logger.Error("invalid semantic version", zap.Error(err))
+
+		return true
+	}
+
+	orVers := strings.Split(rangeVer, "|")
+
+	for _, ver := range orVers {
+		andVers := strings.Split(ver, "&")
+
+		constraints, err := version.NewConstraint(strings.Join(andVers, ","))
+
+		if err != nil {
+			logger.Error("version compare error", zap.Error(err))
+
+			return true
+		}
+
+		if constraints.Check(semVer) {
+			return true
+		}
+	}
+
+	return false
 }
