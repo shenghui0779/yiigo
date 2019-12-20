@@ -52,7 +52,7 @@ func newLogger(cfg *logConfig, debug bool) *zap.Logger {
 
 	core := zapcore.NewCore(zapcore.NewJSONEncoder(c), w, zap.DebugLevel)
 
-	return zap.New(core, zap.AddCaller(), zap.AddStacktrace(zapcore.ErrorLevel))
+	return zap.New(core, zap.AddCaller())
 }
 
 func initLogger(debug bool) {
