@@ -108,6 +108,10 @@ func (p *BufferPool) Get() *bytes.Buffer {
 
 // Put put a buffer to pool
 func (p *BufferPool) Put(buf *bytes.Buffer) {
+	if buf == nil {
+		return
+	}
+
 	p.pool.Put(buf)
 }
 
@@ -131,27 +135,28 @@ type ginValidator struct {
 // ValidateStruct receives any kind of type, but only performed struct or pointer to struct type.
 func (v *ginValidator) ValidateStruct(obj interface{}) error {
 	if err := v.validator.Struct(obj); err != nil {
-		switch e := err.(type) {
-		case validator.ValidationErrors:
-			buf := BufPool.Get()
-			defer BufPool.Put(buf)
+		e, ok := err.(validator.ValidationErrors)
 
-			errM := e.Translate(v.translator)
-			l := len(errM) - 1
-
-			for _, v := range errM {
-				buf.WriteString(v)
-
-				if l > 0 {
-					buf.WriteString(";")
-					l--
-				}
-			}
-
-			return errors.New(buf.String())
-		default:
+		if !ok {
 			return e
 		}
+
+		buf := BufPool.Get()
+		defer BufPool.Put(buf)
+
+		errM := e.Translate(v.translator)
+		l := len(errM) - 1
+
+		for _, v := range errM {
+			buf.WriteString(v)
+
+			if l > 0 {
+				buf.WriteString(";")
+				l--
+			}
+		}
+
+		return errors.New(buf.String())
 	}
 
 	return nil
@@ -184,7 +189,7 @@ func NewGinValidator() *ginValidator {
 }
 
 // VersionCompage compare semantic versions range, support: >, >=, =, !=, <, <=, | (or), & (and)
-// eg: >2.0.0, >=1.0.0&<2.0.0, <2.0.0|>3.0.0, !=4.0.4
+// eg: 1.0.0, =1.0.0, >2.0.0, >=1.0.0&<2.0.0, <2.0.0|>3.0.0, !=4.0.4
 func VersionCompage(rangeVer, curVer string) bool {
 	if rangeVer == "" || curVer == "" {
 		return true
