@@ -99,20 +99,20 @@ type BufferPool struct {
 }
 
 // Get return a buffer
-func (p *BufferPool) Get() *bytes.Buffer {
-	buf := p.pool.Get().(*bytes.Buffer)
+func (b *BufferPool) Get() *bytes.Buffer {
+	buf := b.pool.Get().(*bytes.Buffer)
 	buf.Reset()
 
 	return buf
 }
 
 // Put put a buffer to pool
-func (p *BufferPool) Put(buf *bytes.Buffer) {
+func (b *BufferPool) Put(buf *bytes.Buffer) {
 	if buf == nil {
 		return
 	}
 
-	p.pool.Put(buf)
+	b.pool.Put(buf)
 }
 
 // NewBufferPool returns a new buffer pool
