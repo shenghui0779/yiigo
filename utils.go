@@ -141,22 +141,14 @@ func (v *ginValidator) ValidateStruct(obj interface{}) error {
 			return e
 		}
 
-		buf := BufPool.Get()
-		defer BufPool.Put(buf)
-
 		errM := e.Translate(v.translator)
-		l := len(errM) - 1
+		msgs := make([]string, 0, len(errM))
 
 		for _, v := range errM {
-			buf.WriteString(v)
-
-			if l > 0 {
-				buf.WriteString(";")
-				l--
-			}
+			msgs = append(msgs, v)
 		}
 
-		return errors.New(buf.String())
+		return errors.New(strings.Join(msgs, ";"))
 	}
 
 	return nil
