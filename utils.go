@@ -180,9 +180,9 @@ func NewGinValidator() *ginValidator {
 	}
 }
 
-// VersionCompage compare semantic versions range, support: >, >=, =, !=, <, <=, | (or), & (and)
+// VersionCompare compares semantic versions range, support: >, >=, =, !=, <, <=, | (or), & (and)
 // eg: 1.0.0, =1.0.0, >2.0.0, >=1.0.0&<2.0.0, <2.0.0|>3.0.0, !=4.0.4
-func VersionCompage(rangeVer, curVer string) bool {
+func VersionCompare(rangeVer, curVer string) bool {
 	if rangeVer == "" || curVer == "" {
 		return true
 	}
@@ -203,7 +203,7 @@ func VersionCompage(rangeVer, curVer string) bool {
 		constraints, err := version.NewConstraint(strings.Join(andVers, ","))
 
 		if err != nil {
-			logger.Error("version compare error", zap.Error(err))
+			logger.Error("version compared error", zap.Error(err))
 
 			return true
 		}

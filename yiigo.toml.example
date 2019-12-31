@@ -26,7 +26,8 @@ cache_dir = "./"
     [mongo.default]
     dsn = "mongodb://username:password@localhost:27017"
     connect_timeout = 10 # 秒
-    pool_size = 10
+    min_pool_size = 10
+    max_pool_size = 10
     max_conn_idle_time = 60 # 秒
     mode = "primary" # primary | primary_preferred | secondary | secondary_preferred | nearest
 

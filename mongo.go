@@ -24,7 +24,8 @@ const (
 type mongoConfig struct {
 	Dsn             string `toml:"dsn"`
 	ConnectTimeout  int    `toml:"connect_timeout"`
-	PoolSize        int    `toml:"pool_size"`
+	MinPoolSize     int    `toml:"min_pool_size"`
+	MaxPoolSize     int    `toml:"max_pool_size"`
 	MaxConnIdleTime int    `toml:"max_conn_idle_time"`
 	Mode            string `toml:"mode"`
 }
@@ -39,7 +40,8 @@ func mongoDial(cfg *mongoConfig) (*mongo.Client, error) {
 
 	clientOptions.ApplyURI(cfg.Dsn)
 	clientOptions.SetConnectTimeout(time.Duration(cfg.ConnectTimeout) * time.Second)
-	clientOptions.SetMaxPoolSize(uint64(cfg.PoolSize))
+	clientOptions.SetMinPoolSize(uint64(cfg.MinPoolSize))
+	clientOptions.SetMaxPoolSize(uint64(cfg.MaxPoolSize))
 	clientOptions.SetMaxConnIdleTime(time.Duration(cfg.MaxConnIdleTime) * time.Second)
 
 	if cfg.Mode != "" {
