@@ -1137,39 +1137,7 @@ func loadConfigFile() {
 	if _, err := os.Stat(path); err != nil {
 		if os.IsNotExist(err) {
 			if f, err := os.Create(path); err == nil {
-				f.WriteString(`[app]
-env = "dev" # dev | beta | prod
-debug = true
-			
-[apollo]
-appid = "test"
-cluster = "default"
-address = "127.0.0.1:8080"
-cache_dir = "./"
-
-    [apollo.namespace]
-		
-[db]
-			
-[mongo]
-		
-[redis]
-			
-[log]
-
-    [log.default]
-    path = "app.log"
-    max_size = 500
-    max_age = 0
-    max_backups = 0
-    compress = true
-
-[email]
-host = "smtp.exmail.qq.com"
-port = 25
-username = ""
-password = ""`)
-
+				f.WriteString(defaultEnvContent)
 				f.Close()
 			}
 		} else if os.IsPermission(err) {
@@ -1190,3 +1158,64 @@ password = ""`)
 func Env(key string) *EnvValue {
 	return &EnvValue{value: env.get(key)}
 }
+
+var defaultEnvContent = `[app]
+env = "dev" # dev | beta | prod
+debug = true
+
+[apollo]
+appid = "test"
+cluster = "default"
+address = "127.0.0.1:8080"
+cache_dir = "./"
+
+    [apollo.namespace]
+
+[db]
+
+	# [db.default]
+    # driver = "mysql"
+    # dsn = "username:password@tcp(localhost:3306)/dbname?timeout=10s&charset=utf8mb4&collation=utf8mb4_general_ci&parseTime=True&loc=Local"
+    # max_open_conns = 20
+    # max_idle_conns = 10
+	# conn_max_lifetime = 60 # 秒
+
+[mongo]
+
+    # [mongo.default]
+    # dsn = "mongodb://username:password@localhost:27017"
+    # connect_timeout = 10 # 秒
+    # min_pool_size = 10
+    # max_pool_size = 10
+    # max_conn_idle_time = 60 # 秒
+    # mode = "primary" # primary | primary_preferred | secondary | secondary_preferred | nearest
+
+[redis]
+
+    # [redis.default]
+    # address = "127.0.0.1:6379"
+    # password = ""
+    # database = 0
+    # connect_timeout = 10 # 秒
+    # read_timeout = 10 # 秒
+    # write_timeout = 10 # 秒
+    # pool_size = 10
+    # pool_limit = 20
+    # idle_timeout = 60 # 秒
+    # wait_timeout = 10 # 秒
+    # prefill_parallelism = 0
+
+[log]
+
+    [log.default]
+    path = "app.log"
+    max_size = 500
+    max_age = 0
+    max_backups = 0
+    compress = true
+
+[email]
+host = "smtp.exmail.qq.com"
+port = 25
+username = ""
+password = ""`
