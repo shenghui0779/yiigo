@@ -1218,4 +1218,5 @@ cache_dir = "./"
 host = "smtp.exmail.qq.com"
 port = 25
 username = ""
-password = ""`
+password = ""
+`
