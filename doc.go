@@ -71,8 +71,8 @@
 //        BucketName string `toml:"bucket_name"`
 //    }
 //
-// 	  func (c *QiniuConfig) Namespace() string {
-//		  return yiigo.ApolloNamespace("qiniu", "qiniu")
+//    func (c *QiniuConfig) Namespace() string {
+//        return yiigo.ApolloNamespace("qiniu", "qiniu")
 //    }
 //
 //    var Qiniu = new(QiniuConfig)
@@ -81,7 +81,7 @@
 //        log.Fatal(err)
 //    }
 //
-//	  fmt.Println(Qiniu.BucketName)
+//    fmt.Println(Qiniu.BucketName)
 //
 // Zipkin
 //
