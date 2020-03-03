@@ -68,15 +68,20 @@
 // Apollo
 //
 //    type QiniuConfig struct {
-//        *yiigo.DefaultApolloConfig
 //        BucketName string `toml:"bucket_name"`
 //    }
 //
-//    var qiniu = &QiniuConfig{DefaultApolloConfig: yiigo.NewDefaultConfig("qiniu", "qiniu")}
+// 	  func (c *QiniuConfig) Namespace() string {
+//		  return yiigo.ApolloNamespace("qiniu", "qiniu")
+//    }
 //
-//    if err := yiigo.StartApollo(qiniu); err != nil {
+//    var Qiniu = new(QiniuConfig)
+//
+//    if err := yiigo.StartApollo(Qiniu); err != nil {
 //        log.Fatal(err)
 //    }
+//
+//	  fmt.Println(Qiniu.BucketName)
 //
 // Zipkin
 //
