@@ -123,7 +123,7 @@ func DB(name ...string) *sqlx.DB {
 	return v.(*sqlx.DB)
 }
 
-// Orm returns an orm.
+// Orm returns an orm's db.
 func Orm(name ...string) *gorm.DB {
 	if len(name) == 0 || name[0] == AsDefault {
 		if defaultOrm == nil {

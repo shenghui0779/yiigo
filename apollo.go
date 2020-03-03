@@ -10,37 +10,18 @@ import (
 	"github.com/philchia/agollo/v3"
 )
 
-// cfgM congif map
-var cfgM sync.Map
+// apolloCfgM apollo config map
+var apolloCfgM sync.Map
 
-// ApolloConfig apollo config
+// ApolloConfig apollo namespace
 type ApolloConfig interface {
-	// Namespace return config namespace
+	// Namespace returns namespace
 	Namespace() string
-	// DoExtra do some extra things with config
-	DoExtra()
 }
 
-// DefaultApolloConfig default config
-type DefaultApolloConfig struct {
-	envkey    string `toml:"-"`
-	namespace string `toml:"-"`
-}
-
-// Namespace returns namespace
-func (c *DefaultApolloConfig) Namespace() string {
-	return Env(c.envkey).String(c.namespace)
-}
-
-// DoExtra do some extra things with config
-func (c *DefaultApolloConfig) DoExtra() {}
-
-// NewDefaultConfig returns a default apollo config
-func NewDefaultConfig(namespaceKey, defaultNamespace string) *DefaultApolloConfig {
-	return &DefaultApolloConfig{
-		envkey:    fmt.Sprintf("apollo.namespace.%s", namespaceKey),
-		namespace: defaultNamespace,
-	}
+// ApolloNamespace returns a apollo namespace
+func ApolloNamespace(namespaceKey, defaultName string) string {
+	return Env(fmt.Sprintf("apollo.namespace.%s", namespaceKey)).String(defaultName)
 }
 
 type apollo struct {
@@ -79,7 +60,7 @@ func (a *apollo) start(cfgs ...ApolloConfig) error {
 		events := agollo.WatchUpdate()
 
 		for e := range events {
-			if v, ok := cfgM.Load(e.Namespace); ok {
+			if v, ok := apolloCfgM.Load(e.Namespace); ok {
 				a.updateConfigWithChanges(e, v.(ApolloConfig))
 			}
 		}
@@ -95,7 +76,7 @@ func (a *apollo) registerConfig(cfgs ...ApolloConfig) {
 		namespace := c.Namespace()
 
 		a.setConfigWithNamespace(namespace, c)
-		cfgM.Store(namespace, c)
+		apolloCfgM.Store(namespace, c)
 	}
 }
 
@@ -123,8 +104,6 @@ func (a *apollo) setConfigWithNamespace(namespace string, c ApolloConfig) {
 	}
 
 	a.unmarshalConfig(c, m)
-
-	c.DoExtra()
 }
 
 func (a *apollo) updateConfigWithChanges(e *agollo.ChangeEvent, c ApolloConfig) {
@@ -139,8 +118,6 @@ func (a *apollo) updateConfigWithChanges(e *agollo.ChangeEvent, c ApolloConfig) 
 	}
 
 	a.unmarshalConfig(c, m)
-
-	c.DoExtra()
 }
 
 func (a *apollo) unmarshalConfig(c ApolloConfig, m map[string]string) {
