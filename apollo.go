@@ -19,7 +19,7 @@ type ApolloConfig interface {
 	Namespace() string
 }
 
-// ApolloNamespace returns a apollo namespace
+// ApolloNamespace returns an apollo namespace
 func ApolloNamespace(namespaceKey, defaultName string) string {
 	return Env(fmt.Sprintf("apollo.namespace.%s", namespaceKey)).String(defaultName)
 }
