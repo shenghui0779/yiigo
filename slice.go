@@ -5,11 +5,6 @@ import (
 	"sort"
 )
 
-const (
-	numberUniqueThreshold = 1024
-	stringUniqueThreshold = 256
-)
-
 // UintSlice attaches the methods of Interface to []uint, sorting a increasing order.
 type UintSlice []uint
 
@@ -394,30 +389,8 @@ func IntsUnique(a []int) []int {
 		return a
 	}
 
-	r := make([]int, 0, l)
-
-	// remove duplicates with loop
-	if l < numberUniqueThreshold {
-		for _, v := range a {
-			exist := false
-
-			for _, u := range r {
-				if v == u {
-					exist = true
-					break
-				}
-			}
-
-			if !exist {
-				r = append(r, v)
-			}
-		}
-
-		return r
-	}
-
-	// remove duplicates with map
 	m := make(map[int]byte, l)
+	r := make([]int, 0, l)
 
 	for _, v := range a {
 		if _, ok := m[v]; !ok {
@@ -438,30 +411,8 @@ func UintsUnique(a []uint) []uint {
 		return a
 	}
 
-	r := make([]uint, 0, l)
-
-	// remove duplicates with loop
-	if l < numberUniqueThreshold {
-		for _, v := range a {
-			exist := false
-
-			for _, u := range r {
-				if v == u {
-					exist = true
-					break
-				}
-			}
-
-			if !exist {
-				r = append(r, v)
-			}
-		}
-
-		return r
-	}
-
-	// remove duplicates with map
 	m := make(map[uint]byte, l)
+	r := make([]uint, 0, l)
 
 	for _, v := range a {
 		if _, ok := m[v]; !ok {
@@ -482,30 +433,8 @@ func Int8sUnique(a []int8) []int8 {
 		return a
 	}
 
-	r := make([]int8, 0, l)
-
-	// remove duplicates with loop
-	if l < numberUniqueThreshold {
-		for _, v := range a {
-			exist := false
-
-			for _, u := range r {
-				if v == u {
-					exist = true
-					break
-				}
-			}
-
-			if !exist {
-				r = append(r, v)
-			}
-		}
-
-		return r
-	}
-
-	// remove duplicates with map
 	m := make(map[int8]byte, l)
+	r := make([]int8, 0, l)
 
 	for _, v := range a {
 		if _, ok := m[v]; !ok {
@@ -526,30 +455,8 @@ func Uint8sUnique(a []uint8) []uint8 {
 		return a
 	}
 
-	r := make([]uint8, 0, l)
-
-	// remove duplicates with loop
-	if l < numberUniqueThreshold {
-		for _, v := range a {
-			exist := false
-
-			for _, u := range r {
-				if v == u {
-					exist = true
-					break
-				}
-			}
-
-			if !exist {
-				r = append(r, v)
-			}
-		}
-
-		return r
-	}
-
-	// remove duplicates with map
 	m := make(map[uint8]byte, l)
+	r := make([]uint8, 0, l)
 
 	for _, v := range a {
 		if _, ok := m[v]; !ok {
@@ -570,30 +477,8 @@ func Int16sUnique(a []int16) []int16 {
 		return a
 	}
 
-	r := make([]int16, 0, l)
-
-	// remove duplicates with loop
-	if l < numberUniqueThreshold {
-		for _, v := range a {
-			exist := false
-
-			for _, u := range r {
-				if v == u {
-					exist = true
-					break
-				}
-			}
-
-			if !exist {
-				r = append(r, v)
-			}
-		}
-
-		return r
-	}
-
-	// remove duplicates with map
 	m := make(map[int16]byte, l)
+	r := make([]int16, 0, l)
 
 	for _, v := range a {
 		if _, ok := m[v]; !ok {
@@ -614,30 +499,8 @@ func Uint16sUnique(a []uint16) []uint16 {
 		return a
 	}
 
-	r := make([]uint16, 0, l)
-
-	// remove duplicates with loop
-	if l < numberUniqueThreshold {
-		for _, v := range a {
-			exist := false
-
-			for _, u := range r {
-				if v == u {
-					exist = true
-					break
-				}
-			}
-
-			if !exist {
-				r = append(r, v)
-			}
-		}
-
-		return r
-	}
-
-	// remove duplicates with map
 	m := make(map[uint16]byte, l)
+	r := make([]uint16, 0, l)
 
 	for _, v := range a {
 		if _, ok := m[v]; !ok {
@@ -658,30 +521,8 @@ func Int32sUnique(a []int32) []int32 {
 		return a
 	}
 
-	r := make([]int32, 0, l)
-
-	// remove duplicates with loop
-	if l < numberUniqueThreshold {
-		for _, v := range a {
-			exist := false
-
-			for _, u := range r {
-				if v == u {
-					exist = true
-					break
-				}
-			}
-
-			if !exist {
-				r = append(r, v)
-			}
-		}
-
-		return r
-	}
-
-	// remove duplicates with map
 	m := make(map[int32]byte, l)
+	r := make([]int32, 0, l)
 
 	for _, v := range a {
 		if _, ok := m[v]; !ok {
@@ -702,30 +543,8 @@ func Uint32sUnique(a []uint32) []uint32 {
 		return a
 	}
 
-	r := make([]uint32, 0, l)
-
-	// remove duplicates with loop
-	if l < numberUniqueThreshold {
-		for _, v := range a {
-			exist := false
-
-			for _, u := range r {
-				if v == u {
-					exist = true
-					break
-				}
-			}
-
-			if !exist {
-				r = append(r, v)
-			}
-		}
-
-		return r
-	}
-
-	// remove duplicates with map
 	m := make(map[uint32]byte, l)
+	r := make([]uint32, 0, l)
 
 	for _, v := range a {
 		if _, ok := m[v]; !ok {
@@ -746,30 +565,8 @@ func Int64sUnique(a []int64) []int64 {
 		return a
 	}
 
-	r := make([]int64, 0, l)
-
-	// remove duplicates with loop
-	if l < numberUniqueThreshold {
-		for _, v := range a {
-			exist := false
-
-			for _, u := range r {
-				if v == u {
-					exist = true
-					break
-				}
-			}
-
-			if !exist {
-				r = append(r, v)
-			}
-		}
-
-		return r
-	}
-
-	// remove duplicates with map
 	m := make(map[int64]byte, l)
+	r := make([]int64, 0, l)
 
 	for _, v := range a {
 		if _, ok := m[v]; !ok {
@@ -790,30 +587,8 @@ func Uint64sUnique(a []uint64) []uint64 {
 		return a
 	}
 
-	r := make([]uint64, 0, l)
-
-	// remove duplicates with loop
-	if l < numberUniqueThreshold {
-		for _, v := range a {
-			exist := false
-
-			for _, u := range r {
-				if v == u {
-					exist = true
-					break
-				}
-			}
-
-			if !exist {
-				r = append(r, v)
-			}
-		}
-
-		return r
-	}
-
-	// remove duplicates with map
 	m := make(map[uint64]byte, l)
+	r := make([]uint64, 0, l)
 
 	for _, v := range a {
 		if _, ok := m[v]; !ok {
@@ -834,30 +609,8 @@ func Float64sUnique(a []float64) []float64 {
 		return a
 	}
 
-	r := make([]float64, 0, l)
-
-	// remove duplicates with loop
-	if l < numberUniqueThreshold {
-		for _, v := range a {
-			exist := false
-
-			for _, u := range r {
-				if v == u {
-					exist = true
-					break
-				}
-			}
-
-			if !exist {
-				r = append(r, v)
-			}
-		}
-
-		return r
-	}
-
-	// remove duplicates with map
 	m := make(map[float64]byte, l)
+	r := make([]float64, 0, l)
 
 	for _, v := range a {
 		if _, ok := m[v]; !ok {
@@ -878,30 +631,8 @@ func StringsUnique(a []string) []string {
 		return a
 	}
 
-	r := make([]string, 0, l)
-
-	// remove duplicates with loop
-	if l < stringUniqueThreshold {
-		for _, v := range a {
-			exist := false
-
-			for _, u := range r {
-				if v == u {
-					exist = true
-					break
-				}
-			}
-
-			if !exist {
-				r = append(r, v)
-			}
-		}
-
-		return r
-	}
-
-	// remove duplicates with map
 	m := make(map[string]byte, l)
+	r := make([]string, 0, l)
 
 	for _, v := range a {
 		if _, ok := m[v]; !ok {
