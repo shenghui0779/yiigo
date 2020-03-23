@@ -5,7 +5,7 @@
 [![pkg.go.dev](https://img.shields.io/badge/dev-reference-007d9c?logo=go&logoColor=white&style=flat)](https://pkg.go.dev/github.com/iiinsomnia/yiigo/v4)
 [![MIT license](http://img.shields.io/badge/license-MIT-brightgreen.svg)](http://opensource.org/licenses/MIT)
 
-Golang开发通用库
+Go轻量级开发通用库
 
 ## Features
 
