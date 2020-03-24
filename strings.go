@@ -9,7 +9,17 @@ import (
 	"crypto/sha512"
 	"encoding/hex"
 	"hash"
-	"strings"
+)
+
+type HashAlgo string
+
+const (
+	AlgoMD5    HashAlgo = "md5"
+	AlgoSha1   HashAlgo = "sha1"
+	AlgoSha224 HashAlgo = "sha224"
+	AlgoSha256 HashAlgo = "sha256"
+	AlgoSha384 HashAlgo = "sha384"
+	AlgoSha512 HashAlgo = "sha512"
 )
 
 // MD5 calculate the md5 hash of a string.
@@ -29,21 +39,21 @@ func SHA1(s string) string {
 }
 
 // Hash Generate a hash value, expects: MD5, SHA1, SHA224, SHA256, SHA384, SHA512.
-func Hash(t, s string) string {
+func Hash(algo HashAlgo, s string) string {
 	var h hash.Hash
 
-	switch strings.ToUpper(t) {
-	case "MD5":
+	switch algo {
+	case AlgoMD5:
 		h = md5.New()
-	case "SHA1":
+	case AlgoSha1:
 		h = sha1.New()
-	case "SHA224":
+	case AlgoSha224:
 		h = sha256.New224()
-	case "SHA256":
+	case AlgoSha256:
 		h = sha256.New()
-	case "SHA384":
+	case AlgoSha384:
 		h = sha512.New384()
-	case "SHA512":
+	case AlgoSha512:
 		h = sha512.New()
 	default:
 		return s
@@ -55,21 +65,21 @@ func Hash(t, s string) string {
 }
 
 // HMAC Generate a keyed hash value, expects: MD5, SHA1, SHA224, SHA256, SHA384, SHA512.
-func HMAC(t, s, key string) string {
+func HMAC(algo HashAlgo, s, key string) string {
 	var mac hash.Hash
 
-	switch strings.ToUpper(t) {
-	case "MD5":
+	switch algo {
+	case AlgoMD5:
 		mac = hmac.New(md5.New, []byte(key))
-	case "SHA1":
+	case AlgoSha1:
 		mac = hmac.New(sha1.New, []byte(key))
-	case "SHA224":
+	case AlgoSha224:
 		mac = hmac.New(sha256.New224, []byte(key))
-	case "SHA256":
+	case AlgoSha256:
 		mac = hmac.New(sha256.New, []byte(key))
-	case "SHA384":
+	case AlgoSha384:
 		mac = hmac.New(sha512.New384, []byte(key))
-	case "SHA512":
+	case AlgoSha512:
 		mac = hmac.New(sha512.New, []byte(key))
 	default:
 		return s
