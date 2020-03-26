@@ -63,9 +63,11 @@ func TestInsertSQL(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, got1 := InsertSQL(tt.args.table, tt.args.data)
+
 			if got != tt.want {
 				t.Errorf("InsertSQL() got = %v, want %v", got, tt.want)
 			}
+
 			if !reflect.DeepEqual(got1, tt.want1) {
 				t.Errorf("InsertSQL() got1 = %v, want %v", got1, tt.want1)
 			}
@@ -105,12 +107,15 @@ func TestUpdateSQL(t *testing.T) {
 			want1: []interface{}{"IIInsomnia", "M", 29, 1},
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, got1 := UpdateSQL(tt.args.query, tt.args.data, tt.args.args...)
+
 			if got != tt.want {
 				t.Errorf("UpdateSQL() got = %v, want %v", got, tt.want)
 			}
+
 			if !reflect.DeepEqual(got1, tt.want1) {
 				t.Errorf("UpdateSQL() got1 = %v, want %v", got1, tt.want1)
 			}
@@ -172,12 +177,15 @@ func TestPGInsertSQL(t *testing.T) {
 			want1: []interface{}{1, "IIInsomnia", "M", 29, 2, "test", "W", 20},
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, got1 := PGInsertSQL(tt.args.table, tt.args.data)
+
 			if got != tt.want {
 				t.Errorf("PGInsertSQL() got = %v, want %v", got, tt.want)
 			}
+
 			if !reflect.DeepEqual(got1, tt.want1) {
 				t.Errorf("PGInsertSQL() got1 = %v, want %v", got1, tt.want1)
 			}
@@ -217,12 +225,15 @@ func TestPGUpdateSQL(t *testing.T) {
 			want1: []interface{}{"IIInsomnia", "M", 29, 1},
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, got1 := PGUpdateSQL(tt.args.query, tt.args.data, tt.args.args...)
+
 			if got != tt.want {
 				t.Errorf("PGUpdateSQL() got = %v, want %v", got, tt.want)
 			}
+
 			if !reflect.DeepEqual(got1, tt.want1) {
 				t.Errorf("PGUpdateSQL() got1 = %v, want %v", got1, tt.want1)
 			}
