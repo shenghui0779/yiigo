@@ -1208,7 +1208,7 @@ cache_dir = "./"
 [log]
 
     [log.default]
-    path = "app.log"
+    path = "logs/app.log"
     max_size = 500
     max_age = 0
     max_backups = 0
