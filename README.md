@@ -20,6 +20,7 @@ Go 轻量级开发通用库
 - Use [sqlx](https://github.com/jmoiron/sqlx) for SQL executing
 - Use [gorm](https://gorm.io/) for ORM operating
 - Use [zap](https://github.com/uber-go/zap) for logging
+- Many helpful methods, eg: http、cypto etc.
 
 ## Requirements
 
