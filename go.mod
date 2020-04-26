@@ -7,9 +7,9 @@ require (
 	github.com/go-playground/universal-translator v0.17.0
 	github.com/go-playground/validator/v10 v10.2.0
 	github.com/go-sql-driver/mysql v1.5.0
-	github.com/gomodule/redigo v2.0.1-0.20200211073029-7ac8ae1ada9f+incompatible
+	github.com/gomodule/redigo v2.0.1-0.20200419152818-37c69a26f6a2+incompatible
 	github.com/hashicorp/go-version v1.2.0
-	github.com/jinzhu/gorm v1.9.13-0.20200126152832-7180bd0f27d1
+	github.com/jinzhu/gorm v1.9.13-0.20200305064831-7ea143b5484f
 	github.com/jmoiron/sqlx v1.2.1-0.20200324155115-ee514944af4b
 	github.com/lib/pq v1.4.0
 	github.com/openzipkin/zipkin-go v0.2.2
@@ -20,5 +20,5 @@ require (
 	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
 	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0-20170531160350-a96e63847dc3
-	vitess.io/vitess v0.0.0-20200303170801-d18052db6055
+	vitess.io/vitess v0.0.0-20200303170801-d18052db6055 // locked
 )
