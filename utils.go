@@ -49,6 +49,27 @@ func Date(timestamp int64, layout ...string) string {
 	return date
 }
 
+// StrToTime Parse English textual datetime description into a Unix timestamp.
+// The default layout is: 2006-01-02 15:04:05.
+func StrToTime(datetime string, layout ...string) int64 {
+	l := "2006-01-02 15:04:05"
+
+	if len(layout) > 0 {
+		l = layout[0]
+	}
+
+	t, err := time.ParseInLocation(l, datetime, time.Local)
+
+	// mismatch layout
+	if err != nil {
+		logger.Error("parse layout mismatch", zap.Error(err))
+
+		return 0
+	}
+
+	return t.Unix()
+}
+
 // WeekAround returns the date of monday and sunday for current week
 func WeekAround() (monday, sunday string) {
 	now := time.Now()
@@ -189,9 +210,8 @@ func VersionCompare(rangeVer, curVer string) bool {
 
 	semVer, err := version.NewVersion(curVer)
 
+	// invalid semantic version
 	if err != nil {
-		logger.Error("invalid semantic version", zap.Error(err), zap.String("range_version", rangeVer), zap.String("cur_version", curVer))
-
 		return true
 	}
 
