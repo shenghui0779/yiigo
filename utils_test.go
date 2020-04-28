@@ -30,6 +30,34 @@ func TestDate(t *testing.T) {
 	}
 }
 
+func TestStrToTime(t *testing.T) {
+	type args struct {
+		datetime string
+		layout   []string
+	}
+	tests := []struct {
+		name string
+		args args
+		want int64
+	}{
+		{
+			name: "t1",
+			args: args{
+				datetime: "2019-07-12 13:45:19",
+				layout:   []string{"2006-01-02 15:04:05"},
+			},
+			want: 1562910319,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := StrToTime(tt.args.datetime, tt.args.layout...); got != tt.want {
+				t.Errorf("StrToTime() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestIP2Long(t *testing.T) {
 	type args struct {
 		ip string
