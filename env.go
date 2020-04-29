@@ -1215,8 +1215,11 @@ cache_dir = "./"
     compress = true
 
 [email]
-host = "smtp.exmail.qq.com"
-port = 25
-username = ""
-password = ""
+	
+	[email.default]
+	host = "smtp.exmail.qq.com"
+	port = 25
+	username = ""
+	password = ""
+
 `
