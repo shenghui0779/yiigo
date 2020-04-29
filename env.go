@@ -1205,6 +1205,14 @@ cache_dir = "./"
     # wait_timeout = 10 # 秒
     # prefill_parallelism = 0
 
+[email]
+
+	# [email.default]
+	# host = "smtp.exmail.qq.com"
+	# port = 25
+	# username = ""
+	# password = ""
+
 [log]
 
     [log.default]
@@ -1213,13 +1221,5 @@ cache_dir = "./"
     max_age = 0
     max_backups = 0
     compress = true
-
-[email]
-	
-	[email.default]
-	host = "smtp.exmail.qq.com"
-	port = 25
-	username = ""
-	password = ""
 
 `
