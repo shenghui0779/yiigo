@@ -1164,46 +1164,47 @@ env = "dev" # dev | beta | prod
 debug = true
 
 [apollo]
-appid = "test"
-cluster = "default"
-address = "127.0.0.1:8080"
-cache_dir = "./"
+# appid = "test"
+# cluster = "default"
+# address = "127.0.0.1:8080"
+# cache_dir = "./"
 
-    [apollo.namespace]
+    # [apollo.namespace]
+    # 指定配置对应的namespace名称，用于在不同环境下（如：灰度和生产环境）指定不同的namespace
 
 [db]
 
-	# [db.default]
+    # [db.default]
     # driver = "mysql"
     # dsn = "username:password@tcp(localhost:3306)/dbname?timeout=10s&charset=utf8mb4&collation=utf8mb4_general_ci&parseTime=True&loc=Local"
     # max_open_conns = 20
     # max_idle_conns = 10
-	# conn_max_lifetime = 60 # 秒
+    # conn_max_lifetime = 60 # 秒
 
 [mongo]
 
-    # [mongo.default]
-    # dsn = "mongodb://username:password@localhost:27017"
-    # connect_timeout = 10 # 秒
-    # min_pool_size = 10
-    # max_pool_size = 10
-    # max_conn_idle_time = 60 # 秒
-    # mode = "primary" # primary | primary_preferred | secondary | secondary_preferred | nearest
+	# [mongo.default]
+	# dsn = "mongodb://username:password@localhost:27017"
+	# connect_timeout = 10 # 秒
+	# min_pool_size = 10
+	# max_pool_size = 10
+	# max_conn_idle_time = 60 # 秒
+	# mode = "primary" # primary | primary_preferred | secondary | secondary_preferred | nearest
 
 [redis]
 
-    # [redis.default]
-    # address = "127.0.0.1:6379"
-    # password = ""
-    # database = 0
-    # connect_timeout = 10 # 秒
-    # read_timeout = 10 # 秒
-    # write_timeout = 10 # 秒
-    # pool_size = 10
-    # pool_limit = 20
-    # idle_timeout = 60 # 秒
-    # wait_timeout = 10 # 秒
-    # prefill_parallelism = 0
+	# [redis.default]
+	# address = "127.0.0.1:6379"
+	# password = ""
+	# database = 0
+	# connect_timeout = 10 # 秒
+	# read_timeout = 10 # 秒
+	# write_timeout = 10 # 秒
+	# pool_size = 10
+	# pool_limit = 20
+	# idle_timeout = 60 # 秒
+	# wait_timeout = 10 # 秒
+	# prefill_parallelism = 0
 
 [email]
 
@@ -1221,5 +1222,4 @@ cache_dir = "./"
     max_age = 0
     max_backups = 0
     compress = true
-
 `
