@@ -50,7 +50,7 @@ address = "127.0.0.1:8080"
 cache_dir = "./"
 
     [apollo.namespace]
-    # 指定配置对应的namespace，用于在不同环境下（如：灰度和生产环境）指定不同的namespace
+    # 指定配置对应的namespace名称，用于在不同环境下（如：灰度和生产环境）指定不同的namespace
 
 [db]
 
