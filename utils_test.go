@@ -5,7 +5,7 @@ import "testing"
 func TestDate(t *testing.T) {
 	type args struct {
 		timestamp int64
-		format    []string
+		layout    []string
 	}
 	tests := []struct {
 		name string
@@ -16,14 +16,14 @@ func TestDate(t *testing.T) {
 			name: "t1",
 			args: args{
 				timestamp: 1458370999,
-				format:    []string{"2006-01-02 15:04:05"},
+				layout:    []string{"2006-01-02 15:04:05"},
 			},
 			want: "2016-03-19 15:03:19",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := Date(tt.args.timestamp, tt.args.format...); got != tt.want {
+			if got := Date(tt.args.timestamp, tt.args.layout...); got != tt.want {
 				t.Errorf("Date() = %v, want %v", got, tt.want)
 			}
 		})
