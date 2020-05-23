@@ -148,13 +148,14 @@ func NewBufferPool(cap int64) *BufferPool {
 // BufPool buffer pool
 var BufPool = NewBufferPool(4 << 10) // 4KB
 
-type ginValidator struct {
+// GinValidator validator for gin
+type GinValidator struct {
 	validator  *validator.Validate
 	translator ut.Translator
 }
 
 // ValidateStruct receives any kind of type, but only performed struct or pointer to struct type.
-func (v *ginValidator) ValidateStruct(obj interface{}) error {
+func (v *GinValidator) ValidateStruct(obj interface{}) error {
 	if err := v.validator.Struct(obj); err != nil {
 		e, ok := err.(validator.ValidationErrors)
 
@@ -179,12 +180,12 @@ func (v *ginValidator) ValidateStruct(obj interface{}) error {
 // Validator instance. This is useful if you want to register custom validations
 // or struct level validations. See validator GoDoc for more info -
 // https://godoc.org/gopkg.in/go-playground/validator.v10
-func (v *ginValidator) Engine() interface{} {
+func (v *GinValidator) Engine() interface{} {
 	return v.validator
 }
 
 // NewGinValidator returns a validator for gin
-func NewGinValidator() *ginValidator {
+func NewGinValidator() *GinValidator {
 	zhCn := zh.New()
 	uniTrans := ut.New(zhCn)
 
@@ -195,7 +196,7 @@ func NewGinValidator() *ginValidator {
 
 	zhcn.RegisterDefaultTranslations(validate, translator)
 
-	return &ginValidator{
+	return &GinValidator{
 		validator:  validate,
 		translator: translator,
 	}
