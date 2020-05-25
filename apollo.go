@@ -29,7 +29,7 @@ type apollo struct {
 	Cluster  string `toml:"cluster"`
 	Address  string `toml:"address"`
 	CacheDir string `toml:"cache_dir"`
-	isDev    bool   `toml:"-"`
+	debug    bool
 }
 
 // Start start apollo
@@ -81,7 +81,7 @@ func (a *apollo) registerConfig(cfgs ...ApolloConfig) {
 }
 
 func (a *apollo) setConfigWithNamespace(namespace string, c ApolloConfig) {
-	if a.isDev {
+	if a.debug {
 		if err := Env(namespace).Unmarshal(c); err == nil {
 			return
 		}
@@ -107,7 +107,7 @@ func (a *apollo) setConfigWithNamespace(namespace string, c ApolloConfig) {
 }
 
 func (a *apollo) updateConfigWithChanges(e *agollo.ChangeEvent, c ApolloConfig) {
-	if a.isDev {
+	if a.debug {
 		return
 	}
 
@@ -360,19 +360,13 @@ func (a *apollo) unmarshalConfig(c ApolloConfig, m map[string]string) {
 }
 
 // StartApollo start apollo with configs.
-// Notice! Configs readed from `yiigo.toml` when `app.env` = "dev"
+// Notice! Configs readed from `yiigo.toml` when `app.debug` = true
 func StartApollo(cfgs ...ApolloConfig) error {
 	if len(cfgs) == 0 {
 		return ErrConfigNil
 	}
 
-	isDev := false
-
-	if Env("app.env").String("dev") == "dev" {
-		isDev = true
-	}
-
-	a := &apollo{isDev: isDev}
+	a := &apollo{debug: Env("app.debug").Bool(false)}
 
 	if err := Env("apollo").Unmarshal(a); err != nil {
 		return err
