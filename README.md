@@ -129,7 +129,7 @@ if err := yiigo.StartApollo(Qiniu); err != nil {
 fmt.Println(Qiniu.BucketName)
 ```
 
-> Notice! Configs read from `yiigo.toml` when `app.env = "dev"`
+> Notice! Apollo Namespace read from `yiigo.toml` when `app.debug = true`
 
 #### MySQL
 
