@@ -15,6 +15,8 @@ func init() {
 
 	debug := Env("app.debug").Bool(true)
 
+	// init apollo
+	initApollo(debug)
 	// init logger
 	initLogger(debug)
 	// init mailer

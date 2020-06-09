@@ -6,10 +6,12 @@ import (
 	"path/filepath"
 	"reflect"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/pelletier/go-toml"
+	"github.com/philchia/agollo/v3"
 	"go.uber.org/zap"
 )
 
@@ -17,8 +19,14 @@ import (
 var ErrConfigNil = errors.New("yiigo: config not found")
 
 type config struct {
-	tree  *toml.Tree
-	mutex sync.RWMutex
+	tree   *toml.Tree
+	apollo *apollo
+	mutex  sync.RWMutex
+}
+
+type apollo struct {
+	namespace []string
+	debug     bool
 }
 
 func (c *config) get(key string) interface{} {
@@ -26,6 +34,27 @@ func (c *config) get(key string) interface{} {
 	defer c.mutex.RUnlock()
 
 	return c.tree.Get(key)
+}
+
+func (c *config) getFromApollo(key string) string {
+	if c.apollo == nil || c.apollo.debug || key == "" {
+		return ""
+	}
+
+	arr := strings.Split(key, ".")
+
+	if len(arr) == 1 || !InStrings(arr[0], c.apollo.namespace...) {
+		return agollo.GetStringValue(arr[0], "")
+	}
+
+	return agollo.GetStringValueWithNameSpace(arr[0], arr[1], "")
+}
+
+func (c *config) setApollo(namespace []string, debug bool) {
+	c.apollo = &apollo{
+		namespace: namespace,
+		debug:     debug,
+	}
 }
 
 // Env config value
@@ -1156,6 +1185,10 @@ func loadConfigFile() {
 
 // Env returns an env value
 func Env(key string) *EnvValue {
+	if v := env.getFromApollo(key); v != "" {
+		return &EnvValue{value: v}
+	}
+
 	return &EnvValue{value: env.get(key)}
 }
 
@@ -1167,10 +1200,10 @@ debug = true
 # appid = "test"
 # cluster = "default"
 # address = "127.0.0.1:8080"
+# namespace = []
 # cache_dir = "./"
-
-    # [apollo.namespace]
-    # 指定配置对应的namespace名称，用于在不同环境下（如：灰度和生产环境）指定不同的namespace
+# accesskey_secret = ""
+# insecure_skip_verify = true
 
 [db]
 
