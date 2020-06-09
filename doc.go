@@ -61,27 +61,9 @@
 //    // debug = true
 //    // port = 50001
 //
-//    yiigo.Env("app.env").String()
-//    yiigo.Env("app.debug").Bool()
-//    yiigo.Env("app.port").Int()
-//
-// Apollo
-//
-//    type QiniuConfig struct {
-//        BucketName string `toml:"bucket_name"`
-//    }
-//
-//    func (c *QiniuConfig) Namespace() string {
-//        return yiigo.ApolloNamespace("qiniu", "qiniu")
-//    }
-//
-//    var Qiniu = new(QiniuConfig)
-//
-//    if err := yiigo.StartApollo(Qiniu); err != nil {
-//        log.Fatal(err)
-//    }
-//
-//    fmt.Println(Qiniu.BucketName)
+//    yiigo.Env("app.env").String("dev")
+//    yiigo.Env("app.debug").Bool(true)
+//    yiigo.Env("app.port").Int(8000)
 //
 // Zipkin
 //

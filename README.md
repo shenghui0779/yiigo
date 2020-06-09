@@ -9,18 +9,18 @@ Go 轻量级开发通用库
 
 ## Features
 
-- Support [MySQL](https://github.com/go-sql-driver/mysql)
-- Support [PostgreSQL](https://github.com/lib/pq)
-- Support [MongoDB](https://github.com/mongodb/mongo-go-driver)
-- Support [Redis](https://github.com/gomodule/redigo)
-- Support [Zipkin](https://github.com/openzipkin/zipkin-go)
-- Support [Apollo](https://github.com/philchia/agollo)
-- Use [gomail](https://github.com/go-gomail/gomail) for email sending
-- Use [toml](https://github.com/pelletier/go-toml) for configuration
-- Use [sqlx](https://github.com/jmoiron/sqlx) for SQL executing
-- Use [gorm](https://gorm.io/) for ORM operating
-- Use [zap](https://github.com/uber-go/zap) for logging
-- Many helpful methods, eg: http、cypto etc.
+- 支持 [MySQL](https://github.com/go-sql-driver/mysql)
+- 支持 [PostgreSQL](https://github.com/lib/pq)
+- 支持 [MongoDB](https://github.com/mongodb/mongo-go-driver)
+- 支持 [Redis](https://github.com/gomodule/redigo)
+- 支持 [Zipkin](https://github.com/openzipkin/zipkin-go)
+- 支持 [Apollo](https://github.com/philchia/agollo)
+- 邮件使用 [gomail](https://github.com/go-gomail/gomail)
+- 配置使用 [toml](https://github.com/pelletier/go-toml)
+- SQL使用 [sqlx](https://github.com/jmoiron/sqlx)
+- ORM使用 [gorm](https://gorm.io/)
+- 日志使用 [zap](https://github.com/uber-go/zap)
+- 包含很多帮助方法，如：http、cypto、date、IP 等
 
 ## Requirements
 
@@ -47,10 +47,10 @@ debug = true
 app_id = "test"
 cluster = "default"
 address = "127.0.0.1:8080"
+namespace = ["apollo_test"]
 cache_dir = "./"
-
-    [apollo.namespace]
-    # 指定配置对应的namespace名称，用于在不同环境下（如：灰度和生产环境）指定不同的namespace
+accesskey_secret = ""
+insecure_skip_verify = true
 
 [db]
 
@@ -96,40 +96,27 @@ cache_dir = "./"
     compress = true
 
 [email]
-host = "smtp.exmail.qq.com"
-port = 25
-username = ""
-password = ""
+
+    [email.default]
+    host = "smtp.exmail.qq.com"
+    port = 25
+    username = ""
+    password = ""
 ```
 
-- config usage
+- usage
 
 ```go
-yiigo.Env("app.env").String()
-yiigo.Env("app.debug").Bool()
+yiigo.Env("app.env").String("dev")
+yiigo.Env("app.debug").Bool(true)
 ```
 
-#### Apollo
-
-```go
-type QiniuConfig struct {
-    BucketName string `toml:"bucket_name"`
-}
-
-func (c *QiniuConfig) Namespace() string {
-    return yiigo.ApolloNamespace("qiniu", "qiniu")
-}
-
-var Qiniu = new(QiniuConfig)
-
-if err := yiigo.StartApollo(Qiniu); err != nil {
-    log.Fatal(err)
-}
-
-fmt.Println(Qiniu.BucketName)
-```
-
-> Notice! Namespace read from `yiigo.toml` when `app.debug = true`
+> ⚠️注意！
+>
+> 如果配置了 `apollo`，则：
+>
+> 1. 配置优先从 `apollo` 读取，如果不存在，则从 `yiigo.toml` 读取；
+> 2. 当 `app.debug = true` 时，配置从 `yiigo.toml` 读取。
 
 #### MySQL
 
