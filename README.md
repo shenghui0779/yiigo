@@ -121,8 +121,8 @@ yiigo.Env("apollo_test.name").String("test")
 > 如果配置了 `apollo`，则：
 >
 > 1. 配置优先从 `apollo` 读取，若不存在，则从 `yiigo.toml` 读取；
-> 2. 若 `namespace` 不在 `apollo` 配置中，则其配置项从 `application` 中获取； ，
-> 3. 当 `app.debug = true` 时，配置从 `yiigo.toml` 读取。
+> 2. 若 `namespace` 不在 `apollo` 配置中，则其配置项从 `application` 中获取；
+> 3. 当 `app.debug = true` 时，配置从 `yiigo.toml` 读取
 
 #### MySQL
 
