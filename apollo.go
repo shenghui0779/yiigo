@@ -26,7 +26,7 @@ func initApollo(debug bool) {
 	cfg := new(apolloConfig)
 
 	if err := node.Unmarshal(cfg); err != nil {
-		logger.Fatal("yiigo: apollo init error", zap.Error(err))
+		logger.Error("yiigo: apollo init error", zap.Error(err))
 
 		return
 	}
@@ -40,7 +40,7 @@ func initApollo(debug bool) {
 		AccesskeySecret:    cfg.AccesskeySecret,
 		InsecureSkipVerify: cfg.InsecureSkipVerify,
 	}); err != nil {
-		logger.Fatal("yiigo: apollo init error", zap.Error(err))
+		logger.Error("yiigo: apollo init error", zap.Error(err))
 
 		return
 	}
