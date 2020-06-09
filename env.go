@@ -1196,7 +1196,7 @@ var defaultEnvContent = `[app]
 env = "dev" # dev | beta | prod
 debug = true
 
-[apollo]
+# [apollo]
 # appid = "test"
 # cluster = "default"
 # address = "127.0.0.1:8080"
