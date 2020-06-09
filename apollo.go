@@ -45,7 +45,9 @@ func initApollo(debug bool) {
 		return
 	}
 
-	env.setApollo(cfg.Namespace, debug)
+	if !debug {
+		env.withApollo()
+	}
 
 	logger.Info("yiigo: apollo is OK.")
 }

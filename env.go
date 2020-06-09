@@ -20,13 +20,8 @@ var ErrConfigNil = errors.New("yiigo: config not found")
 
 type config struct {
 	tree   *toml.Tree
-	apollo *apollo
+	apollo bool
 	mutex  sync.RWMutex
-}
-
-type apollo struct {
-	namespace []string
-	debug     bool
 }
 
 func (c *config) get(key string) interface{} {
@@ -37,24 +32,27 @@ func (c *config) get(key string) interface{} {
 }
 
 func (c *config) getFromApollo(key string) string {
-	if c.apollo == nil || c.apollo.debug || key == "" {
+	if strings.TrimSpace(key) == "" {
 		return ""
 	}
 
 	arr := strings.Split(key, ".")
 
-	if len(arr) == 1 || !InStrings(arr[0], c.apollo.namespace...) {
-		return agollo.GetStringValue(arr[1], "")
+	l := len(arr)
+
+	if l == 0 {
+		return ""
+	}
+
+	if l == 1 {
+		return agollo.GetStringValue(arr[0], "")
 	}
 
 	return agollo.GetStringValueWithNameSpace(arr[0], arr[1], "")
 }
 
-func (c *config) setApollo(namespace []string, debug bool) {
-	c.apollo = &apollo{
-		namespace: namespace,
-		debug:     debug,
-	}
+func (c *config) withApollo() {
+	c.apollo = true
 }
 
 // Env config value
@@ -1185,8 +1183,10 @@ func loadConfigFile() {
 
 // Env returns an env value
 func Env(key string) *EnvValue {
-	if v := env.getFromApollo(key); v != "" {
-		return &EnvValue{value: v}
+	if env.apollo {
+		if v := env.getFromApollo(key); v != "" {
+			return &EnvValue{value: v}
+		}
 	}
 
 	return &EnvValue{value: env.get(key)}
