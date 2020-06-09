@@ -44,7 +44,7 @@ func (c *config) getFromApollo(key string) string {
 	arr := strings.Split(key, ".")
 
 	if len(arr) == 1 || !InStrings(arr[0], c.apollo.namespace...) {
-		return agollo.GetStringValue(arr[0], "")
+		return agollo.GetStringValue(arr[1], "")
 	}
 
 	return agollo.GetStringValueWithNameSpace(arr[0], arr[1], "")
