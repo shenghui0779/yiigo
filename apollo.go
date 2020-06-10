@@ -16,7 +16,7 @@ type apolloConfig struct {
 	InsecureSkipVerify bool     `toml:"insecure_skip_verify"`
 }
 
-func initApollo(debug bool) {
+func initApollo() {
 	node, ok := env.get("apollo").(*toml.Tree)
 
 	if !ok {
@@ -45,8 +45,8 @@ func initApollo(debug bool) {
 		return
 	}
 
-	if !debug {
-		env.withApollo()
+	if Env("app.env").String("dev") != "dev" {
+		env.withApollo(cfg.Namespace)
 	}
 
 	logger.Info("yiigo: apollo is OK.")
