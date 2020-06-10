@@ -19,9 +19,9 @@ import (
 var ErrConfigNil = errors.New("yiigo: config not found")
 
 type config struct {
-	tree   *toml.Tree
-	apollo bool
-	mutex  sync.RWMutex
+	tree      *toml.Tree
+	namespace []string
+	mutex     sync.RWMutex
 }
 
 func (c *config) get(key string) interface{} {
@@ -38,21 +38,15 @@ func (c *config) getFromApollo(key string) string {
 
 	arr := strings.Split(key, ".")
 
-	l := len(arr)
-
-	if l == 0 {
+	if len(arr) == 1 || !InStrings(arr[0], c.namespace...) {
 		return ""
-	}
-
-	if l == 1 {
-		return agollo.GetStringValue(arr[0], "")
 	}
 
 	return agollo.GetStringValueWithNameSpace(arr[0], arr[1], "")
 }
 
-func (c *config) withApollo() {
-	c.apollo = true
+func (c *config) withApollo(namespace []string) {
+	c.namespace = namespace
 }
 
 // Env config value
@@ -1183,7 +1177,7 @@ func loadConfigFile() {
 
 // Env returns an env value
 func Env(key string) *EnvValue {
-	if env.apollo {
+	if len(env.namespace) != 0 {
 		if v := env.getFromApollo(key); v != "" {
 			return &EnvValue{value: v}
 		}
