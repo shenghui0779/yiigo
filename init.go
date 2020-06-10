@@ -17,8 +17,6 @@ func init() {
 
 	// init logger
 	initLogger(debug)
-	// init apollo
-	initApollo(debug)
 	// init mailer
 	initMailer()
 	// init db
@@ -27,4 +25,6 @@ func init() {
 	initMongoDB()
 	// init redis
 	initRedis()
+	// init apollo
+	initApollo()
 }
