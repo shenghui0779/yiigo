@@ -17,14 +17,14 @@ func init() {
 
 	// init logger
 	initLogger(debug)
-	// init mailer
-	initMailer()
 	// init db
 	initDB(debug)
 	// init mongodb
 	initMongoDB()
 	// init redis
 	initRedis()
+	// init mailer
+	initMailer()
 	// init apollo
 	initApollo()
 }
