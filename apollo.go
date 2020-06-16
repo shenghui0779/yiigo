@@ -6,6 +6,8 @@ import (
 	"go.uber.org/zap"
 )
 
+const defaultNamespace = "application"
+
 type apolloConfig struct {
 	AppID              string   `toml:"appid"`
 	Cluster            string   `toml:"cluster"`
@@ -45,9 +47,11 @@ func initApollo() {
 		return
 	}
 
-	if len(cfg.Namespace) != 0 {
-		env.withApollo(cfg.Namespace)
+	if InStrings(defaultNamespace, cfg.Namespace...) {
+		cfg.Namespace = append(cfg.Namespace, defaultNamespace)
 	}
+
+	env.withApollo(cfg.Namespace)
 
 	logger.Info("yiigo: apollo is OK.")
 }

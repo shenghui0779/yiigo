@@ -36,9 +36,13 @@ func (c *config) getFromApollo(key string) string {
 		return ""
 	}
 
-	arr := strings.Split(key, ".")
+	arr := strings.SplitN(key, ".", 2)
 
-	if len(arr) == 1 || !InStrings(arr[0], c.namespace...) {
+	if len(arr) == 1 {
+		return agollo.GetStringValue(arr[0], "")
+	}
+
+	if !InStrings(arr[0], c.namespace...) {
 		return ""
 	}
 
@@ -1178,7 +1182,7 @@ func loadConfigFile() {
 // Env returns an env value
 func Env(key string) *EnvValue {
 	if len(env.namespace) != 0 {
-		if v := env.getFromApollo(key); v != "" {
+		if v := env.getFromApollo(key); len(v) != 0 {
 			return &EnvValue{value: v}
 		}
 	}
