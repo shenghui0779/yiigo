@@ -45,7 +45,7 @@ func initApollo() {
 		return
 	}
 
-	if Env("app.env").String("dev") != "dev" {
+	if len(cfg.Namespace) != 0 {
 		env.withApollo(cfg.Namespace)
 	}
 
