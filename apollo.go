@@ -47,7 +47,7 @@ func initApollo() {
 		return
 	}
 
-	if InStrings(defaultNamespace, cfg.Namespace...) {
+	if !InStrings(defaultNamespace, cfg.Namespace...) {
 		cfg.Namespace = append(cfg.Namespace, defaultNamespace)
 	}
 
