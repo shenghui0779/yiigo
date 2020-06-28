@@ -1,4 +1,4 @@
-module github.com/iiinsomnia/yiigo/v4
+module github.com/shenghui0779/yiigo
 
 go 1.13
 

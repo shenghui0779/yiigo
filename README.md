@@ -1,8 +1,8 @@
 # yiigo
 
 [![golang](https://img.shields.io/badge/Language-Go-green.svg?style=flat)](https://golang.org)
-[![GitHub release](https://img.shields.io/github/release/IIInsomnia/yiigo.svg)](https://github.com/iiinsomnia/yiigo/releases/latest)
-[![pkg.go.dev](https://img.shields.io/badge/dev-reference-007d9c?logo=go&logoColor=white&style=flat)](https://pkg.go.dev/github.com/iiinsomnia/yiigo/v4)
+[![GitHub release](https://img.shields.io/github/release/shenghui0779/yiigo.svg)](https://github.com/shenghui0779/yiigo/releases/latest)
+[![pkg.go.dev](https://img.shields.io/badge/dev-reference-007d9c?logo=go&logoColor=white&style=flat)](https://pkg.go.dev/github.com/shenghui0779/yiigo)
 [![MIT license](http://img.shields.io/badge/license-MIT-brightgreen.svg)](http://opensource.org/licenses/MIT)
 
 Go 轻量级开发通用库
@@ -29,7 +29,7 @@ Go 轻量级开发通用库
 ## Installation
 
 ```sh
-go get github.com/iiinsomnia/yiigo/v4
+go get github.com/shenghui0779/yiigo
 ```
 
 ## Usage
@@ -231,8 +231,8 @@ yiigo.Logger("foo").Info("hello world")
 
 ## Documentation
 
-- [API Reference](https://pkg.go.dev/github.com/iiinsomnia/yiigo/v4)
+- [API Reference](https://pkg.go.dev/github.com/shenghui0779/yiigo)
 - [TOML](https://github.com/toml-lang/toml)
-- [Example](https://github.com/iiinsomnia/yiigo-example)
+- [Example](https://github.com/shenghui0779/yiigo-example)
 
 **Enjoy 😊**
