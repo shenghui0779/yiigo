@@ -13,50 +13,75 @@ import (
 	"errors"
 )
 
-// AESCBCEncrypt AES CBC encrypt with PKCS#7 padding
-func AESCBCEncrypt(plainText, key []byte, iv ...byte) ([]byte, error) {
-	block, err := aes.NewCipher(key)
+type AESPadding string
+
+const (
+	PKCS5 AESPadding = "PKCS#5"
+	PKCS7 AESPadding = "PKCS#7"
+)
+
+type AESCrypto struct {
+	block cipher.Block
+	key   []byte
+	iv    []byte
+}
+
+// NewAESCrypto returns new aes crypto
+func NewAESCrypto(key []byte, iv ...byte) (*AESCrypto, error) {
+	cb, err := aes.NewCipher(key)
 
 	if err != nil {
 		return nil, err
 	}
 
-	plainText = PKCS7Padding(plainText, len(key))
+	r := &AESCrypto{
+		block: cb,
+		key:   key,
+		iv:    iv,
+	}
+
+	if len(iv) == 0 {
+		r.iv = key[:cb.BlockSize()]
+	}
+
+	return r, nil
+}
+
+// CBCEncrypt aes-cbc encryption
+func (a *AESCrypto) CBCEncrypt(plainText []byte, padding AESPadding) []byte {
+	switch padding {
+	case PKCS5:
+		plainText = a.padding(plainText, a.block.BlockSize())
+	case PKCS7:
+		plainText = a.padding(plainText, len(a.key))
+	}
 
 	cipherText := make([]byte, len(plainText))
 
-	if len(iv) == 0 {
-		iv = key[:block.BlockSize()]
-	}
-
-	blockMode := cipher.NewCBCEncrypter(block, iv)
+	blockMode := cipher.NewCBCEncrypter(a.block, a.iv)
 	blockMode.CryptBlocks(cipherText, plainText)
 
-	return cipherText, nil
+	return cipherText
 }
 
-// AESCBCDecrypt AES CBC decrypt with PKCS#7 unpadding
-func AESCBCDecrypt(cipherText, key []byte, iv ...byte) ([]byte, error) {
-	block, err := aes.NewCipher(key)
-
-	if err != nil {
-		return nil, err
-	}
-
+// CBCDecrypt aes-cbc decryption
+func (a *AESCrypto) CBCDecrypt(cipherText []byte, padding AESPadding) []byte {
 	plainText := make([]byte, len(cipherText))
 
-	if len(iv) == 0 {
-		iv = key[:block.BlockSize()]
-	}
-
-	blockMode := cipher.NewCBCDecrypter(block, iv)
+	blockMode := cipher.NewCBCDecrypter(a.block, a.iv)
 	blockMode.CryptBlocks(plainText, cipherText)
 
-	return PKCS7UnPadding(plainText, len(key)), nil
+	switch padding {
+	case PKCS5:
+		plainText = a.unPadding(plainText, a.block.BlockSize())
+	case PKCS7:
+		plainText = a.unPadding(plainText, len(a.key))
+	}
+
+	return plainText
 }
 
-// PKCS7Padding PKCS#7 padding
-func PKCS7Padding(cipherText []byte, blockSize int) []byte {
+func (a *AESCrypto) padding(cipherText []byte, blockSize int) []byte {
 	padding := blockSize - len(cipherText)%blockSize
 
 	if padding == 0 {
@@ -68,12 +93,11 @@ func PKCS7Padding(cipherText []byte, blockSize int) []byte {
 	return append(cipherText, padText...)
 }
 
-// PKCS7UnPadding PKCS#7 unpadding
-func PKCS7UnPadding(plainText []byte, blockSize int) []byte {
+func (a *AESCrypto) unPadding(plainText []byte, blockSize int) []byte {
 	l := len(plainText)
 	unpadding := int(plainText[l-1])
 
-	if unpadding < 0 || unpadding > blockSize {
+	if unpadding < 1 || unpadding > blockSize {
 		unpadding = 0
 	}
 
