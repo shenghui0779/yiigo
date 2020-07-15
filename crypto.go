@@ -142,10 +142,10 @@ type RSACrypto struct {
 }
 
 // NewRSACrypto returns new rsa crypto
-func NewRSACrypto(publicKey, privateKey []byte) *RSACrypto {
+func NewRSACrypto(privateKey, publicKey []byte) *RSACrypto {
 	return &RSACrypto{
-		publicKey:  publicKey,
 		privateKey: privateKey,
+		publicKey:  publicKey,
 	}
 }
 
