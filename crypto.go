@@ -13,13 +13,17 @@ import (
 	"errors"
 )
 
+// AESPadding aes padding
 type AESPadding string
 
 const (
-	PKCS5 AESPadding = "PKCS#5"
-	PKCS7 AESPadding = "PKCS#7"
+	// PKCS5_PADDING PKCS#5 padding
+	PKCS5_PADDING AESPadding = "PKCS#5"
+	// PKCS7_PADDING PKCS#7 padding
+	PKCS7_PADDING AESPadding = "PKCS#7"
 )
 
+// AESCrypto aes crypto
 type AESCrypto struct {
 	block cipher.Block
 	key   []byte
@@ -50,9 +54,9 @@ func NewAESCrypto(key []byte, iv ...byte) (*AESCrypto, error) {
 // CBCEncrypt aes-cbc encryption
 func (a *AESCrypto) CBCEncrypt(plainText []byte, padding AESPadding) []byte {
 	switch padding {
-	case PKCS5:
+	case PKCS5_PADDING:
 		plainText = a.padding(plainText, a.block.BlockSize())
-	case PKCS7:
+	case PKCS7_PADDING:
 		plainText = a.padding(plainText, len(a.key))
 	}
 
@@ -72,9 +76,9 @@ func (a *AESCrypto) CBCDecrypt(cipherText []byte, padding AESPadding) []byte {
 	blockMode.CryptBlocks(plainText, cipherText)
 
 	switch padding {
-	case PKCS5:
+	case PKCS5_PADDING:
 		plainText = a.unPadding(plainText, a.block.BlockSize())
-	case PKCS7:
+	case PKCS7_PADDING:
 		plainText = a.unPadding(plainText, len(a.key))
 	}
 
@@ -131,12 +135,26 @@ func GenerateRSAKey(bits int) (privateKey, publicKey []byte, err error) {
 	return
 }
 
-// RSASignWithSha256 returns rsa signature with sha256
-func RSASignWithSha256(data, privateKey []byte) ([]byte, error) {
-	block, _ := pem.Decode(privateKey)
+// RSACrypto rsa crypto
+type RSACrypto struct {
+	publicKey  []byte
+	privateKey []byte
+}
+
+// NewRSACrypto returns new rsa crypto
+func NewRSACrypto(publicKey, privateKey []byte) *RSACrypto {
+	return &RSACrypto{
+		publicKey:  publicKey,
+		privateKey: privateKey,
+	}
+}
+
+// SignWithSha256 returns rsa sha256-signature with private key
+func (r *RSACrypto) SignWithSha256(data []byte) ([]byte, error) {
+	block, _ := pem.Decode(r.privateKey)
 
 	if block == nil {
-		return nil, errors.New("invalid rsa private key")
+		return nil, errors.New("yiigo: invalid rsa private key")
 	}
 
 	key, err := x509.ParsePKCS1PrivateKey(block.Bytes)
@@ -157,12 +175,12 @@ func RSASignWithSha256(data, privateKey []byte) ([]byte, error) {
 	return signature, nil
 }
 
-// RSAVerifyWithSha256 verifies rsa signature with sha256
-func RSAVerifyWithSha256(data, signature, publicKey []byte) error {
-	block, _ := pem.Decode(publicKey)
+// VerifyWithSha256 verifies rsa sha256-signature with public key
+func (r *RSACrypto) VerifyWithSha256(data, signature []byte) error {
+	block, _ := pem.Decode(r.publicKey)
 
 	if block == nil {
-		return errors.New("invalid rsa public key")
+		return errors.New("yiigo: invalid rsa public key")
 	}
 
 	pubKey, err := x509.ParsePKIXPublicKey(block.Bytes)
@@ -174,7 +192,7 @@ func RSAVerifyWithSha256(data, signature, publicKey []byte) error {
 	key, ok := pubKey.(*rsa.PublicKey)
 
 	if !ok {
-		return errors.New("invalid rsa public key")
+		return errors.New("yiigo: invalid rsa public key")
 	}
 
 	hashed := sha256.Sum256(data)
@@ -182,12 +200,12 @@ func RSAVerifyWithSha256(data, signature, publicKey []byte) error {
 	return rsa.VerifyPKCS1v15(key, crypto.SHA256, hashed[:], signature)
 }
 
-// RSAEncrypt rsa encrypt with public key
-func RSAEncrypt(data, publicKey []byte) ([]byte, error) {
-	block, _ := pem.Decode(publicKey)
+// Encrypt rsa encryption with public key
+func (r *RSACrypto) Encrypt(data []byte) ([]byte, error) {
+	block, _ := pem.Decode(r.publicKey)
 
 	if block == nil {
-		return nil, errors.New("invalid rsa public key")
+		return nil, errors.New("yiigo: invalid rsa public key")
 	}
 
 	pubKey, err := x509.ParsePKIXPublicKey(block.Bytes)
@@ -199,18 +217,18 @@ func RSAEncrypt(data, publicKey []byte) ([]byte, error) {
 	key, ok := pubKey.(*rsa.PublicKey)
 
 	if !ok {
-		return nil, errors.New("invalid rsa public key")
+		return nil, errors.New("yiigo: invalid rsa public key")
 	}
 
 	return rsa.EncryptPKCS1v15(rand.Reader, key, data)
 }
 
-// RSADecrypt rsa decrypt with private key
-func RSADecrypt(cipherText, privateKey []byte) ([]byte, error) {
-	block, _ := pem.Decode(privateKey)
+// Decrypt rsa decryption with private key
+func (r *RSACrypto) Decrypt(cipherText []byte) ([]byte, error) {
+	block, _ := pem.Decode(r.privateKey)
 
 	if block == nil {
-		return nil, errors.New("invalid rsa private key")
+		return nil, errors.New("yiigo: invalid rsa private key")
 	}
 
 	key, err := x509.ParsePKCS1PrivateKey(block.Bytes)

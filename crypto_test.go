@@ -19,7 +19,7 @@ func TestAESCBCCrypt(t *testing.T) {
 			name: "t1",
 			args: args{
 				data:    []byte("shenghui0779"),
-				padding: PKCS5,
+				padding: PKCS5_PADDING,
 			},
 			want: "shenghui0779",
 		},
@@ -27,7 +27,7 @@ func TestAESCBCCrypt(t *testing.T) {
 			name: "t2",
 			args: args{
 				data:    []byte("Iloveyiigo"),
-				padding: PKCS7,
+				padding: PKCS7_PADDING,
 			},
 			want: "Iloveyiigo",
 		},
@@ -63,20 +63,22 @@ func TestRSASign(t *testing.T) {
 		{
 			name: "t1",
 			args: args{
-				data: []byte("IIInsomnia"),
+				data: []byte("Iloveyiigo"),
 			},
 		},
 	}
 
+	rsaCrypto := NewRSACrypto(publicKey, privateKey)
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			signature, err := RSASignWithSha256(tt.args.data, privateKey)
+			signature, err := rsaCrypto.SignWithSha256(tt.args.data)
 
 			if err != nil {
 				t.Errorf("RSASignWithSha256() error = %v", err)
 			}
 
-			if err = RSAVerifyWithSha256(tt.args.data, signature, publicKey); err != nil {
+			if err = rsaCrypto.VerifyWithSha256(tt.args.data, signature); err != nil {
 				t.Errorf("RSAVerifyWithSha256() error = %v", err)
 			}
 		})
@@ -95,28 +97,30 @@ func TestRSACrypt(t *testing.T) {
 		{
 			name: "t1",
 			args: args{
-				data: []byte("IIInsomnia"),
+				data: []byte("Iloveyiigo"),
 			},
-			want: "IIInsomnia",
+			want: "Iloveyiigo",
 		},
 	}
 
+	rsaCrypto := NewRSACrypto(publicKey, privateKey)
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			rsaData, err := RSAEncrypt(tt.args.data, publicKey)
+			rsaData, err := rsaCrypto.Encrypt(tt.args.data)
 
 			if err != nil {
 				t.Errorf("RSAEncrypt() error = %v", err)
 			}
 
-			got, err := RSADecrypt(rsaData, privateKey)
+			got, err := rsaCrypto.Decrypt(rsaData)
 
 			if err != nil {
 				t.Errorf("RSADecrypt() error = %v", err)
 			}
 
 			if !reflect.DeepEqual(string(got), tt.want) {
-				t.Errorf("RSADecrypt() = %v, want %v", got, tt.want)
+				t.Errorf("RSACrypt() = %v, want %v", got, tt.want)
 			}
 		})
 	}
