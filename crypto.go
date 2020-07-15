@@ -32,20 +32,20 @@ type AESCrypto struct {
 
 // NewAESCrypto returns new aes crypto
 func NewAESCrypto(key []byte, iv ...byte) (*AESCrypto, error) {
-	cb, err := aes.NewCipher(key)
+	b, err := aes.NewCipher(key)
 
 	if err != nil {
 		return nil, err
 	}
 
 	r := &AESCrypto{
-		block: cb,
+		block: b,
 		key:   key,
 		iv:    iv,
 	}
 
 	if len(iv) == 0 {
-		r.iv = key[:cb.BlockSize()]
+		r.iv = key[:b.BlockSize()]
 	}
 
 	return r, nil
