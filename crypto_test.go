@@ -68,7 +68,7 @@ func TestRSASign(t *testing.T) {
 		},
 	}
 
-	rsaCrypto := NewRSACrypto(publicKey, privateKey)
+	rsaCrypto := NewRSACrypto(privateKey, publicKey)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -103,7 +103,7 @@ func TestRSACrypt(t *testing.T) {
 		},
 	}
 
-	rsaCrypto := NewRSACrypto(publicKey, privateKey)
+	rsaCrypto := NewRSACrypto(privateKey, publicKey)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

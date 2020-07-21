@@ -820,7 +820,7 @@ func Test_env_Unmarshal(t *testing.T) {
 		Amount int       `toml:"amount"`
 		Hosts  []string  `toml:"hosts"`
 		Ports  []int     `toml:"ports"`
-		Weight int       `toml:"weight"`
+		Weight float64   `toml:"weight"`
 		Prices []float64 `toml:"prices"`
 	}
 	tests := []struct {
