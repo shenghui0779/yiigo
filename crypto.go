@@ -13,50 +13,79 @@ import (
 	"errors"
 )
 
-// AESCBCEncrypt AES CBC encrypt with PKCS#7 padding
-func AESCBCEncrypt(plainText, key []byte, iv ...byte) ([]byte, error) {
-	block, err := aes.NewCipher(key)
+// AESPadding aes padding
+type AESPadding string
+
+const (
+	// PKCS5_PADDING PKCS#5 padding
+	PKCS5_PADDING AESPadding = "PKCS#5"
+	// PKCS7_PADDING PKCS#7 padding
+	PKCS7_PADDING AESPadding = "PKCS#7"
+)
+
+// AESCrypto aes crypto
+type AESCrypto struct {
+	block cipher.Block
+	key   []byte
+	iv    []byte
+}
+
+// NewAESCrypto returns new aes crypto
+func NewAESCrypto(key []byte, iv ...byte) (*AESCrypto, error) {
+	b, err := aes.NewCipher(key)
 
 	if err != nil {
 		return nil, err
 	}
 
-	plainText = PKCS7Padding(plainText, len(key))
+	r := &AESCrypto{
+		block: b,
+		key:   key,
+		iv:    iv,
+	}
+
+	if len(iv) == 0 {
+		r.iv = key[:b.BlockSize()]
+	}
+
+	return r, nil
+}
+
+// CBCEncrypt aes-cbc encryption
+func (a *AESCrypto) CBCEncrypt(plainText []byte, padding AESPadding) []byte {
+	switch padding {
+	case PKCS5_PADDING:
+		plainText = a.padding(plainText, a.block.BlockSize())
+	case PKCS7_PADDING:
+		plainText = a.padding(plainText, len(a.key))
+	}
 
 	cipherText := make([]byte, len(plainText))
 
-	if len(iv) == 0 {
-		iv = key[:block.BlockSize()]
-	}
-
-	blockMode := cipher.NewCBCEncrypter(block, iv)
+	blockMode := cipher.NewCBCEncrypter(a.block, a.iv)
 	blockMode.CryptBlocks(cipherText, plainText)
 
-	return cipherText, nil
+	return cipherText
 }
 
-// AESCBCDecrypt AES CBC decrypt with PKCS#7 unpadding
-func AESCBCDecrypt(cipherText, key []byte, iv ...byte) ([]byte, error) {
-	block, err := aes.NewCipher(key)
-
-	if err != nil {
-		return nil, err
-	}
-
+// CBCDecrypt aes-cbc decryption
+func (a *AESCrypto) CBCDecrypt(cipherText []byte, padding AESPadding) []byte {
 	plainText := make([]byte, len(cipherText))
 
-	if len(iv) == 0 {
-		iv = key[:block.BlockSize()]
-	}
-
-	blockMode := cipher.NewCBCDecrypter(block, iv)
+	blockMode := cipher.NewCBCDecrypter(a.block, a.iv)
 	blockMode.CryptBlocks(plainText, cipherText)
 
-	return PKCS7UnPadding(plainText, len(key)), nil
+	switch padding {
+	case PKCS5_PADDING:
+		plainText = a.unPadding(plainText, a.block.BlockSize())
+	case PKCS7_PADDING:
+		plainText = a.unPadding(plainText, len(a.key))
+	}
+
+	return plainText
 }
 
-// PKCS7Padding PKCS#7 padding
-func PKCS7Padding(cipherText []byte, blockSize int) []byte {
+func (a *AESCrypto) padding(cipherText []byte, blockSize int) []byte {
 	padding := blockSize - len(cipherText)%blockSize
 
 	if padding == 0 {
@@ -68,12 +97,11 @@ func PKCS7Padding(cipherText []byte, blockSize int) []byte {
 	return append(cipherText, padText...)
 }
 
-// PKCS7UnPadding PKCS#7 unpadding
-func PKCS7UnPadding(plainText []byte, blockSize int) []byte {
+func (a *AESCrypto) unPadding(plainText []byte, blockSize int) []byte {
 	l := len(plainText)
 	unpadding := int(plainText[l-1])
 
-	if unpadding < 0 || unpadding > blockSize {
+	if unpadding < 1 || unpadding > blockSize {
 		unpadding = 0
 	}
 
@@ -107,12 +135,26 @@ func GenerateRSAKey(bits int) (privateKey, publicKey []byte, err error) {
 	return
 }
 
-// RSASignWithSha256 returns rsa signature with sha256
-func RSASignWithSha256(data, privateKey []byte) ([]byte, error) {
-	block, _ := pem.Decode(privateKey)
+// RSACrypto rsa crypto
+type RSACrypto struct {
+	publicKey  []byte
+	privateKey []byte
+}
+
+// NewRSACrypto returns new rsa crypto
+func NewRSACrypto(privateKey, publicKey []byte) *RSACrypto {
+	return &RSACrypto{
+		privateKey: privateKey,
+		publicKey:  publicKey,
+	}
+}
+
+// SignWithSha256 returns rsa sha256-signature with private key
+func (r *RSACrypto) SignWithSha256(data []byte) ([]byte, error) {
+	block, _ := pem.Decode(r.privateKey)
 
 	if block == nil {
-		return nil, errors.New("invalid rsa private key")
+		return nil, errors.New("yiigo: invalid rsa private key")
 	}
 
 	key, err := x509.ParsePKCS1PrivateKey(block.Bytes)
@@ -133,12 +175,12 @@ func RSASignWithSha256(data, privateKey []byte) ([]byte, error) {
 	return signature, nil
 }
 
-// RSAVerifyWithSha256 verifies rsa signature with sha256
-func RSAVerifyWithSha256(data, signature, publicKey []byte) error {
-	block, _ := pem.Decode(publicKey)
+// VerifyWithSha256 verifies rsa sha256-signature with public key
+func (r *RSACrypto) VerifyWithSha256(data, signature []byte) error {
+	block, _ := pem.Decode(r.publicKey)
 
 	if block == nil {
-		return errors.New("invalid rsa public key")
+		return errors.New("yiigo: invalid rsa public key")
 	}
 
 	pubKey, err := x509.ParsePKIXPublicKey(block.Bytes)
@@ -150,7 +192,7 @@ func RSAVerifyWithSha256(data, signature, publicKey []byte) error {
 	key, ok := pubKey.(*rsa.PublicKey)
 
 	if !ok {
-		return errors.New("invalid rsa public key")
+		return errors.New("yiigo: invalid rsa public key")
 	}
 
 	hashed := sha256.Sum256(data)
@@ -158,12 +200,12 @@ func RSAVerifyWithSha256(data, signature, publicKey []byte) error {
 	return rsa.VerifyPKCS1v15(key, crypto.SHA256, hashed[:], signature)
 }
 
-// RSAEncrypt rsa encrypt with public key
-func RSAEncrypt(data, publicKey []byte) ([]byte, error) {
-	block, _ := pem.Decode(publicKey)
+// Encrypt rsa encryption with public key
+func (r *RSACrypto) Encrypt(data []byte) ([]byte, error) {
+	block, _ := pem.Decode(r.publicKey)
 
 	if block == nil {
-		return nil, errors.New("invalid rsa public key")
+		return nil, errors.New("yiigo: invalid rsa public key")
 	}
 
 	pubKey, err := x509.ParsePKIXPublicKey(block.Bytes)
@@ -175,18 +217,18 @@ func RSAEncrypt(data, publicKey []byte) ([]byte, error) {
 	key, ok := pubKey.(*rsa.PublicKey)
 
 	if !ok {
-		return nil, errors.New("invalid rsa public key")
+		return nil, errors.New("yiigo: invalid rsa public key")
 	}
 
 	return rsa.EncryptPKCS1v15(rand.Reader, key, data)
 }
 
-// RSADecrypt rsa decrypt with private key
-func RSADecrypt(cipherText, privateKey []byte) ([]byte, error) {
-	block, _ := pem.Decode(privateKey)
+// Decrypt rsa decryption with private key
+func (r *RSACrypto) Decrypt(cipherText []byte) ([]byte, error) {
+	block, _ := pem.Decode(r.privateKey)
 
 	if block == nil {
-		return nil, errors.New("invalid rsa private key")
+		return nil, errors.New("yiigo: invalid rsa private key")
 	}
 
 	key, err := x509.ParsePKCS1PrivateKey(block.Bytes)
