@@ -213,6 +213,7 @@ func VersionCompare(rangeVer, curVer string) bool {
 
 	// invalid semantic version
 	if err != nil {
+		// add error log ?
 		return true
 	}
 
