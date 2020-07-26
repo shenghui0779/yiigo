@@ -13,7 +13,7 @@ Go 轻量级开发通用库
 - 支持 [PostgreSQL](https://github.com/lib/pq)
 - 支持 [MongoDB](https://github.com/mongodb/mongo-go-driver)
 - 支持 [Redis](https://github.com/gomodule/redigo)
-- 支持 [Zipkin](https://github.com/openzipkin/zipkin-go)
+- 支持 [Zipkin](https://github.com/openzipkin/zipkin-go) (http)
 - 支持 [Apollo](https://github.com/philchia/agollo)
 - 邮件使用 [gomail](https://github.com/go-gomail/gomail)
 - 配置使用 [toml](https://github.com/pelletier/go-toml)
