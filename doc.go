@@ -77,10 +77,7 @@
 //        log.Fatal(err)
 //    }
 //
-//    b, err := client.Get(context.Background(), "url...",
-//        yiigo.WithRequestHeader("Content-Type", "application/json; charset=utf-8"),
-//        yiigo.WithRequestTimeout(5*time.Second),
-//    )
+//    b, err := client.Get("url...", yiigo.WithRequestTimeout(5*time.Second))
 //
 //    if err != nil {
 //        log.Fatal(err)
