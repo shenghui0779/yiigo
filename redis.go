@@ -8,8 +8,8 @@ import (
 
 	"github.com/gomodule/redigo/redis"
 	"github.com/pelletier/go-toml"
+	"github.com/shenghui0779/vitess_pool"
 	"go.uber.org/zap"
-	"vitess.io/vitess/go/pools"
 )
 
 type redisConfig struct {
@@ -39,7 +39,7 @@ func (r RedisConn) Close() {
 // RedisPoolResource redis pool resource
 type RedisPoolResource struct {
 	config *redisConfig
-	pool   *pools.ResourcePool
+	pool   *vitess_pool.ResourcePool
 	mutex  sync.Mutex
 }
 
@@ -65,7 +65,7 @@ func (r *RedisPoolResource) init() {
 		return
 	}
 
-	df := func() (pools.Resource, error) {
+	df := func() (vitess_pool.Resource, error) {
 		conn, err := r.dial()
 
 		if err != nil {
@@ -75,7 +75,7 @@ func (r *RedisPoolResource) init() {
 		return RedisConn{conn}, nil
 	}
 
-	r.pool = pools.NewResourcePool(df, r.config.PoolSize, r.config.PoolLimit, time.Duration(r.config.IdleTimeout)*time.Second, r.config.PrefillParallelism)
+	r.pool = vitess_pool.NewResourcePool(df, r.config.PoolSize, r.config.PoolLimit, time.Duration(r.config.IdleTimeout)*time.Second, r.config.PrefillParallelism)
 }
 
 // Get get a connection resource from the pool.
