@@ -1191,7 +1191,7 @@ func Env(key string) *EnvValue {
 }
 
 var defaultEnvContent = `[app]
-env = "dev" # dev | beta | prod
+env = "dev"
 debug = true
 
 # [apollo]
@@ -1210,17 +1210,17 @@ debug = true
     # dsn = "username:password@tcp(localhost:3306)/dbname?timeout=10s&charset=utf8mb4&collation=utf8mb4_general_ci&parseTime=True&loc=Local"
     # max_open_conns = 20
     # max_idle_conns = 10
-    # conn_max_lifetime = 60 # 秒
+    # conn_max_lifetime = 60
 
 [mongo]
 
 	# [mongo.default]
 	# dsn = "mongodb://username:password@localhost:27017"
-	# connect_timeout = 10 # 秒
+	# connect_timeout = 10
 	# min_pool_size = 10
 	# max_pool_size = 10
-	# max_conn_idle_time = 60 # 秒
-	# mode = "primary" # primary | primary_preferred | secondary | secondary_preferred | nearest
+	# max_conn_idle_time = 60
+	# mode = "primary"
 
 [redis]
 
@@ -1228,13 +1228,13 @@ debug = true
 	# address = "127.0.0.1:6379"
 	# password = ""
 	# database = 0
-	# connect_timeout = 10 # 秒
-	# read_timeout = 10 # 秒
-	# write_timeout = 10 # 秒
+	# connect_timeout = 10
+	# read_timeout = 10
+	# write_timeout = 10
 	# pool_size = 10
 	# pool_limit = 20
-	# idle_timeout = 60 # 秒
-	# wait_timeout = 10 # 秒
+	# idle_timeout = 60
+	# wait_timeout = 10
 	# prefill_parallelism = 0
 
 [email]
