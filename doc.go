@@ -65,33 +65,20 @@
 //    yiigo.Env("app.debug").Bool(true)
 //    yiigo.Env("app.port").Int(8000)
 //
-// Zipkin
+// HTTP
 //
-//    reporter := yiigo.NewZipkinHTTPReporter("http://localhost:9411/api/v2/spans")
-//
-//    // sampler
-//    sampler := zipkin.NewModuloSampler(1)
-//    // endpoint
-//    endpoint, _ := zipkin.NewEndpoint("yiigo-zipkin", "localhost")
-//
-//    tracer, err := yiigo.NewZipkinTracer(reporter,
-//        zipkin.WithLocalEndpoint(endpoint),
-//        zipkin.WithSharedSpans(false),
-//        zipkin.WithSampler(sampler),
+//    client, err := yiigo.NewHTTPClient(
+//        yiigo.WithHTTPMaxIdleConnsPerHost(1000),
+//        yiigo.WithHTTPMaxConnsPerHost(1000),
+//        yiigo.WithHTTPDefaultTimeout(time.Second*10),
 //    )
 //
 //    if err != nil {
 //        log.Fatal(err)
 //    }
 //
-//    client, err := tracer.HTTPClient(yiigo.WithZipkinClientOptions(zipkinHttp.ClientTrace(true)))
-//
-//    if err != nil {
-//        log.Fatal(err)
-//    }
-//
 //    b, err := client.Get(context.Background(), "url...",
-//        yiigo.WithRequestHeader("Content-Type", "application/json"),
+//        yiigo.WithRequestHeader("Content-Type", "application/json; charset=utf-8"),
 //        yiigo.WithRequestTimeout(5*time.Second),
 //    )
 //
