@@ -127,11 +127,10 @@ func WithHTTPDefaultTimeout(d time.Duration) HTTPClientOption {
 
 // httpRequestOptions http request options
 type httpRequestOptions struct {
-	headers        map[string]string
-	cookies        []*http.Cookie
-	close          bool
-	timeout        time.Duration
-	zipkinSpanTags map[string]string
+	headers map[string]string
+	cookies []*http.Cookie
+	close   bool
+	timeout time.Duration
 }
 
 // HTTPRequestOption configures how we set up the http request
@@ -179,13 +178,6 @@ func WithRequestClose(b bool) HTTPRequestOption {
 func WithRequestTimeout(d time.Duration) HTTPRequestOption {
 	return newFuncHTTPRequestOption(func(o *httpRequestOptions) {
 		o.timeout = d
-	})
-}
-
-// WithZipkinSpanTag specifies the zipkin span tag to zipkin http request.
-func WithZipkinSpanTag(key, value string) HTTPRequestOption {
-	return newFuncHTTPRequestOption(func(o *httpRequestOptions) {
-		o.zipkinSpanTags[key] = value
 	})
 }
 

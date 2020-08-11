@@ -13,7 +13,6 @@ Go 轻量级开发通用库
 - 支持 [PostgreSQL](https://github.com/lib/pq)
 - 支持 [MongoDB](https://github.com/mongodb/mongo-go-driver)
 - 支持 [Redis](https://github.com/gomodule/redigo)
-- 支持 [Zipkin](https://github.com/openzipkin/zipkin-go) (http)
 - 支持 [Apollo](https://github.com/philchia/agollo)
 - 邮件使用 [gomail](https://github.com/go-gomail/gomail)
 - 配置使用 [toml](https://github.com/pelletier/go-toml)
@@ -181,27 +180,14 @@ defer yiigo.Redis("foo").Put(conn)
 conn.Do("SET", "test_key", "hello world")
 ```
 
-#### Zipkin
+#### HTTP
 
 ```go
-reporter := yiigo.NewZipkinHTTPReporter("http://localhost:9411/api/v2/spans")
-
-// sampler
-sampler := zipkin.NewModuloSampler(1)
-// endpoint
-endpoint, _ := zipkin.NewEndpoint("yiigo-zipkin", "localhost")
-
-tracer, err := yiigo.NewZipkinTracer(reporter,
-    zipkin.WithLocalEndpoint(endpoint),
-    zipkin.WithSharedSpans(false),
-    zipkin.WithSampler(sampler),
+client, err := yiigo.NewHTTPClient(
+    yiigo.WithHTTPMaxIdleConnsPerHost(1000),
+    yiigo.WithHTTPMaxConnsPerHost(1000),
+    yiigo.WithHTTPDefaultTimeout(time.Second*10),
 )
-
-if err != nil {
-    log.Fatal(err)
-}
-
-client, err := tracer.HTTPClient(yiigo.WithZipkinClientOptions(zipkinHttp.ClientTrace(true)))
 
 if err != nil {
     log.Fatal(err)
