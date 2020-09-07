@@ -40,7 +40,7 @@ type dbConfig struct {
 
 func dbDial(cfg *dbConfig, debug bool) (*gorm.DB, error) {
 	if !InStrings(cfg.Driver, MySQL, Postgres, SQLite) {
-		return nil, fmt.Errorf("yiigo: unknown db driver %s", cfg.Driver)
+		return nil, fmt.Errorf("yiigo: unknown db driver %s, expects mysql, postgres, sqlite3", cfg.Driver)
 	}
 
 	orm, err := gorm.Open(cfg.Driver, cfg.Dsn)
@@ -175,6 +175,19 @@ func PGUpdateSQL(query string, data interface{}, condition ...interface{}) (stri
 	return updateSQLBuilder(Postgres, query, data, condition...)
 }
 
+// LiteInsertSQL returns sqlite3 insert sql and binds.
+// param data expects: `struct`, `*struct`, `yiigo.X`.
+func LiteInsertSQL(table string, data interface{}) (string, []interface{}) {
+	return insertSQLBuilder(Postgres, table, data)
+}
+
+// LiteUpdateSQL returns sqlite3 update sql and binds.
+// param query expects eg: "UPDATE `table` SET ? WHERE `id` = ?".
+// param data expects: `struct`, `*struct`, `yiigo.X`.
+func LiteUpdateSQL(query string, data interface{}, condition ...interface{}) (string, []interface{}) {
+	return updateSQLBuilder(Postgres, query, data, condition...)
+}
+
 func insertSQLBuilder(driver, table string, data interface{}) (string, []interface{}) {
 	var (
 		sql   string
@@ -191,6 +204,10 @@ func insertSQLBuilder(driver, table string, data interface{}) (string, []interfa
 	case reflect.Struct:
 		sql, binds = singleInsertWithStruct(driver, table, v)
 	case reflect.Slice:
+		if driver == SQLite {
+			panic(errInsertInvalidType)
+		}
+
 		count := v.Len()
 
 		if count == 0 {
