@@ -117,7 +117,7 @@ func initMongoDB() {
 func Mongo(name ...string) *mongo.Client {
 	if len(name) == 0 {
 		if defaultMongo == nil {
-			logger.Panic("yiigo: invalid mongodb", zap.String("name", AsDefault))
+			logger.Panic(fmt.Sprintf("yiigo: unknown mongodb.%s (forgotten configure?)", AsDefault))
 		}
 
 		return defaultMongo
@@ -126,7 +126,7 @@ func Mongo(name ...string) *mongo.Client {
 	v, ok := mgoMap.Load(name[0])
 
 	if !ok {
-		logger.Panic("yiigo: invalid mongodb", zap.String("name", name[0]))
+		logger.Panic(fmt.Sprintf("yiigo: unknown mongodb.%s (forgotten configure?)", name[0]))
 	}
 
 	return v.(*mongo.Client)

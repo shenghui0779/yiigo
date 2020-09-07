@@ -12,6 +12,7 @@ import (
 	"github.com/jinzhu/gorm"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
+	_ "github.com/mattn/go-sqlite3"
 	"github.com/pelletier/go-toml"
 	"go.uber.org/zap"
 )
@@ -19,6 +20,7 @@ import (
 const (
 	MySQL    = "mysql"
 	Postgres = "postgres"
+	SQLite   = "sqlite"
 )
 
 var (
@@ -37,8 +39,8 @@ type dbConfig struct {
 }
 
 func dbDial(cfg *dbConfig, debug bool) (*gorm.DB, error) {
-	if cfg.Driver != MySQL && cfg.Driver != Postgres {
-		return nil, fmt.Errorf("yiigo: invalid db driver: %s", cfg.Driver)
+	if !InStrings(cfg.Driver, MySQL, Postgres, SQLite) {
+		return nil, fmt.Errorf("yiigo: unknown db driver %s", cfg.Driver)
 	}
 
 	orm, err := gorm.Open(cfg.Driver, cfg.Dsn)
@@ -108,7 +110,7 @@ func initDB(debug bool) {
 func DB(name ...string) *sqlx.DB {
 	if len(name) == 0 {
 		if defaultDB == nil {
-			logger.Panic("yiigo: invalid db", zap.String("name", AsDefault))
+			logger.Panic(fmt.Sprintf("yiigo: unknown db.%s (forgotten configure?)", AsDefault))
 		}
 
 		return defaultDB
@@ -117,7 +119,7 @@ func DB(name ...string) *sqlx.DB {
 	v, ok := dbmap.Load(name[0])
 
 	if !ok {
-		logger.Panic("yiigo: invalid db", zap.String("name", name[0]))
+		logger.Panic(fmt.Sprintf("yiigo: unknown db.%s (forgotten configure?)", name[0]))
 	}
 
 	return v.(*sqlx.DB)
@@ -127,7 +129,7 @@ func DB(name ...string) *sqlx.DB {
 func Orm(name ...string) *gorm.DB {
 	if len(name) == 0 || name[0] == AsDefault {
 		if defaultOrm == nil {
-			logger.Panic("yiigo: invalid db", zap.String("name", AsDefault))
+			logger.Panic(fmt.Sprintf("yiigo: unknown db.%s (forgotten configure?)", AsDefault))
 		}
 
 		return defaultOrm
@@ -136,7 +138,7 @@ func Orm(name ...string) *gorm.DB {
 	v, ok := ormap.Load(name[0])
 
 	if !ok {
-		logger.Panic("yiigo: invalid db", zap.String("name", name[0]))
+		logger.Panic(fmt.Sprintf("yiigo: unknown db.%s (forgotten configure?)", name[0]))
 	}
 
 	return v.(*gorm.DB)

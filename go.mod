@@ -13,6 +13,7 @@ require (
 	github.com/jinzhu/gorm v1.9.16
 	github.com/jmoiron/sqlx v1.2.1-0.20200615141059-0794cb1f47ee
 	github.com/lib/pq v1.8.0
+	github.com/mattn/go-sqlite3 v1.14.2
 	github.com/pelletier/go-toml v1.8.0
 	github.com/philchia/agollo/v3 v3.1.2
 	github.com/shenghui0779/vitess_pool v1.0.1
