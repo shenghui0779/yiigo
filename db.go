@@ -17,10 +17,12 @@ import (
 	"go.uber.org/zap"
 )
 
+type DBDriver string
+
 const (
-	MySQL    = "mysql"
-	Postgres = "postgres"
-	SQLite   = "sqlite3"
+	MySQL    DBDriver = "mysql"
+	Postgres DBDriver = "postgres"
+	SQLite   DBDriver = "sqlite3"
 )
 
 var (
@@ -152,66 +154,74 @@ var (
 // InsertSQL returns mysql insert sql and binds.
 // param data expects: `struct`, `*struct`, `[]struct`, `[]*struct`, `yiigo.X`, `[]yiigo.X`.
 func InsertSQL(table string, data interface{}) (string, []interface{}) {
-	return insertSQLBuilder(MySQL, table, data)
+	columns, placeholders, binds := insertSQLBuilder(MySQL, data)
+	query := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)", table, strings.Join(columns, ", "), strings.Join(placeholders, ", "))
+
+	return sqlx.Rebind(sqlx.BindType(MySQL), query), binds
 }
 
 // UpdateSQL returns mysql update sql and binds.
 // param query expects eg: "UPDATE `table` SET ? WHERE `id` = ?".
 // param data expects: `struct`, `*struct`, `yiigo.X`.
 func UpdateSQL(query string, data interface{}, condition ...interface{}) (string, []interface{}) {
-	return updateSQLBuilder(MySQL, query, data, condition...)
+	return updateSQLBuilder(query, data, condition...)
 }
 
 // PGInsertSQL returns postgres insert sql and binds.
 // param data expects: `struct`, `*struct`, `[]struct`, `[]*struct`, `yiigo.X`, `[]yiigo.X`.
 func PGInsertSQL(table string, data interface{}) (string, []interface{}) {
-	return insertSQLBuilder(Postgres, table, data)
+	columns, placeholders, binds := insertSQLBuilder(MySQL, data)
+	query := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s) RETURNING id", table, strings.Join(columns, ", "), strings.Join(placeholders, ", "))
+
+	return sqlx.Rebind(sqlx.BindType(Postgres), query), binds
 }
 
 // PGUpdateSQL returns postgres update sql and binds.
-// param query expects eg: "UPDATE `table` SET $1 WHERE `id` = $2".
+// param query expects eg: "UPDATE `table` SET ? WHERE `id` = ?".
 // param data expects: `struct`, `*struct`, `yiigo.X`.
 func PGUpdateSQL(query string, data interface{}, condition ...interface{}) (string, []interface{}) {
-	return updateSQLBuilder(Postgres, query, data, condition...)
+	return updateSQLBuilder(query, data, condition...)
 }
 
 // LiteInsertSQL returns sqlite3 insert sql and binds.
 // param data expects: `struct`, `*struct`, `yiigo.X`.
 func LiteInsertSQL(table string, data interface{}) (string, []interface{}) {
-	return insertSQLBuilder(Postgres, table, data)
+	columns, placeholders, binds := insertSQLBuilder(MySQL, data)
+	query := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)", table, strings.Join(columns, ", "), strings.Join(placeholders, ", "))
+
+	return sqlx.Rebind(sqlx.BindType(SQLite), query), binds
 }
 
 // LiteUpdateSQL returns sqlite3 update sql and binds.
 // param query expects eg: "UPDATE `table` SET ? WHERE `id` = ?".
 // param data expects: `struct`, `*struct`, `yiigo.X`.
 func LiteUpdateSQL(query string, data interface{}, condition ...interface{}) (string, []interface{}) {
-	return updateSQLBuilder(Postgres, query, data, condition...)
+	return updateSQLBuilder(query, data, condition...)
 }
 
-func insertSQLBuilder(driver, table string, data interface{}) (string, []interface{}) {
-	var (
-		sql   string
-		binds []interface{}
-	)
+type SQLBuilder struct {
+	driver DBDriver
+	table  string
+	data   interface{}
+}
 
+func insertSQLBuilder(driver string, data interface{}) (columns []string, placeholders []string, binds []interface{}) {
 	v := reflect.Indirect(reflect.ValueOf(data))
 
 	switch v.Kind() {
 	case reflect.Map:
 		if x, ok := data.(X); ok {
-			sql, binds = singleInsertWithMap(driver, table, x)
+			columns, placeholders, binds = singleInsertWithMap(x)
 		}
 	case reflect.Struct:
-		sql, binds = singleInsertWithStruct(driver, table, v)
+		columns, placeholders, binds = singleInsertWithStruct(v)
 	case reflect.Slice:
 		if driver == SQLite {
 			panic(errInsertInvalidType)
 		}
 
-		count := v.Len()
-
-		if count == 0 {
-			return sql, binds
+		if v.Len() == 0 {
+			return
 		}
 
 		e := v.Type().Elem()
@@ -224,15 +234,15 @@ func insertSQLBuilder(driver, table string, data interface{}) (string, []interfa
 				panic(errInsertInvalidType)
 			}
 
-			sql, binds = batchInsertWithMap(driver, table, x, count)
+			columns, placeholders, binds = batchInsertWithMap(x)
 		case reflect.Struct:
-			sql, binds = batchInsertWithStruct(driver, table, v, count)
+			columns, placeholders, binds = batchInsertWithStruct(v)
 		case reflect.Ptr:
 			if e.Elem().Kind() != reflect.Struct {
 				panic(errInsertInvalidType)
 			}
 
-			sql, binds = batchInsertWithStruct(driver, table, v, count)
+			columns, placeholders, binds = batchInsertWithStruct(v)
 		default:
 			panic(errInsertInvalidType)
 		}
@@ -240,10 +250,10 @@ func insertSQLBuilder(driver, table string, data interface{}) (string, []interfa
 		panic(errInsertInvalidType)
 	}
 
-	return sql, binds
+	return
 }
 
-func updateSQLBuilder(driver, query string, data interface{}, condition ...interface{}) (string, []interface{}) {
+func updateSQLBuilder(query string, data interface{}, condition ...interface{}) (string, []interface{}) {
 	var (
 		sql   string
 		binds []interface{}
@@ -259,9 +269,9 @@ func updateSQLBuilder(driver, query string, data interface{}, condition ...inter
 			panic(errUpdateInvalidType)
 		}
 
-		sql, binds = updateWithMap(driver, query, x, condition...)
+		sql, binds = updateWithMap(query, x, condition...)
 	case reflect.Struct:
-		sql, binds = updateWithStruct(driver, query, v, condition...)
+		sql, binds = updateWithStruct(query, v, condition...)
 	default:
 		panic(errUpdateInvalidType)
 	}
@@ -269,389 +279,159 @@ func updateSQLBuilder(driver, query string, data interface{}, condition ...inter
 	return sql, binds
 }
 
-func singleInsertWithMap(driver, table string, data X) (string, []interface{}) {
+func singleInsertWithMap(data X) ([]string, []string, []interface{}) {
 	fieldNum := len(data)
 
 	columns := make([]string, 0, fieldNum)
 	placeholders := make([]string, 0, fieldNum)
-
-	sql := ""
 	binds := make([]interface{}, 0, fieldNum)
 
-	switch driver {
-	case MySQL:
-		for k, v := range data {
-			columns = append(columns, fmt.Sprintf("`%s`", k))
-			placeholders = append(placeholders, "?")
-			binds = append(binds, v)
-		}
-
-		sql = fmt.Sprintf("INSERT INTO `%s` (%s) VALUES (%s)", table, strings.Join(columns, ", "), strings.Join(placeholders, ", "))
-	case Postgres:
-		bindIndex := 0
-
-		for k, v := range data {
-			bindIndex++
-
-			columns = append(columns, fmt.Sprintf(`"%s"`, k))
-			placeholders = append(placeholders, fmt.Sprintf("$%d", bindIndex))
-			binds = append(binds, v)
-		}
-
-		sql = fmt.Sprintf(`INSERT INTO "%s" (%s) VALUES (%s) RETURNING "id"`, table, strings.Join(columns, ", "), strings.Join(placeholders, ", "))
-	case SQLite:
-		for k, v := range data {
-			columns = append(columns, fmt.Sprintf("%s", k))
-			placeholders = append(placeholders, "?")
-			binds = append(binds, v)
-		}
-
-		sql = fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)", table, strings.Join(columns, ", "), strings.Join(placeholders, ", "))
+	for k, v := range data {
+		columns = append(columns, k)
+		placeholders = append(placeholders, "?")
+		binds = append(binds, v)
 	}
 
-	return sql, binds
+	return columns, placeholders, binds
 }
 
-func singleInsertWithStruct(driver, table string, v reflect.Value) (string, []interface{}) {
+func singleInsertWithStruct(v reflect.Value) ([]string, []string, []interface{}) {
 	fieldNum := v.NumField()
 
 	columns := make([]string, 0, fieldNum)
 	placeholders := make([]string, 0, fieldNum)
-
-	sql := ""
 	binds := make([]interface{}, 0, fieldNum)
 
 	t := v.Type()
 
-	switch driver {
-	case MySQL:
-		for i := 0; i < fieldNum; i++ {
-			column := t.Field(i).Tag.Get("db")
+	for i := 0; i < fieldNum; i++ {
+		column := t.Field(i).Tag.Get("db")
 
-			if column == "-" {
-				continue
-			}
-
-			if column == "" {
-				column = t.Field(i).Name
-			}
-
-			columns = append(columns, fmt.Sprintf("`%s`", column))
-			placeholders = append(placeholders, "?")
-			binds = append(binds, v.Field(i).Interface())
+		if column == "-" {
+			continue
 		}
 
-		sql = fmt.Sprintf("INSERT INTO `%s` (%s) VALUES (%s)", table, strings.Join(columns, ", "), strings.Join(placeholders, ", "))
-	case Postgres:
-		bindIndex := 0
-
-		for i := 0; i < fieldNum; i++ {
-			column := t.Field(i).Tag.Get("db")
-
-			if column == "-" {
-				continue
-			}
-
-			bindIndex++
-
-			if column == "" {
-				column = t.Field(i).Name
-			}
-
-			columns = append(columns, fmt.Sprintf(`"%s"`, column))
-			placeholders = append(placeholders, fmt.Sprintf("$%d", bindIndex))
-			binds = append(binds, v.Field(i).Interface())
+		if column == "" {
+			column = t.Field(i).Name
 		}
 
-		sql = fmt.Sprintf(`INSERT INTO "%s" (%s) VALUES (%s) RETURNING "id"`, table, strings.Join(columns, ", "), strings.Join(placeholders, ", "))
-	case SQLite:
-		for i := 0; i < fieldNum; i++ {
-			column := t.Field(i).Tag.Get("db")
-
-			if column == "-" {
-				continue
-			}
-
-			if column == "" {
-				column = t.Field(i).Name
-			}
-
-			columns = append(columns, fmt.Sprintf("%s", column))
-			placeholders = append(placeholders, "?")
-			binds = append(binds, v.Field(i).Interface())
-		}
-
-		sql = fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)", table, strings.Join(columns, ", "), strings.Join(placeholders, ", "))
+		columns = append(columns, column)
+		placeholders = append(placeholders, "?")
+		binds = append(binds, v.Field(i).Interface())
 	}
 
-	return sql, binds
+	return columns, placeholders, binds
 }
 
-func batchInsertWithMap(driver, table string, data []X, count int) (string, []interface{}) {
+func batchInsertWithMap(data []X) ([]string, []string, []interface{}) {
 	fieldNum := len(data[0])
 
 	fields := make([]string, 0, fieldNum)
 	columns := make([]string, 0, fieldNum)
 	placeholders := make([]string, 0, fieldNum)
+	binds := make([]interface{}, 0, fieldNum*len(data))
 
-	sql := ""
-	binds := make([]interface{}, 0, fieldNum*count)
+	for k := range data[0] {
+		fields = append(fields, k)
 
-	switch driver {
-	case MySQL:
-		for k := range data[0] {
-			fields = append(fields, k)
-
-			columns = append(columns, fmt.Sprintf("`%s`", k))
-		}
-
-		for _, x := range data {
-			phrs := make([]string, 0, fieldNum)
-
-			for _, v := range fields {
-				phrs = append(phrs, "?")
-				binds = append(binds, x[v])
-			}
-
-			placeholders = append(placeholders, fmt.Sprintf("(%s)", strings.Join(phrs, ", ")))
-		}
-
-		sql = fmt.Sprintf("INSERT INTO `%s` (%s) VALUES %s", table, strings.Join(columns, ", "), strings.Join(placeholders, ", "))
-	case Postgres:
-		for k := range data[0] {
-			fields = append(fields, k)
-
-			columns = append(columns, fmt.Sprintf(`"%s"`, k))
-		}
-
-		bindIndex := 0
-
-		for _, x := range data {
-			phrs := make([]string, 0, fieldNum)
-
-			for _, v := range fields {
-				bindIndex++
-
-				phrs = append(phrs, fmt.Sprintf("$%d", bindIndex))
-				binds = append(binds, x[v])
-			}
-
-			placeholders = append(placeholders, fmt.Sprintf("(%s)", strings.Join(phrs, ", ")))
-		}
-
-		sql = fmt.Sprintf(`INSERT INTO "%s" (%s) VALUES %s`, table, strings.Join(columns, ", "), strings.Join(placeholders, ", "))
+		columns = append(columns, k)
 	}
 
-	return sql, binds
+	for _, x := range data {
+		phrs := make([]string, 0, fieldNum)
+
+		for _, v := range fields {
+			phrs = append(phrs, "?")
+			binds = append(binds, x[v])
+		}
+
+		placeholders = append(placeholders, fmt.Sprintf("(%s)", strings.Join(phrs, ", ")))
+	}
+
+	return columns, placeholders, binds
 }
 
-func batchInsertWithStruct(driver, table string, v reflect.Value, count int) (string, []interface{}) {
+func batchInsertWithStruct(v reflect.Value) ([]string, []string, []interface{}) {
 	first := reflect.Indirect(v.Index(0))
 
 	fieldNum := first.NumField()
 
 	columns := make([]string, 0, fieldNum)
 	placeholders := make([]string, 0, fieldNum)
-
-	sql := ""
-	binds := make([]interface{}, 0, fieldNum*count)
+	binds := make([]interface{}, 0, fieldNum*v.Len())
 
 	t := first.Type()
 
-	switch driver {
-	case MySQL:
-		for i := 0; i < count; i++ {
-			phrs := make([]string, 0, fieldNum)
+	for i := 0; i < count; i++ {
+		phrs := make([]string, 0, fieldNum)
 
-			for j := 0; j < fieldNum; j++ {
-				column := t.Field(j).Tag.Get("db")
+		for j := 0; j < fieldNum; j++ {
+			column := t.Field(j).Tag.Get("db")
 
-				if column == "-" {
-					continue
-				}
-
-				if i == 0 {
-					if column == "" {
-						column = t.Field(j).Name
-					}
-
-					columns = append(columns, fmt.Sprintf("`%s`", column))
-				}
-
-				phrs = append(phrs, "?")
-				binds = append(binds, reflect.Indirect(v.Index(i)).Field(j).Interface())
+			if column == "-" {
+				continue
 			}
 
-			placeholders = append(placeholders, fmt.Sprintf("(%s)", strings.Join(phrs, ", ")))
-		}
-
-		sql = fmt.Sprintf("INSERT INTO `%s` (%s) VALUES %s", table, strings.Join(columns, ", "), strings.Join(placeholders, ", "))
-	case Postgres:
-		bindIndex := 0
-
-		for i := 0; i < count; i++ {
-			phrs := make([]string, 0, fieldNum)
-
-			for j := 0; j < fieldNum; j++ {
-				column := t.Field(j).Tag.Get("db")
-
-				if column == "-" {
-					continue
+			if i == 0 {
+				if column == "" {
+					column = t.Field(j).Name
 				}
 
-				bindIndex++
-
-				if i == 0 {
-					if column == "" {
-						column = t.Field(j).Name
-					}
-
-					columns = append(columns, fmt.Sprintf(`"%s"`, column))
-				}
-
-				phrs = append(phrs, fmt.Sprintf("$%d", bindIndex))
-				binds = append(binds, reflect.Indirect(v.Index(i)).Field(j).Interface())
+				columns = append(columns, column)
 			}
 
-			placeholders = append(placeholders, fmt.Sprintf("(%s)", strings.Join(phrs, ", ")))
+			phrs = append(phrs, "?")
+			binds = append(binds, reflect.Indirect(v.Index(i)).Field(j).Interface())
 		}
 
-		sql = fmt.Sprintf(`INSERT INTO "%s" (%s) VALUES %s`, table, strings.Join(columns, ", "), strings.Join(placeholders, ", "))
+		placeholders = append(placeholders, fmt.Sprintf("(%s)", strings.Join(phrs, ", ")))
 	}
 
-	return sql, binds
+	return columns, placeholders, binds
 }
 
-func updateWithMap(driver, query string, data X, condition ...interface{}) (string, []interface{}) {
+func updateWithMap(query string, data X, conditions ...interface{}) (string, []interface{}) {
 	dataLen := len(data)
-	condLen := len(condition)
 
-	sql := ""
 	sets := make([]string, 0, dataLen)
-	binds := make([]interface{}, 0, dataLen+condLen)
+	binds := make([]interface{}, 0, dataLen+len(conditions))
 
-	switch driver {
-	case MySQL:
-		for k, v := range data {
-			sets = append(sets, fmt.Sprintf("`%s` = ?", k))
-			binds = append(binds, v)
-		}
-
-		sql = strings.Replace(query, "?", strings.Join(sets, ", "), 1)
-		binds = append(binds, condition...)
-	case Postgres:
-		bindIndex := 0
-
-		for k, v := range data {
-			bindIndex++
-
-			sets = append(sets, fmt.Sprintf(`"%s" = $%d`, k, bindIndex))
-			binds = append(binds, v)
-		}
-
-		oldnew := make([]string, 0, condLen*2)
-
-		for i := 1; i <= condLen; i++ {
-			oldnew = append(oldnew, fmt.Sprintf("$%d", i+1), fmt.Sprintf("$%d", dataLen+i))
-		}
-
-		r := strings.NewReplacer(oldnew...)
-		query = r.Replace(query)
-
-		sql = strings.Replace(query, "$1", strings.Join(sets, ", "), 1)
-		binds = append(binds, condition...)
-	case SQLite:
-		for k, v := range data {
-			sets = append(sets, fmt.Sprintf("%s = ?", k))
-			binds = append(binds, v)
-		}
-
-		sql = strings.Replace(query, "?", strings.Join(sets, ", "), 1)
-		binds = append(binds, condition...)
+	for k, v := range data {
+		sets = append(sets, fmt.Sprintf("%s = ?", k))
+		binds = append(binds, v)
 	}
 
-	return sql, binds
+	query = strings.Replace(query, "?", strings.Join(sets, ", "), 1)
+	binds = append(binds, conditions...)
+
+	return query, binds
 }
 
-func updateWithStruct(driver, query string, v reflect.Value, condition ...interface{}) (string, []interface{}) {
+func updateWithStruct(query string, v reflect.Value, conditions ...interface{}) (string, []interface{}) {
 	fieldNum := v.NumField()
-	condLen := len(condition)
 
-	sql := ""
 	sets := make([]string, 0, fieldNum)
-	binds := make([]interface{}, 0, fieldNum+condLen)
+	binds := make([]interface{}, 0, fieldNum+len(conditions))
 
 	t := v.Type()
 
-	switch driver {
-	case MySQL:
-		for i := 0; i < fieldNum; i++ {
-			column := t.Field(i).Tag.Get("db")
+	for i := 0; i < fieldNum; i++ {
+		column := t.Field(i).Tag.Get("db")
 
-			if column == "-" {
-				continue
-			}
-
-			if column == "" {
-				column = t.Field(i).Name
-			}
-
-			sets = append(sets, fmt.Sprintf("`%s` = ?", column))
-			binds = append(binds, v.Field(i).Interface())
+		if column == "-" {
+			continue
 		}
 
-		sql = strings.Replace(query, "?", strings.Join(sets, ", "), 1)
-		binds = append(binds, condition...)
-	case Postgres:
-		bindIndex := 0
-
-		for i := 0; i < fieldNum; i++ {
-			column := t.Field(i).Tag.Get("db")
-
-			if column == "-" {
-				continue
-			}
-
-			bindIndex++
-
-			if column == "" {
-				column = t.Field(i).Name
-			}
-
-			sets = append(sets, fmt.Sprintf(`"%s" = $%d`, column, bindIndex))
-			binds = append(binds, v.Field(i).Interface())
+		if column == "" {
+			column = t.Field(i).Name
 		}
 
-		oldnew := make([]string, 0, condLen*2)
-
-		for i := 1; i <= condLen; i++ {
-			oldnew = append(oldnew, fmt.Sprintf("$%d", i+1), fmt.Sprintf("$%d", bindIndex+i))
-		}
-
-		r := strings.NewReplacer(oldnew...)
-		query = r.Replace(query)
-
-		sql = strings.Replace(query, "$1", strings.Join(sets, ", "), 1)
-		binds = append(binds, condition...)
-	case SQLite:
-		for i := 0; i < fieldNum; i++ {
-			column := t.Field(i).Tag.Get("db")
-
-			if column == "-" {
-				continue
-			}
-
-			if column == "" {
-				column = t.Field(i).Name
-			}
-
-			sets = append(sets, fmt.Sprintf("%s = ?", column))
-			binds = append(binds, v.Field(i).Interface())
-		}
-
-		sql = strings.Replace(query, "?", strings.Join(sets, ", "), 1)
-		binds = append(binds, condition...)
+		sets = append(sets, fmt.Sprintf("%s = ?", column))
+		binds = append(binds, v.Field(i).Interface())
 	}
 
-	return sql, binds
+	query = strings.Replace(query, "?", strings.Join(sets, ", "), 1)
+	binds = append(binds, conditions...)
+
+	return query, binds
 }
