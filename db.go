@@ -14,7 +14,6 @@ import (
 	_ "github.com/lib/pq"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/pelletier/go-toml"
-	"gitlab.meipian.cn/golib/yiigo/v2"
 	"go.uber.org/zap"
 )
 
@@ -345,7 +344,7 @@ func (b *SQLBuilder) ToInsert(data interface{}) (string, []interface{}) {
 
 	switch v.Kind() {
 	case reflect.Map:
-		x, ok := data.(yiigo.X)
+		x, ok := data.(X)
 
 		if !ok {
 			Logger().Error("invalid data type for insert, expects struct, *struct, yiigo.X")
@@ -373,7 +372,7 @@ func (b *SQLBuilder) ToInsert(data interface{}) (string, []interface{}) {
 	return sqlx.Rebind(sqlx.BindType(string(b.driver)), strings.Join(query, " ")), b.binds
 }
 
-func (b *SQLBuilder) insertWithMap(data yiigo.X) {
+func (b *SQLBuilder) insertWithMap(data X) {
 	fieldNum := len(data)
 
 	b.columns = make([]string, 0, fieldNum)
@@ -428,7 +427,7 @@ func (b *SQLBuilder) ToBatchInsert(data interface{}) (string, []interface{}) {
 
 		switch e.Kind() {
 		case reflect.Map:
-			x, ok := data.([]yiigo.X)
+			x, ok := data.([]X)
 
 			if !ok {
 				Logger().Error("invalid data type for batch insert, expects []struct, []*struct, []yiigo.X")
@@ -463,7 +462,7 @@ func (b *SQLBuilder) ToBatchInsert(data interface{}) (string, []interface{}) {
 	return sqlx.Rebind(sqlx.BindType(string(b.driver)), strings.Join(query, " ")), b.binds
 }
 
-func (b *SQLBuilder) batchInsertWithMap(data []yiigo.X) {
+func (b *SQLBuilder) batchInsertWithMap(data []X) {
 	dataLen := len(data)
 	fieldNum := len(data[0])
 
@@ -532,7 +531,7 @@ func (b *SQLBuilder) ToUpdate(data interface{}) (string, []interface{}) {
 
 	switch v.Kind() {
 	case reflect.Map:
-		x, ok := data.(yiigo.X)
+		x, ok := data.(X)
 
 		if !ok {
 			Logger().Error("invalid data type for update, expects struct, *struct, yiigo.X")
@@ -549,7 +548,7 @@ func (b *SQLBuilder) ToUpdate(data interface{}) (string, []interface{}) {
 		return "", nil
 	}
 
-	query := make([]string, 0)
+	query := make([]string, 0, 6)
 
 	query = append(query, "UPDATE", b.table, "SET", strings.Join(b.sets, ", "))
 
@@ -561,7 +560,7 @@ func (b *SQLBuilder) ToUpdate(data interface{}) (string, []interface{}) {
 	return sqlx.Rebind(sqlx.BindType(string(b.driver)), strings.Join(query, " ")), b.binds
 }
 
-func (b *SQLBuilder) updateWithMap(data yiigo.X) {
+func (b *SQLBuilder) updateWithMap(data X) {
 	fieldNum := len(data)
 
 	b.sets = make([]string, 0, fieldNum)
@@ -619,6 +618,7 @@ func (b *SQLBuilder) ToDelete() (string, []interface{}) {
 	return sqlx.Rebind(sqlx.BindType(string(b.driver)), strings.Join(query, " ")), binds
 }
 
+// NewSQLBuilder returns new SQL builder
 func NewSQLBuilder(driver DBDriver) *SQLBuilder {
 	return &SQLBuilder{driver: driver}
 }
