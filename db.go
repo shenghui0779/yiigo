@@ -1,9 +1,9 @@
 package yiigo
 
 import (
-	"errors"
 	"fmt"
 	"reflect"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -14,6 +14,7 @@ import (
 	_ "github.com/lib/pq"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/pelletier/go-toml"
+	"gitlab.meipian.cn/golib/yiigo/v2"
 	"go.uber.org/zap"
 )
 
@@ -41,7 +42,7 @@ type dbConfig struct {
 }
 
 func dbDial(cfg *dbConfig, debug bool) (*gorm.DB, error) {
-	if !InStrings(cfg.Driver, MySQL, Postgres, SQLite) {
+	if !InStrings(cfg.Driver, string(MySQL), string(Postgres), string(SQLite)) {
 		return nil, fmt.Errorf("yiigo: unknown db driver %s, expects mysql, postgres, sqlite3", cfg.Driver)
 	}
 
@@ -146,161 +147,252 @@ func Orm(name ...string) *gorm.DB {
 	return v.(*gorm.DB)
 }
 
-var (
-	errInsertInvalidType = errors.New("yiigo: invalid data type of InsertSQL() / PGInsertSQL(), expects: struct, *struct, []struct, []*struct, yiigo.X, []yiigo.X")
-	errUpdateInvalidType = errors.New("yiigo: invalid data type of UpdateSQL() / PGUpdateSQL(), expects: struct, *struct, yiigo.X")
-)
-
-// InsertSQL returns mysql insert sql and binds.
-// param data expects: `struct`, `*struct`, `[]struct`, `[]*struct`, `yiigo.X`, `[]yiigo.X`.
-func InsertSQL(table string, data interface{}) (string, []interface{}) {
-	columns, placeholders, binds := insertSQLBuilder(MySQL, data)
-	query := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)", table, strings.Join(columns, ", "), strings.Join(placeholders, ", "))
-
-	return sqlx.Rebind(sqlx.BindType(MySQL), query), binds
+type SQLClause struct {
+	query string
+	args  []interface{}
 }
 
-// UpdateSQL returns mysql update sql and binds.
-// param query expects eg: "UPDATE `table` SET ? WHERE `id` = ?".
-// param data expects: `struct`, `*struct`, `yiigo.X`.
-func UpdateSQL(query string, data interface{}, condition ...interface{}) (string, []interface{}) {
-	return updateSQLBuilder(query, data, condition...)
+// Clause returns sql clause, eg: yiigo.Clause("price * ? + ?", 2, 100).
+func Clause(query string, args ...interface{}) *SQLClause {
+	return &SQLClause{
+		query: query,
+		args:  args,
+	}
 }
 
-// PGInsertSQL returns postgres insert sql and binds.
-// param data expects: `struct`, `*struct`, `[]struct`, `[]*struct`, `yiigo.X`, `[]yiigo.X`.
-func PGInsertSQL(table string, data interface{}) (string, []interface{}) {
-	columns, placeholders, binds := insertSQLBuilder(MySQL, data)
-	query := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s) RETURNING id", table, strings.Join(columns, ", "), strings.Join(placeholders, ", "))
-
-	return sqlx.Rebind(sqlx.BindType(Postgres), query), binds
-}
-
-// PGUpdateSQL returns postgres update sql and binds.
-// param query expects eg: "UPDATE `table` SET ? WHERE `id` = ?".
-// param data expects: `struct`, `*struct`, `yiigo.X`.
-func PGUpdateSQL(query string, data interface{}, condition ...interface{}) (string, []interface{}) {
-	return updateSQLBuilder(query, data, condition...)
-}
-
-// LiteInsertSQL returns sqlite3 insert sql and binds.
-// param data expects: `struct`, `*struct`, `yiigo.X`.
-func LiteInsertSQL(table string, data interface{}) (string, []interface{}) {
-	columns, placeholders, binds := insertSQLBuilder(MySQL, data)
-	query := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)", table, strings.Join(columns, ", "), strings.Join(placeholders, ", "))
-
-	return sqlx.Rebind(sqlx.BindType(SQLite), query), binds
-}
-
-// LiteUpdateSQL returns sqlite3 update sql and binds.
-// param query expects eg: "UPDATE `table` SET ? WHERE `id` = ?".
-// param data expects: `struct`, `*struct`, `yiigo.X`.
-func LiteUpdateSQL(query string, data interface{}, condition ...interface{}) (string, []interface{}) {
-	return updateSQLBuilder(query, data, condition...)
-}
-
+// SQLBuilder build SQL statement
 type SQLBuilder struct {
-	driver DBDriver
-	table  string
-	data   interface{}
+	driver   DBDriver
+	table    string
+	columns  []string
+	distinct []string
+	where    *SQLClause
+	joins    []string
+	group    string
+	having   *SQLClause
+	order    string
+	offset   int
+	limit    int
+	values   []string
+	sets     []string
+	binds    []interface{}
+	queryLen int
+	bindsLen int
 }
 
-func insertSQLBuilder(driver string, data interface{}) (columns []string, placeholders []string, binds []interface{}) {
-	v := reflect.Indirect(reflect.ValueOf(data))
+// Table add query table
+func (b *SQLBuilder) Table(table string) *SQLBuilder {
+	b.table = table
+	b.queryLen += 2
 
-	switch v.Kind() {
-	case reflect.Map:
-		if x, ok := data.(X); ok {
-			columns, placeholders, binds = singleInsertWithMap(x)
-		}
-	case reflect.Struct:
-		columns, placeholders, binds = singleInsertWithStruct(v)
-	case reflect.Slice:
-		if driver == SQLite {
-			panic(errInsertInvalidType)
-		}
+	return b
+}
 
-		if v.Len() == 0 {
-			return
-		}
+// Select add query columns
+func (b *SQLBuilder) Select(columns ...string) *SQLBuilder {
+	b.columns = columns
+	b.queryLen += 2
 
-		e := v.Type().Elem()
+	return b
+}
 
-		switch e.Kind() {
-		case reflect.Map:
-			x, ok := data.([]X)
+// Distinct add distinct clause
+func (b *SQLBuilder) Distinct(columns ...string) *SQLBuilder {
+	b.distinct = columns
+	b.queryLen += 2
 
-			if !ok {
-				panic(errInsertInvalidType)
-			}
+	return b
+}
 
-			columns, placeholders, binds = batchInsertWithMap(x)
-		case reflect.Struct:
-			columns, placeholders, binds = batchInsertWithStruct(v)
-		case reflect.Ptr:
-			if e.Elem().Kind() != reflect.Struct {
-				panic(errInsertInvalidType)
-			}
+// Distinct add inner join clause
+func (b *SQLBuilder) InnerJoin(table, on string) *SQLBuilder {
+	b.joins = append(b.joins, "INNER", "JOIN", table, "ON", on)
+	b.queryLen += 5
 
-			columns, placeholders, binds = batchInsertWithStruct(v)
-		default:
-			panic(errInsertInvalidType)
-		}
-	default:
-		panic(errInsertInvalidType)
+	return b
+}
+
+// Distinct add left join clause
+func (b *SQLBuilder) LeftJoin(table, on string) *SQLBuilder {
+	b.joins = append(b.joins, "LEFT", "JOIN", table, "ON", on)
+	b.queryLen += 5
+
+	return b
+}
+
+// Distinct add right join clause
+func (b *SQLBuilder) RightJoin(table, on string) *SQLBuilder {
+	b.joins = append(b.joins, "RIGHT", "JOIN", table, "ON", on)
+	b.queryLen += 5
+
+	return b
+}
+
+// Distinct add full join clause
+func (b *SQLBuilder) FullJoin(table, on string) *SQLBuilder {
+	b.joins = append(b.joins, "FULL", "JOIN", table, "ON", on)
+	b.queryLen += 5
+
+	return b
+}
+
+// Distinct add where clause
+func (b *SQLBuilder) Where(query string, args ...interface{}) *SQLBuilder {
+	b.where = Clause(query, args...)
+
+	b.queryLen += 2
+	b.bindsLen += len(args)
+
+	return b
+}
+
+// Distinct add group clause
+func (b *SQLBuilder) Group(column string) *SQLBuilder {
+	b.group = column
+	b.queryLen += 2
+
+	return b
+}
+
+// Distinct add having clause
+func (b *SQLBuilder) Having(query string, args ...interface{}) *SQLBuilder {
+	b.having = Clause(query, args...)
+
+	b.queryLen += 2
+	b.bindsLen += len(args)
+
+	return b
+}
+
+// Order add order clause
+func (b *SQLBuilder) Order(query string) *SQLBuilder {
+	b.order = query
+	b.queryLen += 2
+
+	return b
+}
+
+// Distinct add offset clause
+func (b *SQLBuilder) Offset(offset int) *SQLBuilder {
+	b.offset = offset
+	b.queryLen += 2
+
+	return b
+}
+
+// Distinct add limit clause
+func (b *SQLBuilder) Limit(limit int) *SQLBuilder {
+	b.limit = limit
+	b.queryLen += 2
+
+	return b
+}
+
+// ToToQuery returns query clause and binds.
+func (b *SQLBuilder) ToQuery() (string, []interface{}) {
+	query := make([]string, 0, b.queryLen+2)
+	b.binds = make([]interface{}, 0, b.bindsLen)
+
+	query = append(query, "SELECT")
+
+	if len(b.distinct) != 0 {
+		query = append(query, "DISTINCT", strings.Join(b.distinct, ", "))
+	} else if len(b.columns) != 0 {
+		query = append(query, strings.Join(b.columns, ", "))
+	} else {
+		query = append(query, "*")
 	}
 
-	return
+	query = append(query, "FROM", b.table)
+
+	if len(b.joins) != 0 {
+		query = append(query, b.joins...)
+	}
+
+	if b.where != nil {
+		query = append(query, "WHERE", b.where.query)
+		b.binds = append(b.binds, b.where.args...)
+	}
+
+	if b.group != "" {
+		query = append(query, "GROUP BY", b.group)
+	}
+
+	if b.having != nil {
+		query = append(query, "HAVING", b.having.query)
+		b.binds = append(b.binds, b.having.args...)
+	}
+
+	if b.order != "" {
+		query = append(query, "ORDER BY", b.order)
+	}
+
+	if b.offset != 0 {
+		query = append(query, "OFFSET", strconv.Itoa(b.offset))
+	}
+
+	if b.limit != 0 {
+		query = append(query, "LIMIT", strconv.Itoa(b.limit))
+	}
+
+	return sqlx.Rebind(sqlx.BindType(string(b.driver)), strings.Join(query, " ")), b.binds
 }
 
-func updateSQLBuilder(query string, data interface{}, condition ...interface{}) (string, []interface{}) {
-	var (
-		sql   string
-		binds []interface{}
-	)
-
+// ToInsert returns insert clause and binds.
+// data expects `struct`, `*struct`, `yiigo.X`.
+func (b *SQLBuilder) ToInsert(data interface{}) (string, []interface{}) {
 	v := reflect.Indirect(reflect.ValueOf(data))
 
 	switch v.Kind() {
 	case reflect.Map:
-		x, ok := data.(X)
+		x, ok := data.(yiigo.X)
 
 		if !ok {
-			panic(errUpdateInvalidType)
+			Logger().Error("invalid data type for insert, expects struct, *struct, yiigo.X")
+
+			return "", nil
 		}
 
-		sql, binds = updateWithMap(query, x, condition...)
+		b.insertWithMap(x)
 	case reflect.Struct:
-		sql, binds = updateWithStruct(query, v, condition...)
+		b.insertWithStruct(v)
 	default:
-		panic(errUpdateInvalidType)
+		Logger().Error("invalid data type for insert, expects struct, *struct, yiigo.X")
+
+		return "", nil
 	}
 
-	return sql, binds
+	query := make([]string, 0, 12)
+
+	query = append(query, "INSERT", "INTO", b.table, "(", strings.Join(b.columns, ", "), ")", "VALUES", "(", strings.Join(b.values, ", "), ")")
+
+	if b.driver == Postgres {
+		query = append(query, "RETURNING", "id")
+	}
+
+	return sqlx.Rebind(sqlx.BindType(string(b.driver)), strings.Join(query, " ")), b.binds
 }
 
-func singleInsertWithMap(data X) ([]string, []string, []interface{}) {
+func (b *SQLBuilder) insertWithMap(data yiigo.X) {
 	fieldNum := len(data)
 
-	columns := make([]string, 0, fieldNum)
-	placeholders := make([]string, 0, fieldNum)
-	binds := make([]interface{}, 0, fieldNum)
+	b.columns = make([]string, 0, fieldNum)
+	b.values = make([]string, 0, fieldNum)
+	b.binds = make([]interface{}, 0, fieldNum)
 
 	for k, v := range data {
-		columns = append(columns, k)
-		placeholders = append(placeholders, "?")
-		binds = append(binds, v)
+		b.columns = append(b.columns, k)
+		b.values = append(b.values, "?")
+		b.binds = append(b.binds, v)
 	}
-
-	return columns, placeholders, binds
 }
 
-func singleInsertWithStruct(v reflect.Value) ([]string, []string, []interface{}) {
+func (b *SQLBuilder) insertWithStruct(v reflect.Value) {
 	fieldNum := v.NumField()
 
-	columns := make([]string, 0, fieldNum)
-	placeholders := make([]string, 0, fieldNum)
-	binds := make([]interface{}, 0, fieldNum)
+	b.columns = make([]string, 0, fieldNum)
+	b.values = make([]string, 0, fieldNum)
+	b.binds = make([]interface{}, 0, fieldNum)
 
 	t := v.Type()
 
@@ -315,54 +407,99 @@ func singleInsertWithStruct(v reflect.Value) ([]string, []string, []interface{})
 			column = t.Field(i).Name
 		}
 
-		columns = append(columns, column)
-		placeholders = append(placeholders, "?")
-		binds = append(binds, v.Field(i).Interface())
+		b.columns = append(b.columns, column)
+		b.values = append(b.values, "?")
+		b.binds = append(b.binds, v.Field(i).Interface())
 	}
-
-	return columns, placeholders, binds
 }
 
-func batchInsertWithMap(data []X) ([]string, []string, []interface{}) {
+// ToBatchInsert returns batch insert clause and binds.
+// data expects `[]struct`, `[]*struct`, `[]yiigo.X`.
+func (b *SQLBuilder) ToBatchInsert(data interface{}) (string, []interface{}) {
+	v := reflect.Indirect(reflect.ValueOf(data))
+
+	switch v.Kind() {
+	case reflect.Slice:
+		if v.Len() == 0 {
+			return "", nil
+		}
+
+		e := v.Type().Elem()
+
+		switch e.Kind() {
+		case reflect.Map:
+			x, ok := data.([]yiigo.X)
+
+			if !ok {
+				Logger().Error("invalid data type for batch insert, expects []struct, []*struct, []yiigo.X")
+
+				return "", nil
+			}
+
+			b.batchInsertWithMap(x)
+		case reflect.Struct:
+			b.batchInsertWithStruct(v)
+		case reflect.Ptr:
+			if e.Elem().Kind() != reflect.Struct {
+				Logger().Error("invalid data type for batch insert, expects []struct, []*struct, []yiigo.X")
+
+				return "", nil
+			}
+
+			b.batchInsertWithStruct(v)
+		default:
+			Logger().Error("invalid data type for batch insert, expects []struct, []*struct, []yiigo.X")
+
+			return "", nil
+		}
+	default:
+		Logger().Error("invalid data type for batch insert, expects []struct, []*struct, []yiigo.X")
+
+		return "", nil
+	}
+
+	query := []string{"INSERT", "INTO", b.table, "(", strings.Join(b.columns, ", "), ")", "VALUES", strings.Join(b.values, ", ")}
+
+	return sqlx.Rebind(sqlx.BindType(string(b.driver)), strings.Join(query, " ")), b.binds
+}
+
+func (b *SQLBuilder) batchInsertWithMap(data []yiigo.X) {
+	dataLen := len(data)
 	fieldNum := len(data[0])
 
-	fields := make([]string, 0, fieldNum)
-	columns := make([]string, 0, fieldNum)
-	placeholders := make([]string, 0, fieldNum)
-	binds := make([]interface{}, 0, fieldNum*len(data))
+	b.columns = make([]string, 0, fieldNum)
+	b.values = make([]string, 0, dataLen)
+	b.binds = make([]interface{}, 0, fieldNum*dataLen)
 
 	for k := range data[0] {
-		fields = append(fields, k)
-
-		columns = append(columns, k)
+		b.columns = append(b.columns, k)
 	}
 
 	for _, x := range data {
 		phrs := make([]string, 0, fieldNum)
 
-		for _, v := range fields {
+		for _, v := range b.columns {
 			phrs = append(phrs, "?")
-			binds = append(binds, x[v])
+			b.binds = append(b.binds, x[v])
 		}
 
-		placeholders = append(placeholders, fmt.Sprintf("(%s)", strings.Join(phrs, ", ")))
+		b.values = append(b.values, fmt.Sprintf("( %s )", strings.Join(phrs, ", ")))
 	}
-
-	return columns, placeholders, binds
 }
 
-func batchInsertWithStruct(v reflect.Value) ([]string, []string, []interface{}) {
+func (b *SQLBuilder) batchInsertWithStruct(v reflect.Value) {
 	first := reflect.Indirect(v.Index(0))
 
+	dataLen := v.Len()
 	fieldNum := first.NumField()
 
-	columns := make([]string, 0, fieldNum)
-	placeholders := make([]string, 0, fieldNum)
-	binds := make([]interface{}, 0, fieldNum*v.Len())
+	b.columns = make([]string, 0, fieldNum)
+	b.values = make([]string, 0, dataLen)
+	b.binds = make([]interface{}, 0, fieldNum*dataLen)
 
 	t := first.Type()
 
-	for i := 0; i < count; i++ {
+	for i := 0; i < dataLen; i++ {
 		phrs := make([]string, 0, fieldNum)
 
 		for j := 0; j < fieldNum; j++ {
@@ -377,41 +514,77 @@ func batchInsertWithStruct(v reflect.Value) ([]string, []string, []interface{}) 
 					column = t.Field(j).Name
 				}
 
-				columns = append(columns, column)
+				b.columns = append(b.columns, column)
 			}
 
 			phrs = append(phrs, "?")
-			binds = append(binds, reflect.Indirect(v.Index(i)).Field(j).Interface())
+			b.binds = append(b.binds, reflect.Indirect(v.Index(i)).Field(j).Interface())
 		}
 
-		placeholders = append(placeholders, fmt.Sprintf("(%s)", strings.Join(phrs, ", ")))
+		b.values = append(b.values, fmt.Sprintf("( %s )", strings.Join(phrs, ", ")))
 	}
-
-	return columns, placeholders, binds
 }
 
-func updateWithMap(query string, data X, conditions ...interface{}) (string, []interface{}) {
-	dataLen := len(data)
+// ToUpdate returns update clause and binds.
+// data expects `struct`, `*struct`, `yiigo.X`.
+func (b *SQLBuilder) ToUpdate(data interface{}) (string, []interface{}) {
+	v := reflect.Indirect(reflect.ValueOf(data))
 
-	sets := make([]string, 0, dataLen)
-	binds := make([]interface{}, 0, dataLen+len(conditions))
+	switch v.Kind() {
+	case reflect.Map:
+		x, ok := data.(yiigo.X)
+
+		if !ok {
+			Logger().Error("invalid data type for update, expects struct, *struct, yiigo.X")
+
+			return "", nil
+		}
+
+		b.updateWithMap(x)
+	case reflect.Struct:
+		b.updateWithStruct(v)
+	default:
+		Logger().Error("invalid data type for update, expects struct, *struct, yiigo.X")
+
+		return "", nil
+	}
+
+	query := make([]string, 0)
+
+	query = append(query, "UPDATE", b.table, "SET", strings.Join(b.sets, ", "))
+
+	if b.where != nil {
+		query = append(query, "WHERE", b.where.query)
+		b.binds = append(b.binds, b.where.args...)
+	}
+
+	return sqlx.Rebind(sqlx.BindType(string(b.driver)), strings.Join(query, " ")), b.binds
+}
+
+func (b *SQLBuilder) updateWithMap(data yiigo.X) {
+	fieldNum := len(data)
+
+	b.sets = make([]string, 0, fieldNum)
+	b.binds = make([]interface{}, 0, fieldNum+b.bindsLen)
 
 	for k, v := range data {
-		sets = append(sets, fmt.Sprintf("%s = ?", k))
-		binds = append(binds, v)
+		if clause, ok := v.(*SQLClause); ok {
+			b.sets = append(b.sets, fmt.Sprintf("%s = %s", k, clause.query))
+			b.binds = append(b.binds, clause.args...)
+
+			continue
+		}
+
+		b.sets = append(b.sets, fmt.Sprintf("%s = ?", k))
+		b.binds = append(b.binds, v)
 	}
-
-	query = strings.Replace(query, "?", strings.Join(sets, ", "), 1)
-	binds = append(binds, conditions...)
-
-	return query, binds
 }
 
-func updateWithStruct(query string, v reflect.Value, conditions ...interface{}) (string, []interface{}) {
+func (b *SQLBuilder) updateWithStruct(v reflect.Value) {
 	fieldNum := v.NumField()
 
-	sets := make([]string, 0, fieldNum)
-	binds := make([]interface{}, 0, fieldNum+len(conditions))
+	b.sets = make([]string, 0, fieldNum)
+	b.binds = make([]interface{}, 0, fieldNum+b.bindsLen)
 
 	t := v.Type()
 
@@ -426,12 +599,26 @@ func updateWithStruct(query string, v reflect.Value, conditions ...interface{}) 
 			column = t.Field(i).Name
 		}
 
-		sets = append(sets, fmt.Sprintf("%s = ?", column))
-		binds = append(binds, v.Field(i).Interface())
+		b.sets = append(b.sets, fmt.Sprintf("%s = ?", column))
+		b.binds = append(b.binds, v.Field(i).Interface())
+	}
+}
+
+// ToDelete returns delete clause and binds.
+func (b *SQLBuilder) ToDelete() (string, []interface{}) {
+	query := make([]string, 0, b.queryLen)
+	binds := make([]interface{}, 0, b.bindsLen)
+
+	query = append(query, "DELETE", "FROM", b.table)
+
+	if b.where != nil {
+		query = append(query, "WHERE", b.where.query)
+		binds = append(binds, b.where.args...)
 	}
 
-	query = strings.Replace(query, "?", strings.Join(sets, ", "), 1)
-	binds = append(binds, conditions...)
+	return sqlx.Rebind(sqlx.BindType(string(b.driver)), strings.Join(query, " ")), binds
+}
 
-	return query, binds
+func NewSQLBuilder(driver DBDriver) *SQLBuilder {
+	return &SQLBuilder{driver: driver}
 }
