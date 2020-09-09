@@ -238,7 +238,6 @@ func (b *SQLBuilder) FullJoin(table, on string) *SQLBuilder {
 // Distinct add where clause
 func (b *SQLBuilder) Where(query string, args ...interface{}) *SQLBuilder {
 	b.where = Clause(query, args...)
-
 	b.queryLen += 2
 	b.bindsLen += len(args)
 
@@ -256,7 +255,6 @@ func (b *SQLBuilder) Group(column string) *SQLBuilder {
 // Distinct add having clause
 func (b *SQLBuilder) Having(query string, args ...interface{}) *SQLBuilder {
 	b.having = Clause(query, args...)
-
 	b.queryLen += 2
 	b.bindsLen += len(args)
 
