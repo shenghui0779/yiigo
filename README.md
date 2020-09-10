@@ -11,8 +11,10 @@ Go 轻量级开发通用库
 
 - 支持 [MySQL](https://github.com/go-sql-driver/mysql)
 - 支持 [PostgreSQL](https://github.com/lib/pq)
+- 支持 [sqlite3](https://github.com/mattn/go-sqlite3)
 - 支持 [MongoDB](https://github.com/mongodb/mongo-go-driver)
 - 支持 [Redis](https://github.com/gomodule/redigo)
+- 支持 [NSQ](https://github.com/nsqio/go-nsq)
 - 支持 [Apollo](https://github.com/philchia/agollo)
 - 邮件使用 [gomail](https://github.com/go-gomail/gomail)
 - 配置使用 [toml](https://github.com/pelletier/go-toml)
