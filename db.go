@@ -62,7 +62,7 @@ func dbDial(cfg *dbConfig, debug bool) (*gorm.DB, error) {
 	return orm, nil
 }
 
-func initDB(debug bool) {
+func initDB() {
 	tree, ok := env.get("db").(*toml.Tree)
 
 	if !ok {
@@ -235,7 +235,7 @@ func (b *SQLBuilder) FullJoin(table, on string) *SQLBuilder {
 	return b
 }
 
-// Distinct add where clause
+// Distinct add where clause, eg: `id = ?`, `name <> ? AND age > ?`
 func (b *SQLBuilder) Where(query string, args ...interface{}) *SQLBuilder {
 	b.where = Clause(query, args...)
 	b.queryLen += 2
@@ -287,52 +287,58 @@ func (b *SQLBuilder) Limit(limit int) *SQLBuilder {
 
 // ToToQuery returns query clause and binds.
 func (b *SQLBuilder) ToQuery() (string, []interface{}) {
-	query := make([]string, 0, b.queryLen+2)
+	clauses := make([]string, 0, b.queryLen+2)
 	b.binds = make([]interface{}, 0, b.bindsLen)
 
-	query = append(query, "SELECT")
+	clauses = append(clauses, "SELECT")
 
 	if len(b.distinct) != 0 {
-		query = append(query, "DISTINCT", strings.Join(b.distinct, ", "))
+		clauses = append(clauses, "DISTINCT", strings.Join(b.distinct, ", "))
 	} else if len(b.columns) != 0 {
-		query = append(query, strings.Join(b.columns, ", "))
+		clauses = append(clauses, strings.Join(b.columns, ", "))
 	} else {
-		query = append(query, "*")
+		clauses = append(clauses, "*")
 	}
 
-	query = append(query, "FROM", b.table)
+	clauses = append(clauses, "FROM", b.table)
 
 	if len(b.joins) != 0 {
-		query = append(query, b.joins...)
+		clauses = append(clauses, b.joins...)
 	}
 
 	if b.where != nil {
-		query = append(query, "WHERE", b.where.query)
+		clauses = append(clauses, "WHERE", b.where.query)
 		b.binds = append(b.binds, b.where.args...)
 	}
 
 	if b.group != "" {
-		query = append(query, "GROUP BY", b.group)
+		clauses = append(clauses, "GROUP BY", b.group)
 	}
 
 	if b.having != nil {
-		query = append(query, "HAVING", b.having.query)
+		clauses = append(clauses, "HAVING", b.having.query)
 		b.binds = append(b.binds, b.having.args...)
 	}
 
 	if b.order != "" {
-		query = append(query, "ORDER BY", b.order)
+		clauses = append(clauses, "ORDER BY", b.order)
 	}
 
 	if b.offset != 0 {
-		query = append(query, "OFFSET", strconv.Itoa(b.offset))
+		clauses = append(clauses, "OFFSET", strconv.Itoa(b.offset))
 	}
 
 	if b.limit != 0 {
-		query = append(query, "LIMIT", strconv.Itoa(b.limit))
+		clauses = append(clauses, "LIMIT", strconv.Itoa(b.limit))
 	}
 
-	return sqlx.Rebind(sqlx.BindType(string(b.driver)), strings.Join(query, " ")), b.binds
+	query := sqlx.Rebind(sqlx.BindType(string(b.driver)), strings.Join(clauses, " "))
+
+	if debug {
+		Logger().Info(query, zap.Any("binds", b.binds))
+	}
+
+	return query, b.binds
 }
 
 // ToInsert returns insert clause and binds.
@@ -359,15 +365,21 @@ func (b *SQLBuilder) ToInsert(data interface{}) (string, []interface{}) {
 		return "", nil
 	}
 
-	query := make([]string, 0, 12)
+	clauses := make([]string, 0, 12)
 
-	query = append(query, "INSERT", "INTO", b.table, "(", strings.Join(b.columns, ", "), ")", "VALUES", "(", strings.Join(b.values, ", "), ")")
+	clauses = append(clauses, "INSERT", "INTO", b.table, "(", strings.Join(b.columns, ", "), ")", "VALUES", "(", strings.Join(b.values, ", "), ")")
 
 	if b.driver == Postgres {
-		query = append(query, "RETURNING", "id")
+		clauses = append(clauses, "RETURNING", "id")
 	}
 
-	return sqlx.Rebind(sqlx.BindType(string(b.driver)), strings.Join(query, " ")), b.binds
+	query := sqlx.Rebind(sqlx.BindType(string(b.driver)), strings.Join(clauses, " "))
+
+	if debug {
+		Logger().Info(query, zap.Any("binds", b.binds))
+	}
+
+	return query, b.binds
 }
 
 func (b *SQLBuilder) insertWithMap(data X) {
@@ -455,9 +467,15 @@ func (b *SQLBuilder) ToBatchInsert(data interface{}) (string, []interface{}) {
 		return "", nil
 	}
 
-	query := []string{"INSERT", "INTO", b.table, "(", strings.Join(b.columns, ", "), ")", "VALUES", strings.Join(b.values, ", ")}
+	clauses := []string{"INSERT", "INTO", b.table, "(", strings.Join(b.columns, ", "), ")", "VALUES", strings.Join(b.values, ", ")}
 
-	return sqlx.Rebind(sqlx.BindType(string(b.driver)), strings.Join(query, " ")), b.binds
+	query := sqlx.Rebind(sqlx.BindType(string(b.driver)), strings.Join(clauses, " "))
+
+	if debug {
+		Logger().Info(query, zap.Any("binds", b.binds))
+	}
+
+	return query, b.binds
 }
 
 func (b *SQLBuilder) batchInsertWithMap(data []X) {
@@ -546,16 +564,22 @@ func (b *SQLBuilder) ToUpdate(data interface{}) (string, []interface{}) {
 		return "", nil
 	}
 
-	query := make([]string, 0, 6)
+	clauses := make([]string, 0, 6)
 
-	query = append(query, "UPDATE", b.table, "SET", strings.Join(b.sets, ", "))
+	clauses = append(clauses, "UPDATE", b.table, "SET", strings.Join(b.sets, ", "))
 
 	if b.where != nil {
-		query = append(query, "WHERE", b.where.query)
+		clauses = append(clauses, "WHERE", b.where.query)
 		b.binds = append(b.binds, b.where.args...)
 	}
 
-	return sqlx.Rebind(sqlx.BindType(string(b.driver)), strings.Join(query, " ")), b.binds
+	query := sqlx.Rebind(sqlx.BindType(string(b.driver)), strings.Join(clauses, " "))
+
+	if debug {
+		Logger().Info(query, zap.Any("binds", b.binds))
+	}
+
+	return query, b.binds
 }
 
 func (b *SQLBuilder) updateWithMap(data X) {
@@ -603,17 +627,23 @@ func (b *SQLBuilder) updateWithStruct(v reflect.Value) {
 
 // ToDelete returns delete clause and binds.
 func (b *SQLBuilder) ToDelete() (string, []interface{}) {
-	query := make([]string, 0, b.queryLen)
-	binds := make([]interface{}, 0, b.bindsLen)
+	clauses := make([]string, 0, b.queryLen)
+	b.binds = make([]interface{}, 0, b.bindsLen)
 
-	query = append(query, "DELETE", "FROM", b.table)
+	clauses = append(clauses, "DELETE", "FROM", b.table)
 
 	if b.where != nil {
-		query = append(query, "WHERE", b.where.query)
-		binds = append(binds, b.where.args...)
+		clauses = append(clauses, "WHERE", b.where.query)
+		b.binds = append(b.binds, b.where.args...)
 	}
 
-	return sqlx.Rebind(sqlx.BindType(string(b.driver)), strings.Join(query, " ")), binds
+	query := sqlx.Rebind(sqlx.BindType(string(b.driver)), strings.Join(clauses, " "))
+
+	if debug {
+		Logger().Info(query, zap.Any("binds", b.binds))
+	}
+
+	return query, b.binds
 }
 
 // NewSQLBuilder returns new SQL builder

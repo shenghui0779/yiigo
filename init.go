@@ -1,5 +1,7 @@
 package yiigo
 
+var debug bool
+
 func init() {
 	// init default logger
 	logger = newLogger(&logConfig{
@@ -13,12 +15,12 @@ func init() {
 	// load config file: yiigo.toml
 	loadConfigFile()
 
-	debug := Env("app.debug").Bool(true)
+	debug = Env("app.debug").Bool(false)
 
 	// init logger
-	initLogger(debug)
+	initLogger()
 	// init db
-	initDB(debug)
+	initDB()
 	// init mongodb
 	initMongoDB()
 	// init redis
