@@ -15,7 +15,7 @@ type NSQLogger struct{}
 
 // Output implements the NSQ logger interface
 func (l *NSQLogger) Output(calldepth int, s string) error {
-	Logger().Error(s, zap.Int("call_depth", calldepth))
+	logger.Error(s, zap.Int("call_depth", calldepth))
 
 	return nil
 }
@@ -24,7 +24,7 @@ func initProducer(nsqd string) error {
 	p, err := nsq.NewProducer(nsqd, nsq.NewConfig())
 
 	if err != nil {
-		Logger().Error("init producer error", zap.Error(err))
+		logger.Error("init producer error", zap.Error(err))
 
 		return err
 	}
@@ -137,7 +137,7 @@ func StartNSQ(consumers ...NSQConsumer) error {
 		return errors.Wrap(err, "yiigo: set nsq consumers error")
 	}
 
-	Logger().Info("yiigo: nsq is OK.")
+	logger.Info("yiigo: nsq is OK.")
 
 	return nil
 }

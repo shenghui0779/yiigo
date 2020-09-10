@@ -335,7 +335,7 @@ func (b *SQLBuilder) ToQuery() (string, []interface{}) {
 	query := sqlx.Rebind(sqlx.BindType(string(b.driver)), strings.Join(clauses, " "))
 
 	if debug {
-		Logger().Info(query, zap.Any("binds", b.binds))
+		logger.Info(query, zap.Any("binds", b.binds))
 	}
 
 	return query, b.binds
@@ -351,7 +351,7 @@ func (b *SQLBuilder) ToInsert(data interface{}) (string, []interface{}) {
 		x, ok := data.(X)
 
 		if !ok {
-			Logger().Error("invalid data type for insert, expects struct, *struct, yiigo.X")
+			logger.Error("invalid data type for insert, expects struct, *struct, yiigo.X")
 
 			return "", nil
 		}
@@ -360,7 +360,7 @@ func (b *SQLBuilder) ToInsert(data interface{}) (string, []interface{}) {
 	case reflect.Struct:
 		b.insertWithStruct(v)
 	default:
-		Logger().Error("invalid data type for insert, expects struct, *struct, yiigo.X")
+		logger.Error("invalid data type for insert, expects struct, *struct, yiigo.X")
 
 		return "", nil
 	}
@@ -376,7 +376,7 @@ func (b *SQLBuilder) ToInsert(data interface{}) (string, []interface{}) {
 	query := sqlx.Rebind(sqlx.BindType(string(b.driver)), strings.Join(clauses, " "))
 
 	if debug {
-		Logger().Info(query, zap.Any("binds", b.binds))
+		logger.Info(query, zap.Any("binds", b.binds))
 	}
 
 	return query, b.binds
@@ -440,7 +440,7 @@ func (b *SQLBuilder) ToBatchInsert(data interface{}) (string, []interface{}) {
 			x, ok := data.([]X)
 
 			if !ok {
-				Logger().Error("invalid data type for batch insert, expects []struct, []*struct, []yiigo.X")
+				logger.Error("invalid data type for batch insert, expects []struct, []*struct, []yiigo.X")
 
 				return "", nil
 			}
@@ -450,19 +450,19 @@ func (b *SQLBuilder) ToBatchInsert(data interface{}) (string, []interface{}) {
 			b.batchInsertWithStruct(v)
 		case reflect.Ptr:
 			if e.Elem().Kind() != reflect.Struct {
-				Logger().Error("invalid data type for batch insert, expects []struct, []*struct, []yiigo.X")
+				logger.Error("invalid data type for batch insert, expects []struct, []*struct, []yiigo.X")
 
 				return "", nil
 			}
 
 			b.batchInsertWithStruct(v)
 		default:
-			Logger().Error("invalid data type for batch insert, expects []struct, []*struct, []yiigo.X")
+			logger.Error("invalid data type for batch insert, expects []struct, []*struct, []yiigo.X")
 
 			return "", nil
 		}
 	default:
-		Logger().Error("invalid data type for batch insert, expects []struct, []*struct, []yiigo.X")
+		logger.Error("invalid data type for batch insert, expects []struct, []*struct, []yiigo.X")
 
 		return "", nil
 	}
@@ -472,7 +472,7 @@ func (b *SQLBuilder) ToBatchInsert(data interface{}) (string, []interface{}) {
 	query := sqlx.Rebind(sqlx.BindType(string(b.driver)), strings.Join(clauses, " "))
 
 	if debug {
-		Logger().Info(query, zap.Any("binds", b.binds))
+		logger.Info(query, zap.Any("binds", b.binds))
 	}
 
 	return query, b.binds
@@ -550,7 +550,7 @@ func (b *SQLBuilder) ToUpdate(data interface{}) (string, []interface{}) {
 		x, ok := data.(X)
 
 		if !ok {
-			Logger().Error("invalid data type for update, expects struct, *struct, yiigo.X")
+			logger.Error("invalid data type for update, expects struct, *struct, yiigo.X")
 
 			return "", nil
 		}
@@ -559,7 +559,7 @@ func (b *SQLBuilder) ToUpdate(data interface{}) (string, []interface{}) {
 	case reflect.Struct:
 		b.updateWithStruct(v)
 	default:
-		Logger().Error("invalid data type for update, expects struct, *struct, yiigo.X")
+		logger.Error("invalid data type for update, expects struct, *struct, yiigo.X")
 
 		return "", nil
 	}
@@ -576,7 +576,7 @@ func (b *SQLBuilder) ToUpdate(data interface{}) (string, []interface{}) {
 	query := sqlx.Rebind(sqlx.BindType(string(b.driver)), strings.Join(clauses, " "))
 
 	if debug {
-		Logger().Info(query, zap.Any("binds", b.binds))
+		logger.Info(query, zap.Any("binds", b.binds))
 	}
 
 	return query, b.binds
@@ -640,7 +640,7 @@ func (b *SQLBuilder) ToDelete() (string, []interface{}) {
 	query := sqlx.Rebind(sqlx.BindType(string(b.driver)), strings.Join(clauses, " "))
 
 	if debug {
-		Logger().Info(query, zap.Any("binds", b.binds))
+		logger.Info(query, zap.Any("binds", b.binds))
 	}
 
 	return query, b.binds
