@@ -1237,6 +1237,10 @@ debug = true
 	# wait_timeout = 10
 	# prefill_parallelism = 0
 
+# [nsq]
+# lookupd = ["127.0.0.1:4161"]
+# nsqd = "127.0.0.1:4150"
+
 [email]
 
 	# [email.default]

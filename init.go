@@ -1,9 +1,11 @@
 package yiigo
 
+var debug bool
+
 func init() {
 	// init default logger
 	logger = newLogger(&logConfig{
-		Path:       "app.log",
+		Path:       "logs/app.log",
 		MaxSize:    500,
 		MaxBackups: 0,
 		MaxAge:     0,
@@ -13,12 +15,12 @@ func init() {
 	// load config file: yiigo.toml
 	loadConfigFile()
 
-	debug := Env("app.debug").Bool(true)
+	debug = Env("app.debug").Bool(false)
 
 	// init logger
-	initLogger(debug)
+	initLogger()
 	// init db
-	initDB(debug)
+	initDB()
 	// init mongodb
 	initMongoDB()
 	// init redis

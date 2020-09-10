@@ -13,11 +13,15 @@ require (
 	github.com/jinzhu/gorm v1.9.16
 	github.com/jmoiron/sqlx v1.2.1-0.20200615141059-0794cb1f47ee
 	github.com/lib/pq v1.8.0
+	github.com/mattn/go-sqlite3 v1.14.2
+	github.com/nsqio/go-nsq v1.0.8
 	github.com/pelletier/go-toml v1.8.0
 	github.com/philchia/agollo/v3 v3.1.2
+	github.com/pkg/errors v0.9.1
 	github.com/shenghui0779/vitess_pool v1.0.1
-	go.mongodb.org/mongo-driver v1.4.0
-	go.uber.org/zap v1.15.0
+	github.com/stretchr/testify v1.6.1
+	go.mongodb.org/mongo-driver v1.4.1
+	go.uber.org/zap v1.16.0
 	golang.org/x/crypto v0.0.0-20200820211705-5c72a883971a // indirect
 	golang.org/x/tools v0.0.0-20200827010519-17fd2f27a9e3 // indirect
 	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect

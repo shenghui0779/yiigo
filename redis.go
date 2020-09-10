@@ -174,7 +174,7 @@ func initRedis() {
 func Redis(name ...string) *RedisPoolResource {
 	if len(name) == 0 {
 		if defaultRedis == nil {
-			logger.Panic("yiigo: invalid redis", zap.String("name", AsDefault))
+			logger.Panic(fmt.Sprintf("yiigo: unknown redis.%s (forgotten configure?)", AsDefault))
 		}
 
 		return defaultRedis
@@ -183,7 +183,7 @@ func Redis(name ...string) *RedisPoolResource {
 	v, ok := redisMap.Load(name[0])
 
 	if !ok {
-		logger.Panic("yiigo: invalid redis", zap.String("name", name[0]))
+		logger.Panic(fmt.Sprintf("yiigo: unknown redis.%s (forgotten configure?)", name[0]))
 	}
 
 	return v.(*RedisPoolResource)

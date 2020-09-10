@@ -55,7 +55,7 @@ func newLogger(cfg *logConfig, debug bool) *zap.Logger {
 	return zap.New(core, zap.AddCaller())
 }
 
-func initLogger(debug bool) {
+func initLogger() {
 	tree, ok := env.get("log").(*toml.Tree)
 
 	if !ok {
