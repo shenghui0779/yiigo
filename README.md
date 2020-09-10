@@ -219,13 +219,19 @@ yiigo.Logger("foo").Info("hello world")
 - Query
 
 ```go
+yiigo.NewSQLBuilder(yiigo.MySQL).Table("user").Where("id = ?", 1).ToQuery()
+// SELECT * FROM user WHERE id = ?
+// [1]
 
+yiigo.NewSQLBuilder(yiigo.MySQL).Table("user").Select("id", "name", "age").Where("id = ?", 1).ToQuery()
+// SELECT id, name, age FROM user WHERE id = ?
+// [1]
 ```
 
 - Insert
 
 ```go
-query, binds := yiigo.NewSQLBuilder(yiigo.MySQL).Table("user").ToInsert(yiigo.X{
+yiigo.NewSQLBuilder(yiigo.MySQL).Table("user").ToInsert(yiigo.X{
     "name": "shenghui0779",
     "age":  29,
 })
@@ -236,7 +242,7 @@ query, binds := yiigo.NewSQLBuilder(yiigo.MySQL).Table("user").ToInsert(yiigo.X{
 - Batch Insert
 
 ```go
-query, binds := yiigo.NewSQLBuilder(yiigo.MySQL).Table("user").ToBatchInsert([]yiigo.X{
+yiigo.NewSQLBuilder(yiigo.MySQL).Table("user").ToBatchInsert([]yiigo.X{
     {
         "name": "shenghui0779",
         "age":  29,
@@ -253,14 +259,14 @@ query, binds := yiigo.NewSQLBuilder(yiigo.MySQL).Table("user").ToBatchInsert([]y
 - Update
 
 ```go
-query, binds := yiigo.NewSQLBuilder(yiigo.MySQL).Table("user").Where("id = ?", 1).ToUpdate(yiigo.X{
+yiigo.NewSQLBuilder(yiigo.MySQL).Table("user").Where("id = ?", 1).ToUpdate(yiigo.X{
     "name": "shenghui0779",
     "age":  29,
 })
 // UPDATE user SET name = ?, age = ? WHERE id = ?
 // [shenghui0779 29 1]
 
-query, binds := yiigo.NewSQLBuilder(yiigo.MySQL).Table("goods").Where("id = ?", 1).ToUpdate(yiigo.X{
+yiigo.NewSQLBuilder(yiigo.MySQL).Table("goods").Where("id = ?", 1).ToUpdate(yiigo.X{
     "amount": yiigo.Clause("amount * ? + ?", 2, 10),
     "price":  250,
 })
@@ -271,7 +277,7 @@ query, binds := yiigo.NewSQLBuilder(yiigo.MySQL).Table("goods").Where("id = ?", 
 - Delete
 
 ```go
-query, binds := yiigo.NewSQLBuilder(yiigo.MySQL).Where("id = ?", 1).ToDelete()
+yiigo.NewSQLBuilder(yiigo.MySQL).Where("id = ?", 1).ToDelete()
 // DELETE FROM user WHERE id = ?
 // [1]
 ```
