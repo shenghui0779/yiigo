@@ -13,7 +13,7 @@ var producer *nsq.Producer
 // NSQLogger NSQ logger
 type NSQLogger struct{}
 
-// Output logger output
+// Output implements the NSQ logger interface
 func (l *NSQLogger) Output(calldepth int, s string) error {
 	Logger().Error(s, zap.Int("call_depth", calldepth))
 
@@ -39,6 +39,7 @@ func initProducer(nsqd string) error {
 // NSQMessage NSQ message
 type NSQMessage interface {
 	Bytes() ([]byte, error)
+	// Do message processing
 	Do() error
 }
 
