@@ -214,6 +214,74 @@ yiigo.Logger().Info("hello world")
 yiigo.Logger("foo").Info("hello world")
 ```
 
+#### SQL Builder
+
+- Query
+
+```go
+yiigo.NewSQLBuilder(yiigo.MySQL).Table("user").Where("id = ?", 1).ToQuery()
+// SELECT * FROM user WHERE id = ?
+// [1]
+
+yiigo.NewSQLBuilder(yiigo.MySQL).Table("user").Select("id", "name", "age").Where("id = ?", 1).ToQuery()
+// SELECT id, name, age FROM user WHERE id = ?
+// [1]
+```
+
+- Insert
+
+```go
+yiigo.NewSQLBuilder(yiigo.MySQL).Table("user").ToInsert(yiigo.X{
+    "name": "shenghui0779",
+    "age":  29,
+})
+// INSERT INTO user ( name, age ) VALUES ( ?, ? )
+// [shenghui0779 29]
+```
+
+- Batch Insert
+
+```go
+yiigo.NewSQLBuilder(yiigo.MySQL).Table("user").ToBatchInsert([]yiigo.X{
+    {
+        "name": "shenghui0779",
+        "age":  29,
+    },
+    {
+        "name": "iiinsomnia",
+        "age":  30,
+    },
+})
+// INSERT INTO user ( name, age ) VALUES ( ?, ? ), ( ?, ? )
+// [shenghui0779 29 iiinsomnia 30]
+```
+
+- Update
+
+```go
+yiigo.NewSQLBuilder(yiigo.MySQL).Table("user").Where("id = ?", 1).ToUpdate(yiigo.X{
+    "name": "shenghui0779",
+    "age":  29,
+})
+// UPDATE user SET name = ?, age = ? WHERE id = ?
+// [shenghui0779 29 1]
+
+yiigo.NewSQLBuilder(yiigo.MySQL).Table("goods").Where("id = ?", 1).ToUpdate(yiigo.X{
+    "amount": yiigo.Clause("amount * ? + ?", 2, 10),
+    "price":  250,
+})
+// UPDATE goods SET amount = amount * ? + ?, price = ? WHERE id = ?
+// [2 10 250 1]
+```
+
+- Delete
+
+```go
+yiigo.NewSQLBuilder(yiigo.MySQL).Where("id = ?", 1).ToDelete()
+// DELETE FROM user WHERE id = ?
+// [1]
+```
+
 ## Documentation
 
 - [API Reference](https://pkg.go.dev/github.com/shenghui0779/yiigo)

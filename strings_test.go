@@ -1,53 +1,17 @@
 package yiigo
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
 
 func TestMD5(t *testing.T) {
-	type args struct {
-		s string
-	}
-	tests := []struct {
-		name string
-		args args
-		want string
-	}{
-		{
-			name: "t1",
-			args: args{s: "iiinsomnia"},
-			want: "483367436bc9a6c5256bfc29a24f955e",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := MD5(tt.args.s); got != tt.want {
-				t.Errorf("MD5() = %v, want %v", got, tt.want)
-			}
-		})
-	}
+	assert.Equal(t, "483367436bc9a6c5256bfc29a24f955e", MD5("iiinsomnia"))
 }
 
 func TestSHA1(t *testing.T) {
-	type args struct {
-		s string
-	}
-	tests := []struct {
-		name string
-		args args
-		want string
-	}{
-		{
-			name: "t1",
-			args: args{s: "iiinsomnia"},
-			want: "7a4082bd79f2086af2c2b792c5e0ad06e729b9c4",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := SHA1(tt.args.s); got != tt.want {
-				t.Errorf("SHA1() = %v, want %v", got, tt.want)
-			}
-		})
-	}
+	assert.Equal(t, "7a4082bd79f2086af2c2b792c5e0ad06e729b9c4", SHA1("iiinsomnia"))
 }
 
 func TestHash(t *testing.T) {
@@ -92,82 +56,18 @@ func TestHash(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := Hash(tt.args.algo, tt.args.s); got != tt.want {
-				t.Errorf("Hash(%s) = %v, want %v", tt.name, got, tt.want)
-			}
-		})
+		assert.Equal(t, tt.want, Hash(tt.args.algo, tt.args.s))
 	}
 }
 
 func TestAddSlashes(t *testing.T) {
-	type args struct {
-		s string
-	}
-	tests := []struct {
-		name string
-		args args
-		want string
-	}{
-		{
-			name: "t1",
-			args: args{s: "Is your name O'Reilly?"},
-			want: `Is your name O\'Reilly?`,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := AddSlashes(tt.args.s); got != tt.want {
-				t.Errorf("AddSlashes() = %v, want %v", got, tt.want)
-			}
-		})
-	}
+	assert.Equal(t, `Is your name O\'Reilly?`, AddSlashes("Is your name O'Reilly?"))
 }
 
 func TestStripSlashes(t *testing.T) {
-	type args struct {
-		s string
-	}
-	tests := []struct {
-		name string
-		args args
-		want string
-	}{
-		{
-			name: "t1",
-			args: args{s: `Is your name O\'reilly?`},
-			want: "Is your name O'reilly?",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := StripSlashes(tt.args.s); got != tt.want {
-				t.Errorf("StripSlashes() = %v, want %v", got, tt.want)
-			}
-		})
-	}
+	assert.Equal(t, "Is your name O'Reilly?", StripSlashes(`Is your name O\'Reilly?`))
 }
 
 func TestQuoteMeta(t *testing.T) {
-	type args struct {
-		s string
-	}
-	tests := []struct {
-		name string
-		args args
-		want string
-	}{
-		{
-			name: "t1",
-			args: args{s: "Hello world. (can you hear me?)"},
-			want: `Hello world\. \(can you hear me\?\)`,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := QuoteMeta(tt.args.s); got != tt.want {
-				t.Errorf("QuoteMeta() = %v, want %v", got, tt.want)
-			}
-		})
-	}
+	assert.Equal(t, `Hello world\. \(can you hear me\?\)`, QuoteMeta("Hello world. (can you hear me?)"))
 }

@@ -1,129 +1,49 @@
 package yiigo
 
 import (
-	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestAESCBCCrypt(t *testing.T) {
-	type args struct {
-		data    []byte
-		padding AESPadding
-	}
-	tests := []struct {
-		name string
-		args args
-		want string
-	}{
-		{
-			name: "t1",
-			args: args{
-				data:    []byte("shenghui0779"),
-				padding: PKCS5_PADDING,
-			},
-			want: "shenghui0779",
-		},
-		{
-			name: "t2",
-			args: args{
-				data:    []byte("Iloveyiigo"),
-				padding: PKCS7_PADDING,
-			},
-			want: "Iloveyiigo",
-		},
-	}
-
 	aesCrypto, err := NewAESCrypto([]byte("c510be34b0466938eace8edee61255c0"))
 
-	if err != nil {
-		t.Errorf("RSAVerifyWithSha256() error = %v", err)
-	}
+	assert.Nil(t, err)
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			b := aesCrypto.CBCEncrypt(tt.args.data, tt.args.padding)
+	// PKCS5_PADDING
+	e5b := aesCrypto.CBCEncrypt([]byte("shenghui0779"), PKCS5_PADDING)
+	d5b := aesCrypto.CBCDecrypt(e5b, PKCS5_PADDING)
 
-			got := aesCrypto.CBCDecrypt(b, tt.args.padding)
+	assert.Equal(t, "shenghui0779", string(d5b))
 
-			if !reflect.DeepEqual(string(got), tt.want) {
-				t.Errorf("AESCBCCrypt() = %v, want %v", string(got), tt.want)
-			}
-		})
-	}
+	// PKCS7_PADDING
+	e7b := aesCrypto.CBCEncrypt([]byte("Iloveyiigo"), PKCS7_PADDING)
+	d7b := aesCrypto.CBCDecrypt(e7b, PKCS7_PADDING)
+
+	assert.Equal(t, "Iloveyiigo", string(d7b))
 }
 
 func TestRSASign(t *testing.T) {
-	type args struct {
-		data []byte
-	}
-	tests := []struct {
-		name string
-		args args
-	}{
-		{
-			name: "t1",
-			args: args{
-				data: []byte("Iloveyiigo"),
-			},
-		},
-	}
-
 	rsaCrypto := NewRSACrypto(privateKey, publicKey)
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			signature, err := rsaCrypto.SignWithSha256(tt.args.data)
+	signature, err := rsaCrypto.SignWithSha256([]byte("Iloveyiigo"))
 
-			if err != nil {
-				t.Errorf("RSASignWithSha256() error = %v", err)
-			}
-
-			if err = rsaCrypto.VerifyWithSha256(tt.args.data, signature); err != nil {
-				t.Errorf("RSAVerifyWithSha256() error = %v", err)
-			}
-		})
-	}
+	assert.Nil(t, err)
+	assert.Nil(t, rsaCrypto.VerifyWithSha256([]byte("Iloveyiigo"), signature))
 }
 
 func TestRSACrypt(t *testing.T) {
-	type args struct {
-		data []byte
-	}
-	tests := []struct {
-		name string
-		args args
-		want string
-	}{
-		{
-			name: "t1",
-			args: args{
-				data: []byte("Iloveyiigo"),
-			},
-			want: "Iloveyiigo",
-		},
-	}
-
 	rsaCrypto := NewRSACrypto(privateKey, publicKey)
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			rsaData, err := rsaCrypto.Encrypt(tt.args.data)
+	eb, err := rsaCrypto.Encrypt([]byte("Iloveyiigo"))
 
-			if err != nil {
-				t.Errorf("RSAEncrypt() error = %v", err)
-			}
+	assert.Nil(t, err)
 
-			got, err := rsaCrypto.Decrypt(rsaData)
+	db, err := rsaCrypto.Decrypt(eb)
 
-			if err != nil {
-				t.Errorf("RSADecrypt() error = %v", err)
-			}
-
-			if !reflect.DeepEqual(string(got), tt.want) {
-				t.Errorf("RSACrypt() = %v, want %v", got, tt.want)
-			}
-		})
-	}
+	assert.Nil(t, err)
+	assert.Equal(t, "Iloveyiigo", string(db))
 }
 
 var (
