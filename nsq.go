@@ -13,7 +13,7 @@ var producer *nsq.Producer
 // NSQLogger NSQ logger
 type NSQLogger struct{}
 
-// Output 日志输出
+// Output logger output
 func (l *NSQLogger) Output(calldepth int, s string) error {
 	Logger().Error(s, zap.Int("call_depth", calldepth))
 
@@ -47,10 +47,14 @@ func NSQPublish(topic string, msg NSQMessage) error {
 	b, err := msg.Bytes()
 
 	if err != nil {
-		return err
+		return errors.Wrap(err, "yiigo: publish nsq message error")
 	}
 
-	return producer.Publish(topic, b)
+	if err = producer.Publish(topic, b); err != nil {
+		return errors.Wrap(err, "yiigo: publish nsq message error")
+	}
+
+	return nil
 }
 
 // DeferredPublish synchronously publishes a message body to the specified topic
@@ -59,10 +63,14 @@ func NSQDeferredPublish(topic string, msg NSQMessage, duration time.Duration) er
 	b, err := msg.Bytes()
 
 	if err != nil {
-		return err
+		return errors.Wrap(err, "yiigo: deferred publish nsq message error")
 	}
 
-	return producer.DeferredPublish(topic, duration, b)
+	if err = producer.DeferredPublish(topic, duration, b); err != nil {
+		return errors.Wrap(err, "yiigo: deferred publish nsq message error")
+	}
+
+	return nil
 }
 
 // NSQConsumer NSQ consumer
