@@ -46,6 +46,16 @@ insecure_skip_verify = true
     wait_timeout = 10 # 秒
     prefill_parallelism = 0 # 预填充连接数
 
+[nsq]
+lookupd = ["127.0.0.1:4161"]
+nsqd = "127.0.0.1:4150"
+
+[email]
+host = "smtp.exmail.qq.com"
+port = 25
+username = ""
+password = ""
+
 [log]
 
     [log.default]
@@ -54,9 +64,3 @@ insecure_skip_verify = true
     max_age = 0
     max_backups = 0
     compress = true
-
-[email]
-host = "smtp.exmail.qq.com"
-port = 25
-username = ""
-password = ""

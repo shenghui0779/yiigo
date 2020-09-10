@@ -14,8 +14,10 @@ require (
 	github.com/jmoiron/sqlx v1.2.1-0.20200615141059-0794cb1f47ee
 	github.com/lib/pq v1.8.0
 	github.com/mattn/go-sqlite3 v1.14.2
+	github.com/nsqio/go-nsq v1.0.8
 	github.com/pelletier/go-toml v1.8.0
 	github.com/philchia/agollo/v3 v3.1.2
+	github.com/pkg/errors v0.9.1
 	github.com/shenghui0779/vitess_pool v1.0.1
 	github.com/stretchr/testify v1.6.1
 	go.mongodb.org/mongo-driver v1.4.1
