@@ -174,11 +174,13 @@ type SQLBuilder struct {
 	order    string
 	offset   int
 	limit    int
-	values   []string
-	sets     []string
-	binds    []interface{}
+
 	queryLen int
 	bindsLen int
+
+	values []string
+	sets   []string
+	binds  []interface{}
 }
 
 func (b *SQLBuilder) clone() *SQLBuilder {
