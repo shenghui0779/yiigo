@@ -431,7 +431,7 @@ func (b *SQLBuilder) ToInsert(data interface{}) (string, []interface{}) {
 		x, ok := data.(X)
 
 		if !ok {
-			logger.Error("invalid data type for insert, expects struct, *struct, yiigo.X")
+			logger.Error("yiigo: invalid data type for insert, expects struct, *struct, yiigo.X")
 
 			return "", nil
 		}
@@ -440,7 +440,7 @@ func (b *SQLBuilder) ToInsert(data interface{}) (string, []interface{}) {
 	case reflect.Struct:
 		b.insertWithStruct(v)
 	default:
-		logger.Error("invalid data type for insert, expects struct, *struct, yiigo.X")
+		logger.Error("yiigo: invalid data type for insert, expects struct, *struct, yiigo.X")
 
 		return "", nil
 	}
@@ -520,7 +520,7 @@ func (b *SQLBuilder) ToBatchInsert(data interface{}) (string, []interface{}) {
 			x, ok := data.([]X)
 
 			if !ok {
-				logger.Error("invalid data type for batch insert, expects []struct, []*struct, []yiigo.X")
+				logger.Error("yiigo: invalid data type for batch insert, expects []struct, []*struct, []yiigo.X")
 
 				return "", nil
 			}
@@ -530,19 +530,19 @@ func (b *SQLBuilder) ToBatchInsert(data interface{}) (string, []interface{}) {
 			b.batchInsertWithStruct(v)
 		case reflect.Ptr:
 			if e.Elem().Kind() != reflect.Struct {
-				logger.Error("invalid data type for batch insert, expects []struct, []*struct, []yiigo.X")
+				logger.Error("yiigo: invalid data type for batch insert, expects []struct, []*struct, []yiigo.X")
 
 				return "", nil
 			}
 
 			b.batchInsertWithStruct(v)
 		default:
-			logger.Error("invalid data type for batch insert, expects []struct, []*struct, []yiigo.X")
+			logger.Error("yiigo: invalid data type for batch insert, expects []struct, []*struct, []yiigo.X")
 
 			return "", nil
 		}
 	default:
-		logger.Error("invalid data type for batch insert, expects []struct, []*struct, []yiigo.X")
+		logger.Error("yiigo: invalid data type for batch insert, expects []struct, []*struct, []yiigo.X")
 
 		return "", nil
 	}
@@ -630,7 +630,7 @@ func (b *SQLBuilder) ToUpdate(data interface{}) (string, []interface{}) {
 		x, ok := data.(X)
 
 		if !ok {
-			logger.Error("invalid data type for update, expects struct, *struct, yiigo.X")
+			logger.Error("yiigo: invalid data type for update, expects struct, *struct, yiigo.X")
 
 			return "", nil
 		}
@@ -639,7 +639,7 @@ func (b *SQLBuilder) ToUpdate(data interface{}) (string, []interface{}) {
 	case reflect.Struct:
 		b.updateWithStruct(v)
 	default:
-		logger.Error("invalid data type for update, expects struct, *struct, yiigo.X")
+		logger.Error("yiigo: invalid data type for update, expects struct, *struct, yiigo.X")
 
 		return "", nil
 	}
