@@ -185,14 +185,10 @@ func (b *SQLBuilder) clone() *SQLBuilder {
 	clone := &SQLBuilder{
 		driver:   b.driver,
 		table:    b.table,
-		joins:    b.joins,
 		group:    b.group,
 		order:    b.order,
 		offset:   b.offset,
 		limit:    b.limit,
-		values:   b.values,
-		sets:     b.sets,
-		binds:    b.binds,
 		queryLen: b.queryLen,
 		bindsLen: b.bindsLen,
 	}
@@ -234,21 +230,6 @@ func (b *SQLBuilder) clone() *SQLBuilder {
 		clone.having = Clause(b.having.query, args...)
 	}
 
-	if l := len(b.values); l != 0 {
-		clone.values = make([]string, l)
-		copy(clone.values, b.values)
-	}
-
-	if l := len(b.sets); l != 0 {
-		clone.sets = make([]string, l)
-		copy(clone.sets, b.sets)
-	}
-
-	if l := len(b.binds); l != 0 {
-		clone.binds = make([]interface{}, l)
-		copy(clone.binds, b.binds)
-	}
-
 	return clone
 }
 
@@ -282,47 +263,47 @@ func (b *SQLBuilder) Distinct(columns ...string) *SQLBuilder {
 	return builder
 }
 
-// Distinct add inner join clause
+// InnerJoin add inner join clause
 func (b *SQLBuilder) InnerJoin(table, on string) *SQLBuilder {
 	builder := b.clone()
 
-	builder.joins = append(b.joins, "INNER", "JOIN", table, "ON", on)
+	builder.joins = append(builder.joins, "INNER", "JOIN", table, "ON", on)
 	builder.queryLen += 5
 
 	return builder
 }
 
-// Distinct add left join clause
+// LeftJoin add left join clause
 func (b *SQLBuilder) LeftJoin(table, on string) *SQLBuilder {
 	builder := b.clone()
 
-	builder.joins = append(b.joins, "LEFT", "JOIN", table, "ON", on)
+	builder.joins = append(builder.joins, "LEFT", "JOIN", table, "ON", on)
 	builder.queryLen += 5
 
 	return builder
 }
 
-// Distinct add right join clause
+// RightJoin add right join clause
 func (b *SQLBuilder) RightJoin(table, on string) *SQLBuilder {
 	builder := b.clone()
 
-	builder.joins = append(b.joins, "RIGHT", "JOIN", table, "ON", on)
+	builder.joins = append(builder.joins, "RIGHT", "JOIN", table, "ON", on)
 	builder.queryLen += 5
 
 	return builder
 }
 
-// Distinct add full join clause
+// FullJoin add full join clause
 func (b *SQLBuilder) FullJoin(table, on string) *SQLBuilder {
 	builder := b.clone()
 
-	builder.joins = append(b.joins, "FULL", "JOIN", table, "ON", on)
+	builder.joins = append(builder.joins, "FULL", "JOIN", table, "ON", on)
 	builder.queryLen += 5
 
 	return builder
 }
 
-// Distinct add where clause, eg: `id = ?`, `name <> ? AND age > ?`
+// Where add where clause, eg: `id = ?`, `name <> ? AND age > ?`
 func (b *SQLBuilder) Where(query string, args ...interface{}) *SQLBuilder {
 	builder := b.clone()
 
@@ -333,7 +314,7 @@ func (b *SQLBuilder) Where(query string, args ...interface{}) *SQLBuilder {
 	return builder
 }
 
-// Distinct add group clause
+// Group add group clause
 func (b *SQLBuilder) Group(column string) *SQLBuilder {
 	builder := b.clone()
 
@@ -343,7 +324,7 @@ func (b *SQLBuilder) Group(column string) *SQLBuilder {
 	return builder
 }
 
-// Distinct add having clause
+// Having add having clause
 func (b *SQLBuilder) Having(query string, args ...interface{}) *SQLBuilder {
 	builder := b.clone()
 
@@ -364,7 +345,7 @@ func (b *SQLBuilder) Order(query string) *SQLBuilder {
 	return builder
 }
 
-// Distinct add offset clause
+// Offset add offset clause
 func (b *SQLBuilder) Offset(offset int) *SQLBuilder {
 	builder := b.clone()
 
@@ -374,7 +355,7 @@ func (b *SQLBuilder) Offset(offset int) *SQLBuilder {
 	return builder
 }
 
-// Distinct add limit clause
+// Limit add limit clause
 func (b *SQLBuilder) Limit(limit int) *SQLBuilder {
 	builder := b.clone()
 
