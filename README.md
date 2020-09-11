@@ -216,34 +216,38 @@ yiigo.Logger("foo").Info("hello world")
 
 #### SQL Builder
 
+```go
+builder := yiigo.NewSQLBuilder(yiigo.MySQL)
+```
+
 - Query
 
 ```go
-yiigo.NewSQLBuilder(yiigo.MySQL).Table("user").Where("id = ?", 1).ToQuery()
+builder.Table("user").Where("id = ?", 1).ToQuery()
 // SELECT * FROM user WHERE id = ?
 // [1]
 
-yiigo.NewSQLBuilder(yiigo.MySQL).Table("user").Where("name = ? AND age > ?", "shenghui0779", 20).ToQuery()
+builder.Table("user").Where("name = ? AND age > ?", "shenghui0779", 20).ToQuery()
 // SELECT * FROM user WHERE name = ? AND age > ?
 // [shenghui0779 20]
 
-yiigo.NewSQLBuilder(yiigo.MySQL).Table("user").Select("id", "name", "age").Where("id = ?", 1).ToQuery()
+builder.Table("user").Select("id", "name", "age").Where("id = ?", 1).ToQuery()
 // SELECT id, name, age FROM user WHERE id = ?
 // [1]
 
-yiigo.NewSQLBuilder(yiigo.MySQL).Table("user").Distinct("name").Where("id = ?", 1).ToQuery()
+builder.Table("user").Distinct("name").Where("id = ?", 1).ToQuery()
 // SELECT DISTINCT name FROM user WHERE id = ?
 // [1]
 
-yiigo.NewSQLBuilder(yiigo.MySQL).Table("user").LeftJoin("address", "user.id = address.user_id").Where("user.id = ?", 1).ToQuery()
+builder.Table("user").LeftJoin("address", "user.id = address.user_id").Where("user.id = ?", 1).ToQuery()
 // SELECT * FROM user LEFT JOIN address ON user.id = address.user_id WHERE user.id = ?
 // [1]
 
-yiigo.NewSQLBuilder(yiigo.MySQL).Table("address").Select("user_id", "COUNT(*) AS total").Group("user_id").Having("user_id = ?", 1).ToQuery()
+builder.Table("address").Select("user_id", "COUNT(*) AS total").Group("user_id").Having("user_id = ?", 1).ToQuery()
 // SELECT user_id, COUNT(*) AS total FROM address GROUP BY user_id HAVING user_id = ?
 // [1]
 
-yiigo.NewSQLBuilder(yiigo.MySQL).Table("user").Where("age > ?", 20).Order("id DESC").Offset(5).Limit(10).ToQuery()
+builder.Table("user").Where("age > ?", 20).Order("id DESC").Offset(5).Limit(10).ToQuery()
 // SELECT * FROM user WHERE age > ? ORDER BY id DESC OFFSET 5 LIMIT 10
 // [20]
 ```
@@ -251,7 +255,7 @@ yiigo.NewSQLBuilder(yiigo.MySQL).Table("user").Where("age > ?", 20).Order("id DE
 - Insert
 
 ```go
-yiigo.NewSQLBuilder(yiigo.MySQL).Table("user").ToInsert(yiigo.X{
+builder.Table("user").ToInsert(yiigo.X{
     "name": "shenghui0779",
     "age":  29,
 })
@@ -262,7 +266,7 @@ yiigo.NewSQLBuilder(yiigo.MySQL).Table("user").ToInsert(yiigo.X{
 - Batch Insert
 
 ```go
-yiigo.NewSQLBuilder(yiigo.MySQL).Table("user").ToBatchInsert([]yiigo.X{
+builder.Table("user").ToBatchInsert([]yiigo.X{
     {
         "name": "shenghui0779",
         "age":  29,
@@ -279,14 +283,14 @@ yiigo.NewSQLBuilder(yiigo.MySQL).Table("user").ToBatchInsert([]yiigo.X{
 - Update
 
 ```go
-yiigo.NewSQLBuilder(yiigo.MySQL).Table("user").Where("id = ?", 1).ToUpdate(yiigo.X{
+builder.Table("user").Where("id = ?", 1).ToUpdate(yiigo.X{
     "name": "shenghui0779",
     "age":  29,
 })
 // UPDATE user SET name = ?, age = ? WHERE id = ?
 // [shenghui0779 29 1]
 
-yiigo.NewSQLBuilder(yiigo.MySQL).Table("goods").Where("id = ?", 1).ToUpdate(yiigo.X{
+builder.Table("goods").Where("id = ?", 1).ToUpdate(yiigo.X{
     "amount": yiigo.Clause("amount * ? + ?", 2, 10),
     "price":  250,
 })
@@ -297,7 +301,7 @@ yiigo.NewSQLBuilder(yiigo.MySQL).Table("goods").Where("id = ?", 1).ToUpdate(yiig
 - Delete
 
 ```go
-yiigo.NewSQLBuilder(yiigo.MySQL).Where("id = ?", 1).ToDelete()
+builder.Where("id = ?", 1).ToDelete()
 // DELETE FROM user WHERE id = ?
 // [1]
 ```
