@@ -146,6 +146,8 @@ func Orm(name ...string) *gorm.DB {
 	return v.(*gorm.DB)
 }
 
+// SQL Builder
+
 type SQLClause struct {
 	query string
 	args  []interface{}
@@ -179,110 +181,207 @@ type SQLBuilder struct {
 	bindsLen int
 }
 
+func (b *SQLBuilder) clone() *SQLBuilder {
+	clone := &SQLBuilder{
+		driver:   b.driver,
+		table:    b.table,
+		joins:    b.joins,
+		group:    b.group,
+		order:    b.order,
+		offset:   b.offset,
+		limit:    b.limit,
+		values:   b.values,
+		sets:     b.sets,
+		binds:    b.binds,
+		queryLen: b.queryLen,
+		bindsLen: b.bindsLen,
+	}
+
+	if l := len(b.columns); l != 0 {
+		clone.columns = make([]string, l)
+		copy(clone.columns, b.columns)
+	}
+
+	if l := len(b.distinct); l != 0 {
+		clone.distinct = make([]string, l)
+		copy(clone.distinct, b.distinct)
+	}
+
+	if b.where != nil {
+		var args []interface{}
+
+		if l := len(b.where.args); l != 0 {
+			args = make([]interface{}, l)
+			copy(args, b.where.args)
+		}
+
+		clone.where = Clause(b.where.query, args...)
+	}
+
+	if l := len(b.joins); l != 0 {
+		clone.joins = make([]string, l)
+		copy(clone.joins, b.joins)
+	}
+
+	if b.having != nil {
+		var args []interface{}
+
+		if l := len(b.having.args); l != 0 {
+			args = make([]interface{}, l)
+			copy(args, b.having.args)
+		}
+
+		clone.having = Clause(b.having.query, args...)
+	}
+
+	if l := len(b.values); l != 0 {
+		clone.values = make([]string, l)
+		copy(clone.values, b.values)
+	}
+
+	if l := len(b.sets); l != 0 {
+		clone.sets = make([]string, l)
+		copy(clone.sets, b.sets)
+	}
+
+	if l := len(b.binds); l != 0 {
+		clone.binds = make([]interface{}, l)
+		copy(clone.binds, b.binds)
+	}
+
+	return clone
+}
+
 // Table add query table
 func (b *SQLBuilder) Table(table string) *SQLBuilder {
-	b.table = table
-	b.queryLen += 2
+	builder := b.clone()
 
-	return b
+	builder.table = table
+	builder.queryLen += 2
+
+	return builder
 }
 
 // Select add query columns
 func (b *SQLBuilder) Select(columns ...string) *SQLBuilder {
-	b.columns = columns
-	b.queryLen += 2
+	builder := b.clone()
 
-	return b
+	builder.columns = columns
+	builder.queryLen += 2
+
+	return builder
 }
 
 // Distinct add distinct clause
 func (b *SQLBuilder) Distinct(columns ...string) *SQLBuilder {
-	b.distinct = columns
-	b.queryLen += 2
+	builder := b.clone()
 
-	return b
+	builder.distinct = columns
+	builder.queryLen += 2
+
+	return builder
 }
 
 // Distinct add inner join clause
 func (b *SQLBuilder) InnerJoin(table, on string) *SQLBuilder {
-	b.joins = append(b.joins, "INNER", "JOIN", table, "ON", on)
-	b.queryLen += 5
+	builder := b.clone()
 
-	return b
+	builder.joins = append(b.joins, "INNER", "JOIN", table, "ON", on)
+	builder.queryLen += 5
+
+	return builder
 }
 
 // Distinct add left join clause
 func (b *SQLBuilder) LeftJoin(table, on string) *SQLBuilder {
-	b.joins = append(b.joins, "LEFT", "JOIN", table, "ON", on)
-	b.queryLen += 5
+	builder := b.clone()
 
-	return b
+	builder.joins = append(b.joins, "LEFT", "JOIN", table, "ON", on)
+	builder.queryLen += 5
+
+	return builder
 }
 
 // Distinct add right join clause
 func (b *SQLBuilder) RightJoin(table, on string) *SQLBuilder {
-	b.joins = append(b.joins, "RIGHT", "JOIN", table, "ON", on)
-	b.queryLen += 5
+	builder := b.clone()
 
-	return b
+	builder.joins = append(b.joins, "RIGHT", "JOIN", table, "ON", on)
+	builder.queryLen += 5
+
+	return builder
 }
 
 // Distinct add full join clause
 func (b *SQLBuilder) FullJoin(table, on string) *SQLBuilder {
-	b.joins = append(b.joins, "FULL", "JOIN", table, "ON", on)
-	b.queryLen += 5
+	builder := b.clone()
 
-	return b
+	builder.joins = append(b.joins, "FULL", "JOIN", table, "ON", on)
+	builder.queryLen += 5
+
+	return builder
 }
 
 // Distinct add where clause, eg: `id = ?`, `name <> ? AND age > ?`
 func (b *SQLBuilder) Where(query string, args ...interface{}) *SQLBuilder {
-	b.where = Clause(query, args...)
-	b.queryLen += 2
-	b.bindsLen += len(args)
+	builder := b.clone()
 
-	return b
+	builder.where = Clause(query, args...)
+	builder.queryLen += 2
+	builder.bindsLen += len(args)
+
+	return builder
 }
 
 // Distinct add group clause
 func (b *SQLBuilder) Group(column string) *SQLBuilder {
-	b.group = column
-	b.queryLen += 2
+	builder := b.clone()
 
-	return b
+	builder.group = column
+	builder.queryLen += 2
+
+	return builder
 }
 
 // Distinct add having clause
 func (b *SQLBuilder) Having(query string, args ...interface{}) *SQLBuilder {
-	b.having = Clause(query, args...)
-	b.queryLen += 2
-	b.bindsLen += len(args)
+	builder := b.clone()
 
-	return b
+	builder.having = Clause(query, args...)
+	builder.queryLen += 2
+	builder.bindsLen += len(args)
+
+	return builder
 }
 
 // Order add order clause
 func (b *SQLBuilder) Order(query string) *SQLBuilder {
-	b.order = query
-	b.queryLen += 2
+	builder := b.clone()
 
-	return b
+	builder.order = query
+	builder.queryLen += 2
+
+	return builder
 }
 
 // Distinct add offset clause
 func (b *SQLBuilder) Offset(offset int) *SQLBuilder {
-	b.offset = offset
-	b.queryLen += 2
+	builder := b.clone()
 
-	return b
+	builder.offset = offset
+	builder.queryLen += 2
+
+	return builder
 }
 
 // Distinct add limit clause
 func (b *SQLBuilder) Limit(limit int) *SQLBuilder {
-	b.limit = limit
-	b.queryLen += 2
+	builder := b.clone()
 
-	return b
+	builder.limit = limit
+	builder.queryLen += 2
+
+	return builder
 }
 
 // ToToQuery returns query clause and binds.
