@@ -1218,7 +1218,7 @@ debug = true
 	# dsn = "mongodb://username:password@localhost:27017"
 	# connect_timeout = 10
 	# min_pool_size = 10
-	# max_pool_size = 10
+	# max_pool_size = 20
 	# max_conn_idle_time = 60
 	# mode = "primary"
 
