@@ -414,13 +414,21 @@ func (b *SQLBuilder) ToQuery() (string, []interface{}) {
 		clauses = append(clauses, "LIMIT", strconv.Itoa(b.limit))
 	}
 
-	query := sqlx.Rebind(sqlx.BindType(string(b.driver)), strings.Join(clauses, " "))
+	query, binds, err := sqlx.In(strings.Join(clauses, " "), b.binds...)
 
-	if debug {
-		logger.Info(query, zap.Any("binds", b.binds))
+	if err != nil {
+		logger.Error("yiigo: build 'IN' query error", zap.Error(err))
+
+		return "", nil
 	}
 
-	return query, b.binds
+	query = sqlx.Rebind(sqlx.BindType(string(b.driver)), query)
+
+	if debug {
+		logger.Info(query, zap.Any("binds", binds))
+	}
+
+	return query, binds
 }
 
 // ToInsert returns insert clause and binds.
