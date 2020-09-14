@@ -294,12 +294,11 @@ builder.Table("user").Where("id = ?", 1).ToUpdate(yiigo.X{
 // UPDATE user SET name = ?, age = ? WHERE id = ?
 // [shenghui0779 29 1]
 
-builder.Table("goods").Where("id = ?", 1).ToUpdate(yiigo.X{
-    "amount": yiigo.Clause("amount * ? + ?", 2, 10),
-    "price":  250,
+builder.Table("product").Where("id = ?", 1).ToUpdate(yiigo.X{
+    "price": yiigo.Clause("price * ? + ?", 2, 100),
 })
-// UPDATE goods SET amount = amount * ? + ?, price = ? WHERE id = ?
-// [2 10 250 1]
+// UPDATE product SET price = price * ? + ? WHERE id = ?
+// [2 100 1]
 ```
 
 - Delete
