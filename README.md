@@ -216,7 +216,7 @@ yiigo.Logger("foo").Info("hello world")
 
 #### SQL Builder
 
-> 😊 如果你不想手写SQL，可以使用SQL生成器，用于 `yiigo.DB().Select()` 等
+> 😊 如果你不想手写SQL，可以使用 SQL Builder，用于 `yiigo.DB().Select()` 等
 
 ```go
 builder := yiigo.NewSQLBuilder(yiigo.MySQL)
