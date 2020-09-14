@@ -56,9 +56,10 @@ insecure_skip_verify = true
 [db]
 
     [db.default]
-    driver = "mysql"
-    dsn = "username:password@tcp(localhost:3306)/dbname?timeout=10s&charset=utf8mb4&collation=utf8mb4_general_ci&parseTime=True&loc=Local"
-    # dsn = "host=localhost port=5432 user=root password=secret dbname=test connect_timeout=10 sslmode=disable" # pgsql
+    driver = "mysql" # mysql | postgres | sqlite3
+    dsn = "username:password@tcp(localhost:3306)/dbname?timeout=10s&charset=utf8mb4&collation=utf8mb4_general_ci&parseTime=True&loc=Local" # mysql
+    # dsn = "host=localhost port=5432 user=root password=secret dbname=test connect_timeout=10 sslmode=disable" # postgres
+    # dsn = "file::memory:?cache=shared" # sqlite3
     max_open_conns = 20
     max_idle_conns = 10
     conn_max_lifetime = 60 # 秒
