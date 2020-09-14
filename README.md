@@ -130,11 +130,11 @@ yiigo.Env("apollo_test.name").String("foo")
 
 ```go
 // default db
-yiigo.DB().Get(&User{}, "SELECT * FROM `user` WHERE `id` = ?", 1)
+yiigo.DB().Get(&User{}, "SELECT * FROM user WHERE id = ?", 1)
 yiigo.Orm().First(&User{}, 1)
 
 // other db
-yiigo.DB("foo").Get(&User{}, "SELECT * FROM `user` WHERE `id` = ?", 1)
+yiigo.DB("foo").Get(&User{}, "SELECT * FROM user WHERE id = ?", 1)
 yiigo.Orm("foo").First(&User{}, 1)
 ```
 
@@ -215,6 +215,8 @@ yiigo.Logger("foo").Info("hello world")
 ```
 
 #### SQL Builder
+
+> 😊 如果你不想手写SQL，可以使用SQL生成器，用于 `yiigo.DB().Select()` 等
 
 ```go
 builder := yiigo.NewSQLBuilder(yiigo.MySQL)
