@@ -231,6 +231,10 @@ builder.Table("user").Where("name = ? AND age > ?", "shenghui0779", 20).ToQuery(
 // SELECT * FROM user WHERE name = ? AND age > ?
 // [shenghui0779 20]
 
+builder.Table("user").Where("age IN (?)", []int{20, 30}).ToQuery()
+// SELECT * FROM user WHERE age IN (?, ?)
+// [20 30]
+
 builder.Table("user").Select("id", "name", "age").Where("id = ?", 1).ToQuery()
 // SELECT id, name, age FROM user WHERE id = ?
 // [1]
