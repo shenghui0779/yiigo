@@ -88,14 +88,9 @@ insecure_skip_verify = true
     wait_timeout = 10 # 秒
     prefill_parallelism = 0 # 预填充连接数
 
-[log]
-
-    [log.default]
-    path = "app.log"
-    max_size = 500
-    max_age = 0
-    max_backups = 0
-    compress = true
+[nsq]
+lookupd = ["127.0.0.1:4161"]
+nsqd = "127.0.0.1:4150"
 
 [email]
 
@@ -104,6 +99,15 @@ insecure_skip_verify = true
     port = 25
     username = ""
     password = ""
+
+[log]
+
+    [log.default]
+    path = "app.log"
+    max_size = 500
+    max_age = 0
+    max_backups = 0
+    compress = true
 
 # apollo namespace
 
