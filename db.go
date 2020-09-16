@@ -457,7 +457,7 @@ func (b *SQLBuilder) ToInsert(data interface{}) (string, []interface{}) {
 
 	clauses := make([]string, 0, 12)
 
-	clauses = append(clauses, "INSERT", "INTO", b.table, "(", strings.Join(b.columns, ", "), ")", "VALUES", "(", strings.Join(b.values, ", "), ")")
+	clauses = append(clauses, "INSERT", "INTO", b.table, fmt.Sprintf("(%s)", strings.Join(b.columns, ", ")), "VALUES", fmt.Sprintf("(%s)", strings.Join(b.values, ", ")))
 
 	if b.driver == Postgres {
 		clauses = append(clauses, "RETURNING", "id")
@@ -557,7 +557,7 @@ func (b *SQLBuilder) ToBatchInsert(data interface{}) (string, []interface{}) {
 		return "", nil
 	}
 
-	clauses := []string{"INSERT", "INTO", b.table, "(", strings.Join(b.columns, ", "), ")", "VALUES", strings.Join(b.values, ", ")}
+	clauses := []string{"INSERT", "INTO", b.table, fmt.Sprintf("(%s)", strings.Join(b.columns, ", ")), "VALUES", strings.Join(b.values, ", ")}
 
 	query := sqlx.Rebind(sqlx.BindType(string(b.driver)), strings.Join(clauses, " "))
 
@@ -588,7 +588,7 @@ func (b *SQLBuilder) batchInsertWithMap(data []X) {
 			b.binds = append(b.binds, x[v])
 		}
 
-		b.values = append(b.values, fmt.Sprintf("( %s )", strings.Join(phrs, ", ")))
+		b.values = append(b.values, fmt.Sprintf("(%s)", strings.Join(phrs, ", ")))
 	}
 }
 
@@ -626,7 +626,7 @@ func (b *SQLBuilder) batchInsertWithStruct(v reflect.Value) {
 			b.binds = append(b.binds, reflect.Indirect(v.Index(i)).Field(j).Interface())
 		}
 
-		b.values = append(b.values, fmt.Sprintf("( %s )", strings.Join(phrs, ", ")))
+		b.values = append(b.values, fmt.Sprintf("(%s)", strings.Join(phrs, ", ")))
 	}
 }
 

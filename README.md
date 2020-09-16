@@ -266,7 +266,7 @@ builder.Table("user").ToInsert(yiigo.X{
     "name": "shenghui0779",
     "age":  29,
 })
-// INSERT INTO user ( name, age ) VALUES ( ?, ? )
+// INSERT INTO user (name, age) VALUES (?, ?)
 // [shenghui0779 29]
 ```
 
@@ -283,7 +283,7 @@ builder.Table("user").ToBatchInsert([]yiigo.X{
         "age":  30,
     },
 })
-// INSERT INTO user ( name, age ) VALUES ( ?, ? ), ( ?, ? )
+// INSERT INTO user (name, age) VALUES (?, ?), (?, ?)
 // [shenghui0779 29 iiinsomnia 30]
 ```
 
