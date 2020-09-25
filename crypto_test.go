@@ -7,43 +7,62 @@ import (
 )
 
 func TestAESCBCCrypt(t *testing.T) {
-	aesKey := []byte("c510be34b0466938eace8edee61255c0")
+	key := []byte("c510be34b0466938eace8edee61255c0")
+	plainText := "Iloveyiigo"
 
 	// PKCS5_PADDING
-	e5b, err := AESCBCEncrypt([]byte("shenghui0779"), PKCS5_PADDING, aesKey)
+	e5b, err := AESCBCEncrypt([]byte(plainText), PKCS5_PADDING, key)
 	assert.Nil(t, err)
 
-	d5b, err := AESCBCDecrypt(e5b, PKCS5_PADDING, aesKey)
+	d5b, err := AESCBCDecrypt(e5b, PKCS5_PADDING, key)
 	assert.Nil(t, err)
 
-	assert.Equal(t, "shenghui0779", string(d5b))
+	assert.Equal(t, plainText, string(d5b))
 
 	// PKCS7_PADDING
-	e7b, err := AESCBCEncrypt([]byte("Iloveyiigo"), PKCS7_PADDING, aesKey)
+	e7b, err := AESCBCEncrypt([]byte(plainText), PKCS7_PADDING, key)
 	assert.Nil(t, err)
 
-	d7b, err := AESCBCDecrypt(e7b, PKCS7_PADDING, aesKey)
+	d7b, err := AESCBCDecrypt(e7b, PKCS7_PADDING, key)
 	assert.Nil(t, err)
 
-	assert.Equal(t, "Iloveyiigo", string(d7b))
+	assert.Equal(t, plainText, string(d7b))
+}
+
+func TestAESGCMCrypt(t *testing.T) {
+	key := []byte("AES256Key-32Characters1234567890")
+	nonce := []byte("35f1878f242bd1229a1e6700")
+	plainText := "Iloveyiigo"
+
+	eb, err := AESGCMEncrypt([]byte(plainText), key, nonce)
+	assert.Nil(t, err)
+
+	db, err := AESGCMDecrypt(eb, key, nonce)
+	assert.Nil(t, err)
+
+	assert.Equal(t, plainText, string(db))
 }
 
 func TestRSASign(t *testing.T) {
-	signature, err := RSASignWithSha256([]byte("Iloveyiigo"), privateKey)
+	plainText := "Iloveyiigo"
+
+	signature, err := RSASignWithSha256([]byte(plainText), privateKey)
 
 	assert.Nil(t, err)
-	assert.Nil(t, RSAVerifyWithSha256([]byte("Iloveyiigo"), signature, publicKey))
+	assert.Nil(t, RSAVerifyWithSha256([]byte(plainText), signature, publicKey))
 }
 
 func TestRSACrypt(t *testing.T) {
-	eb, err := RSAEncrypt([]byte("Iloveyiigo"), publicKey)
+	plainText := "Iloveyiigo"
+
+	eb, err := RSAEncrypt([]byte(plainText), publicKey)
 
 	assert.Nil(t, err)
 
 	db, err := RSADecrypt(eb, privateKey)
 
 	assert.Nil(t, err)
-	assert.Equal(t, "Iloveyiigo", string(db))
+	assert.Equal(t, plainText, string(db))
 }
 
 var (

@@ -9,6 +9,7 @@ import (
 	"crypto/rsa"
 	"crypto/sha256"
 	"crypto/x509"
+	"encoding/hex"
 	"encoding/pem"
 	"errors"
 )
@@ -98,6 +99,52 @@ func aesUnPadding(plainText []byte, blockSize int) []byte {
 	}
 
 	return plainText[:(l - unpadding)]
+}
+
+// AESGCMEncrypt AES GCM encrypt
+func AESGCMEncrypt(plainText, key, nonce []byte) ([]byte, error) {
+	nonceHex, err := hex.DecodeString(string(nonce))
+
+	if err != nil {
+		return nil, err
+	}
+
+	block, err := aes.NewCipher(key)
+
+	if err != nil {
+		return nil, err
+	}
+
+	aesgcm, err := cipher.NewGCM(block)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return aesgcm.Seal(nil, nonceHex, plainText, nil), nil
+}
+
+// AESGCMDecrypt AES GCM decrypt
+func AESGCMDecrypt(cipherText, key, nonce []byte) ([]byte, error) {
+	nonceHex, err := hex.DecodeString(string(nonce))
+
+	if err != nil {
+		return nil, err
+	}
+
+	block, err := aes.NewCipher(key)
+
+	if err != nil {
+		return nil, err
+	}
+
+	aesgcm, err := cipher.NewGCM(block)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return aesgcm.Open(nil, nonceHex, cipherText, nil)
 }
 
 // GenerateRSAKey returns rsa private and public key
