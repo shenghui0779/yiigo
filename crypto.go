@@ -25,7 +25,7 @@ const (
 )
 
 // AESCBCEncrypt AES CBC encrypt
-func AESCBCEncrypt(plainText []byte, padding AESPadding, key []byte, iv ...byte) ([]byte, error) {
+func AESCBCEncrypt(plainText []byte, key []byte, padding AESPadding, iv ...byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 
 	if err != nil {
@@ -52,7 +52,7 @@ func AESCBCEncrypt(plainText []byte, padding AESPadding, key []byte, iv ...byte)
 }
 
 // AESCBCDecrypt AES CBC decrypt
-func AESCBCDecrypt(cipherText []byte, padding AESPadding, key []byte, iv ...byte) ([]byte, error) {
+func AESCBCDecrypt(cipherText []byte, key []byte, padding AESPadding, iv ...byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 
 	if err != nil {

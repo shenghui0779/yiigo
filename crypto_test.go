@@ -11,19 +11,19 @@ func TestAESCBCCrypt(t *testing.T) {
 	plainText := "Iloveyiigo"
 
 	// PKCS5_PADDING
-	e5b, err := AESCBCEncrypt([]byte(plainText), PKCS5_PADDING, key)
+	e5b, err := AESCBCEncrypt([]byte(plainText), key, PKCS5_PADDING)
 	assert.Nil(t, err)
 
-	d5b, err := AESCBCDecrypt(e5b, PKCS5_PADDING, key)
+	d5b, err := AESCBCDecrypt(e5b, key, PKCS5_PADDING)
 	assert.Nil(t, err)
 
 	assert.Equal(t, plainText, string(d5b))
 
 	// PKCS7_PADDING
-	e7b, err := AESCBCEncrypt([]byte(plainText), PKCS7_PADDING, key)
+	e7b, err := AESCBCEncrypt([]byte(plainText), key, PKCS7_PADDING)
 	assert.Nil(t, err)
 
-	d7b, err := AESCBCDecrypt(e7b, PKCS7_PADDING, key)
+	d7b, err := AESCBCDecrypt(e7b, key, PKCS7_PADDING)
 	assert.Nil(t, err)
 
 	assert.Equal(t, plainText, string(d7b))
