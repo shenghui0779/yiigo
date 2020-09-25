@@ -7,40 +7,40 @@ import (
 )
 
 func TestAESCBCCrypt(t *testing.T) {
-	aesCrypto, err := NewAESCrypto([]byte("c510be34b0466938eace8edee61255c0"))
-
-	assert.Nil(t, err)
+	aesKey := []byte("c510be34b0466938eace8edee61255c0")
 
 	// PKCS5_PADDING
-	e5b := aesCrypto.CBCEncrypt([]byte("shenghui0779"), PKCS5_PADDING)
-	d5b := aesCrypto.CBCDecrypt(e5b, PKCS5_PADDING)
+	e5b, err := AESCBCEncrypt([]byte("shenghui0779"), PKCS5_PADDING, aesKey)
+	assert.Nil(t, err)
+
+	d5b, err := AESCBCDecrypt(e5b, PKCS5_PADDING, aesKey)
+	assert.Nil(t, err)
 
 	assert.Equal(t, "shenghui0779", string(d5b))
 
 	// PKCS7_PADDING
-	e7b := aesCrypto.CBCEncrypt([]byte("Iloveyiigo"), PKCS7_PADDING)
-	d7b := aesCrypto.CBCDecrypt(e7b, PKCS7_PADDING)
+	e7b, err := AESCBCEncrypt([]byte("Iloveyiigo"), PKCS7_PADDING, aesKey)
+	assert.Nil(t, err)
+
+	d7b, err := AESCBCDecrypt(e7b, PKCS7_PADDING, aesKey)
+	assert.Nil(t, err)
 
 	assert.Equal(t, "Iloveyiigo", string(d7b))
 }
 
 func TestRSASign(t *testing.T) {
-	rsaCrypto := NewRSACrypto(privateKey, publicKey)
-
-	signature, err := rsaCrypto.SignWithSha256([]byte("Iloveyiigo"))
+	signature, err := RSASignWithSha256([]byte("Iloveyiigo"), privateKey)
 
 	assert.Nil(t, err)
-	assert.Nil(t, rsaCrypto.VerifyWithSha256([]byte("Iloveyiigo"), signature))
+	assert.Nil(t, RSAVerifyWithSha256([]byte("Iloveyiigo"), signature, publicKey))
 }
 
 func TestRSACrypt(t *testing.T) {
-	rsaCrypto := NewRSACrypto(privateKey, publicKey)
-
-	eb, err := rsaCrypto.Encrypt([]byte("Iloveyiigo"))
+	eb, err := RSAEncrypt([]byte("Iloveyiigo"), publicKey)
 
 	assert.Nil(t, err)
 
-	db, err := rsaCrypto.Decrypt(eb)
+	db, err := RSADecrypt(eb, privateKey)
 
 	assert.Nil(t, err)
 	assert.Equal(t, "Iloveyiigo", string(db))
