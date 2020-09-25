@@ -24,7 +24,7 @@ const (
 	PKCS7_PADDING AESPadding = "PKCS#7"
 )
 
-// AESCBCEncrypt AES CBC encrypt
+// AESCBCEncrypt aes-cbc encrypt
 func AESCBCEncrypt(plainText []byte, key []byte, padding AESPadding, iv ...byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 
@@ -51,7 +51,7 @@ func AESCBCEncrypt(plainText []byte, key []byte, padding AESPadding, iv ...byte)
 	return cipherText, nil
 }
 
-// AESCBCDecrypt AES CBC decrypt
+// AESCBCDecrypt aes-cbc decrypt
 func AESCBCDecrypt(cipherText []byte, key []byte, padding AESPadding, iv ...byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 
@@ -101,7 +101,7 @@ func aesUnPadding(plainText []byte, blockSize int) []byte {
 	return plainText[:(l - unpadding)]
 }
 
-// AESGCMEncrypt AES GCM encrypt
+// AESGCMEncrypt aes-gcm encrypt
 func AESGCMEncrypt(plainText, key, nonce []byte) ([]byte, error) {
 	nonceHex, err := hex.DecodeString(string(nonce))
 
@@ -124,7 +124,7 @@ func AESGCMEncrypt(plainText, key, nonce []byte) ([]byte, error) {
 	return aesgcm.Seal(nil, nonceHex, plainText, nil), nil
 }
 
-// AESGCMDecrypt AES GCM decrypt
+// AESGCMDecrypt aes-gcm decrypt
 func AESGCMDecrypt(cipherText, key, nonce []byte) ([]byte, error) {
 	nonceHex, err := hex.DecodeString(string(nonce))
 
