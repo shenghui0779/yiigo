@@ -4,16 +4,66 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net"
 	"net/http"
+	"net/url"
 	"time"
+
+	"go.uber.org/zap"
 )
 
 // defaultHTTPTimeout default http request timeout
 const defaultHTTPTimeout = 10 * time.Second
+
+// tlsOptions https tls options
+type tlsOptions struct {
+	rootCAs            [][]byte
+	certificates       []tls.Certificate
+	insecureSkipVerify bool
+}
+
+// TLSOption configures how we set up the https transport
+type TLSOption interface {
+	apply(*tlsOptions)
+}
+
+// funcTLSOption implements tls option
+type funcTLSOption struct {
+	f func(*tlsOptions)
+}
+
+func (fo *funcTLSOption) apply(o *tlsOptions) {
+	fo.f(o)
+}
+
+func newFuncTLSOption(f func(*tlsOptions)) *funcTLSOption {
+	return &funcTLSOption{f: f}
+}
+
+// WithRootCA specifies the `RootCAs` to https transport.
+func WithRootCA(crt []byte) TLSOption {
+	return newFuncTLSOption(func(o *tlsOptions) {
+		o.rootCAs = append(o.rootCAs, crt)
+	})
+}
+
+// WithInsecureSkipVerify specifies the `Certificates` to https transport.
+func WithCertificates(certs ...tls.Certificate) TLSOption {
+	return newFuncTLSOption(func(o *tlsOptions) {
+		o.certificates = certs
+	})
+}
+
+// WithInsecureSkipVerify specifies the `InsecureSkipVerify` to https transport.
+func WithInsecureSkipVerify(b bool) TLSOption {
+	return newFuncTLSOption(func(o *tlsOptions) {
+		o.insecureSkipVerify = b
+	})
+}
 
 // httpClientOptions http client options
 type httpClientOptions struct {
@@ -24,7 +74,8 @@ type httpClientOptions struct {
 	maxIdleConnsPerHost   int
 	maxConnsPerHost       int
 	idleConnTimeout       time.Duration
-	tlsConfig             *tls.Config
+	proxyURL              *url.URL
+	tlsConfig             []TLSOption
 	tlsHandshakeTimeout   time.Duration
 	expectContinueTimeout time.Duration
 	defaultTimeout        time.Duration
@@ -97,10 +148,25 @@ func WithHTTPIdleConnTimeout(d time.Duration) HTTPClientOption {
 	})
 }
 
-// WithHTTPTLSConfig specifies the `TLSClientConfig` to http client.
-func WithHTTPTLSConfig(c *tls.Config) HTTPClientOption {
+// WithHTTPProxy specifies the `Proxy` to http client.
+func WithHTTPProxy(proxyURL string) HTTPClientOption {
 	return newFuncHTTPOption(func(o *httpClientOptions) {
-		o.tlsConfig = c
+		fixedURL, err := url.Parse(proxyURL)
+
+		if err != nil {
+			logger.Error("yiigo: parse proxy url error", zap.Error(err))
+
+			return
+		}
+
+		o.proxyURL = fixedURL
+	})
+}
+
+// WithHTTPTLSConfig specifies the `TLSClientConfig` to http client.
+func WithHTTPTLSConfig(options ...TLSOption) HTTPClientOption {
+	return newFuncHTTPOption(func(o *httpClientOptions) {
+		o.tlsConfig = options
 	})
 }
 
@@ -188,7 +254,7 @@ type HTTPClient struct {
 }
 
 // Get http get request
-func (h *HTTPClient) Get(url string, options ...HTTPRequestOption) ([]byte, error) {
+func (h *HTTPClient) Get(reqURL string, options ...HTTPRequestOption) ([]byte, error) {
 	o := &httpRequestOptions{
 		headers: make(map[string]string),
 		timeout: h.timeout,
@@ -200,7 +266,7 @@ func (h *HTTPClient) Get(url string, options ...HTTPRequestOption) ([]byte, erro
 		}
 	}
 
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest("GET", reqURL, nil)
 
 	if err != nil {
 		return nil, err
@@ -253,7 +319,7 @@ func (h *HTTPClient) Get(url string, options ...HTTPRequestOption) ([]byte, erro
 }
 
 // Post http post request
-func (h *HTTPClient) Post(url string, body []byte, options ...HTTPRequestOption) ([]byte, error) {
+func (h *HTTPClient) Post(reqURL string, body []byte, options ...HTTPRequestOption) ([]byte, error) {
 	o := &httpRequestOptions{
 		headers: make(map[string]string),
 		timeout: h.timeout,
@@ -265,7 +331,7 @@ func (h *HTTPClient) Post(url string, body []byte, options ...HTTPRequestOption)
 		}
 	}
 
-	req, err := http.NewRequest("POST", url, bytes.NewReader(body))
+	req, err := http.NewRequest("POST", reqURL, bytes.NewReader(body))
 
 	if err != nil {
 		return nil, err
@@ -367,9 +433,44 @@ func NewHTTPClient(options ...HTTPClientOption) *HTTPClient {
 		MaxIdleConnsPerHost:   o.maxIdleConnsPerHost,
 		MaxIdleConns:          o.maxIdleConns,
 		IdleConnTimeout:       o.idleConnTimeout,
-		TLSClientConfig:       o.tlsConfig,
 		TLSHandshakeTimeout:   o.tlsHandshakeTimeout,
 		ExpectContinueTimeout: o.expectContinueTimeout,
+	}
+
+	// set proxy
+	if o.proxyURL != nil {
+		t.Proxy = http.ProxyURL(o.proxyURL)
+	}
+
+	// set tls client config
+	if len(o.tlsConfig) > 0 {
+		tlso := new(tlsOptions)
+
+		for _, cfg := range o.tlsConfig {
+			cfg.apply(tlso)
+		}
+
+		tlsCfg := new(tls.Config)
+
+		if len(tlso.rootCAs) > 0 {
+			pool := x509.NewCertPool()
+
+			for _, b := range tlso.rootCAs {
+				pool.AppendCertsFromPEM(b)
+			}
+
+			tlsCfg.RootCAs = pool
+		} else {
+			if tlso.insecureSkipVerify {
+				tlsCfg.InsecureSkipVerify = true
+			}
+		}
+
+		if len(tlso.certificates) > 0 {
+			tlsCfg.Certificates = tlso.certificates
+		}
+
+		t.TLSClientConfig = tlsCfg
 	}
 
 	c := &HTTPClient{
@@ -383,11 +484,11 @@ func NewHTTPClient(options ...HTTPClientOption) *HTTPClient {
 }
 
 // HTTPGet http get request
-func HTTPGet(url string, options ...HTTPRequestOption) ([]byte, error) {
-	return defaultHTTPClient.Get(url, options...)
+func HTTPGet(reqURL string, options ...HTTPRequestOption) ([]byte, error) {
+	return defaultHTTPClient.Get(reqURL, options...)
 }
 
 // HTTPPost http post request
-func HTTPPost(url string, body []byte, options ...HTTPRequestOption) ([]byte, error) {
-	return defaultHTTPClient.Post(url, body, options...)
+func HTTPPost(reqURL string, body []byte, options ...HTTPRequestOption) ([]byte, error) {
+	return defaultHTTPClient.Post(reqURL, body, options...)
 }

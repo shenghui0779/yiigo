@@ -190,15 +190,11 @@ conn.Do("SET", "test_key", "hello world")
 #### HTTP
 
 ```go
-client, err := yiigo.NewHTTPClient(
+client := yiigo.NewHTTPClient(
     yiigo.WithHTTPMaxIdleConnsPerHost(1000),
     yiigo.WithHTTPMaxConnsPerHost(1000),
     yiigo.WithHTTPDefaultTimeout(time.Second*10),
 )
-
-if err != nil {
-    log.Fatal(err)
-}
 
 b, err := client.Get("url...", yiigo.WithRequestTimeout(5*time.Second))
 
@@ -230,35 +226,67 @@ builder := yiigo.NewSQLBuilder(yiigo.MySQL)
 - Query
 
 ```go
-builder.Table("user").Where("id = ?", 1).ToQuery()
+builder.Wrap(
+    yiigo.Table("user"),
+    yiigo.Where("id = ?", 1),
+).ToQuery()
 // SELECT * FROM user WHERE id = ?
 // [1]
 
-builder.Table("user").Where("name = ? AND age > ?", "shenghui0779", 20).ToQuery()
+builder.Wrap(
+    yiigo.Table("user"),
+    yiigo.Where("name = ? AND age > ?", "shenghui0779", 20),
+).ToQuery()
 // SELECT * FROM user WHERE name = ? AND age > ?
 // [shenghui0779 20]
 
-builder.Table("user").Where("age IN (?)", []int{20, 30}).ToQuery()
+builder.Wrap(
+    yiigo.Table("user"),
+    yiigo.Where("age IN (?)", []int{20, 30}),
+).ToQuery()
 // SELECT * FROM user WHERE age IN (?, ?)
 // [20 30]
 
-builder.Table("user").Select("id", "name", "age").Where("id = ?", 1).ToQuery()
+builder.Wrap(
+    yiigo.Table("user"),
+    yiigo.Select("id", "name", "age"),
+    yiigo.Where("id = ?", 1),
+).ToQuery()
 // SELECT id, name, age FROM user WHERE id = ?
 // [1]
 
-builder.Table("user").Distinct("name").Where("id = ?", 1).ToQuery()
+builder.Wrap(
+    yiigo.Table("user"),
+    yiigo.Distinct("name"),
+    yiigo.Where("id = ?", 1),
+).ToQuery()
 // SELECT DISTINCT name FROM user WHERE id = ?
 // [1]
 
-builder.Table("user").LeftJoin("address", "user.id = address.user_id").Where("user.id = ?", 1).ToQuery()
+builder.Wrap(
+    yiigo.Table("user"),
+    yiigo.LeftJoin("address", "user.id = address.user_id"),
+    yiigo.Where("user.id = ?", 1),
+).ToQuery()
 // SELECT * FROM user LEFT JOIN address ON user.id = address.user_id WHERE user.id = ?
 // [1]
 
-builder.Table("address").Select("user_id", "COUNT(*) AS total").Group("user_id").Having("user_id = ?", 1).ToQuery()
+builder.Wrap(
+    yiigo.Table("address"),
+    yiigo.Select("user_id", "COUNT(*) AS total"),
+    yiigo.GroupBy("user_id"),
+    yiigo.Having("user_id = ?", 1),
+).ToQuery()
 // SELECT user_id, COUNT(*) AS total FROM address GROUP BY user_id HAVING user_id = ?
 // [1]
 
-builder.Table("user").Where("age > ?", 20).Order("id DESC").Offset(5).Limit(10).ToQuery()
+builder.Wrap(
+    yiigo.Table("user"),
+    yiigo.Where("age > ?", 20),
+    yiigo.OrderBy("id DESC"),
+    yiigo.Offset(5),
+    yiigo.Limit(10),
+).ToQuery()
 // SELECT * FROM user WHERE age > ? ORDER BY id DESC OFFSET 5 LIMIT 10
 // [20]
 ```
@@ -266,7 +294,7 @@ builder.Table("user").Where("age > ?", 20).Order("id DESC").Offset(5).Limit(10).
 - Insert
 
 ```go
-builder.Table("user").ToInsert(yiigo.X{
+builder.Wrap(yiigo.Table("user")).ToInsert(yiigo.X{
     "name": "shenghui0779",
     "age":  29,
 })
@@ -277,7 +305,7 @@ builder.Table("user").ToInsert(yiigo.X{
 - Batch Insert
 
 ```go
-builder.Table("user").ToBatchInsert([]yiigo.X{
+builder.Wrap(yiigo.Table("user")).ToBatchInsert([]yiigo.X{
     {
         "name": "shenghui0779",
         "age":  29,
@@ -294,14 +322,20 @@ builder.Table("user").ToBatchInsert([]yiigo.X{
 - Update
 
 ```go
-builder.Table("user").Where("id = ?", 1).ToUpdate(yiigo.X{
+builder.Wrap(
+    yiigo.Table("user"),
+    yiigo.Where("id = ?", 1),
+).ToUpdate(yiigo.X{
     "name": "shenghui0779",
     "age":  29,
 })
 // UPDATE user SET name = ?, age = ? WHERE id = ?
 // [shenghui0779 29 1]
 
-builder.Table("product").Where("id = ?", 1).ToUpdate(yiigo.X{
+builder.Wrap(
+    yiigo.Table("product"),
+    yiigo.Where("id = ?", 1),
+).ToUpdate(yiigo.X{
     "price": yiigo.Clause("price * ? + ?", 2, 100),
 })
 // UPDATE product SET price = price * ? + ? WHERE id = ?
@@ -311,7 +345,10 @@ builder.Table("product").Where("id = ?", 1).ToUpdate(yiigo.X{
 - Delete
 
 ```go
-builder.Where("id = ?", 1).ToDelete()
+builder.Wrap(
+    yiigo.Table("user"),
+    yiigo.Where("id = ?", 1),
+).ToDelete()
 // DELETE FROM user WHERE id = ?
 // [1]
 ```
