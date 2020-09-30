@@ -59,9 +59,9 @@ func WithCertificates(certs ...tls.Certificate) TLSOption {
 }
 
 // WithInsecureSkipVerify specifies the `InsecureSkipVerify` to https transport.
-func WithInsecureSkipVerify(b bool) TLSOption {
+func WithInsecureSkipVerify() TLSOption {
 	return newFuncTLSOption(func(o *tlsOptions) {
-		o.insecureSkipVerify = b
+		o.insecureSkipVerify = true
 	})
 }
 
@@ -234,9 +234,9 @@ func WithRequestCookies(cookies ...*http.Cookie) HTTPRequestOption {
 // WithRequestClose specifies close the connection after
 // replying to this request (for servers) or after sending this
 // request and reading its response (for clients).
-func WithRequestClose(b bool) HTTPRequestOption {
+func WithRequestClose() HTTPRequestOption {
 	return newFuncHTTPRequestOption(func(o *httpRequestOptions) {
-		o.close = b
+		o.close = true
 	})
 }
 
@@ -460,14 +460,14 @@ func NewHTTPClient(options ...HTTPClientOption) *HTTPClient {
 			}
 
 			tlsCfg.RootCAs = pool
-		} else {
-			if tlso.insecureSkipVerify {
-				tlsCfg.InsecureSkipVerify = true
-			}
 		}
 
 		if len(tlso.certificates) > 0 {
 			tlsCfg.Certificates = tlso.certificates
+		}
+
+		if tlso.insecureSkipVerify {
+			tlsCfg.InsecureSkipVerify = true
 		}
 
 		t.TLSClientConfig = tlsCfg
