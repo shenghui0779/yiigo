@@ -12,6 +12,7 @@ import (
 	"encoding/hex"
 	"encoding/pem"
 	"errors"
+	"io"
 )
 
 // AESPadding aes padding
@@ -145,6 +146,16 @@ func AESGCMDecrypt(cipherText, key, nonce []byte) ([]byte, error) {
 	}
 
 	return aesgcm.Open(nil, nonceHex, cipherText, nil)
+}
+
+// AESGCMNonce returns aes-gcm nonce
+func AESGCMNonce() string {
+	// Never use more than 2^32 random nonces with a given key because of the risk of a repeat.
+	nonce := make([]byte, 12)
+
+	io.ReadFull(rand.Reader, nonce)
+
+	return hex.EncodeToString(nonce)
 }
 
 // GenerateRSAKey returns rsa private and public key

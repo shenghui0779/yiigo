@@ -31,7 +31,7 @@ func TestAESCBCCrypt(t *testing.T) {
 
 func TestAESGCMCrypt(t *testing.T) {
 	key := []byte("AES256Key-32Characters1234567890")
-	nonce := []byte("35f1878f242bd1229a1e6700")
+	nonce := []byte(AESGCMNonce())
 	plainText := "Iloveyiigo"
 
 	eb, err := AESGCMEncrypt([]byte(plainText), key, nonce)
