@@ -67,15 +67,11 @@
 //
 // HTTP
 //
-//    client, err := yiigo.NewHTTPClient(
+//    client := yiigo.NewHTTPClient(
 //        yiigo.WithHTTPMaxIdleConnsPerHost(1000),
 //        yiigo.WithHTTPMaxConnsPerHost(1000),
 //        yiigo.WithHTTPDefaultTimeout(time.Second*10),
 //    )
-//
-//    if err != nil {
-//        log.Fatal(err)
-//    }
 //
 //    b, err := client.Get("url...", yiigo.WithRequestTimeout(5*time.Second))
 //
