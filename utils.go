@@ -225,7 +225,7 @@ func VersionCompare(rangeVer, curVer string) bool {
 		constraints, err := version.NewConstraint(strings.Join(andVers, ","))
 
 		if err != nil {
-			logger.Error("version compared error", zap.Error(err), zap.String("range_version", rangeVer), zap.String("cur_version", curVer))
+			logger.Error("yiigo: version compared error", zap.Error(err), zap.String("range_version", rangeVer), zap.String("cur_version", curVer))
 
 			return true
 		}
