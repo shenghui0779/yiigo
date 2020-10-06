@@ -5,14 +5,14 @@ go 1.13
 require (
 	github.com/go-playground/locales v0.13.0
 	github.com/go-playground/universal-translator v0.17.0
-	github.com/go-playground/validator/v10 v10.3.0
+	github.com/go-playground/validator/v10 v10.4.0
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/gomodule/redigo v1.8.2
 	github.com/hashicorp/go-version v1.2.1
 	github.com/jinzhu/gorm v1.9.16
 	github.com/jmoiron/sqlx v1.2.1-0.20200615141059-0794cb1f47ee
 	github.com/lib/pq v1.8.0
-	github.com/mattn/go-sqlite3 v1.14.3
+	github.com/mattn/go-sqlite3 v1.14.4
 	github.com/nsqio/go-nsq v1.0.8
 	github.com/pelletier/go-toml v1.8.1
 	github.com/philchia/agollo/v3 v3.1.2
