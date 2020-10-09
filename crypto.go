@@ -9,10 +9,8 @@ import (
 	"crypto/rsa"
 	"crypto/sha256"
 	"crypto/x509"
-	"encoding/hex"
 	"encoding/pem"
 	"errors"
-	"io"
 )
 
 // AESPadding aes padding
@@ -95,21 +93,58 @@ func aesUnPadding(plainText []byte, blockSize int) []byte {
 	l := len(plainText)
 	unpadding := int(plainText[l-1])
 
-	if unpadding < 0 || unpadding > blockSize {
+	if unpadding < 1 || unpadding > blockSize {
 		unpadding = 0
 	}
 
 	return plainText[:(l - unpadding)]
 }
 
-// AESGCMEncrypt aes-gcm encrypt
-func AESGCMEncrypt(plainText, key, nonce []byte) ([]byte, error) {
-	nonceHex, err := hex.DecodeString(string(nonce))
+// AESCFBEncrypt aes-cfb encrypt
+func AESCFBEncrypt(plainText, key []byte, iv ...byte) ([]byte, error) {
+	block, err := aes.NewCipher(key)
 
 	if err != nil {
 		return nil, err
 	}
 
+	cipherText := make([]byte, block.BlockSize()+len(plainText))
+
+	if len(iv) == 0 {
+		iv = key[:block.BlockSize()]
+	}
+
+	copy(cipherText[:block.BlockSize()], iv)
+
+	stream := cipher.NewCFBEncrypter(block, iv)
+	stream.XORKeyStream(cipherText[block.BlockSize():], plainText)
+
+	return cipherText, nil
+}
+
+// AESCFBDecrypt aes-cfb decrypt
+func AESCFBDecrypt(cipherText, key []byte) ([]byte, error) {
+	block, err := aes.NewCipher(key)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if len(cipherText) < block.BlockSize() {
+		return nil, errors.New("yiigo: ciphertext too short")
+	}
+
+	iv := cipherText[:block.BlockSize()]
+	cipherText = cipherText[block.BlockSize():]
+
+	stream := cipher.NewCFBDecrypter(block, iv)
+	stream.XORKeyStream(cipherText, cipherText)
+
+	return cipherText, nil
+}
+
+// AESGCMEncrypt aes-gcm encrypt
+func AESGCMEncrypt(plainText, key []byte, nonce ...byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 
 	if err != nil {
@@ -122,17 +157,15 @@ func AESGCMEncrypt(plainText, key, nonce []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	return aesgcm.Seal(nil, nonceHex, plainText, nil), nil
+	if len(nonce) == 0 {
+		nonce = key[:12]
+	}
+
+	return aesgcm.Seal(nil, nonce, plainText, nil), nil
 }
 
 // AESGCMDecrypt aes-gcm decrypt
-func AESGCMDecrypt(cipherText, key, nonce []byte) ([]byte, error) {
-	nonceHex, err := hex.DecodeString(string(nonce))
-
-	if err != nil {
-		return nil, err
-	}
-
+func AESGCMDecrypt(cipherText, key []byte, nonce ...byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 
 	if err != nil {
@@ -145,17 +178,11 @@ func AESGCMDecrypt(cipherText, key, nonce []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	return aesgcm.Open(nil, nonceHex, cipherText, nil)
-}
+	if len(nonce) == 0 {
+		nonce = key[:12]
+	}
 
-// AESGCMNonce returns aes-gcm nonce
-func AESGCMNonce() string {
-	// Never use more than 2^32 random nonces with a given key because of the risk of a repeat.
-	nonce := make([]byte, 12)
-
-	io.ReadFull(rand.Reader, nonce)
-
-	return hex.EncodeToString(nonce)
+	return aesgcm.Open(nil, nonce, cipherText, nil)
 }
 
 // GenerateRSAKey returns rsa private and public key

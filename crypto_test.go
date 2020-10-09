@@ -6,8 +6,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAESCBCCrypt(t *testing.T) {
-	key := []byte("c510be34b0466938eace8edee61255c0")
+func TestAESCBCCrypto(t *testing.T) {
+	key := []byte("AES256Key-32Characters1234567890")
 	plainText := "Iloveyiigo"
 
 	// PKCS5_PADDING
@@ -29,15 +29,27 @@ func TestAESCBCCrypt(t *testing.T) {
 	assert.Equal(t, plainText, string(d7b))
 }
 
-func TestAESGCMCrypt(t *testing.T) {
+func TestAESCFBCrypto(t *testing.T) {
 	key := []byte("AES256Key-32Characters1234567890")
-	nonce := []byte(AESGCMNonce())
 	plainText := "Iloveyiigo"
 
-	eb, err := AESGCMEncrypt([]byte(plainText), key, nonce)
+	eb, err := AESCFBEncrypt([]byte(plainText), key)
 	assert.Nil(t, err)
 
-	db, err := AESGCMDecrypt(eb, key, nonce)
+	db, err := AESCFBDecrypt(eb, key)
+	assert.Nil(t, err)
+
+	assert.Equal(t, plainText, string(db))
+}
+
+func TestAESGCMCrypto(t *testing.T) {
+	key := []byte("AES256Key-32Characters1234567890")
+	plainText := "Iloveyiigo"
+
+	eb, err := AESGCMEncrypt([]byte(plainText), key)
+	assert.Nil(t, err)
+
+	db, err := AESGCMDecrypt(eb, key)
 	assert.Nil(t, err)
 
 	assert.Equal(t, plainText, string(db))
@@ -52,7 +64,7 @@ func TestRSASign(t *testing.T) {
 	assert.Nil(t, RSAVerifyWithSha256([]byte(plainText), signature, publicKey))
 }
 
-func TestRSACrypt(t *testing.T) {
+func TestRSACrypto(t *testing.T) {
 	plainText := "Iloveyiigo"
 
 	eb, err := RSAEncrypt([]byte(plainText), publicKey)
