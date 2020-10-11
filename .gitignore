@@ -2,3 +2,5 @@
 .idea
 vendor
 yiigo.toml
+logs
+*.log

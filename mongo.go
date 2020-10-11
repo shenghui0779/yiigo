@@ -13,12 +13,15 @@ import (
 	"go.uber.org/zap"
 )
 
+// MongoMode indicates the user's preference on reads.
+type MongoMode string
+
 const (
-	Primary            = "primary"             // Default mode. All operations read from the current replica set primary.
-	PrimaryPreferred   = "primary_preferred"   // Read from the primary if available. Read from the secondary otherwise.
-	Secondary          = "secondary"           // Read from one of the nearest secondary members of the replica set.
-	SecondaryPreferred = "secondary_preferred" // Read from one of the nearest secondaries if available. Read from primary otherwise.
-	Nearest            = "nearest"             // Read from one of the nearest members, irrespective of it being primary or secondary.
+	Primary            MongoMode = "primary"             // Default mode. All operations read from the current replica set primary.
+	PrimaryPreferred   MongoMode = "primary_preferred"   // Read from the primary if available. Read from the secondary otherwise.
+	Secondary          MongoMode = "secondary"           // Read from one of the nearest secondary members of the replica set.
+	SecondaryPreferred MongoMode = "secondary_preferred" // Read from one of the nearest secondaries if available. Read from primary otherwise.
+	Nearest            MongoMode = "nearest"             // Read from one of the nearest members, irrespective of it being primary or secondary.
 )
 
 type mongoConfig struct {
@@ -45,7 +48,7 @@ func mongoDial(cfg *mongoConfig) (*mongo.Client, error) {
 	clientOptions.SetMaxConnIdleTime(time.Duration(cfg.MaxConnIdleTime) * time.Second)
 
 	if cfg.Mode != "" {
-		switch cfg.Mode {
+		switch MongoMode(cfg.Mode) {
 		case Primary:
 			clientOptions.SetReadPreference(readpref.Primary())
 		case PrimaryPreferred:
@@ -56,6 +59,8 @@ func mongoDial(cfg *mongoConfig) (*mongo.Client, error) {
 			clientOptions.SetReadPreference(readpref.SecondaryPreferred())
 		case Nearest:
 			clientOptions.SetReadPreference(readpref.Nearest())
+		default:
+			return nil, fmt.Errorf("yiigo: unknown read preference %s", cfg.Mode)
 		}
 	}
 
