@@ -1,6 +1,7 @@
 package yiigo
 
 import (
+	"crypto/aes"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -8,22 +9,25 @@ import (
 
 func TestAESCBCCrypto(t *testing.T) {
 	key := []byte("AES256Key-32Characters1234567890")
+	iv := key[:aes.BlockSize]
 	plainText := "Iloveyiigo"
 
+	crypto := NewAESCBCCrypto(key, iv)
+
 	// PKCS5_PADDING
-	e5b, err := AESCBCEncrypt([]byte(plainText), key, PKCS5_PADDING)
+	e5b, err := crypto.Encrypt([]byte(plainText), PKCS5)
 	assert.Nil(t, err)
 
-	d5b, err := AESCBCDecrypt(e5b, key, PKCS5_PADDING)
+	d5b, err := crypto.Decrypt(e5b, PKCS5)
 	assert.Nil(t, err)
 
 	assert.Equal(t, plainText, string(d5b))
 
 	// PKCS7_PADDING
-	e7b, err := AESCBCEncrypt([]byte(plainText), key, PKCS7_PADDING)
+	e7b, err := crypto.Encrypt([]byte(plainText), PKCS7)
 	assert.Nil(t, err)
 
-	d7b, err := AESCBCDecrypt(e7b, key, PKCS7_PADDING)
+	d7b, err := crypto.Decrypt(e7b, PKCS7)
 	assert.Nil(t, err)
 
 	assert.Equal(t, plainText, string(d7b))
@@ -31,12 +35,47 @@ func TestAESCBCCrypto(t *testing.T) {
 
 func TestAESCFBCrypto(t *testing.T) {
 	key := []byte("AES256Key-32Characters1234567890")
+	iv := key[:aes.BlockSize]
 	plainText := "Iloveyiigo"
 
-	eb, err := AESCFBEncrypt([]byte(plainText), key)
+	crypto := NewAESCFBCrypto(key, iv)
+
+	eb, err := crypto.Encrypt([]byte(plainText))
 	assert.Nil(t, err)
 
-	db, err := AESCFBDecrypt(eb, key)
+	db, err := crypto.Decrypt(eb)
+	assert.Nil(t, err)
+
+	assert.Equal(t, plainText, string(db))
+}
+
+func TestAESOFBCrypto(t *testing.T) {
+	key := []byte("AES256Key-32Characters1234567890")
+	iv := key[:aes.BlockSize]
+	plainText := "Iloveyiigo"
+
+	crypto := NewAESOFBCrypto(key, iv)
+
+	eb, err := crypto.Encrypt([]byte(plainText))
+	assert.Nil(t, err)
+
+	db, err := crypto.Decrypt(eb)
+	assert.Nil(t, err)
+
+	assert.Equal(t, plainText, string(db))
+}
+
+func TestAESCTRCrypto(t *testing.T) {
+	key := []byte("AES256Key-32Characters1234567890")
+	iv := key[:aes.BlockSize]
+	plainText := "Iloveyiigo"
+
+	crypto := NewAESCTRCrypto(key, iv)
+
+	eb, err := crypto.Encrypt([]byte(plainText))
+	assert.Nil(t, err)
+
+	db, err := crypto.Decrypt(eb)
 	assert.Nil(t, err)
 
 	assert.Equal(t, plainText, string(db))
@@ -44,12 +83,15 @@ func TestAESCFBCrypto(t *testing.T) {
 
 func TestAESGCMCrypto(t *testing.T) {
 	key := []byte("AES256Key-32Characters1234567890")
+	nonce := key[:12]
 	plainText := "Iloveyiigo"
 
-	eb, err := AESGCMEncrypt([]byte(plainText), key)
+	crypto := NewAESGCMCrypto(key, nonce)
+
+	eb, err := crypto.Encrypt([]byte(plainText))
 	assert.Nil(t, err)
 
-	db, err := AESGCMDecrypt(eb, key)
+	db, err := crypto.Decrypt(eb)
 	assert.Nil(t, err)
 
 	assert.Equal(t, plainText, string(db))

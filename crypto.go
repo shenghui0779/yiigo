@@ -13,71 +13,85 @@ import (
 	"errors"
 )
 
-// AESPadding aes padding
-type AESPadding string
+// AESPaddingMode aes padding mode
+type AESPaddingMode string
 
 const (
-	// PKCS5_PADDING PKCS#5 padding
-	PKCS5_PADDING AESPadding = "PKCS#5"
-	// PKCS7_PADDING PKCS#7 padding
-	PKCS7_PADDING AESPadding = "PKCS#7"
+	// PKCS5 PKCS#5 padding mode
+	PKCS5 AESPaddingMode = "PKCS#5"
+	// PKCS7 PKCS#7 padding mode
+	PKCS7 AESPaddingMode = "PKCS#7"
 )
 
-// AESCBCEncrypt aes-cbc encrypt
-func AESCBCEncrypt(plainText []byte, key []byte, padding AESPadding, iv ...byte) ([]byte, error) {
-	block, err := aes.NewCipher(key)
+// AESCBCCrypto aes-cbc crypto
+type AESCBCCrypto struct {
+	key []byte
+	iv  []byte
+}
+
+// NewAESCBCCrypto returns new aes-cbc crypto
+func NewAESCBCCrypto(key, iv []byte) *AESCBCCrypto {
+	return &AESCBCCrypto{
+		key: key,
+		iv:  iv,
+	}
+}
+
+// Encrypt aes-cbc encrypt
+func (c *AESCBCCrypto) Encrypt(plainText []byte, mode AESPaddingMode) ([]byte, error) {
+	block, err := aes.NewCipher(c.key)
 
 	if err != nil {
 		return nil, err
 	}
 
-	switch padding {
-	case PKCS5_PADDING:
-		plainText = aesPadding(plainText, block.BlockSize())
-	case PKCS7_PADDING:
-		plainText = aesPadding(plainText, len(key))
+	if len(c.iv) != block.BlockSize() {
+		return nil, errors.New("yiigo: IV length must equal block size")
+	}
+
+	switch mode {
+	case PKCS5:
+		plainText = c.padding(plainText, block.BlockSize())
+	case PKCS7:
+		plainText = c.padding(plainText, len(c.key))
 	}
 
 	cipherText := make([]byte, len(plainText))
 
-	if len(iv) == 0 {
-		iv = key[:block.BlockSize()]
-	}
-
-	blockMode := cipher.NewCBCEncrypter(block, iv)
+	blockMode := cipher.NewCBCEncrypter(block, c.iv)
 	blockMode.CryptBlocks(cipherText, plainText)
 
 	return cipherText, nil
 }
 
-// AESCBCDecrypt aes-cbc decrypt
-func AESCBCDecrypt(cipherText []byte, key []byte, padding AESPadding, iv ...byte) ([]byte, error) {
-	block, err := aes.NewCipher(key)
+// Decrypt aes-cbc decrypt
+func (c *AESCBCCrypto) Decrypt(cipherText []byte, mode AESPaddingMode) ([]byte, error) {
+	block, err := aes.NewCipher(c.key)
 
 	if err != nil {
 		return nil, err
 	}
 
-	plainText := make([]byte, len(cipherText))
-
-	if len(iv) == 0 {
-		iv = key[:block.BlockSize()]
+	if len(c.iv) != block.BlockSize() {
+		return nil, errors.New("yiigo: IV length must equal block size")
 	}
 
-	blockMode := cipher.NewCBCDecrypter(block, iv)
+	plainText := make([]byte, len(cipherText))
+
+	blockMode := cipher.NewCBCDecrypter(block, c.iv)
 	blockMode.CryptBlocks(plainText, cipherText)
 
-	switch padding {
-	case PKCS5_PADDING:
-		plainText = aesUnPadding(plainText, block.BlockSize())
-	case PKCS7_PADDING:
-		plainText = aesUnPadding(plainText, len(key))
+	switch mode {
+	case PKCS5:
+		plainText = c.unpadding(plainText, block.BlockSize())
+	case PKCS7:
+		plainText = c.unpadding(plainText, len(c.key))
 	}
 
 	return plainText, nil
 }
 
-func aesPadding(cipherText []byte, blockSize int) []byte {
+func (c *AESCBCCrypto) padding(cipherText []byte, blockSize int) []byte {
 	padding := blockSize - len(cipherText)%blockSize
 
 	if padding == 0 {
@@ -89,7 +103,7 @@ func aesPadding(cipherText []byte, blockSize int) []byte {
 	return append(cipherText, padText...)
 }
 
-func aesUnPadding(plainText []byte, blockSize int) []byte {
+func (c *AESCBCCrypto) unpadding(plainText []byte, blockSize int) []byte {
 	l := len(plainText)
 	unpadding := int(plainText[l-1])
 
@@ -100,52 +114,185 @@ func aesUnPadding(plainText []byte, blockSize int) []byte {
 	return plainText[:(l - unpadding)]
 }
 
-// AESCFBEncrypt aes-cfb encrypt
-func AESCFBEncrypt(plainText, key []byte, iv ...byte) ([]byte, error) {
-	block, err := aes.NewCipher(key)
+// AESCFBCrypto aes-cfb crypto
+type AESCFBCrypto struct {
+	key []byte
+	iv  []byte
+}
+
+// NewAESCFBCrypto returns new aes-cfb crypto
+func NewAESCFBCrypto(key, iv []byte) *AESCFBCrypto {
+	return &AESCFBCrypto{
+		key: key,
+		iv:  iv,
+	}
+}
+
+// Encrypt aes-cfb encrypt
+func (c *AESCFBCrypto) Encrypt(plainText []byte) ([]byte, error) {
+	block, err := aes.NewCipher(c.key)
 
 	if err != nil {
 		return nil, err
 	}
 
-	cipherText := make([]byte, block.BlockSize()+len(plainText))
-
-	if len(iv) == 0 {
-		iv = key[:block.BlockSize()]
+	if len(c.iv) != block.BlockSize() {
+		return nil, errors.New("yiigo: IV length must equal block size")
 	}
 
-	copy(cipherText[:block.BlockSize()], iv)
+	cipherText := make([]byte, len(plainText))
 
-	stream := cipher.NewCFBEncrypter(block, iv)
-	stream.XORKeyStream(cipherText[block.BlockSize():], plainText)
+	stream := cipher.NewCFBEncrypter(block, c.iv)
+	stream.XORKeyStream(cipherText, plainText)
 
 	return cipherText, nil
 }
 
-// AESCFBDecrypt aes-cfb decrypt
-func AESCFBDecrypt(cipherText, key []byte) ([]byte, error) {
-	block, err := aes.NewCipher(key)
+// Decrypt aes-cfb decrypt
+func (c *AESCFBCrypto) Decrypt(cipherText []byte) ([]byte, error) {
+	block, err := aes.NewCipher(c.key)
 
 	if err != nil {
 		return nil, err
 	}
 
-	if len(cipherText) < block.BlockSize() {
-		return nil, errors.New("yiigo: ciphertext too short")
+	if len(c.iv) != block.BlockSize() {
+		return nil, errors.New("yiigo: IV length must equal block size")
 	}
 
-	iv := cipherText[:block.BlockSize()]
-	cipherText = cipherText[block.BlockSize():]
+	plainText := make([]byte, len(cipherText))
 
-	stream := cipher.NewCFBDecrypter(block, iv)
-	stream.XORKeyStream(cipherText, cipherText)
+	stream := cipher.NewCFBDecrypter(block, c.iv)
+	stream.XORKeyStream(plainText, cipherText)
+
+	return plainText, nil
+}
+
+// AESCTRCrypto aes-ctr crypto
+type AESCTRCrypto struct {
+	key []byte
+	iv  []byte
+}
+
+// AESOFBCrypto aes-ofb crypto
+type AESOFBCrypto struct {
+	key []byte
+	iv  []byte
+}
+
+// NewAESOFBCrypto returns new aes-ofb crypto
+func NewAESOFBCrypto(key, iv []byte) *AESOFBCrypto {
+	return &AESOFBCrypto{
+		key: key,
+		iv:  iv,
+	}
+}
+
+// Encrypt aes-ofb encrypt
+func (c *AESOFBCrypto) Encrypt(plainText []byte) ([]byte, error) {
+	block, err := aes.NewCipher(c.key)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if len(c.iv) != block.BlockSize() {
+		return nil, errors.New("yiigo: IV length must equal block size")
+	}
+
+	cipherText := make([]byte, len(plainText))
+
+	stream := cipher.NewOFB(block, c.iv)
+	stream.XORKeyStream(cipherText, plainText)
 
 	return cipherText, nil
 }
 
-// AESGCMEncrypt aes-gcm encrypt
-func AESGCMEncrypt(plainText, key []byte, nonce ...byte) ([]byte, error) {
-	block, err := aes.NewCipher(key)
+// Decrypt aes-ofb decrypt
+func (c *AESOFBCrypto) Decrypt(cipherText []byte) ([]byte, error) {
+	block, err := aes.NewCipher(c.key)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if len(c.iv) != block.BlockSize() {
+		return nil, errors.New("yiigo: IV length must equal block size")
+	}
+
+	plainText := make([]byte, len(cipherText))
+
+	stream := cipher.NewOFB(block, c.iv)
+	stream.XORKeyStream(plainText, cipherText)
+
+	return plainText, nil
+}
+
+// NewAESCTRCrypto returns new aes-ctr crypto
+func NewAESCTRCrypto(key, iv []byte) *AESCTRCrypto {
+	return &AESCTRCrypto{
+		key: key,
+		iv:  iv,
+	}
+}
+
+// Encrypt aes-ctr encrypt
+func (c *AESCTRCrypto) Encrypt(plainText []byte) ([]byte, error) {
+	block, err := aes.NewCipher(c.key)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if len(c.iv) != block.BlockSize() {
+		return nil, errors.New("yiigo: IV length must equal block size")
+	}
+
+	cipherText := make([]byte, len(plainText))
+
+	stream := cipher.NewCTR(block, c.iv)
+	stream.XORKeyStream(cipherText, plainText)
+
+	return cipherText, nil
+}
+
+// Decrypt aes-ctr decrypt
+func (c *AESCTRCrypto) Decrypt(cipherText []byte) ([]byte, error) {
+	block, err := aes.NewCipher(c.key)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if len(c.iv) != block.BlockSize() {
+		return nil, errors.New("yiigo: IV length must equal block size")
+	}
+
+	plainText := make([]byte, len(cipherText))
+
+	stream := cipher.NewCTR(block, c.iv)
+	stream.XORKeyStream(plainText, cipherText)
+
+	return plainText, nil
+}
+
+// AESGCMCrypto aes-gcm crypto
+type AESGCMCrypto struct {
+	key   []byte
+	nonce []byte
+}
+
+// NewAESGCMCrypto returns new aes-gcm crypto
+func NewAESGCMCrypto(key, nonce []byte) *AESGCMCrypto {
+	return &AESGCMCrypto{
+		key:   key,
+		nonce: nonce,
+	}
+}
+
+// Encrypt aes-gcm encrypt
+func (c *AESGCMCrypto) Encrypt(plainText []byte) ([]byte, error) {
+	block, err := aes.NewCipher(c.key)
 
 	if err != nil {
 		return nil, err
@@ -157,16 +304,16 @@ func AESGCMEncrypt(plainText, key []byte, nonce ...byte) ([]byte, error) {
 		return nil, err
 	}
 
-	if len(nonce) == 0 {
-		nonce = key[:12]
+	if len(c.nonce) != aesgcm.NonceSize() {
+		return nil, errors.New("yiigo: Nonce length must equal gcm standard nonce size")
 	}
 
-	return aesgcm.Seal(nil, nonce, plainText, nil), nil
+	return aesgcm.Seal(nil, c.nonce, plainText, nil), nil
 }
 
-// AESGCMDecrypt aes-gcm decrypt
-func AESGCMDecrypt(cipherText, key []byte, nonce ...byte) ([]byte, error) {
-	block, err := aes.NewCipher(key)
+// Decrypt aes-gcm decrypt
+func (c *AESGCMCrypto) Decrypt(cipherText []byte) ([]byte, error) {
+	block, err := aes.NewCipher(c.key)
 
 	if err != nil {
 		return nil, err
@@ -178,11 +325,11 @@ func AESGCMDecrypt(cipherText, key []byte, nonce ...byte) ([]byte, error) {
 		return nil, err
 	}
 
-	if len(nonce) == 0 {
-		nonce = key[:12]
+	if len(c.nonce) != aesgcm.NonceSize() {
+		return nil, errors.New("yiigo: Nonce length must equal gcm standard nonce size")
 	}
 
-	return aesgcm.Open(nil, nonce, cipherText, nil)
+	return aesgcm.Open(nil, c.nonce, cipherText, nil)
 }
 
 // GenerateRSAKey returns rsa private and public key
