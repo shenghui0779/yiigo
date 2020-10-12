@@ -168,12 +168,6 @@ func (c *AESCFBCrypto) Decrypt(cipherText []byte) ([]byte, error) {
 	return plainText, nil
 }
 
-// AESCTRCrypto aes-ctr crypto
-type AESCTRCrypto struct {
-	key []byte
-	iv  []byte
-}
-
 // AESOFBCrypto aes-ofb crypto
 type AESOFBCrypto struct {
 	key []byte
@@ -226,6 +220,12 @@ func (c *AESOFBCrypto) Decrypt(cipherText []byte) ([]byte, error) {
 	stream.XORKeyStream(plainText, cipherText)
 
 	return plainText, nil
+}
+
+// AESCTRCrypto aes-ctr crypto
+type AESCTRCrypto struct {
+	key []byte
+	iv  []byte
 }
 
 // NewAESCTRCrypto returns new aes-ctr crypto
