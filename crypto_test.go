@@ -12,22 +12,22 @@ func TestAESCBCCrypto(t *testing.T) {
 	iv := key[:aes.BlockSize]
 	plainText := "Iloveyiigo"
 
-	crypto := NewAESCBCCrypto(key, iv)
+	cbc := NewAESCBCCrypto(key, iv)
 
 	// PKCS5_PADDING
-	e5b, err := crypto.Encrypt([]byte(plainText), PKCS5)
+	e5b, err := cbc.Encrypt([]byte(plainText), PKCS5)
 	assert.Nil(t, err)
 
-	d5b, err := crypto.Decrypt(e5b, PKCS5)
+	d5b, err := cbc.Decrypt(e5b, PKCS5)
 	assert.Nil(t, err)
 
 	assert.Equal(t, plainText, string(d5b))
 
 	// PKCS7_PADDING
-	e7b, err := crypto.Encrypt([]byte(plainText), PKCS7)
+	e7b, err := cbc.Encrypt([]byte(plainText), PKCS7)
 	assert.Nil(t, err)
 
-	d7b, err := crypto.Decrypt(e7b, PKCS7)
+	d7b, err := cbc.Decrypt(e7b, PKCS7)
 	assert.Nil(t, err)
 
 	assert.Equal(t, plainText, string(d7b))
@@ -38,12 +38,12 @@ func TestAESCFBCrypto(t *testing.T) {
 	iv := key[:aes.BlockSize]
 	plainText := "Iloveyiigo"
 
-	crypto := NewAESCFBCrypto(key, iv)
+	cfb := NewAESCFBCrypto(key, iv)
 
-	eb, err := crypto.Encrypt([]byte(plainText))
+	eb, err := cfb.Encrypt([]byte(plainText))
 	assert.Nil(t, err)
 
-	db, err := crypto.Decrypt(eb)
+	db, err := cfb.Decrypt(eb)
 	assert.Nil(t, err)
 
 	assert.Equal(t, plainText, string(db))
@@ -54,12 +54,12 @@ func TestAESOFBCrypto(t *testing.T) {
 	iv := key[:aes.BlockSize]
 	plainText := "Iloveyiigo"
 
-	crypto := NewAESOFBCrypto(key, iv)
+	ofb := NewAESOFBCrypto(key, iv)
 
-	eb, err := crypto.Encrypt([]byte(plainText))
+	eb, err := ofb.Encrypt([]byte(plainText))
 	assert.Nil(t, err)
 
-	db, err := crypto.Decrypt(eb)
+	db, err := ofb.Decrypt(eb)
 	assert.Nil(t, err)
 
 	assert.Equal(t, plainText, string(db))
@@ -70,12 +70,12 @@ func TestAESCTRCrypto(t *testing.T) {
 	iv := key[:aes.BlockSize]
 	plainText := "Iloveyiigo"
 
-	crypto := NewAESCTRCrypto(key, iv)
+	ctr := NewAESCTRCrypto(key, iv)
 
-	eb, err := crypto.Encrypt([]byte(plainText))
+	eb, err := ctr.Encrypt([]byte(plainText))
 	assert.Nil(t, err)
 
-	db, err := crypto.Decrypt(eb)
+	db, err := ctr.Decrypt(eb)
 	assert.Nil(t, err)
 
 	assert.Equal(t, plainText, string(db))
@@ -86,12 +86,12 @@ func TestAESGCMCrypto(t *testing.T) {
 	nonce := key[:12]
 	plainText := "Iloveyiigo"
 
-	crypto := NewAESGCMCrypto(key, nonce)
+	gcm := NewAESGCMCrypto(key, nonce)
 
-	eb, err := crypto.Encrypt([]byte(plainText))
+	eb, err := gcm.Encrypt([]byte(plainText))
 	assert.Nil(t, err)
 
-	db, err := crypto.Decrypt(eb)
+	db, err := gcm.Decrypt(eb)
 	assert.Nil(t, err)
 
 	assert.Equal(t, plainText, string(db))
