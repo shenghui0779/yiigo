@@ -224,7 +224,7 @@ func (w *QueryWrapper) ToBatchInsert(data interface{}) (string, []interface{}) {
 	}
 
 	if v.Len() == 0 {
-		logger.Error("yiigo: empty data for batch insert, expects []struct, []*struct, []yiigo.X")
+		logger.Error("yiigo: empty data for batch insert")
 
 		return "", nil
 	}
