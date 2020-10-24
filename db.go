@@ -31,9 +31,10 @@ var (
 
 type dbConfig struct {
 	Driver          string `toml:"driver"`
-	Dsn             string `toml:"dsn"`
+	DSN             string `toml:"dsn"`
 	MaxOpenConns    int    `toml:"max_open_conns"`
 	MaxIdleConns    int    `toml:"max_idle_conns"`
+	ConnMaxIdleTime int    `toml:"conn_max_idle_time"`
 	ConnMaxLifetime int    `toml:"conn_max_lifetime"`
 }
 
@@ -42,7 +43,7 @@ func dbDial(cfg *dbConfig, debug bool) (*gorm.DB, error) {
 		return nil, fmt.Errorf("yiigo: unknown db driver %s, expects mysql, postgres, sqlite3", cfg.Driver)
 	}
 
-	orm, err := gorm.Open(cfg.Driver, cfg.Dsn)
+	orm, err := gorm.Open(cfg.Driver, cfg.DSN)
 
 	if err != nil {
 		return nil, err
@@ -54,6 +55,7 @@ func dbDial(cfg *dbConfig, debug bool) (*gorm.DB, error) {
 
 	orm.DB().SetMaxOpenConns(cfg.MaxOpenConns)
 	orm.DB().SetMaxIdleConns(cfg.MaxIdleConns)
+	orm.DB().SetConnMaxIdleTime(time.Duration(cfg.ConnMaxIdleTime) * time.Second)
 	orm.DB().SetConnMaxLifetime(time.Duration(cfg.ConnMaxLifetime) * time.Second)
 
 	return orm, nil

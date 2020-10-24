@@ -1213,8 +1213,9 @@ debug = true
     # driver = "mysql"
     # dsn = "username:password@tcp(localhost:3306)/dbname?timeout=10s&charset=utf8mb4&collation=utf8mb4_general_ci&parseTime=True&loc=Local"
     # max_open_conns = 20
-    # max_idle_conns = 10
-    # conn_max_lifetime = 60
+	# max_idle_conns = 10
+	# conn_max_idle_time = 60
+    # conn_max_lifetime = 600
 
 [mongo]
 

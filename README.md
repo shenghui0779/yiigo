@@ -25,7 +25,7 @@ Go 轻量级开发通用库
 
 ## Requirements
 
-`Go1.11+`
+`Go1.15+`
 
 ## Installation
 
