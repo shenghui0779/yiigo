@@ -217,40 +217,41 @@ func (w *QueryWrapper) insertWithStruct(v reflect.Value) {
 func (w *QueryWrapper) ToBatchInsert(data interface{}) (string, []interface{}) {
 	v := reflect.Indirect(reflect.ValueOf(data))
 
-	switch v.Kind() {
-	case reflect.Slice:
-		if v.Len() == 0 {
-			return "", nil
-		}
+	if v.Kind() != reflect.Slice {
+		logger.Error("yiigo: invalid data type for batch insert, expects []struct, []*struct, []yiigo.X")
 
-		e := v.Type().Elem()
+		return "", nil
+	}
 
-		switch e.Kind() {
-		case reflect.Map:
-			x, ok := data.([]X)
+	if v.Len() == 0 {
+		logger.Error("yiigo: empty data for batch insert")
 
-			if !ok {
-				logger.Error("yiigo: invalid data type for batch insert, expects []struct, []*struct, []yiigo.X")
+		return "", nil
+	}
 
-				return "", nil
-			}
+	e := v.Type().Elem()
 
-			w.batchInsertWithMap(x)
-		case reflect.Struct:
-			w.batchInsertWithStruct(v)
-		case reflect.Ptr:
-			if e.Elem().Kind() != reflect.Struct {
-				logger.Error("yiigo: invalid data type for batch insert, expects []struct, []*struct, []yiigo.X")
+	switch e.Kind() {
+	case reflect.Map:
+		x, ok := data.([]X)
 
-				return "", nil
-			}
-
-			w.batchInsertWithStruct(v)
-		default:
+		if !ok {
 			logger.Error("yiigo: invalid data type for batch insert, expects []struct, []*struct, []yiigo.X")
 
 			return "", nil
 		}
+
+		w.batchInsertWithMap(x)
+	case reflect.Struct:
+		w.batchInsertWithStruct(v)
+	case reflect.Ptr:
+		if e.Elem().Kind() != reflect.Struct {
+			logger.Error("yiigo: invalid data type for batch insert, expects []struct, []*struct, []yiigo.X")
+
+			return "", nil
+		}
+
+		w.batchInsertWithStruct(v)
 	default:
 		logger.Error("yiigo: invalid data type for batch insert, expects []struct, []*struct, []yiigo.X")
 
