@@ -12,8 +12,8 @@ func init() {
 		Compress:   true,
 	}, false)
 
-	// load config file: yiigo.toml
-	loadConfigFile()
+	// load env file: yiigo.toml
+	initEnv()
 
 	debug = Env("app.debug").Bool(false)
 

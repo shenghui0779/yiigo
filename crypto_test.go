@@ -1,43 +1,97 @@
 package yiigo
 
 import (
+	"crypto/aes"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAESCBCCrypt(t *testing.T) {
-	key := []byte("c510be34b0466938eace8edee61255c0")
+func TestAESCBCCrypto(t *testing.T) {
+	key := []byte("AES256Key-32Characters1234567890")
+	iv := key[:aes.BlockSize]
 	plainText := "Iloveyiigo"
 
+	cbc := NewAESCBCCrypto(key, iv)
+
 	// PKCS5_PADDING
-	e5b, err := AESCBCEncrypt([]byte(plainText), key, PKCS5_PADDING)
+	e5b, err := cbc.Encrypt([]byte(plainText), PKCS5)
 	assert.Nil(t, err)
 
-	d5b, err := AESCBCDecrypt(e5b, key, PKCS5_PADDING)
+	d5b, err := cbc.Decrypt(e5b, PKCS5)
 	assert.Nil(t, err)
 
 	assert.Equal(t, plainText, string(d5b))
 
 	// PKCS7_PADDING
-	e7b, err := AESCBCEncrypt([]byte(plainText), key, PKCS7_PADDING)
+	e7b, err := cbc.Encrypt([]byte(plainText), PKCS7)
 	assert.Nil(t, err)
 
-	d7b, err := AESCBCDecrypt(e7b, key, PKCS7_PADDING)
+	d7b, err := cbc.Decrypt(e7b, PKCS7)
 	assert.Nil(t, err)
 
 	assert.Equal(t, plainText, string(d7b))
 }
 
-func TestAESGCMCrypt(t *testing.T) {
+func TestAESCFBCrypto(t *testing.T) {
 	key := []byte("AES256Key-32Characters1234567890")
-	nonce := []byte(AESGCMNonce())
+	iv := key[:aes.BlockSize]
 	plainText := "Iloveyiigo"
 
-	eb, err := AESGCMEncrypt([]byte(plainText), key, nonce)
+	cfb := NewAESCFBCrypto(key, iv)
+
+	eb, err := cfb.Encrypt([]byte(plainText))
 	assert.Nil(t, err)
 
-	db, err := AESGCMDecrypt(eb, key, nonce)
+	db, err := cfb.Decrypt(eb)
+	assert.Nil(t, err)
+
+	assert.Equal(t, plainText, string(db))
+}
+
+func TestAESOFBCrypto(t *testing.T) {
+	key := []byte("AES256Key-32Characters1234567890")
+	iv := key[:aes.BlockSize]
+	plainText := "Iloveyiigo"
+
+	ofb := NewAESOFBCrypto(key, iv)
+
+	eb, err := ofb.Encrypt([]byte(plainText))
+	assert.Nil(t, err)
+
+	db, err := ofb.Decrypt(eb)
+	assert.Nil(t, err)
+
+	assert.Equal(t, plainText, string(db))
+}
+
+func TestAESCTRCrypto(t *testing.T) {
+	key := []byte("AES256Key-32Characters1234567890")
+	iv := key[:aes.BlockSize]
+	plainText := "Iloveyiigo"
+
+	ctr := NewAESCTRCrypto(key, iv)
+
+	eb, err := ctr.Encrypt([]byte(plainText))
+	assert.Nil(t, err)
+
+	db, err := ctr.Decrypt(eb)
+	assert.Nil(t, err)
+
+	assert.Equal(t, plainText, string(db))
+}
+
+func TestAESGCMCrypto(t *testing.T) {
+	key := []byte("AES256Key-32Characters1234567890")
+	nonce := key[:12]
+	plainText := "Iloveyiigo"
+
+	gcm := NewAESGCMCrypto(key, nonce)
+
+	eb, err := gcm.Encrypt([]byte(plainText))
+	assert.Nil(t, err)
+
+	db, err := gcm.Decrypt(eb)
 	assert.Nil(t, err)
 
 	assert.Equal(t, plainText, string(db))
@@ -52,7 +106,7 @@ func TestRSASign(t *testing.T) {
 	assert.Nil(t, RSAVerifyWithSha256([]byte(plainText), signature, publicKey))
 }
 
-func TestRSACrypt(t *testing.T) {
+func TestRSACrypto(t *testing.T) {
 	plainText := "Iloveyiigo"
 
 	eb, err := RSAEncrypt([]byte(plainText), publicKey)

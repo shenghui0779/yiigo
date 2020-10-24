@@ -1152,8 +1152,12 @@ func (e *EnvValue) Unmarshal(dest interface{}) error {
 
 var env *config
 
-func loadConfigFile() {
-	path, err := filepath.Abs("yiigo.toml")
+func initEnv() {
+	LoadEnvFromFile("yiigo.toml")
+}
+
+func LoadEnvFromFile(path string) {
+	path, err := filepath.Abs(path)
 
 	if err != nil {
 		logger.Panic("yiigo: load config file error", zap.Error(err))
