@@ -169,14 +169,8 @@ func NextAttemptDuration(attempts uint16) time.Duration {
 		d = 30 * time.Minute
 	case 10:
 		d = 1 * time.Hour
-	case 11:
-		d = 2 * time.Hour
-	case 12:
-		d = 5 * time.Hour
-	case 13:
-		d = 10 * time.Hour
 	default:
-		d = 10 * time.Hour
+		d = 1 * time.Hour
 	}
 
 	return d
