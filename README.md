@@ -190,13 +190,9 @@ conn.Do("SET", "test_key", "hello world")
 #### HTTP
 
 ```go
-client := yiigo.NewHTTPClient(
-    yiigo.WithHTTPMaxIdleConnsPerHost(1000),
-    yiigo.WithHTTPMaxConnsPerHost(1000),
-    yiigo.WithHTTPDefaultTimeout(time.Second*10),
-)
+c := yiigo.NewHTTPClient(client)
 
-b, err := client.Get("url...", yiigo.WithRequestTimeout(5*time.Second))
+b, err := c.Get("url...", yiigo.WithHTTPTimeout(5*time.Second))
 
 if err != nil {
     log.Fatal(err)
