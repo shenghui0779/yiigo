@@ -19,7 +19,6 @@ Go 轻量级开发通用库
 - 邮件使用 [gomail](https://github.com/go-gomail/gomail)
 - 配置使用 [toml](https://github.com/pelletier/go-toml)
 - SQL使用 [sqlx](https://github.com/jmoiron/sqlx)
-- ORM使用 [gorm](https://gorm.io/)
 - 日志使用 [zap](https://github.com/uber-go/zap)
 - 包含一些实用的帮助方法，如：http、cypto、date、IP、SQL Builder 等
 
