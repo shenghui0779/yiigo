@@ -25,12 +25,12 @@ const (
 )
 
 type mongoConfig struct {
-	DSN             string `toml:"dsn"`
-	ConnectTimeout  int    `toml:"connect_timeout"`
-	MinPoolSize     int    `toml:"min_pool_size"`
-	MaxPoolSize     int    `toml:"max_pool_size"`
-	MaxConnIdleTime int    `toml:"max_conn_idle_time"`
-	Mode            string `toml:"mode"`
+	DSN             string    `toml:"dsn"`
+	ConnectTimeout  int       `toml:"connect_timeout"`
+	MinPoolSize     int       `toml:"min_pool_size"`
+	MaxPoolSize     int       `toml:"max_pool_size"`
+	MaxConnIdleTime int       `toml:"max_conn_idle_time"`
+	Mode            MongoMode `toml:"mode"`
 }
 
 var (
@@ -47,21 +47,17 @@ func mongoDial(cfg *mongoConfig) (*mongo.Client, error) {
 	clientOptions.SetMaxPoolSize(uint64(cfg.MaxPoolSize))
 	clientOptions.SetMaxConnIdleTime(time.Duration(cfg.MaxConnIdleTime) * time.Second)
 
-	if cfg.Mode != "" {
-		switch MongoMode(cfg.Mode) {
-		case Primary:
-			clientOptions.SetReadPreference(readpref.Primary())
-		case PrimaryPreferred:
-			clientOptions.SetReadPreference(readpref.PrimaryPreferred())
-		case Secondary:
-			clientOptions.SetReadPreference(readpref.Secondary())
-		case SecondaryPreferred:
-			clientOptions.SetReadPreference(readpref.SecondaryPreferred())
-		case Nearest:
-			clientOptions.SetReadPreference(readpref.Nearest())
-		default:
-			return nil, fmt.Errorf("yiigo: unknown read preference %s", cfg.Mode)
-		}
+	switch cfg.Mode {
+	case Primary:
+		clientOptions.SetReadPreference(readpref.Primary())
+	case PrimaryPreferred:
+		clientOptions.SetReadPreference(readpref.PrimaryPreferred())
+	case Secondary:
+		clientOptions.SetReadPreference(readpref.Secondary())
+	case SecondaryPreferred:
+		clientOptions.SetReadPreference(readpref.SecondaryPreferred())
+	case Nearest:
+		clientOptions.SetReadPreference(readpref.Nearest())
 	}
 
 	// validates the client options

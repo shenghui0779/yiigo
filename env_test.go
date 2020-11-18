@@ -7,18 +7,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// yiigo.toml
-//
-// [app]
-// env = "dev"
-// debug = true
-// time = "2016-03-19 15:03:19"
-// amount = 100
-// hosts = [ "127.0.0.1", "192.168.1.1", "192.168.1.80" ]
-// ports = [ 80, 81, 82 ]
-// weight = 50.6
-// prices = [ 23.5, 46.7, 45.9 ]
-
 func Test_env_String(t *testing.T) {
 	assert.Equal(t, "dev", Env("app.env").String())
 }
@@ -32,7 +20,7 @@ func Test_env_Int(t *testing.T) {
 }
 
 func Test_env_Ints(t *testing.T) {
-	assert.Equal(t, []int{80,81,82}, Env("app.ports").Ints())
+	assert.Equal(t, []int{80, 81, 82}, Env("app.ports").Ints())
 }
 
 func Test_env_Uint(t *testing.T) {
@@ -149,4 +137,29 @@ func Test_env_Unmarshal(t *testing.T) {
 	}
 
 	assert.Nil(t, Env("app").Unmarshal(&App{}))
+}
+
+var (
+	builder *SQLBuilder
+
+	privateKey []byte
+	publicKey  []byte
+)
+
+func TestMain(m *testing.M) {
+	LoadEnvFromBytes([]byte(`[app]
+env = "dev"
+debug = true
+time = "2016-03-19 15:03:19"
+amount = 100
+hosts = [ "127.0.0.1", "192.168.1.1", "192.168.1.80" ]
+ports = [ 80, 81, 82 ]
+weight = 50.6
+prices = [ 23.5, 46.7, 45.9 ]`))
+
+	builder = NewSQLBuilder(MySQL)
+
+	privateKey, publicKey, _ = GenerateRSAKey(2048)
+
+	m.Run()
 }

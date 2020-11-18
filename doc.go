@@ -6,11 +6,9 @@
 //
 //    // default db
 //    yiigo.DB().Get(&User{}, "SELECT * FROM `user` WHERE `id` = ?", 1)
-//    yiigo.Orm().First(&User{}, 1)
 //
 //    // other db
 //    yiigo.DB("foo").Get(&User{}, "SELECT * FROM `user` WHERE `id` = ?", 1)
-//    yiigo.Orm("foo").First(&User{}, 1)
 //
 // MongoDB
 //
@@ -67,13 +65,9 @@
 //
 // HTTP
 //
-//    client := yiigo.NewHTTPClient(
-//        yiigo.WithHTTPMaxIdleConnsPerHost(1000),
-//        yiigo.WithHTTPMaxConnsPerHost(1000),
-//        yiigo.WithHTTPDefaultTimeout(time.Second*10),
-//    )
+//    c := yiigo.NewHTTPClient(*http.client)
 //
-//    b, err := client.Get("url...", yiigo.WithRequestTimeout(5*time.Second))
+//    b, err := c.Get("url...", yiigo.WithRequestTimeout(5*time.Second))
 //
 //    if err != nil {
 //        log.Fatal(err)

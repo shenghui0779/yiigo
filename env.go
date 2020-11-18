@@ -1153,14 +1153,17 @@ func (e *EnvValue) Unmarshal(dest interface{}) error {
 var env *config
 
 func initEnv() {
-	LoadEnvFromFile("yiigo.toml")
+	if err := LoadEnvFromFile("yiigo.toml"); err != nil {
+		logger.Panic("yiigo: load config file error", zap.Error(err))
+	}
 }
 
-func LoadEnvFromFile(path string) {
+// LoadEnvFromFile load env from file
+func LoadEnvFromFile(path string) error {
 	path, err := filepath.Abs(path)
 
 	if err != nil {
-		logger.Panic("yiigo: load config file error", zap.Error(err))
+		return err
 	}
 
 	if _, err := os.Stat(path); err != nil {
@@ -1177,10 +1180,25 @@ func LoadEnvFromFile(path string) {
 	t, err := toml.LoadFile(path)
 
 	if err != nil {
-		logger.Panic("yiigo: load config file error", zap.Error(err))
+		return err
 	}
 
 	env = &config{tree: t}
+
+	return nil
+}
+
+// LoadEnvFromBytes load env from bytes
+func LoadEnvFromBytes(b []byte) error {
+	t, err := toml.LoadBytes(b)
+
+	if err != nil {
+		return err
+	}
+
+	env = &config{tree: t}
+
+	return nil
 }
 
 // Env returns an env value

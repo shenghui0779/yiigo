@@ -1,12 +1,12 @@
 package yiigo
 
 import (
+	"database/sql"
 	"fmt"
 	"sync"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/jinzhu/gorm"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	_ "github.com/mattn/go-sqlite3"
@@ -23,10 +23,8 @@ const (
 )
 
 var (
-	defaultDB  *sqlx.DB
-	dbmap      sync.Map
-	defaultOrm *gorm.DB
-	ormap      sync.Map
+	defaultDB *sqlx.DB
+	dbmap     sync.Map
 )
 
 type dbConfig struct {
@@ -38,27 +36,29 @@ type dbConfig struct {
 	ConnMaxLifetime int    `toml:"conn_max_lifetime"`
 }
 
-func dbDial(cfg *dbConfig, debug bool) (*gorm.DB, error) {
+func dbDial(cfg *dbConfig) (*sql.DB, error) {
 	if !InStrings(cfg.Driver, string(MySQL), string(Postgres), string(SQLite)) {
 		return nil, fmt.Errorf("yiigo: unknown db driver %s, expects mysql, postgres, sqlite3", cfg.Driver)
 	}
 
-	orm, err := gorm.Open(cfg.Driver, cfg.DSN)
+	db, err := sql.Open(cfg.Driver, cfg.DSN)
 
 	if err != nil {
 		return nil, err
 	}
 
-	if debug {
-		orm.LogMode(true)
+	if err = db.Ping(); err != nil {
+		db.Close()
+
+		return nil, err
 	}
 
-	orm.DB().SetMaxOpenConns(cfg.MaxOpenConns)
-	orm.DB().SetMaxIdleConns(cfg.MaxIdleConns)
-	orm.DB().SetConnMaxIdleTime(time.Duration(cfg.ConnMaxIdleTime) * time.Second)
-	orm.DB().SetConnMaxLifetime(time.Duration(cfg.ConnMaxLifetime) * time.Second)
+	db.SetMaxOpenConns(cfg.MaxOpenConns)
+	db.SetMaxIdleConns(cfg.MaxIdleConns)
+	db.SetConnMaxIdleTime(time.Duration(cfg.ConnMaxIdleTime) * time.Second)
+	db.SetConnMaxLifetime(time.Duration(cfg.ConnMaxLifetime) * time.Second)
 
-	return orm, nil
+	return db, nil
 }
 
 func initDB() {
@@ -87,21 +87,19 @@ func initDB() {
 			logger.Panic("yiigo: db init error", zap.String("name", v), zap.Error(err))
 		}
 
-		orm, err := dbDial(cfg, debug)
+		db, err := dbDial(cfg)
 
 		if err != nil {
 			logger.Panic("yiigo: db init error", zap.String("name", v), zap.Error(err))
 		}
 
-		db := sqlx.NewDb(orm.DB(), cfg.Driver)
+		sqlxDB := sqlx.NewDb(db, cfg.Driver)
 
 		if v == AsDefault {
-			defaultDB = db
-			defaultOrm = orm
+			defaultDB = sqlxDB
 		}
 
-		dbmap.Store(v, db)
-		ormap.Store(v, orm)
+		dbmap.Store(v, sqlxDB)
 
 		logger.Info(fmt.Sprintf("yiigo: db.%s is OK.", v))
 	}
@@ -124,23 +122,4 @@ func DB(name ...string) *sqlx.DB {
 	}
 
 	return v.(*sqlx.DB)
-}
-
-// Orm returns an orm's db.
-func Orm(name ...string) *gorm.DB {
-	if len(name) == 0 || name[0] == AsDefault {
-		if defaultOrm == nil {
-			logger.Panic(fmt.Sprintf("yiigo: unknown db.%s (forgotten configure?)", AsDefault))
-		}
-
-		return defaultOrm
-	}
-
-	v, ok := ormap.Load(name[0])
-
-	if !ok {
-		logger.Panic(fmt.Sprintf("yiigo: unknown db.%s (forgotten configure?)", name[0]))
-	}
-
-	return v.(*gorm.DB)
 }

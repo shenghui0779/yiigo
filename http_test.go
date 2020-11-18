@@ -28,6 +28,6 @@ func TestHTTPOption(t *testing.T) {
 		"Accept-Language": "zh-CN,zh;q=0.9",
 		"Content-Type":    "text/xml; charset=utf-8",
 	}, o.headers)
-	assert.Equal(t, true, o.close)
+	assert.True(t, o.close)
 	assert.Equal(t, 5*time.Second, o.timeout)
 }

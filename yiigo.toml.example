@@ -20,7 +20,8 @@ insecure_skip_verify = true
     # dsn = "file::memory:?cache=shared" # sqlite3
     max_open_conns = 20
     max_idle_conns = 10
-    conn_max_lifetime = 60 # 秒
+    conn_max_idle_time = 60 # 秒
+    conn_max_lifetime = 600 # 秒
 
 [mongo]
 

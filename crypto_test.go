@@ -118,18 +118,3 @@ func TestRSACrypto(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, plainText, string(db))
 }
-
-var (
-	builder *SQLBuilder
-
-	privateKey []byte
-	publicKey  []byte
-)
-
-func TestMain(m *testing.M) {
-	builder = NewSQLBuilder(MySQL)
-
-	privateKey, publicKey, _ = GenerateRSAKey(2048)
-
-	m.Run()
-}

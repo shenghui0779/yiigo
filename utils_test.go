@@ -21,3 +21,24 @@ func TestIP2Long(t *testing.T) {
 func TestLong2IP(t *testing.T) {
 	assert.Equal(t, "192.0.34.166", Long2IP(uint32(3221234342)))
 }
+
+func TestVersionCompare(t *testing.T) {
+	assert.True(t, VersionCompare("1.0.0", "1.0.0"))
+	assert.False(t, VersionCompare("1.0.0", "1.0.1"))
+
+	assert.True(t, VersionCompare("=1.0.0", "1.0.0"))
+	assert.False(t, VersionCompare("=1.0.0", "1.0.1"))
+
+	assert.True(t, VersionCompare("!=4.0.4", "4.0.0"))
+	assert.False(t, VersionCompare("!=4.0.4", "4.0.4"))
+
+	assert.True(t, VersionCompare(">2.0.0", "2.0.1"))
+	assert.False(t, VersionCompare(">2.0.0", "1.0.1"))
+
+	assert.True(t, VersionCompare(">=1.0.0&<2.0.0", "1.0.2"))
+	assert.False(t, VersionCompare(">=1.0.0&<2.0.0", "2.0.1"))
+
+	assert.True(t, VersionCompare("<2.0.0|>3.0.0", "1.0.2"))
+	assert.True(t, VersionCompare("<2.0.0|>3.0.0", "3.0.1"))
+	assert.False(t, VersionCompare("<2.0.0|>3.0.0", "2.0.1"))
+}

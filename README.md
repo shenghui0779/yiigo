@@ -136,11 +136,9 @@ yiigo.Env("apollo_test.name").String("foo")
 ```go
 // default db
 yiigo.DB().Get(&User{}, "SELECT * FROM user WHERE id = ?", 1)
-yiigo.Orm().First(&User{}, 1)
 
 // other db
 yiigo.DB("foo").Get(&User{}, "SELECT * FROM user WHERE id = ?", 1)
-yiigo.Orm("foo").First(&User{}, 1)
 ```
 
 #### MongoDB
@@ -190,7 +188,7 @@ conn.Do("SET", "test_key", "hello world")
 #### HTTP
 
 ```go
-c := yiigo.NewHTTPClient(client)
+c := yiigo.NewHTTPClient(*http.client)
 
 b, err := c.Get("url...", yiigo.WithHTTPTimeout(5*time.Second))
 
