@@ -333,8 +333,8 @@ func (c *AESGCMCrypto) Decrypt(cipherText []byte) ([]byte, error) {
 }
 
 // GenerateRSAKey returns rsa private and public key
-func GenerateRSAKey(bits int) (privateKey, publicKey []byte, err error) {
-	prvKey, err := rsa.GenerateKey(rand.Reader, bits)
+func GenerateRSAKey(bitSize int) (privateKey, publicKey []byte, err error) {
+	prvKey, err := rsa.GenerateKey(rand.Reader, bitSize)
 
 	if err != nil {
 		return
@@ -411,7 +411,7 @@ func RSAVerifyWithSha256(data, signature, publicKey []byte) error {
 }
 
 // RSAEncrypt rsa encrypt with public key
-func RSAEncrypt(data, publicKey []byte) ([]byte, error) {
+func RSAEncrypt(plainText, publicKey []byte) ([]byte, error) {
 	block, _ := pem.Decode(publicKey)
 
 	if block == nil {
@@ -430,7 +430,7 @@ func RSAEncrypt(data, publicKey []byte) ([]byte, error) {
 		return nil, errors.New("invalid rsa public key")
 	}
 
-	return rsa.EncryptPKCS1v15(rand.Reader, key, data)
+	return rsa.EncryptPKCS1v15(rand.Reader, key, plainText)
 }
 
 // RSADecrypt rsa decrypt with private key
