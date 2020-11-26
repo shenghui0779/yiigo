@@ -87,11 +87,11 @@ func (r *RedisPoolResource) Get() (RedisConn, error) {
 	ctx := context.TODO()
 
 	if r.config.WaitTimeout != 0 {
-		c, cancel := context.WithTimeout(ctx, time.Duration(r.config.WaitTimeout)*time.Second)
+		var cancel context.CancelFunc
+
+		ctx, cancel = context.WithTimeout(ctx, time.Duration(r.config.WaitTimeout)*time.Second)
 
 		defer cancel()
-
-		ctx = c
 	}
 
 	resource, err := r.pool.Get(ctx)
@@ -102,7 +102,7 @@ func (r *RedisPoolResource) Get() (RedisConn, error) {
 
 	rc := resource.(RedisConn)
 
-	// if rc is error, close and reconnect
+	// If rc is error, close and reconnect
 	if rc.Err() != nil {
 		conn, err := r.dial()
 

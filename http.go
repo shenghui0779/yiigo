@@ -76,8 +76,7 @@ type HTTPClient struct {
 	timeout time.Duration
 }
 
-// Get http get request
-func (h *HTTPClient) Get(reqURL string, options ...HTTPOption) ([]byte, error) {
+func (h *HTTPClient) Do(ctx context.Context, req *http.Request, options ...HTTPOption) ([]byte, error) {
 	o := &httpOptions{
 		headers: make(map[string]string),
 		timeout: h.timeout,
@@ -87,12 +86,6 @@ func (h *HTTPClient) Get(reqURL string, options ...HTTPOption) ([]byte, error) {
 		for _, option := range options {
 			option.apply(o)
 		}
-	}
-
-	req, err := http.NewRequest("GET", reqURL, nil)
-
-	if err != nil {
-		return nil, err
 	}
 
 	// headers
@@ -114,13 +107,20 @@ func (h *HTTPClient) Get(reqURL string, options ...HTTPOption) ([]byte, error) {
 	}
 
 	// timeout
-	ctx, cancel := context.WithTimeout(req.Context(), o.timeout)
+	ctx, cancel := context.WithTimeout(ctx, o.timeout)
 
 	defer cancel()
 
 	resp, err := h.client.Do(req.WithContext(ctx))
 
 	if err != nil {
+		// If the context has been canceled, the context's error is probably more useful.
+		select {
+		case <-ctx.Done():
+			err = ctx.Err()
+		default:
+		}
+
 		return nil, err
 	}
 
@@ -141,69 +141,26 @@ func (h *HTTPClient) Get(reqURL string, options ...HTTPOption) ([]byte, error) {
 	return b, nil
 }
 
+// Get http get request
+func (h *HTTPClient) Get(ctx context.Context, url string, options ...HTTPOption) ([]byte, error) {
+	req, err := http.NewRequest("GET", url, nil)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return h.Do(ctx, req, options...)
+}
+
 // Post http post request
-func (h *HTTPClient) Post(reqURL string, body []byte, options ...HTTPOption) ([]byte, error) {
-	o := &httpOptions{
-		headers: make(map[string]string),
-		timeout: h.timeout,
-	}
-
-	if len(options) > 0 {
-		for _, option := range options {
-			option.apply(o)
-		}
-	}
-
-	req, err := http.NewRequest("POST", reqURL, bytes.NewReader(body))
+func (h *HTTPClient) Post(ctx context.Context, url string, body []byte, options ...HTTPOption) ([]byte, error) {
+	req, err := http.NewRequest("POST", url, bytes.NewReader(body))
 
 	if err != nil {
 		return nil, err
 	}
 
-	// headers
-	if len(o.headers) > 0 {
-		for k, v := range o.headers {
-			req.Header.Set(k, v)
-		}
-	}
-
-	// cookies
-	if len(o.cookies) > 0 {
-		for _, v := range o.cookies {
-			req.AddCookie(v)
-		}
-	}
-
-	if o.close {
-		req.Close = true
-	}
-
-	// timeout
-	ctx, cancel := context.WithTimeout(req.Context(), o.timeout)
-
-	defer cancel()
-
-	resp, err := h.client.Do(req.WithContext(ctx))
-
-	if err != nil {
-		return nil, err
-	}
-
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		io.Copy(ioutil.Discard, resp.Body)
-
-		return nil, fmt.Errorf("error http code: %d", resp.StatusCode)
-	}
-
-	b, err := ioutil.ReadAll(resp.Body)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return b, nil
+	return h.Do(ctx, req, options...)
 }
 
 // defaultHTTPClient default http client
@@ -241,11 +198,11 @@ func NewHTTPClient(client *http.Client, defaultTimeout ...time.Duration) *HTTPCl
 }
 
 // HTTPGet http get request
-func HTTPGet(reqURL string, options ...HTTPOption) ([]byte, error) {
-	return defaultHTTPClient.Get(reqURL, options...)
+func HTTPGet(ctx context.Context, url string, options ...HTTPOption) ([]byte, error) {
+	return defaultHTTPClient.Get(ctx, url, options...)
 }
 
 // HTTPPost http post request
-func HTTPPost(reqURL string, body []byte, options ...HTTPOption) ([]byte, error) {
-	return defaultHTTPClient.Post(reqURL, body, options...)
+func HTTPPost(ctx context.Context, url string, body []byte, options ...HTTPOption) ([]byte, error) {
+	return defaultHTTPClient.Post(ctx, url, body, options...)
 }

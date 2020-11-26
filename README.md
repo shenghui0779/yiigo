@@ -200,15 +200,14 @@ conn.Do("SET", "test_key", "hello world")
 #### HTTP
 
 ```go
-c := yiigo.NewHTTPClient(*http.client)
+ctx := context.Background()
 
-b, err := c.Get("url...", yiigo.WithHTTPTimeout(5*time.Second))
+// default client
+yiigo.HTTPGet(ctx, "URL", yiigo.WithHTTPTimeout(5*time.Second))
 
-if err != nil {
-    log.Fatal(err)
-}
-
-fmt.Println(string(b))
+// new client
+client := yiigo.NewHTTPClient(*http.client)
+client.Get(ctx, "URL", yiigo.WithHTTPTimeout(5*time.Second))
 ```
 
 #### Logger
