@@ -19,6 +19,7 @@ Go 轻量级开发通用库
 - 邮件使用 [gomail](https://github.com/go-gomail/gomail)
 - 配置使用 [toml](https://github.com/pelletier/go-toml)
 - SQL使用 [sqlx](https://github.com/jmoiron/sqlx)
+- ORM推荐 [ent](https://github.com/facebook/ent)
 - 日志使用 [zap](https://github.com/uber-go/zap)
 - 包含一些实用的帮助方法，如：http、cypto、date、IP、SQL Builder 等
 
@@ -138,6 +139,18 @@ yiigo.DB().Get(&User{}, "SELECT * FROM user WHERE id = ?", 1)
 
 // other db
 yiigo.DB("foo").Get(&User{}, "SELECT * FROM user WHERE id = ?", 1)
+```
+
+#### ORM - ent
+
+```go
+import "<your_project>/ent"
+
+// default driver
+client := ent.NewClient(ent.Driver(yiigo.EntDriver()))
+
+// other driver
+client := ent.NewClient(ent.Driver(yiigo.EntDriver("foo")))
 ```
 
 #### MongoDB

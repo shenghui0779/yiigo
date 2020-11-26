@@ -3,10 +3,11 @@ module github.com/shenghui0779/yiigo
 go 1.15
 
 require (
+	github.com/facebook/ent v0.5.0
 	github.com/go-playground/locales v0.13.0
 	github.com/go-playground/universal-translator v0.17.0
 	github.com/go-playground/validator/v10 v10.4.1
-	github.com/go-sql-driver/mysql v1.5.0
+	github.com/go-sql-driver/mysql v1.5.1-0.20200311113236-681ffa848bae
 	github.com/gomodule/redigo v1.8.3
 	github.com/hashicorp/go-version v1.2.1
 	github.com/jmoiron/sqlx v1.2.1-0.20200615141059-0794cb1f47ee

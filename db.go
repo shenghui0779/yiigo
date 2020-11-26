@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	entsql "github.com/facebook/ent/dialect/sql"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
@@ -25,6 +26,9 @@ const (
 var (
 	defaultDB *sqlx.DB
 	dbmap     sync.Map
+
+	defaultEntDriver *entsql.Driver
+	entmap           sync.Map
 )
 
 type dbConfig struct {
@@ -74,8 +78,8 @@ func initDB() {
 		return
 	}
 
-	for _, v := range keys {
-		node, ok := tree.Get(v).(*toml.Tree)
+	for _, name := range keys {
+		node, ok := tree.Get(name).(*toml.Tree)
 
 		if !ok {
 			continue
@@ -84,24 +88,27 @@ func initDB() {
 		cfg := new(dbConfig)
 
 		if err := node.Unmarshal(cfg); err != nil {
-			logger.Panic("yiigo: db init error", zap.String("name", v), zap.Error(err))
+			logger.Panic("yiigo: db init error", zap.String("name", name), zap.Error(err))
 		}
 
 		db, err := dbDial(cfg)
 
 		if err != nil {
-			logger.Panic("yiigo: db init error", zap.String("name", v), zap.Error(err))
+			logger.Panic("yiigo: db init error", zap.String("name", name), zap.Error(err))
 		}
 
 		sqlxDB := sqlx.NewDb(db, cfg.Driver)
+		entDriver := entsql.OpenDB(cfg.Driver, db)
 
-		if v == AsDefault {
+		if name == AsDefault {
 			defaultDB = sqlxDB
+			defaultEntDriver = entDriver
 		}
 
-		dbmap.Store(v, sqlxDB)
+		dbmap.Store(name, sqlxDB)
+		entmap.Store(name, entDriver)
 
-		logger.Info(fmt.Sprintf("yiigo: db.%s is OK.", v))
+		logger.Info(fmt.Sprintf("yiigo: db.%s is OK.", name))
 	}
 }
 
@@ -122,4 +129,23 @@ func DB(name ...string) *sqlx.DB {
 	}
 
 	return v.(*sqlx.DB)
+}
+
+// EntDriver returns an ent dialect.Driver.
+func EntDriver(name ...string) *entsql.Driver {
+	if len(name) == 0 || name[0] == AsDefault {
+		if defaultEntDriver == nil {
+			logger.Panic(fmt.Sprintf("yiigo: unknown db.%s (forgotten configure?)", AsDefault))
+		}
+
+		return defaultEntDriver
+	}
+
+	v, ok := entmap.Load(name[0])
+
+	if !ok {
+		logger.Panic(fmt.Sprintf("yiigo: unknown db.%s (forgotten configure?)", name[0]))
+	}
+
+	return v.(*entsql.Driver)
 }
