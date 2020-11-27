@@ -71,15 +71,23 @@ func WithHTTPTimeout(d time.Duration) HTTPOption {
 }
 
 // HTTPClient http client
-type HTTPClient struct {
+type HTTPClient interface {
+	Do(ctx context.Context, req *http.Request, options ...HTTPOption) ([]byte, error)
+	Get(ctx context.Context, url string, options ...HTTPOption) ([]byte, error)
+	Post(ctx context.Context, url string, body []byte, options ...HTTPOption) ([]byte, error)
+}
+
+// YiiClient is a HTTPClient implementation for http request
+type YiiClient struct {
 	client  *http.Client
 	timeout time.Duration
 }
 
-func (h *HTTPClient) Do(ctx context.Context, req *http.Request, options ...HTTPOption) ([]byte, error) {
+// Do sends an HTTP request and returns an HTTP response
+func (y *YiiClient) Do(ctx context.Context, req *http.Request, options ...HTTPOption) ([]byte, error) {
 	o := &httpOptions{
 		headers: make(map[string]string),
-		timeout: h.timeout,
+		timeout: y.timeout,
 	}
 
 	if len(options) > 0 {
@@ -111,7 +119,7 @@ func (h *HTTPClient) Do(ctx context.Context, req *http.Request, options ...HTTPO
 
 	defer cancel()
 
-	resp, err := h.client.Do(req.WithContext(ctx))
+	resp, err := y.client.Do(req.WithContext(ctx))
 
 	if err != nil {
 		// If the context has been canceled, the context's error is probably more useful.
@@ -142,29 +150,29 @@ func (h *HTTPClient) Do(ctx context.Context, req *http.Request, options ...HTTPO
 }
 
 // Get http get request
-func (h *HTTPClient) Get(ctx context.Context, url string, options ...HTTPOption) ([]byte, error) {
+func (y *YiiClient) Get(ctx context.Context, url string, options ...HTTPOption) ([]byte, error) {
 	req, err := http.NewRequest("GET", url, nil)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return h.Do(ctx, req, options...)
+	return y.Do(ctx, req, options...)
 }
 
 // Post http post request
-func (h *HTTPClient) Post(ctx context.Context, url string, body []byte, options ...HTTPOption) ([]byte, error) {
+func (y *YiiClient) Post(ctx context.Context, url string, body []byte, options ...HTTPOption) ([]byte, error) {
 	req, err := http.NewRequest("POST", url, bytes.NewReader(body))
 
 	if err != nil {
 		return nil, err
 	}
 
-	return h.Do(ctx, req, options...)
+	return y.Do(ctx, req, options...)
 }
 
 // defaultHTTPClient default http client
-var defaultHTTPClient = &HTTPClient{
+var defaultHTTPClient = &YiiClient{
 	client: &http.Client{
 		Transport: &http.Transport{
 			Proxy: http.ProxyFromEnvironment,
@@ -184,8 +192,8 @@ var defaultHTTPClient = &HTTPClient{
 }
 
 // NewHTTPClient returns a new http client
-func NewHTTPClient(client *http.Client, defaultTimeout ...time.Duration) *HTTPClient {
-	c := &HTTPClient{
+func NewHTTPClient(client *http.Client, defaultTimeout ...time.Duration) HTTPClient {
+	c := &YiiClient{
 		client:  client,
 		timeout: defaultHTTPTimeout,
 	}
