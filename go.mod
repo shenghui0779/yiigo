@@ -3,7 +3,7 @@ module github.com/shenghui0779/yiigo
 go 1.15
 
 require (
-	github.com/facebook/ent v0.5.0
+	github.com/facebook/ent v0.5.1
 	github.com/go-playground/locales v0.13.0
 	github.com/go-playground/universal-translator v0.17.0
 	github.com/go-playground/validator/v10 v10.4.1
