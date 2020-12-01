@@ -111,7 +111,7 @@ nsqd = "127.0.0.1:4150"
 
 # apollo namespace
 
-[apollo_test]
+[apollo_namespace]
 name = "yiigo"
 ```
 
@@ -120,7 +120,7 @@ name = "yiigo"
 ```go
 yiigo.Env("app.env").String("dev")
 yiigo.Env("app.debug").Bool(true)
-yiigo.Env("apollo_test.name").String("foo")
+yiigo.Env("apollo_namespace.name").String("foo")
 ```
 
 > ⚠️注意！
@@ -138,7 +138,7 @@ yiigo.Env("apollo_test.name").String("foo")
 yiigo.DB().Get(&User{}, "SELECT * FROM user WHERE id = ?", 1)
 
 // other db
-yiigo.DB("foo").Get(&User{}, "SELECT * FROM user WHERE id = ?", 1)
+yiigo.DB("other").Get(&User{}, "SELECT * FROM user WHERE id = ?", 1)
 ```
 
 #### ORM(ent)
@@ -150,25 +150,17 @@ import "<your_project>/ent"
 client := ent.NewClient(ent.Driver(yiigo.EntDriver()))
 
 // other driver
-client := ent.NewClient(ent.Driver(yiigo.EntDriver("foo")))
+client := ent.NewClient(ent.Driver(yiigo.EntDriver("other")))
 ```
 
 #### MongoDB
 
 ```go
 // default mongodb
-ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-
-defer cancel()
-
-yiigo.Mongo().Database("test").Collection("numbers").InsertOne(ctx, bson.M{"name": "pi", "value": 3.14159})
+yiigo.Mongo().Database("test").Collection("numbers").InsertOne(context.Background(), bson.M{"name": "pi", "value": 3.14159})
 
 // other mongodb
-ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-
-defer cancel()
-
-yiigo.Mongo("foo").Database("test").Collection("numbers").InsertOne(ctx, bson.M{"name": "pi", "value": 3.14159})
+yiigo.Mongo("other").Database("test").Collection("numbers").InsertOne(context.Background(), bson.M{"name": "pi", "value": 3.14159})
 ```
 
 #### Redis
@@ -200,14 +192,12 @@ conn.Do("SET", "test_key", "hello world")
 #### HTTP
 
 ```go
-ctx := context.Background()
-
 // default client
-yiigo.HTTPGet(ctx, "URL", yiigo.WithHTTPTimeout(5*time.Second))
+yiigo.HTTPGet(context.Background(), "URL", yiigo.WithHTTPTimeout(5*time.Second))
 
 // new client
-client := yiigo.NewHTTPClient(*http.client)
-client.Get(ctx, "URL", yiigo.WithHTTPTimeout(5*time.Second))
+client := yiigo.NewHTTPClient(*http.Client)
+client.Get(context.Background(), "URL", yiigo.WithHTTPTimeout(5*time.Second))
 ```
 
 #### Logger
@@ -217,7 +207,7 @@ client.Get(ctx, "URL", yiigo.WithHTTPTimeout(5*time.Second))
 yiigo.Logger().Info("hello world")
 
 // other logger
-yiigo.Logger("foo").Info("hello world")
+yiigo.Logger("other").Info("hello world")
 ```
 
 #### SQL Builder
