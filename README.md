@@ -178,13 +178,13 @@ defer yiigo.Redis().Put(conn)
 conn.Do("SET", "test_key", "hello world")
 
 // other redis
-conn, err := yiigo.Redis("foo").Get()
+conn, err := yiigo.Redis("other").Get()
 
 if err != nil {
     log.Fatal(err)
 }
 
-defer yiigo.Redis("foo").Put(conn)
+defer yiigo.Redis("other").Put(conn)
 
 conn.Do("SET", "test_key", "hello world")
 ```
