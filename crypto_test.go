@@ -7,12 +7,20 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAESCBCCrypto(t *testing.T) {
+func TestCBCCrypto(t *testing.T) {
 	key := []byte("AES256Key-32Characters1234567890")
 	iv := key[:aes.BlockSize]
 	plainText := "Iloveyiigo"
 
-	cbc := NewAESCBCCrypto(key, iv)
+	cbc := NewCBCCrypto(key, iv)
+
+	// ZERO_PADDING
+	e0b, err := cbc.Encrypt([]byte(plainText), ZERO)
+	assert.Nil(t, err)
+
+	d0b, err := cbc.Decrypt(e0b, ZERO)
+	assert.Nil(t, err)
+	assert.Equal(t, plainText, string(d0b))
 
 	// PKCS5_PADDING
 	e5b, err := cbc.Encrypt([]byte(plainText), PKCS5)
@@ -20,7 +28,6 @@ func TestAESCBCCrypto(t *testing.T) {
 
 	d5b, err := cbc.Decrypt(e5b, PKCS5)
 	assert.Nil(t, err)
-
 	assert.Equal(t, plainText, string(d5b))
 
 	// PKCS7_PADDING
@@ -29,71 +36,97 @@ func TestAESCBCCrypto(t *testing.T) {
 
 	d7b, err := cbc.Decrypt(e7b, PKCS7)
 	assert.Nil(t, err)
-
 	assert.Equal(t, plainText, string(d7b))
 }
 
-func TestAESCFBCrypto(t *testing.T) {
+func TestECBCrypto(t *testing.T) {
+	key := []byte("AES256Key-32Characters1234567890")
+	plainText := "Iloveyiigo"
+
+	cbc := NewECBCrypto(key)
+
+	// ZERO_PADDING
+	e0b, err := cbc.Encrypt([]byte(plainText), ZERO)
+	assert.Nil(t, err)
+
+	d0b, err := cbc.Decrypt(e0b, ZERO)
+	assert.Nil(t, err)
+	assert.Equal(t, plainText, string(d0b))
+
+	// PKCS5_PADDING
+	e5b, err := cbc.Encrypt([]byte(plainText), PKCS5)
+	assert.Nil(t, err)
+
+	d5b, err := cbc.Decrypt(e5b, PKCS5)
+	assert.Nil(t, err)
+	assert.Equal(t, plainText, string(d5b))
+
+	// PKCS7_PADDING
+	e7b, err := cbc.Encrypt([]byte(plainText), PKCS7)
+	assert.Nil(t, err)
+
+	d7b, err := cbc.Decrypt(e7b, PKCS7)
+	assert.Nil(t, err)
+	assert.Equal(t, plainText, string(d7b))
+}
+
+func TestCFBCrypto(t *testing.T) {
 	key := []byte("AES256Key-32Characters1234567890")
 	iv := key[:aes.BlockSize]
 	plainText := "Iloveyiigo"
 
-	cfb := NewAESCFBCrypto(key, iv)
+	cfb := NewCFBCrypto(key, iv)
 
 	eb, err := cfb.Encrypt([]byte(plainText))
 	assert.Nil(t, err)
 
 	db, err := cfb.Decrypt(eb)
 	assert.Nil(t, err)
-
 	assert.Equal(t, plainText, string(db))
 }
 
-func TestAESOFBCrypto(t *testing.T) {
+func TestOFBCrypto(t *testing.T) {
 	key := []byte("AES256Key-32Characters1234567890")
 	iv := key[:aes.BlockSize]
 	plainText := "Iloveyiigo"
 
-	ofb := NewAESOFBCrypto(key, iv)
+	ofb := NewOFBCrypto(key, iv)
 
 	eb, err := ofb.Encrypt([]byte(plainText))
 	assert.Nil(t, err)
 
 	db, err := ofb.Decrypt(eb)
 	assert.Nil(t, err)
-
 	assert.Equal(t, plainText, string(db))
 }
 
-func TestAESCTRCrypto(t *testing.T) {
+func TestCTRCrypto(t *testing.T) {
 	key := []byte("AES256Key-32Characters1234567890")
 	iv := key[:aes.BlockSize]
 	plainText := "Iloveyiigo"
 
-	ctr := NewAESCTRCrypto(key, iv)
+	ctr := NewCTRCrypto(key, iv)
 
 	eb, err := ctr.Encrypt([]byte(plainText))
 	assert.Nil(t, err)
 
 	db, err := ctr.Decrypt(eb)
 	assert.Nil(t, err)
-
 	assert.Equal(t, plainText, string(db))
 }
 
-func TestAESGCMCrypto(t *testing.T) {
+func TestGCMCrypto(t *testing.T) {
 	key := []byte("AES256Key-32Characters1234567890")
 	nonce := key[:12]
 	plainText := "Iloveyiigo"
 
-	gcm := NewAESGCMCrypto(key, nonce)
+	gcm := NewGCMCrypto(key, nonce)
 
 	eb, err := gcm.Encrypt([]byte(plainText))
 	assert.Nil(t, err)
 
 	db, err := gcm.Decrypt(eb)
 	assert.Nil(t, err)
-
 	assert.Equal(t, plainText, string(db))
 }
 
