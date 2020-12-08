@@ -10,13 +10,27 @@ import (
 	"go.uber.org/zap"
 )
 
-// SQLBuilder build SQL statement
-type SQLBuilder struct {
+// SQLBuilder is the interface that wrap query options
+type SQLBuilder interface {
+	Wrap(options ...QueryOption) SQLWrapper
+}
+
+// SQLWrapper is the interface that build sql statement
+type SQLWrapper interface {
+	ToQuery() (string, []interface{})
+	ToInsert(data interface{}) (string, []interface{})
+	ToBatchInsert(data interface{}) (string, []interface{})
+	ToUpdate(data interface{}) (string, []interface{})
+	ToDelete() (string, []interface{})
+}
+
+// QueryBuilder is a SQLBuilder implementation
+type QueryBuilder struct {
 	driver DBDriver
 }
 
-// Wrap wrap query clauses
-func (b *SQLBuilder) Wrap(options ...QueryOption) *QueryWrapper {
+// Wrap wrap query options
+func (b *QueryBuilder) Wrap(options ...QueryOption) SQLWrapper {
 	wrapper := &QueryWrapper{driver: b.driver}
 
 	for _, option := range options {
@@ -26,9 +40,9 @@ func (b *SQLBuilder) Wrap(options ...QueryOption) *QueryWrapper {
 	return wrapper
 }
 
-// NewSQLBuilder returns new SQL builder
-func NewSQLBuilder(driver DBDriver) *SQLBuilder {
-	return &SQLBuilder{driver: driver}
+// NewSQLBuilder returns new SQLBuilder
+func NewSQLBuilder(driver DBDriver) SQLBuilder {
+	return &QueryBuilder{driver: driver}
 }
 
 // SQLClause SQL clause
@@ -45,7 +59,7 @@ func Clause(query string, args ...interface{}) *SQLClause {
 	}
 }
 
-// QueryWrapper query clauses wrapper
+// QueryWrapper is a SQLWrapper implementation
 type QueryWrapper struct {
 	driver   DBDriver
 	table    string

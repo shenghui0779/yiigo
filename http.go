@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"mime/multipart"
 	"net"
 	"net/http"
+	"path/filepath"
 	"time"
 )
 
@@ -68,6 +70,32 @@ func WithHTTPTimeout(d time.Duration) HTTPOption {
 	return newFuncHTTPOption(func(o *httpOptions) {
 		o.timeout = d
 	})
+}
+
+// UploadForm upload form
+type UploadForm struct {
+	fieldname   string
+	filename    string
+	body        func() ([]byte, error)
+	extraFields map[string]string
+}
+
+// NewUploadForm returns new upload form
+func NewUploadForm(fieldname, filename string, extraFields map[string]string) *UploadForm {
+	return &UploadForm{
+		fieldname: fieldname,
+		filename:  filename,
+		body: func() ([]byte, error) {
+			path, err := filepath.Abs(filename)
+
+			if err != nil {
+				return nil, err
+			}
+
+			return ioutil.ReadFile(path)
+		},
+		extraFields: extraFields,
+	}
 }
 
 // HTTPClient http client
@@ -163,6 +191,49 @@ func (h *HTTPClient) Post(ctx context.Context, url string, body []byte, options 
 	return h.Do(ctx, req, options...)
 }
 
+// Upload http upload media
+func (h *HTTPClient) Upload(ctx context.Context, url string, form *UploadForm, options ...HTTPOption) ([]byte, error) {
+	media, err := form.body()
+
+	if err != nil {
+		return nil, err
+	}
+
+	buf := new(bytes.Buffer)
+	w := multipart.NewWriter(buf)
+
+	fw, err := w.CreateFormFile(form.fieldname, form.filename)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if _, err = io.Copy(fw, bytes.NewReader(media)); err != nil {
+		return nil, err
+	}
+
+	// add extra fields
+	if len(form.extraFields) != 0 {
+		for k, v := range form.extraFields {
+			w.WriteField(k, v)
+		}
+	}
+
+	options = append(options, WithHTTPHeader("Content-Type", w.FormDataContentType()))
+
+	// Don't forget to close the multipart writer.
+	// If you don't close it, your request will be missing the terminating boundary.
+	w.Close()
+
+	req, err := http.NewRequest("POST", url, bytes.NewReader([]byte(buf.String())))
+
+	if err != nil {
+		return nil, err
+	}
+
+	return h.Do(ctx, req, options...)
+}
+
 // defaultHTTPClient default http client
 var defaultHTTPClient = &HTTPClient{
 	client: &http.Client{
@@ -205,4 +276,9 @@ func HTTPGet(ctx context.Context, url string, options ...HTTPOption) ([]byte, er
 // HTTPPost http post request
 func HTTPPost(ctx context.Context, url string, body []byte, options ...HTTPOption) ([]byte, error) {
 	return defaultHTTPClient.Post(ctx, url, body, options...)
+}
+
+// HTTPUpload http upload media
+func HTTPUpload(ctx context.Context, url string, form *UploadForm, options ...HTTPOption) ([]byte, error) {
+	return defaultHTTPClient.Upload(ctx, url, form, options...)
 }
