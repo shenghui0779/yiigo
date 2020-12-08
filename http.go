@@ -76,24 +76,36 @@ func WithHTTPTimeout(d time.Duration) HTTPOption {
 type UploadForm struct {
 	fieldname   string
 	filename    string
-	body        func() ([]byte, error)
 	extraFields map[string]string
+}
+
+func (f *UploadForm) FieldName() string {
+	return f.fieldname
+}
+
+func (f *UploadForm) FileName() string {
+	return f.filename
+}
+
+func (f *UploadForm) ExtraFields() map[string]string {
+	return f.extraFields
+}
+
+func (f *UploadForm) Buffer() ([]byte, error) {
+	path, err := filepath.Abs(f.filename)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return ioutil.ReadFile(path)
 }
 
 // NewUploadForm returns new upload form
 func NewUploadForm(fieldname, filename string, extraFields map[string]string) *UploadForm {
 	return &UploadForm{
-		fieldname: fieldname,
-		filename:  filename,
-		body: func() ([]byte, error) {
-			path, err := filepath.Abs(filename)
-
-			if err != nil {
-				return nil, err
-			}
-
-			return ioutil.ReadFile(path)
-		},
+		fieldname:   fieldname,
+		filename:    filename,
 		extraFields: extraFields,
 	}
 }
@@ -193,7 +205,7 @@ func (h *HTTPClient) Post(ctx context.Context, url string, body []byte, options 
 
 // Upload http upload media
 func (h *HTTPClient) Upload(ctx context.Context, url string, form *UploadForm, options ...HTTPOption) ([]byte, error) {
-	media, err := form.body()
+	media, err := form.Buffer()
 
 	if err != nil {
 		return nil, err
@@ -202,7 +214,7 @@ func (h *HTTPClient) Upload(ctx context.Context, url string, form *UploadForm, o
 	buf := new(bytes.Buffer)
 	w := multipart.NewWriter(buf)
 
-	fw, err := w.CreateFormFile(form.fieldname, form.filename)
+	fw, err := w.CreateFormFile(form.FieldName(), form.FileName())
 
 	if err != nil {
 		return nil, err
@@ -213,8 +225,8 @@ func (h *HTTPClient) Upload(ctx context.Context, url string, form *UploadForm, o
 	}
 
 	// add extra fields
-	if len(form.extraFields) != 0 {
-		for k, v := range form.extraFields {
+	if extraFields := form.ExtraFields(); len(extraFields) != 0 {
+		for k, v := range extraFields {
 			w.WriteField(k, v)
 		}
 	}
