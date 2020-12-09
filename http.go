@@ -211,7 +211,7 @@ func (h *HTTPClient) Upload(ctx context.Context, url string, form *UploadForm, o
 		return nil, err
 	}
 
-	buf := new(bytes.Buffer)
+	buf := bytes.NewBuffer(make([]byte, 0, 4<<10)) // 4kb
 	w := multipart.NewWriter(buf)
 
 	fw, err := w.CreateFormFile(form.FieldName(), form.FileName())
@@ -227,7 +227,9 @@ func (h *HTTPClient) Upload(ctx context.Context, url string, form *UploadForm, o
 	// add extra fields
 	if extraFields := form.ExtraFields(); len(extraFields) != 0 {
 		for k, v := range extraFields {
-			w.WriteField(k, v)
+			if err = w.WriteField(k, v); err != nil {
+				return nil, err
+			}
 		}
 	}
 
@@ -237,7 +239,7 @@ func (h *HTTPClient) Upload(ctx context.Context, url string, form *UploadForm, o
 	// If you don't close it, your request will be missing the terminating boundary.
 	w.Close()
 
-	req, err := http.NewRequest("POST", url, bytes.NewReader([]byte(buf.String())))
+	req, err := http.NewRequest("POST", url, buf)
 
 	if err != nil {
 		return nil, err
