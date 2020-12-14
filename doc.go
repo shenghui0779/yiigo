@@ -10,21 +10,23 @@
 //    // other db
 //    yiigo.DB("foo").Get(&User{}, "SELECT * FROM `user` WHERE `id` = ?", 1)
 //
+// ORM(ent)
+//
+//    import "<your_project>/ent"
+//
+//    // default driver
+//    client := ent.NewClient(ent.Driver(yiigo.EntDriver()))
+//
+//    // other driver
+//    client := ent.NewClient(ent.Driver(yiigo.EntDriver("other")))
+//
 // MongoDB
 //
 //    // default mongodb
-//    ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-//
-//    defer cancel()
-//
-//    yiigo.Mongo().Database("test").Collection("numbers").InsertOne(ctx, bson.M{"name": "pi", "value": 3.14159})
+//    yiigo.Mongo().Database("test").Collection("numbers").InsertOne(context.Background(), bson.M{"name": "pi", "value": 3.14159})
 //
 //    // other mongodb
-//    ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-//
-//    defer cancel()
-//
-//    yiigo.Mongo("foo").Database("test").Collection("numbers").InsertOne(ctx, bson.M{"name": "pi", "value": 3.14159})
+//    yiigo.Mongo("foo").Database("test").Collection("numbers").InsertOne(context.Background(), bson.M{"name": "pi", "value": 3.14159})
 //
 // Redis
 //
@@ -65,15 +67,12 @@
 //
 // HTTP
 //
-//    c := yiigo.NewHTTPClient(*http.client)
+//    // default client
+//    yiigo.HTTPGet(context.Background(), "URL", yiigo.WithHTTPTimeout(5*time.Second))
 //
-//    b, err := c.Get("url...", yiigo.WithRequestTimeout(5*time.Second))
-//
-//    if err != nil {
-//        log.Fatal(err)
-//    }
-//
-//    fmt.Println(string(b))
+//    // new client
+//    client := yiigo.NewHTTPClient(*http.Client)
+//    client.Get(context.Background(), "URL", yiigo.WithHTTPTimeout(5*time.Second))
 //
 // Logger
 //
