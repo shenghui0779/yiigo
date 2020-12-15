@@ -15,13 +15,13 @@ func TestHTTPOption(t *testing.T) {
 		WithHTTPTimeout(5 * time.Second),
 	}
 
-	o := &httpOptions{
+	o := &httpSettings{
 		headers: make(map[string]string),
 		timeout: defaultHTTPTimeout,
 	}
 
-	for _, option := range options {
-		option.apply(o)
+	for _, f := range options {
+		f(o)
 	}
 
 	assert.Equal(t, map[string]string{
