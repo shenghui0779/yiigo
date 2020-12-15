@@ -51,9 +51,9 @@ func WithHTTPClose() HTTPOption {
 }
 
 // WithHTTPTimeout specifies the timeout to http request.
-func WithHTTPTimeout(d time.Duration) HTTPOption {
+func WithHTTPTimeout(timeout time.Duration) HTTPOption {
 	return func(s *httpSettings) {
-		s.timeout = d
+		s.timeout = timeout
 	}
 }
 
