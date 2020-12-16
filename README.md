@@ -237,7 +237,7 @@ builder.Wrap(
 
 builder.Wrap(
     yiigo.Table("user"),
-    yiigo.Where("age IN (?)", []int{20, 30}),
+    yiigo.WhereIn("age IN (?)", []int{20, 30}),
 ).ToQuery()
 // SELECT * FROM user WHERE age IN (?, ?)
 // [20 30]
