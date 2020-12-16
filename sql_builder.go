@@ -73,16 +73,32 @@ type QueryWrapper struct {
 	order   string
 	offset  *SQLClause
 	limit   *SQLClause
+	unions  []*SQLClause
 
 	whereIn  bool
 	queryLen int
 	bindsLen int
 }
 
-// ToToQuery returns query statement and binds.
+// ToQuery returns query statement and binds.
 func (w *QueryWrapper) ToQuery() (string, []interface{}) {
 	clause := w.subquery()
 
+	// do unions
+	if l := len(w.unions); l != 0 {
+		statements := make([]string, 0, l+1)
+
+		statements = append(statements, clause.query)
+
+		for _, v := range w.unions {
+			statements = append(statements, v.query)
+			clause.binds = append(clause.binds, v.binds...)
+		}
+
+		clause.query = strings.Join(statements, " ")
+	}
+
+	// do where in
 	if w.whereIn {
 		var err error
 
@@ -105,7 +121,7 @@ func (w *QueryWrapper) ToQuery() (string, []interface{}) {
 }
 
 func (w *QueryWrapper) subquery() *SQLClause {
-	clauses := make([]string, 0, w.queryLen+2)
+	clauses := make([]string, 0, w.queryLen)
 	binds := make([]interface{}, 0, w.bindsLen)
 
 	clauses = append(clauses, w.columns, "FROM", w.table)
@@ -517,7 +533,7 @@ type QueryOption func(w *QueryWrapper)
 func Table(name string) QueryOption {
 	return func(w *QueryWrapper) {
 		w.table = name
-		w.queryLen += 3
+		w.queryLen += 2
 	}
 }
 
@@ -626,5 +642,49 @@ func Limit(n int) QueryOption {
 	return func(w *QueryWrapper) {
 		w.limit = Clause("LIMIT ?", n)
 		w.queryLen++
+	}
+}
+
+// Union specifies the `union` clause.
+func Union(wrappers ...SQLWrapper) QueryOption {
+	return func(w *QueryWrapper) {
+		for _, wrapper := range wrappers {
+			v, ok := wrapper.(*QueryWrapper)
+
+			if !ok {
+				continue
+			}
+
+			if v.whereIn {
+				w.whereIn = true
+			}
+
+			clause := v.subquery()
+
+			w.unions = append(w.unions, Clause(strings.Join([]string{"UNION", clause.query}, " "), clause.binds...))
+			w.bindsLen += len(clause.binds)
+		}
+	}
+}
+
+// UnionAll specifies the `union all` clause.
+func UnionAll(wrappers ...SQLWrapper) QueryOption {
+	return func(w *QueryWrapper) {
+		for _, wrapper := range wrappers {
+			v, ok := wrapper.(*QueryWrapper)
+
+			if !ok {
+				continue
+			}
+
+			if v.whereIn {
+				w.whereIn = true
+			}
+
+			clause := v.subquery()
+
+			w.unions = append(w.unions, Clause(strings.Join([]string{"UNION", "ALL", clause.query}, " "), clause.binds...))
+			w.bindsLen += len(clause.binds)
+		}
 	}
 }

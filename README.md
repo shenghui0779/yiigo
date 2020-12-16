@@ -284,6 +284,27 @@ builder.Wrap(
 ).ToQuery()
 // SELECT * FROM user WHERE age > ? ORDER BY id DESC OFFSET 5 LIMIT 10
 // [20]
+
+wrap1 := builder.Wrap(
+	Table("user_1"),
+	Where("id = ?", 2),
+)
+
+builder.Wrap(
+    Table("user_0"),
+    Where("id = ?", 1),
+    Union(wrap1),
+).ToQuery()
+// SELECT * FROM user_0 WHERE id = ? UNION SELECT * FROM user_1 WHERE id = ?
+// [1, 2]
+
+builder.Wrap(
+    Table("user_0"),
+    Where("id = ?", 1),
+    UnionAll(wrap1),
+).ToQuery()
+// SELECT * FROM user_0 WHERE id = ? UNION ALL SELECT * FROM user_1 WHERE id = ?
+// [1, 2]
 ```
 
 - Insert

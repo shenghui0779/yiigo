@@ -105,6 +105,42 @@ func TestToQuery(t *testing.T) {
 
 	assert.Equal(t, "SELECT * FROM user WHERE age > ? ORDER BY id DESC OFFSET ? LIMIT ?", query)
 	assert.Equal(t, []interface{}{20, 5, 10}, binds)
+
+	query, binds = builder.Wrap(
+		Table("user00"),
+		Where("id = ?", 1),
+		Union(builder.Wrap(Table("user01"), Where("id = ?", 2))),
+	).ToQuery()
+
+	assert.Equal(t, "SELECT * FROM user00 WHERE id = ? UNION SELECT * FROM user01 WHERE id = ?", query)
+	assert.Equal(t, []interface{}{1, 2}, binds)
+
+	query, binds = builder.Wrap(
+		Table("user_0"),
+		Where("id = ?", 1),
+		UnionAll(builder.Wrap(Table("user_1"), Where("id = ?", 2))),
+	).ToQuery()
+
+	assert.Equal(t, "SELECT * FROM user_0 WHERE id = ? UNION ALL SELECT * FROM user_1 WHERE id = ?", query)
+	assert.Equal(t, []interface{}{1, 2}, binds)
+
+	query, binds = builder.Wrap(
+		Table("user_0"),
+		WhereIn("id IN (?)", []int{1, 2}),
+		Union(builder.Wrap(Table("user_1"), Where("id = ?", 3))),
+	).ToQuery()
+
+	assert.Equal(t, "SELECT * FROM user_0 WHERE id IN (?, ?) UNION SELECT * FROM user_1 WHERE id = ?", query)
+	assert.Equal(t, []interface{}{1, 2, 3}, binds)
+
+	query, binds = builder.Wrap(
+		Table("user_0"),
+		Where("id = ?", 1),
+		Union(builder.Wrap(Table("user_1"), WhereIn("id IN (?)", []int{2, 3}))),
+	).ToQuery()
+
+	assert.Equal(t, "SELECT * FROM user_0 WHERE id = ? UNION SELECT * FROM user_1 WHERE id IN (?, ?)", query)
+	assert.Equal(t, []interface{}{1, 2, 3}, binds)
 }
 
 func TestToInsert(t *testing.T) {
