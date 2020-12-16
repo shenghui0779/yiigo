@@ -38,7 +38,7 @@ func (c CDATA) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 func Date(timestamp int64, layout ...string) string {
 	l := "2006-01-02 15:04:05"
 
-	if len(layout) > 0 {
+	if len(layout) != 0 {
 		l = layout[0]
 	}
 
@@ -52,7 +52,7 @@ func Date(timestamp int64, layout ...string) string {
 func StrToTime(datetime string, layout ...string) int64 {
 	l := "2006-01-02 15:04:05"
 
-	if len(layout) > 0 {
+	if len(layout) != 0 {
 		l = layout[0]
 	}
 

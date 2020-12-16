@@ -40,11 +40,11 @@ func (m *EMailDialer) Send(e *EMail, settings ...gomail.MessageSetting) error {
 	msg.SetAddressHeader("From", e.From, e.Title)
 	msg.SetHeader("To", e.To...)
 
-	if len(e.Cc) > 0 {
+	if len(e.Cc) != 0 {
 		msg.SetHeader("Cc", e.Cc...)
 	}
 
-	if len(e.Attach) > 0 {
+	if len(e.Attach) != 0 {
 		for _, v := range e.Attach {
 			msg.Attach(v)
 		}
@@ -52,7 +52,7 @@ func (m *EMailDialer) Send(e *EMail, settings ...gomail.MessageSetting) error {
 
 	contentType := "text/html"
 
-	if len(e.ContentType) > 0 {
+	if len(e.ContentType) != 0 {
 		contentType = e.ContentType
 	}
 

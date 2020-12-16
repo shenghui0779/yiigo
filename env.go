@@ -62,7 +62,7 @@ type EnvValue struct {
 func (e *EnvValue) String(defaultValue ...string) string {
 	dv := ""
 
-	if len(defaultValue) > 0 {
+	if len(defaultValue) != 0 {
 		dv = defaultValue[0]
 	}
 
@@ -132,7 +132,7 @@ func (e *EnvValue) Strings(defaultValue ...string) []string {
 func (e *EnvValue) Int(defaultValue ...int) int {
 	dv := 0
 
-	if len(defaultValue) > 0 {
+	if len(defaultValue) != 0 {
 		dv = defaultValue[0]
 	}
 
@@ -210,7 +210,7 @@ func (e *EnvValue) Ints(defaultValue ...int) []int {
 func (e *EnvValue) Uint(defaultValue ...uint) uint {
 	var dv uint
 
-	if len(defaultValue) > 0 {
+	if len(defaultValue) != 0 {
 		dv = defaultValue[0]
 	}
 
@@ -301,7 +301,7 @@ func (e *EnvValue) Uints(defaultValue ...uint) []uint {
 func (e *EnvValue) Int8(defaultValue ...int8) int8 {
 	var dv int8
 
-	if len(defaultValue) > 0 {
+	if len(defaultValue) != 0 {
 		dv = defaultValue[0]
 	}
 
@@ -381,7 +381,7 @@ func (e *EnvValue) Int8s(defaultValue ...int8) []int8 {
 func (e *EnvValue) Uint8(defaultValue ...uint8) uint8 {
 	var dv uint8
 
-	if len(defaultValue) > 0 {
+	if len(defaultValue) != 0 {
 		dv = defaultValue[0]
 	}
 
@@ -472,7 +472,7 @@ func (e *EnvValue) Uint8s(defaultValue ...uint8) []uint8 {
 func (e *EnvValue) Int16(defaultValue ...int16) int16 {
 	var dv int16
 
-	if len(defaultValue) > 0 {
+	if len(defaultValue) != 0 {
 		dv = defaultValue[0]
 	}
 
@@ -551,7 +551,7 @@ func (e *EnvValue) Int16s(defaultValue ...int16) []int16 {
 func (e *EnvValue) Uint16(defaultValue ...uint16) uint16 {
 	var dv uint16
 
-	if len(defaultValue) > 0 {
+	if len(defaultValue) != 0 {
 		dv = defaultValue[0]
 	}
 
@@ -642,7 +642,7 @@ func (e *EnvValue) Uint16s(defaultValue ...uint16) []uint16 {
 func (e *EnvValue) Int32(defaultValue ...int32) int32 {
 	var dv int32
 
-	if len(defaultValue) > 0 {
+	if len(defaultValue) != 0 {
 		dv = defaultValue[0]
 	}
 
@@ -722,7 +722,7 @@ func (e *EnvValue) Int32s(defaultValue ...int32) []int32 {
 func (e *EnvValue) Uint32(defaultValue ...uint32) uint32 {
 	var dv uint32
 
-	if len(defaultValue) > 0 {
+	if len(defaultValue) != 0 {
 		dv = defaultValue[0]
 	}
 
@@ -813,7 +813,7 @@ func (e *EnvValue) Uint32s(defaultValue ...uint32) []uint32 {
 func (e *EnvValue) Int64(defaultValue ...int64) int64 {
 	var dv int64
 
-	if len(defaultValue) > 0 {
+	if len(defaultValue) != 0 {
 		dv = defaultValue[0]
 	}
 
@@ -891,7 +891,7 @@ func (e *EnvValue) Int64s(defaultValue ...int64) []int64 {
 func (e *EnvValue) Uint64(defaultValue ...uint64) uint64 {
 	var dv uint64
 
-	if len(defaultValue) > 0 {
+	if len(defaultValue) != 0 {
 		dv = defaultValue[0]
 	}
 
@@ -981,7 +981,7 @@ func (e *EnvValue) Uint64s(defaultValue ...uint64) []uint64 {
 func (e *EnvValue) Float64(defaultValue ...float64) float64 {
 	var dv float64
 
-	if len(defaultValue) > 0 {
+	if len(defaultValue) != 0 {
 		dv = defaultValue[0]
 	}
 
@@ -1059,7 +1059,7 @@ func (e *EnvValue) Float64s(defaultValue ...float64) []float64 {
 func (e *EnvValue) Bool(defaultValue ...bool) bool {
 	var dv bool
 
-	if len(defaultValue) > 0 {
+	if len(defaultValue) != 0 {
 		dv = defaultValue[0]
 	}
 
@@ -1096,7 +1096,7 @@ func (e *EnvValue) Bool(defaultValue ...bool) bool {
 func (e *EnvValue) Time(layout string, defaultValue ...time.Time) time.Time {
 	var dv time.Time
 
-	if len(defaultValue) > 0 {
+	if len(defaultValue) != 0 {
 		dv = defaultValue[0]
 	}
 

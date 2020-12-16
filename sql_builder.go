@@ -509,35 +509,35 @@ func Distinct(columns ...string) QueryOption {
 	})
 }
 
-// InnerJoin specifies the `inner join` clause.
-func InnerJoin(table, on string) QueryOption {
+// Join specifies the `inner join` clause.
+func Join(table, on string) QueryOption {
 	return newFuncQueryOption(func(wrapper *QueryWrapper) {
-		wrapper.joins = append(wrapper.joins, "INNER", "JOIN", table, "ON", on)
-		wrapper.queryLen += 5
+		wrapper.joins = append(wrapper.joins, strings.Join([]string{"INNER", "JOIN", table, "ON", on}, " "))
+		wrapper.queryLen += 1
 	})
 }
 
 // LeftJoin specifies the `left join` clause.
 func LeftJoin(table, on string) QueryOption {
 	return newFuncQueryOption(func(wrapper *QueryWrapper) {
-		wrapper.joins = append(wrapper.joins, "LEFT", "JOIN", table, "ON", on)
-		wrapper.queryLen += 5
+		wrapper.joins = append(wrapper.joins, strings.Join([]string{"LEFT", "JOIN", table, "ON", on}, " "))
+		wrapper.queryLen += 1
 	})
 }
 
 // RightJoin specifies the `right join` clause.
 func RightJoin(table, on string) QueryOption {
 	return newFuncQueryOption(func(wrapper *QueryWrapper) {
-		wrapper.joins = append(wrapper.joins, "RIGHT", "JOIN", table, "ON", on)
-		wrapper.queryLen += 5
+		wrapper.joins = append(wrapper.joins, strings.Join([]string{"RIGHT", "JOIN", table, "ON", on}, " "))
+		wrapper.queryLen += 1
 	})
 }
 
 // FullJoin specifies the `full join` clause.
 func FullJoin(table, on string) QueryOption {
 	return newFuncQueryOption(func(wrapper *QueryWrapper) {
-		wrapper.joins = append(wrapper.joins, "FULL", "JOIN", table, "ON", on)
-		wrapper.queryLen += 5
+		wrapper.joins = append(wrapper.joins, strings.Join([]string{"FULL", "JOIN", table, "ON", on}, " "))
+		wrapper.queryLen += 1
 	})
 }
 

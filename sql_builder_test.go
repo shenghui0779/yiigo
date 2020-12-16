@@ -51,11 +51,38 @@ func TestToQuery(t *testing.T) {
 
 	query, binds = builder.Wrap(
 		Table("user"),
+		Join("address", "user.id = address.user_id"),
+		Where("user.id = ?", 1),
+	).ToQuery()
+
+	assert.Equal(t, "SELECT * FROM user INNER JOIN address ON user.id = address.user_id WHERE user.id = ?", query)
+	assert.Equal(t, []interface{}{1}, binds)
+
+	query, binds = builder.Wrap(
+		Table("user"),
 		LeftJoin("address", "user.id = address.user_id"),
 		Where("user.id = ?", 1),
 	).ToQuery()
 
 	assert.Equal(t, "SELECT * FROM user LEFT JOIN address ON user.id = address.user_id WHERE user.id = ?", query)
+	assert.Equal(t, []interface{}{1}, binds)
+
+	query, binds = builder.Wrap(
+		Table("user"),
+		RightJoin("address", "user.id = address.user_id"),
+		Where("user.id = ?", 1),
+	).ToQuery()
+
+	assert.Equal(t, "SELECT * FROM user RIGHT JOIN address ON user.id = address.user_id WHERE user.id = ?", query)
+	assert.Equal(t, []interface{}{1}, binds)
+
+	query, binds = builder.Wrap(
+		Table("user"),
+		FullJoin("address", "user.id = address.user_id"),
+		Where("user.id = ?", 1),
+	).ToQuery()
+
+	assert.Equal(t, "SELECT * FROM user FULL JOIN address ON user.id = address.user_id WHERE user.id = ?", query)
 	assert.Equal(t, []interface{}{1}, binds)
 
 	query, binds = builder.Wrap(

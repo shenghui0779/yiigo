@@ -107,21 +107,21 @@ func (h *HTTPClient) Do(ctx context.Context, req *http.Request, options ...HTTPO
 		timeout: h.timeout,
 	}
 
-	if len(options) > 0 {
+	if len(options) != 0 {
 		for _, f := range options {
 			f(settings)
 		}
 	}
 
 	// headers
-	if len(settings.headers) > 0 {
+	if len(settings.headers) != 0 {
 		for k, v := range settings.headers {
 			req.Header.Set(k, v)
 		}
 	}
 
 	// cookies
-	if len(settings.cookies) > 0 {
+	if len(settings.cookies) != 0 {
 		for _, v := range settings.cookies {
 			req.AddCookie(v)
 		}
