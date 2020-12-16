@@ -25,7 +25,7 @@ func TestToQuery(t *testing.T) {
 
 	query, binds = builder.Wrap(
 		Table("user"),
-		Where("age IN (?)", []int{20, 30}),
+		WhereIn("age IN (?)", []int{20, 30}),
 	).ToQuery()
 
 	assert.Equal(t, "SELECT * FROM user WHERE age IN (?, ?)", query)
@@ -103,8 +103,8 @@ func TestToQuery(t *testing.T) {
 		Limit(10),
 	).ToQuery()
 
-	assert.Equal(t, "SELECT * FROM user WHERE age > ? ORDER BY id DESC OFFSET 5 LIMIT 10", query)
-	assert.Equal(t, []interface{}{20}, binds)
+	assert.Equal(t, "SELECT * FROM user WHERE age > ? ORDER BY id DESC OFFSET ? LIMIT ?", query)
+	assert.Equal(t, []interface{}{20, 5, 10}, binds)
 }
 
 func TestToInsert(t *testing.T) {
@@ -168,6 +168,18 @@ func TestToUpdate(t *testing.T) {
 
 	assert.Equal(t, "UPDATE user SET name = ?, gender = ?, age = ? WHERE id = ?", query)
 	assert.Equal(t, []interface{}{"shenghui0779", "M", 29, 1}, binds)
+
+	query, binds = builder.Wrap(
+		Table("user"),
+		WhereIn("id IN (?)", []int{1, 2}),
+	).ToUpdate(&User{
+		Name:   "shenghui0779",
+		Gender: "M",
+		Age:    29,
+	})
+
+	assert.Equal(t, "UPDATE user SET name = ?, gender = ?, age = ? WHERE id IN (?, ?)", query)
+	assert.Equal(t, []interface{}{"shenghui0779", "M", 29, 1, 2}, binds)
 }
 
 func TestToDelete(t *testing.T) {
@@ -178,4 +190,12 @@ func TestToDelete(t *testing.T) {
 
 	assert.Equal(t, "DELETE FROM user WHERE id = ?", query)
 	assert.Equal(t, []interface{}{1}, binds)
+
+	query, binds = builder.Wrap(
+		Table("user"),
+		WhereIn("id IN (?)", []int{1, 2}),
+	).ToDelete()
+
+	assert.Equal(t, "DELETE FROM user WHERE id IN (?, ?)", query)
+	assert.Equal(t, []interface{}{1, 2}, binds)
 }
