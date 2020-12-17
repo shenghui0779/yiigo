@@ -123,7 +123,7 @@ yiigo.Env("app.debug").Bool(true)
 yiigo.Env("apollo_namespace.name").String("foo")
 ```
 
-> ⚠️注意！
+> ⚠️ 注意！
 >
 > 如果配置了 `apollo`，则：
 >
