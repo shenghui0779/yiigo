@@ -213,6 +213,7 @@ yiigo.Logger("other").Info("hello world")
 #### SQL Builder
 
 > 😊 如果你不想手写SQL，可以使用 SQL Builder，用于 `yiigo.DB().Select()` 等；
+>
 > ⚠️ SQL Builder 作为辅助使用，目前支持的特性有限，复杂的SQL（如：子查询等）还需自己手写
 
 ```go
