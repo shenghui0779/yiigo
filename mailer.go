@@ -33,30 +33,30 @@ type EMailDialer struct {
 }
 
 // Send send an email.
-func (m *EMailDialer) Send(e *EMail, settings ...gomail.MessageSetting) error {
+func (m *EMailDialer) Send(email *EMail, settings ...gomail.MessageSetting) error {
 	msg := gomail.NewMessage(settings...)
 
-	msg.SetHeader("Subject", e.Subject)
-	msg.SetAddressHeader("From", e.From, e.Title)
-	msg.SetHeader("To", e.To...)
+	msg.SetHeader("Subject", email.Subject)
+	msg.SetAddressHeader("From", email.From, email.Title)
+	msg.SetHeader("To", email.To...)
 
-	if len(e.Cc) != 0 {
-		msg.SetHeader("Cc", e.Cc...)
+	if len(email.Cc) != 0 {
+		msg.SetHeader("Cc", email.Cc...)
 	}
 
-	if len(e.Attach) != 0 {
-		for _, v := range e.Attach {
+	if len(email.Attach) != 0 {
+		for _, v := range email.Attach {
 			msg.Attach(v)
 		}
 	}
 
 	contentType := "text/html"
 
-	if len(e.ContentType) != 0 {
-		contentType = e.ContentType
+	if len(email.ContentType) != 0 {
+		contentType = email.ContentType
 	}
 
-	msg.SetBody(contentType, e.Body)
+	msg.SetBody(contentType, email.Body)
 
 	// Send the email
 	err := m.dialer.DialAndSend(msg)
