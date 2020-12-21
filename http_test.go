@@ -15,19 +15,19 @@ func TestHTTPOption(t *testing.T) {
 		WithHTTPTimeout(5 * time.Second),
 	}
 
-	o := &httpOptions{
+	settings := &httpSettings{
 		headers: make(map[string]string),
 		timeout: defaultHTTPTimeout,
 	}
 
-	for _, option := range options {
-		option.apply(o)
+	for _, f := range options {
+		f(settings)
 	}
 
 	assert.Equal(t, map[string]string{
 		"Accept-Language": "zh-CN,zh;q=0.9",
 		"Content-Type":    "text/xml; charset=utf-8",
-	}, o.headers)
-	assert.True(t, o.close)
-	assert.Equal(t, 5*time.Second, o.timeout)
+	}, settings.headers)
+	assert.True(t, settings.close)
+	assert.Equal(t, 5*time.Second, settings.timeout)
 }

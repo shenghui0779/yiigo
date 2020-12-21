@@ -2,6 +2,7 @@ package yiigo
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -12,6 +13,13 @@ func TestDate(t *testing.T) {
 
 func TestStrToTime(t *testing.T) {
 	assert.Equal(t, int64(1562910319), StrToTime("2019-07-12 13:45:19"))
+}
+
+func TestWeekAround(t *testing.T) {
+	monday, sunday := WeekAround(time.Date(2020, 12, 12, 0, 0, 0, 0, time.Local))
+
+	assert.Equal(t, "20201207", monday)
+	assert.Equal(t, "20201213", sunday)
 }
 
 func TestIP2Long(t *testing.T) {

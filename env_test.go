@@ -140,7 +140,7 @@ func Test_env_Unmarshal(t *testing.T) {
 }
 
 var (
-	builder *SQLBuilder
+	builder SQLBuilder
 
 	privateKey []byte
 	publicKey  []byte

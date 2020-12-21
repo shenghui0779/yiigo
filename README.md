@@ -123,7 +123,7 @@ yiigo.Env("app.debug").Bool(true)
 yiigo.Env("apollo_namespace.name").String("foo")
 ```
 
-> ⚠️注意！
+> ⚠️ 注意
 >
 > 如果配置了 `apollo`，则：
 >
@@ -212,7 +212,9 @@ yiigo.Logger("other").Info("hello world")
 
 #### SQL Builder
 
-> 😊 如果你不想手写SQL，可以使用 SQL Builder，用于 `yiigo.DB().Select()` 等
+> 😊 为不想手写SQL的你生成SQL语句，用于 `yiigo.DB().Get()` 和 `yiigo.DB().Select()` 等；
+>
+> ⚠️ 作为辅助方法使用，目前支持的特性有限，复杂的SQL（如：子查询等）还需自己手写
 
 ```go
 builder := yiigo.NewSQLBuilder(yiigo.MySQL)
@@ -237,7 +239,7 @@ builder.Wrap(
 
 builder.Wrap(
     yiigo.Table("user"),
-    yiigo.Where("age IN (?)", []int{20, 30}),
+    yiigo.WhereIn("age IN (?)", []int{20, 30}),
 ).ToQuery()
 // SELECT * FROM user WHERE age IN (?, ?)
 // [20 30]
@@ -284,6 +286,27 @@ builder.Wrap(
 ).ToQuery()
 // SELECT * FROM user WHERE age > ? ORDER BY id DESC OFFSET 5 LIMIT 10
 // [20]
+
+wrap1 := builder.Wrap(
+	Table("user_1"),
+	Where("id = ?", 2),
+)
+
+builder.Wrap(
+    Table("user_0"),
+    Where("id = ?", 1),
+    Union(wrap1),
+).ToQuery()
+// SELECT * FROM user_0 WHERE id = ? UNION SELECT * FROM user_1 WHERE id = ?
+// [1, 2]
+
+builder.Wrap(
+    Table("user_0"),
+    Where("id = ?", 1),
+    UnionAll(wrap1),
+).ToQuery()
+// SELECT * FROM user_0 WHERE id = ? UNION ALL SELECT * FROM user_1 WHERE id = ?
+// [1, 2]
 ```
 
 - Insert

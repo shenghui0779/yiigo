@@ -1,13 +1,11 @@
 package yiigo
 
 import (
-	"bytes"
 	"encoding/xml"
 	"errors"
 	"math"
 	"net"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/go-playground/locales/zh"
@@ -40,7 +38,7 @@ func (c CDATA) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 func Date(timestamp int64, layout ...string) string {
 	l := "2006-01-02 15:04:05"
 
-	if len(layout) > 0 {
+	if len(layout) != 0 {
 		l = layout[0]
 	}
 
@@ -54,7 +52,7 @@ func Date(timestamp int64, layout ...string) string {
 func StrToTime(datetime string, layout ...string) int64 {
 	l := "2006-01-02 15:04:05"
 
-	if len(layout) > 0 {
+	if len(layout) != 0 {
 		l = layout[0]
 	}
 
@@ -71,19 +69,18 @@ func StrToTime(datetime string, layout ...string) int64 {
 }
 
 // WeekAround returns the date of monday and sunday for current week
-func WeekAround() (monday, sunday string) {
-	now := time.Now()
-	offset := int(time.Monday - now.Weekday())
+func WeekAround(t time.Time) (monday, sunday string) {
+	offset := int(time.Monday - t.Weekday())
 
 	if offset > 0 {
 		offset = -6
 	}
 
-	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.Local)
+	today := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, time.Local)
 
 	monday = today.AddDate(0, 0, offset).Format("20060102")
 
-	offset = int(time.Sunday - now.Weekday())
+	offset = int(time.Sunday - t.Weekday())
 
 	if offset < 0 {
 		offset += 7
@@ -113,40 +110,6 @@ func Long2IP(ip uint32) string {
 
 	return net.IPv4(byte(ip>>24), byte(ip>>16), byte(ip>>8), byte(ip)).String()
 }
-
-// BufferPool type of buffer pool
-type BufferPool struct {
-	pool sync.Pool
-}
-
-// Get return a buffer
-func (b *BufferPool) Get() *bytes.Buffer {
-	buf := b.pool.Get().(*bytes.Buffer)
-	buf.Reset()
-
-	return buf
-}
-
-// Put put a buffer to pool
-func (b *BufferPool) Put(buf *bytes.Buffer) {
-	if buf == nil {
-		return
-	}
-
-	b.pool.Put(buf)
-}
-
-// NewBufferPool returns a new buffer pool
-func NewBufferPool(cap int64) *BufferPool {
-	return &BufferPool{pool: sync.Pool{
-		New: func() interface{} {
-			return bytes.NewBuffer(make([]byte, 0, cap))
-		},
-	}}
-}
-
-// BufPool buffer pool
-var BufPool = NewBufferPool(4 << 10) // 4KB
 
 // GinValidator validator for gin
 type GinValidator struct {
