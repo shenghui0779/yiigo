@@ -17,11 +17,11 @@ func TestToQuery(t *testing.T) {
 
 	query, binds = builder.Wrap(
 		Table("user"),
-		Where("name = ? AND age > ?", "shenghui0779", 20),
+		Where("name = ? AND age > ?", "yiigo", 20),
 	).ToQuery()
 
 	assert.Equal(t, "SELECT * FROM user WHERE name = ? AND age > ?", query)
-	assert.Equal(t, []interface{}{"shenghui0779", 20}, binds)
+	assert.Equal(t, []interface{}{"yiigo", 20}, binds)
 
 	query, binds = builder.Wrap(
 		Table("user"),
@@ -143,13 +143,22 @@ func TestToInsert(t *testing.T) {
 	}
 
 	query, binds := builder.Wrap(Table("user")).ToInsert(&User{
-		Name:   "shenghui0779",
+		Name:   "yiigo",
 		Gender: "M",
 		Age:    29,
 	})
 
 	assert.Equal(t, "INSERT INTO user (name, gender, age) VALUES (?, ?, ?)", query)
-	assert.Equal(t, []interface{}{"shenghui0779", "M", 29}, binds)
+	assert.Equal(t, []interface{}{"yiigo", "M", 29}, binds)
+
+	query, binds = builder.Wrap(Table("user")).ToInsert(X{
+		"age":    29,
+		"gender": "M",
+		"name":   "yiigo",
+	})
+
+	assert.Equal(t, "INSERT INTO user (age, gender, name) VALUES (?, ?, ?)", query)
+	assert.Equal(t, []interface{}{29, "M", "yiigo"}, binds)
 }
 
 func TestToBatchInsert(t *testing.T) {
@@ -162,7 +171,7 @@ func TestToBatchInsert(t *testing.T) {
 
 	query, binds := builder.Wrap(Table("user")).ToBatchInsert([]*User{
 		{
-			Name:   "shenghui0779",
+			Name:   "yiigo",
 			Gender: "M",
 			Age:    29,
 		},
@@ -174,7 +183,24 @@ func TestToBatchInsert(t *testing.T) {
 	})
 
 	assert.Equal(t, "INSERT INTO user (name, gender, age) VALUES (?, ?, ?), (?, ?, ?)", query)
-	assert.Equal(t, []interface{}{"shenghui0779", "M", 29, "test", "W", 20}, binds)
+	assert.Equal(t, []interface{}{"yiigo", "M", 29, "test", "W", 20}, binds)
+
+	// map 字段顺序不一定
+	// query, binds = builder.Wrap(Table("user")).ToBatchInsert([]X{
+	// 	{
+	// 		"age":    29,
+	// 		"gender": "M",
+	// 		"name":   "yiigo",
+	// 	},
+	// 	{
+	// 		"age":    20,
+	// 		"gender": "W",
+	// 		"name":   "test",
+	// 	},
+	// })
+	//
+	// assert.Equal(t, "INSERT INTO user (age, gender, name) VALUES (?, ?, ?), (?, ?, ?)", query)
+	// assert.Equal(t, []interface{}{29, "M", "yiigo", 20, "W", "test"}, binds)
 }
 
 func TestToUpdate(t *testing.T) {
@@ -188,25 +214,38 @@ func TestToUpdate(t *testing.T) {
 		Table("user"),
 		Where("id = ?", 1),
 	).ToUpdate(&User{
-		Name:   "shenghui0779",
+		Name:   "yiigo",
 		Gender: "M",
 		Age:    29,
 	})
 
 	assert.Equal(t, "UPDATE user SET name = ?, gender = ?, age = ? WHERE id = ?", query)
-	assert.Equal(t, []interface{}{"shenghui0779", "M", 29, 1}, binds)
+	assert.Equal(t, []interface{}{"yiigo", "M", 29, 1}, binds)
 
 	query, binds = builder.Wrap(
 		Table("user"),
 		WhereIn("id IN (?)", []int{1, 2}),
 	).ToUpdate(&User{
-		Name:   "shenghui0779",
+		Name:   "yiigo",
 		Gender: "M",
 		Age:    29,
 	})
 
 	assert.Equal(t, "UPDATE user SET name = ?, gender = ?, age = ? WHERE id IN (?, ?)", query)
-	assert.Equal(t, []interface{}{"shenghui0779", "M", 29, 1, 2}, binds)
+	assert.Equal(t, []interface{}{"yiigo", "M", 29, 1, 2}, binds)
+
+	// map 字段顺序不一定
+	// query, binds = builder.Wrap(
+	// 	Table("user"),
+	// 	Where("id = ?", 1),
+	// ).ToUpdate(X{
+	// 	"age":    29,
+	// 	"gender": "M",
+	// 	"name":   "yiigo",
+	// })
+	//
+	// assert.Equal(t, "UPDATE user SET age = ?, gender = ?, name = ? WHERE id = ?", query)
+	// assert.Equal(t, []interface{}{29, "M", "yiigo", 1}, binds)
 }
 
 func TestToDelete(t *testing.T) {

@@ -434,13 +434,13 @@ func (w *QueryWrapper) updateWithMap(data X) *SQLClause {
 
 	for k, v := range data {
 		if clause, ok := v.(*SQLClause); ok {
-			sets = append(sets, fmt.Sprintf("%s = %s", k, clause.query))
+			sets = append(sets, strings.Join([]string{k, "=", clause.query}, " "))
 			binds = append(binds, clause.binds...)
 
 			continue
 		}
 
-		sets = append(sets, fmt.Sprintf("%s = ?", k))
+		sets = append(sets, strings.Join([]string{k, "=", "?"}, " "))
 		binds = append(binds, v)
 	}
 
@@ -475,7 +475,7 @@ func (w *QueryWrapper) updateWithStruct(v reflect.Value) *SQLClause {
 			column = t.Field(i).Name
 		}
 
-		sets = append(sets, fmt.Sprintf("%s = ?", column))
+		sets = append(sets, strings.Join([]string{column, "=", "?"}, " "))
 		binds = append(binds, v.Field(i).Interface())
 	}
 
