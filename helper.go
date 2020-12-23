@@ -149,8 +149,8 @@ func (v *GinValidator) Engine() interface{} {
 
 // NewGinValidator returns a validator for gin
 func NewGinValidator() *GinValidator {
-	zhCn := zh.New()
-	uniTrans := ut.New(zhCn)
+	locale := zh.New()
+	uniTrans := ut.New(locale)
 
 	validate := validator.New()
 	validate.SetTagName("valid")
