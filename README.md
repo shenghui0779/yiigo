@@ -297,7 +297,7 @@ builder.Wrap(
     Where("id = ?", 1),
     Union(wrap1),
 ).ToQuery()
-// SELECT * FROM user_0 WHERE id = ? UNION SELECT * FROM user_1 WHERE id = ?
+// (SELECT * FROM user_0 WHERE id = ?) UNION (SELECT * FROM user_1 WHERE id = ?)
 // [1, 2]
 
 builder.Wrap(
@@ -305,8 +305,23 @@ builder.Wrap(
     Where("id = ?", 1),
     UnionAll(wrap1),
 ).ToQuery()
-// SELECT * FROM user_0 WHERE id = ? UNION ALL SELECT * FROM user_1 WHERE id = ?
+// (SELECT * FROM user_0 WHERE id = ?) UNION ALL (SELECT * FROM user_1 WHERE id = ?)
 // [1, 2]
+
+builder.Wrap(
+    Table("user_0"),
+    WhereIn("age IN (?)", []int{10, 20}),
+    Limit(5),
+    Union(
+        builder.Wrap(
+            Table("user_1"),
+            Where("age IN (?)", []int{30, 40}),
+            Limit(5),
+        ),
+    ),
+).ToQuery()
+// (SELECT * FROM user_0 WHERE age IN (?, ?) LIMIT ?) UNION (SELECT * FROM user_1 WHERE age IN (?, ?) LIMIT ?)
+// [10, 20, 5, 30, 40, 5]
 ```
 
 - Insert

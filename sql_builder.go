@@ -88,7 +88,7 @@ func (w *QueryWrapper) ToQuery() (string, []interface{}) {
 	if l := len(w.unions); l != 0 {
 		statements := make([]string, 0, l+1)
 
-		statements = append(statements, clause.query)
+		statements = append(statements, fmt.Sprintf("(%s)", clause.query))
 
 		for _, v := range w.unions {
 			statements = append(statements, v.query)
@@ -661,7 +661,7 @@ func Union(wrappers ...SQLWrapper) QueryOption {
 
 			clause := v.subquery()
 
-			w.unions = append(w.unions, Clause(strings.Join([]string{"UNION", clause.query}, " "), clause.binds...))
+			w.unions = append(w.unions, Clause(strings.Join([]string{"UNION", fmt.Sprintf("(%s)", clause.query)}, " "), clause.binds...))
 			w.bindsLen += len(clause.binds)
 		}
 	}
@@ -683,7 +683,7 @@ func UnionAll(wrappers ...SQLWrapper) QueryOption {
 
 			clause := v.subquery()
 
-			w.unions = append(w.unions, Clause(strings.Join([]string{"UNION", "ALL", clause.query}, " "), clause.binds...))
+			w.unions = append(w.unions, Clause(strings.Join([]string{"UNION", "ALL", fmt.Sprintf("(%s)", clause.query)}, " "), clause.binds...))
 			w.bindsLen += len(clause.binds)
 		}
 	}
