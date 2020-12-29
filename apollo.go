@@ -48,10 +48,10 @@ func initApollo() {
 	}
 
 	if !InStrings(defaultNamespace, cfg.Namespace...) {
-		cfg.Namespace = append(cfg.Namespace, defaultNamespace)
+		env.withNamespaces(defaultNamespace)
 	}
 
-	env.withApollo(cfg.Namespace)
+	env.withNamespaces(cfg.Namespace...)
 
 	logger.Info("yiigo: apollo is OK.")
 }
