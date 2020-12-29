@@ -158,14 +158,15 @@ func TestToInsert(t *testing.T) {
 	assert.Equal(t, "INSERT INTO user (name, gender, age) VALUES (?, ?, ?)", query)
 	assert.Equal(t, []interface{}{"yiigo", "M", 29}, binds)
 
-	query, binds = builder.Wrap(Table("user")).ToInsert(X{
-		"age":    29,
-		"gender": "M",
-		"name":   "yiigo",
-	})
+	// map 字段顺序不一定
+	// query, binds = builder.Wrap(Table("user")).ToInsert(X{
+	// 	"age":    29,
+	// 	"gender": "M",
+	// 	"name":   "yiigo",
+	// })
 
-	assert.Equal(t, "INSERT INTO user (age, gender, name) VALUES (?, ?, ?)", query)
-	assert.Equal(t, []interface{}{29, "M", "yiigo"}, binds)
+	// assert.Equal(t, "INSERT INTO user (age, gender, name) VALUES (?, ?, ?)", query)
+	// assert.Equal(t, []interface{}{29, "M", "yiigo"}, binds)
 }
 
 func TestToBatchInsert(t *testing.T) {
