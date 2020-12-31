@@ -98,12 +98,12 @@ func TestToQuery(t *testing.T) {
 	query, binds = builder.Wrap(
 		Table("user"),
 		Where("age > ?", 20),
-		OrderBy("id DESC"),
+		OrderBy("age ASC", "id DESC"),
 		Offset(5),
 		Limit(10),
 	).ToQuery()
 
-	assert.Equal(t, "SELECT * FROM user WHERE age > ? ORDER BY id DESC OFFSET ? LIMIT ?", query)
+	assert.Equal(t, "SELECT * FROM user WHERE age > ? ORDER BY age ASC, id DESC OFFSET ? LIMIT ?", query)
 	assert.Equal(t, []interface{}{20, 5, 10}, binds)
 
 	query, binds = builder.Wrap(

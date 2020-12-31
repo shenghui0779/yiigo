@@ -32,7 +32,7 @@ type QueryBuilder struct {
 func (b *QueryBuilder) Wrap(options ...QueryOption) SQLWrapper {
 	wrapper := &QueryWrapper{
 		driver:  b.driver,
-		columns: "SELECT *",
+		columns: []string{"*"},
 	}
 
 	for _, f := range options {
@@ -65,26 +65,24 @@ func Clause(query string, binds ...interface{}) *SQLClause {
 type QueryWrapper struct {
 	driver  DBDriver
 	table   string
-	columns string
+	columns []string
 	where   *SQLClause
 	joins   []string
-	group   string
+	group   []string
 	having  *SQLClause
-	order   string
+	order   []string
 	offset  *SQLClause
 	limit   *SQLClause
 	unions  []*SQLClause
-
+	distinct bool
 	whereIn  bool
-	queryLen int
-	bindsLen int
 }
 
 // ToQuery returns query statement and binds.
 func (w *QueryWrapper) ToQuery() (string, []interface{}) {
 	clause := w.subquery()
 
-	// do unions
+	// unions
 	if l := len(w.unions); l != 0 {
 		statements := make([]string, 0, l+1)
 
@@ -98,7 +96,7 @@ func (w *QueryWrapper) ToQuery() (string, []interface{}) {
 		clause.query = strings.Join(statements, " ")
 	}
 
-	// do where in
+	// where in
 	if w.whereIn {
 		var err error
 
@@ -121,44 +119,50 @@ func (w *QueryWrapper) ToQuery() (string, []interface{}) {
 }
 
 func (w *QueryWrapper) subquery() *SQLClause {
-	clauses := make([]string, 0, w.queryLen)
-	binds := make([]interface{}, 0, w.bindsLen)
+	statements := make([]string, 0)
+	binds := make([]interface{}, 0)
 
-	clauses = append(clauses, w.columns, "FROM", w.table)
+	statements = append(statements, "SELECT")
+
+	if w.distinct {
+		statements = append(statements, "DISTINCT")
+	}
+
+	statements = append(statements, strings.Join(w.columns, ", "), "FROM", w.table)
 
 	if len(w.joins) != 0 {
-		clauses = append(clauses, w.joins...)
+		statements = append(statements, w.joins...)
 	}
 
 	if w.where != nil {
-		clauses = append(clauses, w.where.query)
+		statements = append(statements, "WHERE", w.where.query)
 		binds = append(binds, w.where.binds...)
 	}
 
-	if w.group != "" {
-		clauses = append(clauses, w.group)
+	if len(w.group) != 0 {
+		statements = append(statements, "GROUP BY", strings.Join(w.group, ", "))
 	}
 
 	if w.having != nil {
-		clauses = append(clauses, w.having.query)
+		statements = append(statements, "HAVING", w.having.query)
 		binds = append(binds, w.having.binds...)
 	}
 
-	if w.order != "" {
-		clauses = append(clauses, w.order)
+	if len(w.order) != 0 {
+		statements = append(statements, "ORDER BY", strings.Join(w.order, ", "))
 	}
 
 	if w.offset != nil {
-		clauses = append(clauses, w.offset.query)
+		statements = append(statements, w.offset.query)
 		binds = append(binds, w.offset.binds...)
 	}
 
 	if w.limit != nil {
-		clauses = append(clauses, w.limit.query)
+		statements = append(statements, w.limit.query)
 		binds = append(binds, w.limit.binds...)
 	}
 
-	return Clause(strings.Join(clauses, " "), binds...)
+	return Clause(strings.Join(statements, " "), binds...)
 }
 
 // ToInsert returns insert statement and binds.
@@ -430,7 +434,7 @@ func (w *QueryWrapper) updateWithMap(data X) *SQLClause {
 	fieldNum := len(data)
 
 	sets := make([]string, 0, fieldNum)
-	binds := make([]interface{}, 0, fieldNum+w.bindsLen)
+	binds := make([]interface{}, 0, fieldNum)
 
 	for k, v := range data {
 		if clause, ok := v.(*SQLClause); ok {
@@ -460,7 +464,7 @@ func (w *QueryWrapper) updateWithStruct(v reflect.Value) *SQLClause {
 	fieldNum := v.NumField()
 
 	sets := make([]string, 0, fieldNum)
-	binds := make([]interface{}, 0, fieldNum+w.bindsLen)
+	binds := make([]interface{}, 0, fieldNum)
 
 	t := v.Type()
 
@@ -493,17 +497,17 @@ func (w *QueryWrapper) updateWithStruct(v reflect.Value) *SQLClause {
 
 // ToDelete returns delete clause and binds.
 func (w *QueryWrapper) ToDelete() (string, []interface{}) {
-	clauses := make([]string, 0, w.queryLen)
-	binds := make([]interface{}, 0, w.bindsLen)
+	statements := make([]string, 0)
+	binds := make([]interface{}, 0)
 
-	clauses = append(clauses, "DELETE", "FROM", w.table)
+	statements = append(statements, "DELETE", "FROM", w.table)
 
 	if w.where != nil {
-		clauses = append(clauses, w.where.query)
+		statements = append(statements, w.where.query)
 		binds = append(binds, w.where.binds...)
 	}
 
-	query := strings.Join(clauses, " ")
+	query := strings.Join(statements, " ")
 
 	if w.whereIn {
 		var err error
@@ -533,23 +537,21 @@ type QueryOption func(w *QueryWrapper)
 func Table(name string) QueryOption {
 	return func(w *QueryWrapper) {
 		w.table = name
-		w.queryLen += 2
 	}
 }
 
 // Select specifies the query columns.
 func Select(columns ...string) QueryOption {
 	return func(w *QueryWrapper) {
-		w.columns = strings.Join([]string{"SELECT", strings.Join(columns, ", ")}, " ")
-		w.queryLen++
+		w.columns = columns
 	}
 }
 
 // Distinct specifies the `distinct` clause.
 func Distinct(columns ...string) QueryOption {
 	return func(w *QueryWrapper) {
-		w.columns = strings.Join([]string{"SELECT", "DISTINCT", strings.Join(columns, ", ")}, " ")
-		w.queryLen++
+		w.columns = columns
+		w.distinct = true
 	}
 }
 
@@ -557,7 +559,6 @@ func Distinct(columns ...string) QueryOption {
 func Join(table, on string) QueryOption {
 	return func(w *QueryWrapper) {
 		w.joins = append(w.joins, strings.Join([]string{"INNER", "JOIN", table, "ON", on}, " "))
-		w.queryLen++
 	}
 }
 
@@ -565,7 +566,6 @@ func Join(table, on string) QueryOption {
 func LeftJoin(table, on string) QueryOption {
 	return func(w *QueryWrapper) {
 		w.joins = append(w.joins, strings.Join([]string{"LEFT", "JOIN", table, "ON", on}, " "))
-		w.queryLen++
 	}
 }
 
@@ -573,7 +573,6 @@ func LeftJoin(table, on string) QueryOption {
 func RightJoin(table, on string) QueryOption {
 	return func(w *QueryWrapper) {
 		w.joins = append(w.joins, strings.Join([]string{"RIGHT", "JOIN", table, "ON", on}, " "))
-		w.queryLen++
 	}
 }
 
@@ -581,51 +580,42 @@ func RightJoin(table, on string) QueryOption {
 func FullJoin(table, on string) QueryOption {
 	return func(w *QueryWrapper) {
 		w.joins = append(w.joins, strings.Join([]string{"FULL", "JOIN", table, "ON", on}, " "))
-		w.queryLen++
 	}
 }
 
 // Where specifies the `where` clause.
 func Where(query string, binds ...interface{}) QueryOption {
 	return func(w *QueryWrapper) {
-		w.where = Clause(strings.Join([]string{"WHERE", query}, " "), binds...)
-		w.queryLen++
-		w.bindsLen += len(binds)
+		w.where = Clause(query, binds...)
 	}
 }
 
 // WhereIn specifies the `where in` clause.
 func WhereIn(query string, binds ...interface{}) QueryOption {
 	return func(w *QueryWrapper) {
-		w.where = Clause(strings.Join([]string{"WHERE", query}, " "), binds...)
+		w.where = Clause(query, binds...)
 		w.whereIn = true
-		w.queryLen++
-		w.bindsLen += len(binds)
 	}
 }
 
 // GroupBy specifies the `group by` clause.
-func GroupBy(column string) QueryOption {
+func GroupBy(columns ...string) QueryOption {
 	return func(w *QueryWrapper) {
-		w.group = strings.Join([]string{"GROUP", "BY", column}, " ")
-		w.queryLen++
+		w.group = columns
 	}
 }
 
 // Having specifies the `having` clause.
 func Having(query string, binds ...interface{}) QueryOption {
 	return func(w *QueryWrapper) {
-		w.having = Clause(strings.Join([]string{"HAVING", query}, " "), binds...)
-		w.queryLen++
-		w.bindsLen += len(binds)
+		w.having = Clause(query, binds...)
 	}
 }
 
 // OrderBy specifies the `order by` clause.
-func OrderBy(query string) QueryOption {
+func OrderBy(columns ...string) QueryOption {
 	return func(w *QueryWrapper) {
-		w.order = strings.Join([]string{"ORDER", "BY", query}, " ")
-		w.queryLen++
+		w.order = columns
 	}
 }
 
@@ -633,7 +623,6 @@ func OrderBy(query string) QueryOption {
 func Offset(n int) QueryOption {
 	return func(w *QueryWrapper) {
 		w.offset = Clause("OFFSET ?", n)
-		w.queryLen++
 	}
 }
 
@@ -641,7 +630,6 @@ func Offset(n int) QueryOption {
 func Limit(n int) QueryOption {
 	return func(w *QueryWrapper) {
 		w.limit = Clause("LIMIT ?", n)
-		w.queryLen++
 	}
 }
 
@@ -661,8 +649,7 @@ func Union(wrappers ...SQLWrapper) QueryOption {
 
 			clause := v.subquery()
 
-			w.unions = append(w.unions, Clause(strings.Join([]string{"UNION", fmt.Sprintf("(%s)", clause.query)}, " "), clause.binds...))
-			w.bindsLen += len(clause.binds)
+			w.unions = append(w.unions, Clause(strings.Join([]string{"UNION", fmt.Sprintf("(%s)", v.subquery().query)}, " "), clause.binds...))
 		}
 	}
 }
@@ -684,7 +671,6 @@ func UnionAll(wrappers ...SQLWrapper) QueryOption {
 			clause := v.subquery()
 
 			w.unions = append(w.unions, Clause(strings.Join([]string{"UNION", "ALL", fmt.Sprintf("(%s)", clause.query)}, " "), clause.binds...))
-			w.bindsLen += len(clause.binds)
 		}
 	}
 }
