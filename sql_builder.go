@@ -191,7 +191,15 @@ func (w *QueryWrapper) ToInsert(data interface{}) (string, []interface{}) {
 		return "", nil
 	}
 
-	query := sqlx.Rebind(sqlx.BindType(string(w.driver)), clause.query)
+	statements := make([]string, 0, 8)
+
+	statements = append(statements, "INSERT INTO", w.table, clause.query)
+
+	if w.driver == Postgres {
+		statements = append(statements, "RETURNING id")
+	}
+
+	query := sqlx.Rebind(sqlx.BindType(string(w.driver)), strings.Join(statements, " "))
 
 	if debug {
 		logger.Info(query, zap.Any("binds", clause.binds))
@@ -213,15 +221,7 @@ func (w *QueryWrapper) insertWithMap(data X) *SQLClause {
 		binds = append(binds, v)
 	}
 
-	keywords := make([]string, 0, 8)
-
-	keywords = append(keywords, "INSERT", "INTO", w.table, fmt.Sprintf("(%s)", strings.Join(columns, ", ")), "VALUES", fmt.Sprintf("(%s)", strings.Join(values, ", ")))
-
-	if w.driver == Postgres {
-		keywords = append(keywords, "RETURNING", "id")
-	}
-
-	return Clause(strings.Join(keywords, " "), binds...)
+	return Clause(strings.Join([]string{fmt.Sprintf("(%s)", strings.Join(columns, ", ")), "VALUES", fmt.Sprintf("(%s)", strings.Join(values, ", "))}, " "), binds...)
 }
 
 func (w *QueryWrapper) insertWithStruct(v reflect.Value) *SQLClause {
@@ -249,15 +249,7 @@ func (w *QueryWrapper) insertWithStruct(v reflect.Value) *SQLClause {
 		binds = append(binds, v.Field(i).Interface())
 	}
 
-	keywords := make([]string, 0, 8)
-
-	keywords = append(keywords, "INSERT", "INTO", w.table, fmt.Sprintf("(%s)", strings.Join(columns, ", ")), "VALUES", fmt.Sprintf("(%s)", strings.Join(values, ", ")))
-
-	if w.driver == Postgres {
-		keywords = append(keywords, "RETURNING", "id")
-	}
-
-	return Clause(strings.Join(keywords, " "), binds...)
+	return Clause(strings.Join([]string{fmt.Sprintf("(%s)", strings.Join(columns, ", ")), "VALUES", fmt.Sprintf("(%s)", strings.Join(values, ", "))}, " "), binds...)
 }
 
 // ToBatchInsert returns batch insert statement and binds.
@@ -340,7 +332,7 @@ func (w *QueryWrapper) batchInsertWithMap(data []X) *SQLClause {
 		values = append(values, fmt.Sprintf("(%s)", strings.Join(phrs, ", ")))
 	}
 
-	return Clause(strings.Join([]string{"INSERT", "INTO", w.table, fmt.Sprintf("(%s)", strings.Join(columns, ", ")), "VALUES", strings.Join(values, ", ")}, " "), binds...)
+	return Clause(strings.Join([]string{"INSERT INTO", w.table, fmt.Sprintf("(%s)", strings.Join(columns, ", ")), "VALUES", strings.Join(values, ", ")}, " "), binds...)
 }
 
 func (w *QueryWrapper) batchInsertWithStruct(v reflect.Value) *SQLClause {
@@ -380,7 +372,7 @@ func (w *QueryWrapper) batchInsertWithStruct(v reflect.Value) *SQLClause {
 		values = append(values, fmt.Sprintf("(%s)", strings.Join(phrs, ", ")))
 	}
 
-	return Clause(strings.Join([]string{"INSERT", "INTO", w.table, fmt.Sprintf("(%s)", strings.Join(columns, ", ")), "VALUES", strings.Join(values, ", ")}, " "), binds...)
+	return Clause(strings.Join([]string{"INSERT INTO", w.table, fmt.Sprintf("(%s)", strings.Join(columns, ", ")), "VALUES", strings.Join(values, ", ")}, " "), binds...)
 }
 
 // ToUpdate returns update statement and binds.
@@ -408,6 +400,17 @@ func (w *QueryWrapper) ToUpdate(data interface{}) (string, []interface{}) {
 
 		return "", nil
 	}
+
+	statements := make([]string, 0, 6)
+
+	statements = append(statements, "UPDATE", w.table, "SET", clause.query)
+
+	if w.where != nil {
+		statements = append(statements, "WHERE", w.where.query)
+		clause.binds = append(clause.binds, w.where.binds...)
+	}
+
+	clause.query = strings.Join(statements, " ")
 
 	if w.whereIn {
 		var err error
@@ -448,16 +451,7 @@ func (w *QueryWrapper) updateWithMap(data X) *SQLClause {
 		binds = append(binds, v)
 	}
 
-	keywords := make([]string, 0, 5)
-
-	keywords = append(keywords, "UPDATE", w.table, "SET", strings.Join(sets, ", "))
-
-	if w.where != nil {
-		keywords = append(keywords, w.where.query)
-		binds = append(binds, w.where.binds...)
-	}
-
-	return Clause(strings.Join(keywords, " "), binds...)
+	return Clause(strings.Join(sets, ", "), binds...)
 }
 
 func (w *QueryWrapper) updateWithStruct(v reflect.Value) *SQLClause {
@@ -483,27 +477,18 @@ func (w *QueryWrapper) updateWithStruct(v reflect.Value) *SQLClause {
 		binds = append(binds, v.Field(i).Interface())
 	}
 
-	keywords := make([]string, 0, 5)
-
-	keywords = append(keywords, "UPDATE", w.table, "SET", strings.Join(sets, ", "))
-
-	if w.where != nil {
-		keywords = append(keywords, w.where.query)
-		binds = append(binds, w.where.binds...)
-	}
-
-	return Clause(strings.Join(keywords, " "), binds...)
+	return Clause(strings.Join(sets, ", "), binds...)
 }
 
 // ToDelete returns delete clause and binds.
 func (w *QueryWrapper) ToDelete() (string, []interface{}) {
-	statements := make([]string, 0)
+	statements := make([]string, 0, 5)
 	binds := make([]interface{}, 0)
 
 	statements = append(statements, "DELETE", "FROM", w.table)
 
 	if w.where != nil {
-		statements = append(statements, w.where.query)
+		statements = append(statements, "WHERE", w.where.query)
 		binds = append(binds, w.where.binds...)
 	}
 
