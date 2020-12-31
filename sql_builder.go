@@ -63,17 +63,17 @@ func Clause(query string, binds ...interface{}) *SQLClause {
 
 // QueryWrapper is a SQLWrapper implementation
 type QueryWrapper struct {
-	driver  DBDriver
-	table   string
-	columns []string
-	where   *SQLClause
-	joins   []string
-	group   []string
-	having  *SQLClause
-	order   []string
-	offset  *SQLClause
-	limit   *SQLClause
-	unions  []*SQLClause
+	driver   DBDriver
+	table    string
+	columns  []string
+	where    *SQLClause
+	joins    []string
+	group    []string
+	having   *SQLClause
+	order    []string
+	offset   *SQLClause
+	limit    *SQLClause
+	unions   []*SQLClause
 	distinct bool
 	whereIn  bool
 }
@@ -168,7 +168,10 @@ func (w *QueryWrapper) subquery() *SQLClause {
 // ToInsert returns insert statement and binds.
 // data expects `struct`, `*struct`, `yiigo.X`.
 func (w *QueryWrapper) ToInsert(data interface{}) (string, []interface{}) {
-	var clause *SQLClause
+	var (
+		columns []string
+		binds   []interface{}
+	)
 
 	v := reflect.Indirect(reflect.ValueOf(data))
 
@@ -182,74 +185,88 @@ func (w *QueryWrapper) ToInsert(data interface{}) (string, []interface{}) {
 			return "", nil
 		}
 
-		clause = w.insertWithMap(x)
+		columns, binds = w.insertWithMap(x)
 	case reflect.Struct:
-		clause = w.insertWithStruct(v)
+		columns, binds = w.insertWithStruct(v)
 	default:
 		logger.Error("yiigo: invalid data type for insert, expects struct, *struct, yiigo.X")
 
 		return "", nil
 	}
 
-	statements := make([]string, 0, 8)
+	var builder strings.Builder
 
-	statements = append(statements, "INSERT INTO", w.table, clause.query)
+	builder.WriteString("INSERT INTO ")
+	builder.WriteString(w.table)
+	builder.WriteString(" (")
+	builder.WriteString(columns[0])
+
+	for _, column := range columns[1:] {
+		builder.WriteString(" ,")
+		builder.WriteString(column)
+	}
+
+	builder.WriteString(") VALUES (?")
+
+	l := len(columns)
+
+	for i := 0; i < l; i++ {
+		builder.WriteString(", ?")
+	}
+
+	builder.WriteString(")")
 
 	if w.driver == Postgres {
-		statements = append(statements, "RETURNING id")
+		builder.WriteString(" RETURNING id")
 	}
 
-	query := sqlx.Rebind(sqlx.BindType(string(w.driver)), strings.Join(statements, " "))
+	query := sqlx.Rebind(sqlx.BindType(string(w.driver)), builder.String())
 
 	if debug {
-		logger.Info(query, zap.Any("binds", clause.binds))
+		logger.Info(query, zap.Any("binds", binds))
 	}
 
-	return query, clause.binds
+	return query, binds
 }
 
-func (w *QueryWrapper) insertWithMap(data X) *SQLClause {
+func (w *QueryWrapper) insertWithMap(data X) (columns []string, binds []interface{}) {
 	fieldNum := len(data)
 
-	columns := make([]string, 0, fieldNum)
-	values := make([]string, 0, fieldNum)
-	binds := make([]interface{}, 0, fieldNum)
+	columns = make([]string, 0, fieldNum)
+	binds = make([]interface{}, 0, fieldNum)
 
 	for k, v := range data {
 		columns = append(columns, k)
-		values = append(values, "?")
 		binds = append(binds, v)
 	}
 
-	return Clause(strings.Join([]string{fmt.Sprintf("(%s)", strings.Join(columns, ", ")), "VALUES", fmt.Sprintf("(%s)", strings.Join(values, ", "))}, " "), binds...)
+	return
 }
 
-func (w *QueryWrapper) insertWithStruct(v reflect.Value) *SQLClause {
+func (w *QueryWrapper) insertWithStruct(v reflect.Value) (columns []string, binds []interface{}) {
 	fieldNum := v.NumField()
 
-	columns := make([]string, 0, fieldNum)
-	values := make([]string, 0, fieldNum)
-	binds := make([]interface{}, 0, fieldNum)
+	columns = make([]string, 0, fieldNum)
+	binds = make([]interface{}, 0, fieldNum)
 
 	t := v.Type()
 
 	for i := 0; i < fieldNum; i++ {
-		column := t.Field(i).Tag.Get("db")
+		tag := t.Field(i).Tag.Get("db")
 
-		if column == "-" {
+		if tag == "-" {
 			continue
 		}
 
-		if column == "" {
-			column = t.Field(i).Name
+		if tag == "" {
+			tag = t.Field(i).Name
 		}
 
-		columns = append(columns, column)
-		values = append(values, "?")
+		columns = append(columns, tag)
 		binds = append(binds, v.Field(i).Interface())
 	}
 
-	return Clause(strings.Join([]string{fmt.Sprintf("(%s)", strings.Join(columns, ", ")), "VALUES", fmt.Sprintf("(%s)", strings.Join(values, ", "))}, " "), binds...)
+	return
 }
 
 // ToBatchInsert returns batch insert statement and binds.
@@ -269,7 +286,10 @@ func (w *QueryWrapper) ToBatchInsert(data interface{}) (string, []interface{}) {
 		return "", nil
 	}
 
-	var clause *SQLClause
+	var (
+		columns []string
+		binds   []interface{}
+	)
 
 	e := v.Type().Elem()
 
@@ -283,9 +303,9 @@ func (w *QueryWrapper) ToBatchInsert(data interface{}) (string, []interface{}) {
 			return "", nil
 		}
 
-		clause = w.batchInsertWithMap(x)
+		columns, binds = w.batchInsertWithMap(x)
 	case reflect.Struct:
-		clause = w.batchInsertWithStruct(v)
+		columns, binds = w.batchInsertWithStruct(v)
 	case reflect.Ptr:
 		if e.Elem().Kind() != reflect.Struct {
 			logger.Error("yiigo: invalid data type for batch insert, expects []struct, []*struct, []yiigo.X")
@@ -293,63 +313,76 @@ func (w *QueryWrapper) ToBatchInsert(data interface{}) (string, []interface{}) {
 			return "", nil
 		}
 
-		clause = w.batchInsertWithStruct(v)
+		columns, binds = w.batchInsertWithStruct(v)
 	default:
 		logger.Error("yiigo: invalid data type for batch insert, expects []struct, []*struct, []yiigo.X")
 
 		return "", nil
 	}
 
-	query := sqlx.Rebind(sqlx.BindType(string(w.driver)), clause.query)
+	var builder strings.Builder
 
-	if debug {
-		logger.Info(query, zap.Any("binds", clause.binds))
+	builder.WriteString("INSERT INTO ")
+	builder.WriteString(w.table)
+	builder.WriteString(" (")
+	builder.WriteString(columns[0])
+
+	for _, column := range columns[1:] {
+		builder.WriteString(" ,")
+		builder.WriteString(column)
 	}
 
-	return query, clause.binds
+	builder.WriteString(") VALUES (?")
+
+	l := len(columns)
+
+	for i := 0; i < l; i++ {
+		builder.WriteString(", ?")
+	}
+
+	builder.WriteString(")")
+
+	query := sqlx.Rebind(sqlx.BindType(string(w.driver)), builder.String())
+
+	if debug {
+		logger.Info(query, zap.Any("binds", binds))
+	}
+
+	return query, binds
 }
 
-func (w *QueryWrapper) batchInsertWithMap(data []X) *SQLClause {
+func (w *QueryWrapper) batchInsertWithMap(data []X) (columns []string, binds []interface{}) {
 	dataLen := len(data)
 	fieldNum := len(data[0])
 
-	columns := make([]string, 0, fieldNum)
-	values := make([]string, 0, dataLen)
-	binds := make([]interface{}, 0, fieldNum*dataLen)
+	columns = make([]string, 0, fieldNum)
+	binds = make([]interface{}, 0, fieldNum*dataLen)
 
 	for k := range data[0] {
 		columns = append(columns, k)
 	}
 
 	for _, x := range data {
-		phrs := make([]string, 0, fieldNum)
-
 		for _, v := range columns {
-			phrs = append(phrs, "?")
 			binds = append(binds, x[v])
 		}
-
-		values = append(values, fmt.Sprintf("(%s)", strings.Join(phrs, ", ")))
 	}
 
-	return Clause(strings.Join([]string{"INSERT INTO", w.table, fmt.Sprintf("(%s)", strings.Join(columns, ", ")), "VALUES", strings.Join(values, ", ")}, " "), binds...)
+	return
 }
 
-func (w *QueryWrapper) batchInsertWithStruct(v reflect.Value) *SQLClause {
+func (w *QueryWrapper) batchInsertWithStruct(v reflect.Value) (columns []string, binds []interface{}) {
 	first := reflect.Indirect(v.Index(0))
 
 	dataLen := v.Len()
 	fieldNum := first.NumField()
 
-	columns := make([]string, 0, fieldNum)
-	values := make([]string, 0, dataLen)
-	binds := make([]interface{}, 0, fieldNum*dataLen)
+	columns = make([]string, 0, fieldNum)
+	binds = make([]interface{}, 0, fieldNum*dataLen)
 
 	t := first.Type()
 
 	for i := 0; i < dataLen; i++ {
-		phrs := make([]string, 0, fieldNum)
-
 		for j := 0; j < fieldNum; j++ {
 			column := t.Field(j).Tag.Get("db")
 
@@ -365,14 +398,11 @@ func (w *QueryWrapper) batchInsertWithStruct(v reflect.Value) *SQLClause {
 				columns = append(columns, column)
 			}
 
-			phrs = append(phrs, "?")
 			binds = append(binds, reflect.Indirect(v.Index(i)).Field(j).Interface())
 		}
-
-		values = append(values, fmt.Sprintf("(%s)", strings.Join(phrs, ", ")))
 	}
 
-	return Clause(strings.Join([]string{"INSERT INTO", w.table, fmt.Sprintf("(%s)", strings.Join(columns, ", ")), "VALUES", strings.Join(values, ", ")}, " "), binds...)
+	return
 }
 
 // ToUpdate returns update statement and binds.
