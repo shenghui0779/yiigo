@@ -280,11 +280,11 @@ builder.Wrap(
 builder.Wrap(
     yiigo.Table("user"),
     yiigo.Where("age > ?", 20),
-    yiigo.OrderBy("id DESC"),
+    yiigo.OrderBy("age ASC", "id DESC"),
     yiigo.Offset(5),
     yiigo.Limit(10),
 ).ToQuery()
-// SELECT * FROM user WHERE age > ? ORDER BY id DESC OFFSET 5 LIMIT 10
+// SELECT * FROM user WHERE age > ? ORDER BY age ASC, id DESC OFFSET 5 LIMIT 10
 // [20]
 
 wrap1 := builder.Wrap(
