@@ -322,6 +322,9 @@ builder.Wrap(
 ).ToQuery()
 // (SELECT * FROM user_0 WHERE age IN (?, ?) LIMIT ?) UNION (SELECT * FROM user_1 WHERE age IN (?, ?) LIMIT ?)
 // [10, 20, 5, 30, 40, 5]
+
+builder.Wrap(Table("user")).ToTruncate()
+// TRUNCATE user
 ```
 
 - Insert

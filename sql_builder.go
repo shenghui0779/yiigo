@@ -653,7 +653,13 @@ func (w *QueryWrapper) ToTruncate() string {
 	builder.WriteString("TRUNCATE ")
 	builder.WriteString(w.table)
 
-	return builder.String()
+	query := builder.String()
+
+	if debug {
+		logger.Info(query)
+	}
+
+	return query
 }
 
 // QueryOption configures how we set up the SQL query statement
