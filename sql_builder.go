@@ -20,6 +20,7 @@ type SQLWrapper interface {
 	ToBatchInsert(data interface{}) (string, []interface{})
 	ToUpdate(data interface{}) (string, []interface{})
 	ToDelete() (string, []interface{})
+	ToTruncate() string
 }
 
 // QueryBuilder is a SQLBuilder implementation
@@ -643,6 +644,16 @@ func (w *QueryWrapper) ToDelete() (string, []interface{}) {
 	}
 
 	return query, binds
+}
+
+// ToTruncate returns truncate clause
+func (w *QueryWrapper) ToTruncate() string {
+	var builder strings.Builder
+
+	builder.WriteString("TRUNCATE ")
+	builder.WriteString(w.table)
+
+	return builder.String()
 }
 
 // QueryOption configures how we set up the SQL query statement

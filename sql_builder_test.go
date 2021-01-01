@@ -159,6 +159,10 @@ func TestToQuery(t *testing.T) {
 
 	assert.Equal(t, "(SELECT * FROM user_0 WHERE id = ?) UNION (SELECT * FROM user_1 WHERE id = ?) UNION ALL (SELECT * FROM user_2 WHERE id = ?)", query)
 	assert.Equal(t, []interface{}{1, 2, 3}, binds)
+
+	query = builder.Wrap(Table("user")).ToTruncate()
+
+	assert.Equal(t, "TRUNCATE user", query)
 }
 
 func TestToInsert(t *testing.T) {
