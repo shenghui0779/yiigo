@@ -184,7 +184,7 @@ func TestToInsert(t *testing.T) {
 	// 	"gender": "M",
 	// 	"name":   "yiigo",
 	// })
-
+	//
 	// assert.Equal(t, "INSERT INTO user (age, gender, name) VALUES (?, ?, ?)", query)
 	// assert.Equal(t, []interface{}{29, "M", "yiigo"}, binds)
 }
