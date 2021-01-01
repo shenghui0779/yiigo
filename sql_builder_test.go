@@ -86,6 +86,16 @@ func TestToQuery(t *testing.T) {
 	assert.Equal(t, []interface{}{1}, binds)
 
 	query, binds = builder.Wrap(
+		Table("user"),
+		LeftJoin("address", "user.id = address.user_id"),
+		RightJoin("company", "user.id = company.user_id"),
+		Where("user.id = ?", 1),
+	).ToQuery()
+
+	assert.Equal(t, "SELECT * FROM user LEFT JOIN address ON user.id = address.user_id RIGHT JOIN company ON user.id = company.user_id WHERE user.id = ?", query)
+	assert.Equal(t, []interface{}{1}, binds)
+
+	query, binds = builder.Wrap(
 		Table("address"),
 		Select("user_id", "COUNT(*) AS total"),
 		GroupBy("user_id"),
@@ -139,6 +149,16 @@ func TestToQuery(t *testing.T) {
 
 	assert.Equal(t, "(SELECT * FROM user_0 WHERE age IN (?, ?) LIMIT ?) UNION (SELECT * FROM user_1 WHERE age IN (?, ?) LIMIT ?)", query)
 	assert.Equal(t, []interface{}{10, 20, 5, 30, 40, 5}, binds)
+
+	query, binds = builder.Wrap(
+		Table("user_0"),
+		Where("id = ?", 1),
+		Union(builder.Wrap(Table("user_1"), Where("id = ?", 2))),
+		UnionAll(builder.Wrap(Table("user_2"), Where("id = ?", 3))),
+	).ToQuery()
+
+	assert.Equal(t, "(SELECT * FROM user_0 WHERE id = ?) UNION (SELECT * FROM user_1 WHERE id = ?) UNION ALL (SELECT * FROM user_2 WHERE id = ?)", query)
+	assert.Equal(t, []interface{}{1, 2, 3}, binds)
 }
 
 func TestToInsert(t *testing.T) {

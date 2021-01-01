@@ -1,7 +1,6 @@
 package yiigo
 
 import (
-	"fmt"
 	"reflect"
 	"strings"
 
@@ -49,8 +48,10 @@ func NewSQLBuilder(driver DBDriver) SQLBuilder {
 
 // SQLClause SQL clause
 type SQLClause struct {
-	query string
-	binds []interface{}
+	table   string
+	keyword string
+	query   string
+	binds   []interface{}
 }
 
 // Clause returns sql clause, eg: yiigo.Clause("price * ? + ?", 2, 100).
@@ -67,7 +68,7 @@ type QueryWrapper struct {
 	table    string
 	columns  []string
 	where    *SQLClause
-	joins    []string
+	joins    []*SQLClause
 	groups   []string
 	having   *SQLClause
 	orders   []string
@@ -92,7 +93,10 @@ func (w *QueryWrapper) ToQuery() (string, []interface{}) {
 
 		for _, v := range w.unions {
 			builder.WriteString(" ")
+			builder.WriteString(v.keyword)
+			builder.WriteString(" (")
 			builder.WriteString(v.query)
+			builder.WriteString(")")
 
 			binds = append(binds, v.binds...)
 		}
@@ -146,7 +150,11 @@ func (w *QueryWrapper) subquery() (string, []interface{}) {
 	if len(w.joins) != 0 {
 		for _, join := range w.joins {
 			builder.WriteString(" ")
-			builder.WriteString(join)
+			builder.WriteString(join.keyword)
+			builder.WriteString(" JOIN ")
+			builder.WriteString(join.table)
+			builder.WriteString(" ON ")
+			builder.WriteString(join.query)
 		}
 	}
 
@@ -665,42 +673,65 @@ func Distinct(columns ...string) QueryOption {
 // Join specifies the `inner join` clause.
 func Join(table, on string) QueryOption {
 	return func(w *QueryWrapper) {
-		w.joins = append(w.joins, strings.Join([]string{"INNER", "JOIN", table, "ON", on}, " "))
+		w.joins = append(w.joins, &SQLClause{
+			table:   table,
+			keyword: "INNER",
+			query:   on,
+		})
 	}
 }
 
 // LeftJoin specifies the `left join` clause.
 func LeftJoin(table, on string) QueryOption {
 	return func(w *QueryWrapper) {
-		w.joins = append(w.joins, strings.Join([]string{"LEFT", "JOIN", table, "ON", on}, " "))
+		w.joins = append(w.joins, &SQLClause{
+			table:   table,
+			keyword: "LEFT",
+			query:   on,
+		})
 	}
 }
 
 // RightJoin specifies the `right join` clause.
 func RightJoin(table, on string) QueryOption {
 	return func(w *QueryWrapper) {
-		w.joins = append(w.joins, strings.Join([]string{"RIGHT", "JOIN", table, "ON", on}, " "))
+		w.joins = append(w.joins, &SQLClause{
+			table:   table,
+			keyword: "RIGHT",
+			query:   on,
+		})
 	}
 }
 
 // FullJoin specifies the `full join` clause.
 func FullJoin(table, on string) QueryOption {
 	return func(w *QueryWrapper) {
-		w.joins = append(w.joins, strings.Join([]string{"FULL", "JOIN", table, "ON", on}, " "))
+		w.joins = append(w.joins, &SQLClause{
+			table:   table,
+			keyword: "FULL",
+			query:   on,
+		})
 	}
 }
 
 // Where specifies the `where` clause.
 func Where(query string, binds ...interface{}) QueryOption {
 	return func(w *QueryWrapper) {
-		w.where = Clause(query, binds...)
+		w.where = &SQLClause{
+			query: query,
+			binds: binds,
+		}
 	}
 }
 
 // WhereIn specifies the `where in` clause.
 func WhereIn(query string, binds ...interface{}) QueryOption {
 	return func(w *QueryWrapper) {
-		w.where = Clause(query, binds...)
+		w.where = &SQLClause{
+			query: query,
+			binds: binds,
+		}
+
 		w.whereIn = true
 	}
 }
@@ -715,7 +746,10 @@ func GroupBy(columns ...string) QueryOption {
 // Having specifies the `having` clause.
 func Having(query string, binds ...interface{}) QueryOption {
 	return func(w *QueryWrapper) {
-		w.having = Clause(query, binds...)
+		w.having = &SQLClause{
+			query: query,
+			binds: binds,
+		}
 	}
 }
 
@@ -756,7 +790,11 @@ func Union(wrappers ...SQLWrapper) QueryOption {
 
 			query, binds := v.subquery()
 
-			w.unions = append(w.unions, Clause(strings.Join([]string{"UNION", fmt.Sprintf("(%s)", query)}, " "), binds...))
+			w.unions = append(w.unions, &SQLClause{
+				keyword: "UNION",
+				query:   query,
+				binds:   binds,
+			})
 		}
 	}
 }
@@ -777,7 +815,11 @@ func UnionAll(wrappers ...SQLWrapper) QueryOption {
 
 			query, binds := v.subquery()
 
-			w.unions = append(w.unions, Clause(strings.Join([]string{"UNION", "ALL", fmt.Sprintf("(%s)", query)}, " "), binds...))
+			w.unions = append(w.unions, &SQLClause{
+				keyword: "UNION ALL",
+				query:   query,
+				binds:   binds,
+			})
 		}
 	}
 }
