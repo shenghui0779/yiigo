@@ -30,7 +30,7 @@ Go 轻量级开发通用库
 ## Installation
 
 ```sh
-go get github.com/shenghui0779/yiigo
+go get -u github.com/shenghui0779/yiigo
 ```
 
 ## Usage
