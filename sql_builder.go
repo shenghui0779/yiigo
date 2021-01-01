@@ -446,18 +446,18 @@ func (w *QueryWrapper) batchInsertWithStruct(v reflect.Value) (columns []string,
 
 	for i := 0; i < dataLen; i++ {
 		for j := 0; j < fieldNum; j++ {
-			column := t.Field(j).Tag.Get("db")
+			tag := t.Field(j).Tag.Get("db")
 
-			if column == "-" {
+			if tag == "-" {
 				continue
 			}
 
 			if i == 0 {
-				if column == "" {
-					column = t.Field(j).Name
+				if tag == "" {
+					tag = t.Field(j).Name
 				}
 
-				columns = append(columns, column)
+				columns = append(columns, tag)
 			}
 
 			binds = append(binds, reflect.Indirect(v.Index(i)).Field(j).Interface())
