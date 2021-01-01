@@ -68,11 +68,11 @@ type QueryWrapper struct {
 	columns  []string
 	where    *SQLClause
 	joins    []string
-	group    []string
+	groups   []string
 	having   *SQLClause
-	order    []string
-	offset   *SQLClause
-	limit    *SQLClause
+	orders   []string
+	offset   int
+	limit    int
 	unions   []*SQLClause
 	distinct bool
 	whereIn  bool
@@ -80,27 +80,31 @@ type QueryWrapper struct {
 
 // ToQuery returns query statement and binds.
 func (w *QueryWrapper) ToQuery() (string, []interface{}) {
-	clause := w.subquery()
+	query, binds := w.subquery()
 
 	// unions
 	if l := len(w.unions); l != 0 {
-		statements := make([]string, 0, l+1)
+		var builder strings.Builder
 
-		statements = append(statements, fmt.Sprintf("(%s)", clause.query))
+		builder.WriteString("(")
+		builder.WriteString(query)
+		builder.WriteString(")")
 
 		for _, v := range w.unions {
-			statements = append(statements, v.query)
-			clause.binds = append(clause.binds, v.binds...)
+			builder.WriteString(" ")
+			builder.WriteString(v.query)
+
+			binds = append(binds, v.binds...)
 		}
 
-		clause.query = strings.Join(statements, " ")
+		query = builder.String()
 	}
 
 	// where in
 	if w.whereIn {
 		var err error
 
-		clause.query, clause.binds, err = sqlx.In(clause.query, clause.binds...)
+		query, binds, err = sqlx.In(query, binds...)
 
 		if err != nil {
 			logger.Error("yiigo: build 'IN' query error", zap.Error(err))
@@ -109,60 +113,88 @@ func (w *QueryWrapper) ToQuery() (string, []interface{}) {
 		}
 	}
 
-	clause.query = sqlx.Rebind(sqlx.BindType(string(w.driver)), clause.query)
+	query = sqlx.Rebind(sqlx.BindType(string(w.driver)), query)
 
 	if debug {
-		logger.Info(clause.query, zap.Any("binds", clause.binds))
+		logger.Info(query, zap.Any("binds", binds))
 	}
 
-	return clause.query, clause.binds
+	return query, binds
 }
 
-func (w *QueryWrapper) subquery() *SQLClause {
-	statements := make([]string, 0)
+func (w *QueryWrapper) subquery() (string, []interface{}) {
 	binds := make([]interface{}, 0)
 
-	statements = append(statements, "SELECT")
+	var builder strings.Builder
+
+	builder.WriteString("SELECT ")
 
 	if w.distinct {
-		statements = append(statements, "DISTINCT")
+		builder.WriteString("DISTINCT ")
 	}
 
-	statements = append(statements, strings.Join(w.columns, ", "), "FROM", w.table)
+	builder.WriteString(w.columns[0])
+
+	for _, column := range w.columns[1:] {
+		builder.WriteString(", ")
+		builder.WriteString(column)
+	}
+
+	builder.WriteString(" FROM ")
+	builder.WriteString(w.table)
 
 	if len(w.joins) != 0 {
-		statements = append(statements, w.joins...)
+		for _, join := range w.joins {
+			builder.WriteString(" ")
+			builder.WriteString(join)
+		}
 	}
 
 	if w.where != nil {
-		statements = append(statements, "WHERE", w.where.query)
+		builder.WriteString(" WHERE ")
+		builder.WriteString(w.where.query)
+
 		binds = append(binds, w.where.binds...)
 	}
 
-	if len(w.group) != 0 {
-		statements = append(statements, "GROUP BY", strings.Join(w.group, ", "))
+	if len(w.groups) != 0 {
+		builder.WriteString(" GROUP BY ")
+		builder.WriteString(w.groups[0])
+
+		for _, column := range w.groups[1:] {
+			builder.WriteString(", ")
+			builder.WriteString(column)
+		}
 	}
 
 	if w.having != nil {
-		statements = append(statements, "HAVING", w.having.query)
+		builder.WriteString(" HAVING ")
+		builder.WriteString(w.having.query)
+
 		binds = append(binds, w.having.binds...)
 	}
 
-	if len(w.order) != 0 {
-		statements = append(statements, "ORDER BY", strings.Join(w.order, ", "))
+	if len(w.orders) != 0 {
+		builder.WriteString(" ORDER BY ")
+		builder.WriteString(w.orders[0])
+
+		for _, column := range w.orders[1:] {
+			builder.WriteString(", ")
+			builder.WriteString(column)
+		}
 	}
 
-	if w.offset != nil {
-		statements = append(statements, w.offset.query)
-		binds = append(binds, w.offset.binds...)
+	if w.offset != 0 {
+		builder.WriteString(" OFFSET ?")
+		binds = append(binds, w.offset)
 	}
 
-	if w.limit != nil {
-		statements = append(statements, w.limit.query)
-		binds = append(binds, w.limit.binds...)
+	if w.limit != 0 {
+		builder.WriteString(" LIMIT ?")
+		binds = append(binds, w.limit)
 	}
 
-	return Clause(strings.Join(statements, " "), binds...)
+	return builder.String(), binds
 }
 
 // ToInsert returns insert statement and binds.
@@ -194,6 +226,12 @@ func (w *QueryWrapper) ToInsert(data interface{}) (string, []interface{}) {
 		return "", nil
 	}
 
+	columnLen := len(columns)
+
+	if columnLen == 0 {
+		return "", nil
+	}
+
 	var builder strings.Builder
 
 	builder.WriteString("INSERT INTO ")
@@ -202,15 +240,13 @@ func (w *QueryWrapper) ToInsert(data interface{}) (string, []interface{}) {
 	builder.WriteString(columns[0])
 
 	for _, column := range columns[1:] {
-		builder.WriteString(" ,")
+		builder.WriteString(", ")
 		builder.WriteString(column)
 	}
 
 	builder.WriteString(") VALUES (?")
 
-	l := len(columns)
-
-	for i := 0; i < l; i++ {
+	for i := 1; i < columnLen; i++ {
 		builder.WriteString(", ?")
 	}
 
@@ -320,6 +356,12 @@ func (w *QueryWrapper) ToBatchInsert(data interface{}) (string, []interface{}) {
 		return "", nil
 	}
 
+	columnLen := len(columns)
+
+	if columnLen == 0 {
+		return "", nil
+	}
+
 	var builder strings.Builder
 
 	builder.WriteString("INSERT INTO ")
@@ -328,19 +370,31 @@ func (w *QueryWrapper) ToBatchInsert(data interface{}) (string, []interface{}) {
 	builder.WriteString(columns[0])
 
 	for _, column := range columns[1:] {
-		builder.WriteString(" ,")
+		builder.WriteString(", ")
 		builder.WriteString(column)
 	}
 
 	builder.WriteString(") VALUES (?")
 
-	l := len(columns)
-
-	for i := 0; i < l; i++ {
+	// 首行
+	for i := 1; i < columnLen; i++ {
 		builder.WriteString(", ?")
 	}
 
 	builder.WriteString(")")
+
+	rows := len(binds) / columnLen
+
+	// 其余行
+	for i := 1; i < rows; i++ {
+		builder.WriteString(", (?")
+
+		for j := 1; j < columnLen; j++ {
+			builder.WriteString(", ?")
+		}
+
+		builder.WriteString(")")
+	}
 
 	query := sqlx.Rebind(sqlx.BindType(string(w.driver)), builder.String())
 
@@ -408,7 +462,11 @@ func (w *QueryWrapper) batchInsertWithStruct(v reflect.Value) (columns []string,
 // ToUpdate returns update statement and binds.
 // data expects `struct`, `*struct`, `yiigo.X`.
 func (w *QueryWrapper) ToUpdate(data interface{}) (string, []interface{}) {
-	var clause *SQLClause
+	var (
+		columns []string
+		exprs   map[string]string
+		binds   []interface{}
+	)
 
 	v := reflect.Indirect(reflect.ValueOf(data))
 
@@ -422,30 +480,58 @@ func (w *QueryWrapper) ToUpdate(data interface{}) (string, []interface{}) {
 			return "", nil
 		}
 
-		clause = w.updateWithMap(x)
+		columns, exprs, binds = w.updateWithMap(x)
 	case reflect.Struct:
-		clause = w.updateWithStruct(v)
+		columns, binds = w.updateWithStruct(v)
 	default:
 		logger.Error("yiigo: invalid data type for update, expects struct, *struct, yiigo.X")
 
 		return "", nil
 	}
 
-	statements := make([]string, 0, 6)
-
-	statements = append(statements, "UPDATE", w.table, "SET", clause.query)
-
-	if w.where != nil {
-		statements = append(statements, "WHERE", w.where.query)
-		clause.binds = append(clause.binds, w.where.binds...)
+	if len(columns) == 0 {
+		return "", nil
 	}
 
-	clause.query = strings.Join(statements, " ")
+	var builder strings.Builder
+
+	builder.WriteString("UPDATE ")
+	builder.WriteString(w.table)
+	builder.WriteString(" SET ")
+	builder.WriteString(columns[0])
+
+	if expr, ok := exprs[columns[0]]; ok {
+		builder.WriteString(" = ")
+		builder.WriteString(expr)
+	} else {
+		builder.WriteString(" = ?")
+	}
+
+	for _, column := range columns[1:] {
+		builder.WriteString(", ")
+		builder.WriteString(column)
+
+		if expr, ok := exprs[column]; ok {
+			builder.WriteString(" = ")
+			builder.WriteString(expr)
+		} else {
+			builder.WriteString(" = ?")
+		}
+	}
+
+	if w.where != nil {
+		builder.WriteString(" WHERE ")
+		builder.WriteString(w.where.query)
+
+		binds = append(binds, w.where.binds...)
+	}
+
+	query := builder.String()
 
 	if w.whereIn {
 		var err error
 
-		clause.query, clause.binds, err = sqlx.In(clause.query, clause.binds...)
+		query, binds, err = sqlx.In(query, binds...)
 
 		if err != nil {
 			logger.Error("yiigo: build 'IN' query error", zap.Error(err))
@@ -454,75 +540,81 @@ func (w *QueryWrapper) ToUpdate(data interface{}) (string, []interface{}) {
 		}
 	}
 
-	clause.query = sqlx.Rebind(sqlx.BindType(string(w.driver)), clause.query)
+	query = sqlx.Rebind(sqlx.BindType(string(w.driver)), query)
 
 	if debug {
-		logger.Info(clause.query, zap.Any("binds", clause.binds))
+		logger.Info(query, zap.Any("binds", binds))
 	}
 
-	return clause.query, clause.binds
+	return query, binds
 }
 
-func (w *QueryWrapper) updateWithMap(data X) *SQLClause {
+func (w *QueryWrapper) updateWithMap(data X) (columns []string, exprs map[string]string, binds []interface{}) {
 	fieldNum := len(data)
 
-	sets := make([]string, 0, fieldNum)
-	binds := make([]interface{}, 0, fieldNum)
+	columns = make([]string, 0, fieldNum)
+	exprs = make(map[string]string)
+	binds = make([]interface{}, 0, fieldNum)
 
 	for k, v := range data {
+		columns = append(columns, k)
+
 		if clause, ok := v.(*SQLClause); ok {
-			sets = append(sets, strings.Join([]string{k, "=", clause.query}, " "))
+			exprs[k] = clause.query
 			binds = append(binds, clause.binds...)
 
 			continue
 		}
 
-		sets = append(sets, strings.Join([]string{k, "=", "?"}, " "))
 		binds = append(binds, v)
 	}
 
-	return Clause(strings.Join(sets, ", "), binds...)
+	return
 }
 
-func (w *QueryWrapper) updateWithStruct(v reflect.Value) *SQLClause {
+func (w *QueryWrapper) updateWithStruct(v reflect.Value) (columns []string, binds []interface{}) {
 	fieldNum := v.NumField()
 
-	sets := make([]string, 0, fieldNum)
-	binds := make([]interface{}, 0, fieldNum)
+	columns = make([]string, 0, fieldNum)
+	binds = make([]interface{}, 0, fieldNum)
 
 	t := v.Type()
 
 	for i := 0; i < fieldNum; i++ {
-		column := t.Field(i).Tag.Get("db")
+		tag := t.Field(i).Tag.Get("db")
 
-		if column == "-" {
+		if tag == "-" {
 			continue
 		}
 
-		if column == "" {
-			column = t.Field(i).Name
+		if tag == "" {
+			tag = t.Field(i).Name
 		}
 
-		sets = append(sets, strings.Join([]string{column, "=", "?"}, " "))
+		columns = append(columns, tag)
 		binds = append(binds, v.Field(i).Interface())
 	}
 
-	return Clause(strings.Join(sets, ", "), binds...)
+	return
 }
 
 // ToDelete returns delete clause and binds.
 func (w *QueryWrapper) ToDelete() (string, []interface{}) {
-	statements := make([]string, 0, 5)
 	binds := make([]interface{}, 0)
 
-	statements = append(statements, "DELETE", "FROM", w.table)
+	var builder strings.Builder
+
+	builder.WriteString("DELETE FROM ")
+	builder.WriteString(w.table)
 
 	if w.where != nil {
-		statements = append(statements, "WHERE", w.where.query)
+		builder.WriteString(" WHERE ")
+		builder.WriteString(w.where.query)
+
 		binds = append(binds, w.where.binds...)
 	}
 
-	query := strings.Join(statements, " ")
+	query := builder.String()
 
 	if w.whereIn {
 		var err error
@@ -616,7 +708,7 @@ func WhereIn(query string, binds ...interface{}) QueryOption {
 // GroupBy specifies the `group by` clause.
 func GroupBy(columns ...string) QueryOption {
 	return func(w *QueryWrapper) {
-		w.group = columns
+		w.groups = columns
 	}
 }
 
@@ -630,21 +722,21 @@ func Having(query string, binds ...interface{}) QueryOption {
 // OrderBy specifies the `order by` clause.
 func OrderBy(columns ...string) QueryOption {
 	return func(w *QueryWrapper) {
-		w.order = columns
+		w.orders = columns
 	}
 }
 
 // Offset specifies the `offset` clause.
 func Offset(n int) QueryOption {
 	return func(w *QueryWrapper) {
-		w.offset = Clause("OFFSET ?", n)
+		w.offset = n
 	}
 }
 
 // Limit specifies the `limit` clause.
 func Limit(n int) QueryOption {
 	return func(w *QueryWrapper) {
-		w.limit = Clause("LIMIT ?", n)
+		w.limit = n
 	}
 }
 
@@ -662,9 +754,9 @@ func Union(wrappers ...SQLWrapper) QueryOption {
 				w.whereIn = true
 			}
 
-			clause := v.subquery()
+			query, binds := v.subquery()
 
-			w.unions = append(w.unions, Clause(strings.Join([]string{"UNION", fmt.Sprintf("(%s)", v.subquery().query)}, " "), clause.binds...))
+			w.unions = append(w.unions, Clause(strings.Join([]string{"UNION", fmt.Sprintf("(%s)", query)}, " "), binds...))
 		}
 	}
 }
@@ -683,9 +775,9 @@ func UnionAll(wrappers ...SQLWrapper) QueryOption {
 				w.whereIn = true
 			}
 
-			clause := v.subquery()
+			query, binds := v.subquery()
 
-			w.unions = append(w.unions, Clause(strings.Join([]string{"UNION", "ALL", fmt.Sprintf("(%s)", clause.query)}, " "), clause.binds...))
+			w.unions = append(w.unions, Clause(strings.Join([]string{"UNION", "ALL", fmt.Sprintf("(%s)", query)}, " "), binds...))
 		}
 	}
 }

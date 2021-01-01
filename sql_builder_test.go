@@ -254,6 +254,14 @@ func TestToUpdate(t *testing.T) {
 	//
 	// assert.Equal(t, "UPDATE user SET age = ?, gender = ?, name = ? WHERE id = ?", query)
 	// assert.Equal(t, []interface{}{29, "M", "yiigo", 1}, binds)
+
+	query, binds = builder.Wrap(
+		Table("product"),
+		Where("id = ?", 1),
+	).ToUpdate(X{"price": Clause("price * ? + ?", 2, 100)})
+
+	assert.Equal(t, "UPDATE product SET price = price * ? + ? WHERE id = ?", query)
+	assert.Equal(t, []interface{}{2, 100, 1}, binds)
 }
 
 func TestToDelete(t *testing.T) {
