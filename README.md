@@ -212,7 +212,7 @@ yiigo.Logger("other").Info("hello world")
 
 #### SQL Builder
 
-> 😊 为不想手写SQL的你生成SQL语句，用于 `yiigo.DB().Get()` 和 `yiigo.DB().Select()` 等；
+> 😊 为不想手写SQL的你生成SQL语句，用于 `sqlx` 的相关方法；
 >
 > ⚠️ 作为辅助方法使用，目前支持的特性有限，复杂的SQL（如：子查询等）还需自己手写
 
