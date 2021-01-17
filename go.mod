@@ -3,7 +3,7 @@ module github.com/shenghui0779/yiigo
 go 1.15
 
 require (
-	github.com/facebook/ent v0.5.3
+	github.com/facebook/ent v0.5.4
 	github.com/go-playground/locales v0.13.0
 	github.com/go-playground/universal-translator v0.17.0
 	github.com/go-playground/validator/v10 v10.4.1
@@ -18,7 +18,7 @@ require (
 	github.com/philchia/agollo/v3 v3.1.3
 	github.com/pkg/errors v0.9.1
 	github.com/shenghui0779/vitess_pool v1.0.1
-	github.com/stretchr/testify v1.6.1
+	github.com/stretchr/testify v1.7.0
 	go.mongodb.org/mongo-driver v1.4.4
 	go.uber.org/zap v1.16.0
 	golang.org/x/net v0.0.0-20201224014010-6772e930b67b // indirect

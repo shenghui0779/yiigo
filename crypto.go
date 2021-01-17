@@ -25,22 +25,30 @@ const (
 	PKCS7 PaddingMode = "PKCS#7"
 )
 
+// AESCrypto aes crypto
+type AESCrypto interface {
+	Encrypt(plainText []byte) ([]byte, error)
+	Decrypt(cipherText []byte) ([]byte, error)
+}
+
 // CBCCrypto aes-cbc crypto
 type CBCCrypto struct {
-	key []byte
-	iv  []byte
+	key  []byte
+	iv   []byte
+	mode PaddingMode
 }
 
 // NewCBCCrypto returns new aes-cbc crypto
-func NewCBCCrypto(key, iv []byte) *CBCCrypto {
+func NewCBCCrypto(key, iv []byte, mode PaddingMode) AESCrypto {
 	return &CBCCrypto{
-		key: key,
-		iv:  iv,
+		key:  key,
+		iv:   iv,
+		mode: mode,
 	}
 }
 
 // Encrypt aes-cbc encrypt
-func (c *CBCCrypto) Encrypt(plainText []byte, mode PaddingMode) ([]byte, error) {
+func (c *CBCCrypto) Encrypt(plainText []byte) ([]byte, error) {
 	block, err := aes.NewCipher(c.key)
 
 	if err != nil {
@@ -51,7 +59,7 @@ func (c *CBCCrypto) Encrypt(plainText []byte, mode PaddingMode) ([]byte, error) 
 		return nil, errors.New("yiigo: IV length must equal block size")
 	}
 
-	switch mode {
+	switch c.mode {
 	case ZERO:
 		plainText = ZeroPadding(plainText, block.BlockSize())
 	case PKCS5:
@@ -69,7 +77,7 @@ func (c *CBCCrypto) Encrypt(plainText []byte, mode PaddingMode) ([]byte, error) 
 }
 
 // Decrypt aes-cbc decrypt
-func (c *CBCCrypto) Decrypt(cipherText []byte, mode PaddingMode) ([]byte, error) {
+func (c *CBCCrypto) Decrypt(cipherText []byte) ([]byte, error) {
 	block, err := aes.NewCipher(c.key)
 
 	if err != nil {
@@ -85,7 +93,7 @@ func (c *CBCCrypto) Decrypt(cipherText []byte, mode PaddingMode) ([]byte, error)
 	blockMode := cipher.NewCBCDecrypter(block, c.iv)
 	blockMode.CryptBlocks(plainText, cipherText)
 
-	switch mode {
+	switch c.mode {
 	case ZERO:
 		plainText = ZeroUnPadding(plainText)
 	case PKCS5:
@@ -99,23 +107,27 @@ func (c *CBCCrypto) Decrypt(cipherText []byte, mode PaddingMode) ([]byte, error)
 
 // ECBCrypto aes-ecb crypto
 type ECBCrypto struct {
-	key []byte
+	key  []byte
+	mode PaddingMode
 }
 
 // NewECBCrypto returns new aes-ecb crypto
-func NewECBCrypto(key []byte) *ECBCrypto {
-	return &ECBCrypto{key: key}
+func NewECBCrypto(key []byte, mode PaddingMode) AESCrypto {
+	return &ECBCrypto{
+		key:  key,
+		mode: mode,
+	}
 }
 
 // Encrypt aes-ecb encrypt
-func (c *ECBCrypto) Encrypt(plainText []byte, mode PaddingMode) ([]byte, error) {
+func (c *ECBCrypto) Encrypt(plainText []byte) ([]byte, error) {
 	block, err := aes.NewCipher(c.key)
 
 	if err != nil {
 		return nil, err
 	}
 
-	switch mode {
+	switch c.mode {
 	case ZERO:
 		plainText = ZeroPadding(plainText, block.BlockSize())
 	case PKCS5:
@@ -133,7 +145,7 @@ func (c *ECBCrypto) Encrypt(plainText []byte, mode PaddingMode) ([]byte, error) 
 }
 
 // Decrypt aes-ecb decrypt
-func (c *ECBCrypto) Decrypt(cipherText []byte, mode PaddingMode) ([]byte, error) {
+func (c *ECBCrypto) Decrypt(cipherText []byte) ([]byte, error) {
 	block, err := aes.NewCipher(c.key)
 
 	if err != nil {
@@ -145,7 +157,7 @@ func (c *ECBCrypto) Decrypt(cipherText []byte, mode PaddingMode) ([]byte, error)
 	blockMode := NewECBDecrypter(block)
 	blockMode.CryptBlocks(plainText, cipherText)
 
-	switch mode {
+	switch c.mode {
 	case ZERO:
 		plainText = ZeroUnPadding(plainText)
 	case PKCS5:
@@ -164,7 +176,7 @@ type CFBCrypto struct {
 }
 
 // NewCFBCrypto returns new aes-cfb crypto
-func NewCFBCrypto(key, iv []byte) *CFBCrypto {
+func NewCFBCrypto(key, iv []byte) AESCrypto {
 	return &CFBCrypto{
 		key: key,
 		iv:  iv,
@@ -218,7 +230,7 @@ type OFBCrypto struct {
 }
 
 // NewOFBCrypto returns new aes-ofb crypto
-func NewOFBCrypto(key, iv []byte) *OFBCrypto {
+func NewOFBCrypto(key, iv []byte) AESCrypto {
 	return &OFBCrypto{
 		key: key,
 		iv:  iv,
@@ -272,7 +284,7 @@ type CTRCrypto struct {
 }
 
 // NewCTRCrypto returns new aes-ctr crypto
-func NewCTRCrypto(key, iv []byte) *CTRCrypto {
+func NewCTRCrypto(key, iv []byte) AESCrypto {
 	return &CTRCrypto{
 		key: key,
 		iv:  iv,
@@ -326,7 +338,7 @@ type GCMCrypto struct {
 }
 
 // NewGCMCrypto returns new aes-gcm crypto
-func NewGCMCrypto(key, nonce []byte) *GCMCrypto {
+func NewGCMCrypto(key, nonce []byte) AESCrypto {
 	return &GCMCrypto{
 		key:   key,
 		nonce: nonce,

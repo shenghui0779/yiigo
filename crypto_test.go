@@ -12,29 +12,33 @@ func TestCBCCrypto(t *testing.T) {
 	iv := key[:aes.BlockSize]
 	plainText := "Iloveyiigo"
 
-	cbc := NewCBCCrypto(key, iv)
-
 	// ZERO_PADDING
-	e0b, err := cbc.Encrypt([]byte(plainText), ZERO)
+	zero := NewCBCCrypto(key, iv, ZERO)
+
+	e0b, err := zero.Encrypt([]byte(plainText))
 	assert.Nil(t, err)
 
-	d0b, err := cbc.Decrypt(e0b, ZERO)
+	d0b, err := zero.Decrypt(e0b)
 	assert.Nil(t, err)
 	assert.Equal(t, plainText, string(d0b))
 
 	// PKCS5_PADDING
-	e5b, err := cbc.Encrypt([]byte(plainText), PKCS5)
+	pkcs5 := NewCBCCrypto(key, iv, PKCS5)
+
+	e5b, err := pkcs5.Encrypt([]byte(plainText))
 	assert.Nil(t, err)
 
-	d5b, err := cbc.Decrypt(e5b, PKCS5)
+	d5b, err := pkcs5.Decrypt(e5b)
 	assert.Nil(t, err)
 	assert.Equal(t, plainText, string(d5b))
 
 	// PKCS7_PADDING
-	e7b, err := cbc.Encrypt([]byte(plainText), PKCS7)
+	pkcs7 := NewCBCCrypto(key, iv, PKCS7)
+
+	e7b, err := pkcs7.Encrypt([]byte(plainText))
 	assert.Nil(t, err)
 
-	d7b, err := cbc.Decrypt(e7b, PKCS7)
+	d7b, err := pkcs7.Decrypt(e7b)
 	assert.Nil(t, err)
 	assert.Equal(t, plainText, string(d7b))
 }
@@ -43,29 +47,33 @@ func TestECBCrypto(t *testing.T) {
 	key := []byte("AES256Key-32Characters1234567890")
 	plainText := "Iloveyiigo"
 
-	cbc := NewECBCrypto(key)
-
 	// ZERO_PADDING
-	e0b, err := cbc.Encrypt([]byte(plainText), ZERO)
+	zero := NewECBCrypto(key, ZERO)
+
+	e0b, err := zero.Encrypt([]byte(plainText))
 	assert.Nil(t, err)
 
-	d0b, err := cbc.Decrypt(e0b, ZERO)
+	d0b, err := zero.Decrypt(e0b)
 	assert.Nil(t, err)
 	assert.Equal(t, plainText, string(d0b))
 
 	// PKCS5_PADDING
-	e5b, err := cbc.Encrypt([]byte(plainText), PKCS5)
+	pkcs5 := NewECBCrypto(key, PKCS5)
+
+	e5b, err := pkcs5.Encrypt([]byte(plainText))
 	assert.Nil(t, err)
 
-	d5b, err := cbc.Decrypt(e5b, PKCS5)
+	d5b, err := pkcs5.Decrypt(e5b)
 	assert.Nil(t, err)
 	assert.Equal(t, plainText, string(d5b))
 
 	// PKCS7_PADDING
-	e7b, err := cbc.Encrypt([]byte(plainText), PKCS7)
+	pkcs7 := NewECBCrypto(key, PKCS7)
+
+	e7b, err := pkcs7.Encrypt([]byte(plainText))
 	assert.Nil(t, err)
 
-	d7b, err := cbc.Decrypt(e7b, PKCS7)
+	d7b, err := pkcs7.Decrypt(e7b)
 	assert.Nil(t, err)
 	assert.Equal(t, plainText, string(d7b))
 }
