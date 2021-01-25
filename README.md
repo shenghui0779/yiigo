@@ -288,8 +288,8 @@ builder.Wrap(
 // [20]
 
 wrap1 := builder.Wrap(
-	Table("user_1"),
-	Where("id = ?", 2),
+    Table("user_1"),
+    Where("id = ?", 2),
 )
 
 builder.Wrap(
