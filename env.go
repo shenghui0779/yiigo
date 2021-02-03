@@ -15,38 +15,95 @@ import (
 
 // Environment is the interface for config
 type Environment interface {
+	// Get returns an env value
 	Get(key string) EnvValue
 }
 
 // EnvValue is the interface for config value
 type EnvValue interface {
+	// String returns a value of string.
 	String(defaultValue ...string) string
+
+	// Strings returns a value of []string.
 	Strings(defaultValue ...string) []string
+
+	// Int returns a value of int.
 	Int(defaultValue ...int) int
+
+	// Ints returns a value of []int.
 	Ints(defaultValue ...int) []int
+
+	// Uint returns a value of uint.
 	Uint(defaultValue ...uint) uint
+
+	// Uints returns a value of []uint.
 	Uints(defaultValue ...uint) []uint
+
+	// Int8 returns a value of int8.
 	Int8(defaultValue ...int8) int8
+
+	// Int8s returns a value of []int8.
 	Int8s(defaultValue ...int8) []int8
+
+	// Uint8 returns a value of uint8.
 	Uint8(defaultValue ...uint8) uint8
+
+	// Uint8s returns a value of []uint8.
 	Uint8s(defaultValue ...uint8) []uint8
+
+	// Int16 returns a value of int16.
 	Int16(defaultValue ...int16) int16
+
+	// Int16s returns a value of []int16.
 	Int16s(defaultValue ...int16) []int16
+
+	// Uint16 returns a value of uint16.
 	Uint16(defaultValue ...uint16) uint16
+
+	// Uint16s returns a value of []uint16.
 	Uint16s(defaultValue ...uint16) []uint16
+
+	// Int32 returns a value of int32.
 	Int32(defaultValue ...int32) int32
+
+	// Int32s returns a value of []int32.
 	Int32s(defaultValue ...int32) []int32
+
+	// Uint32 returns a value of uint32.
 	Uint32(defaultValue ...uint32) uint32
+
+	// Uint32s returns a value of []uint32.
 	Uint32s(defaultValue ...uint32) []uint32
+
+	// Int64 returns a value of int64.
 	Int64(defaultValue ...int64) int64
+
+	// Int64s returns a value of []int64.
 	Int64s(defaultValue ...int64) []int64
+
+	// Uint64 returns a value of uint64.
 	Uint64(defaultValue ...uint64) uint64
+
+	// Uint64s returns a value of []uint64.
 	Uint64s(defaultValue ...uint64) []uint64
+
+	// Float64 returns a value of float64.
 	Float64(defaultValue ...float64) float64
+
+	// Float64s returns a value of []float64.
 	Float64s(defaultValue ...float64) []float64
+
+	// Bool returns a value of bool.
 	Bool(defaultValue ...bool) bool
+
+	// Time returns a value of time.Time.
+	// Layout is required when the env value is a string.
 	Time(layout string, defaultValue ...time.Time) time.Time
+
+	// Map returns a value of X.
 	Map() X
+
+	// Unmarshal attempts to unmarshal the value into a Go struct pointed by dest.
 	Unmarshal(dest interface{}) error
 }
 
@@ -66,7 +123,6 @@ type configValue struct {
 	value interface{}
 }
 
-// String returns a value of string.
 func (c *configValue) String(defaultValue ...string) string {
 	dv := ""
 
@@ -94,7 +150,6 @@ func (c *configValue) String(defaultValue ...string) string {
 	}
 }
 
-// Strings returns a value of []string.
 func (c *configValue) Strings(defaultValue ...string) []string {
 	if c.value == nil {
 		return defaultValue
@@ -136,7 +191,6 @@ func (c *configValue) Strings(defaultValue ...string) []string {
 	return result
 }
 
-// Int returns a value of int.
 func (c *configValue) Int(defaultValue ...int) int {
 	dv := 0
 
@@ -170,7 +224,6 @@ func (c *configValue) Int(defaultValue ...int) int {
 	}
 }
 
-// Ints returns a value of []int.
 func (c *configValue) Ints(defaultValue ...int) []int {
 	if c.value == nil {
 		return defaultValue
@@ -214,7 +267,6 @@ func (c *configValue) Ints(defaultValue ...int) []int {
 	return result
 }
 
-// Uint returns a value of uint.
 func (c *configValue) Uint(defaultValue ...uint) uint {
 	var dv uint
 
@@ -256,7 +308,6 @@ func (c *configValue) Uint(defaultValue ...uint) uint {
 	}
 }
 
-// Uints returns a value of []uint.
 func (c *configValue) Uints(defaultValue ...uint) []uint {
 	if c.value == nil {
 		return defaultValue
@@ -305,7 +356,6 @@ func (c *configValue) Uints(defaultValue ...uint) []uint {
 	return result
 }
 
-// Int8 returns a value of int8.
 func (c *configValue) Int8(defaultValue ...int8) int8 {
 	var dv int8
 
@@ -339,7 +389,6 @@ func (c *configValue) Int8(defaultValue ...int8) int8 {
 	}
 }
 
-// Int8s returns a value of []int8.
 func (c *configValue) Int8s(defaultValue ...int8) []int8 {
 	if c.value == nil {
 		return defaultValue
@@ -385,7 +434,6 @@ func (c *configValue) Int8s(defaultValue ...int8) []int8 {
 	return result
 }
 
-// Uint8 returns a value of uint8.
 func (c *configValue) Uint8(defaultValue ...uint8) uint8 {
 	var dv uint8
 
@@ -427,7 +475,6 @@ func (c *configValue) Uint8(defaultValue ...uint8) uint8 {
 	}
 }
 
-// Uint8s returns a value of []uint8.
 func (c *configValue) Uint8s(defaultValue ...uint8) []uint8 {
 	if c.value == nil {
 		return defaultValue
@@ -476,7 +523,6 @@ func (c *configValue) Uint8s(defaultValue ...uint8) []uint8 {
 	return result
 }
 
-// Int16 returns a value of int16.
 func (c *configValue) Int16(defaultValue ...int16) int16 {
 	var dv int16
 
@@ -510,7 +556,6 @@ func (c *configValue) Int16(defaultValue ...int16) int16 {
 	}
 }
 
-// Int16s returns a value of []int16.
 func (c *configValue) Int16s(defaultValue ...int16) []int16 {
 	if c.value == nil {
 		return defaultValue
@@ -555,7 +600,6 @@ func (c *configValue) Int16s(defaultValue ...int16) []int16 {
 	return result
 }
 
-// Uint16 returns a value of uint16.
 func (c *configValue) Uint16(defaultValue ...uint16) uint16 {
 	var dv uint16
 
@@ -597,7 +641,6 @@ func (c *configValue) Uint16(defaultValue ...uint16) uint16 {
 	}
 }
 
-// Uint16s returns a value of []uint16.
 func (c *configValue) Uint16s(defaultValue ...uint16) []uint16 {
 	if c.value == nil {
 		return defaultValue
@@ -646,7 +689,6 @@ func (c *configValue) Uint16s(defaultValue ...uint16) []uint16 {
 	return result
 }
 
-// Int32 returns a value of int32.
 func (c *configValue) Int32(defaultValue ...int32) int32 {
 	var dv int32
 
@@ -680,7 +722,6 @@ func (c *configValue) Int32(defaultValue ...int32) int32 {
 	}
 }
 
-// Int32s returns a value of []int32.
 func (c *configValue) Int32s(defaultValue ...int32) []int32 {
 	if c.value == nil {
 		return defaultValue
@@ -726,7 +767,6 @@ func (c *configValue) Int32s(defaultValue ...int32) []int32 {
 	return result
 }
 
-// Uint32 returns a value of uint32.
 func (c *configValue) Uint32(defaultValue ...uint32) uint32 {
 	var dv uint32
 
@@ -768,7 +808,6 @@ func (c *configValue) Uint32(defaultValue ...uint32) uint32 {
 	}
 }
 
-// Uint32s returns a value of []uint32.
 func (c *configValue) Uint32s(defaultValue ...uint32) []uint32 {
 	if c.value == nil {
 		return defaultValue
@@ -817,7 +856,6 @@ func (c *configValue) Uint32s(defaultValue ...uint32) []uint32 {
 	return result
 }
 
-// Int64 returns a value of int64.
 func (c *configValue) Int64(defaultValue ...int64) int64 {
 	var dv int64
 
@@ -851,7 +889,6 @@ func (c *configValue) Int64(defaultValue ...int64) int64 {
 	}
 }
 
-// Int64s returns a value of []int64.
 func (c *configValue) Int64s(defaultValue ...int64) []int64 {
 	if c.value == nil {
 		return defaultValue
@@ -895,7 +932,6 @@ func (c *configValue) Int64s(defaultValue ...int64) []int64 {
 	return result
 }
 
-// Uint64 returns a value of uint64.
 func (c *configValue) Uint64(defaultValue ...uint64) uint64 {
 	var dv uint64
 
@@ -937,7 +973,6 @@ func (c *configValue) Uint64(defaultValue ...uint64) uint64 {
 	}
 }
 
-// Uint64s returns a value of []uint64.
 func (c *configValue) Uint64s(defaultValue ...uint64) []uint64 {
 	if c.value == nil {
 		return defaultValue
@@ -985,7 +1020,6 @@ func (c *configValue) Uint64s(defaultValue ...uint64) []uint64 {
 	return result
 }
 
-// Float64 returns a value of float64.
 func (c *configValue) Float64(defaultValue ...float64) float64 {
 	var dv float64
 
@@ -1019,7 +1053,6 @@ func (c *configValue) Float64(defaultValue ...float64) float64 {
 	}
 }
 
-// Float64s returns a value of []float64.
 func (c *configValue) Float64s(defaultValue ...float64) []float64 {
 	if c.value == nil {
 		return defaultValue
@@ -1063,7 +1096,6 @@ func (c *configValue) Float64s(defaultValue ...float64) []float64 {
 	return result
 }
 
-// Bool returns a value of bool.
 func (c *configValue) Bool(defaultValue ...bool) bool {
 	var dv bool
 
@@ -1099,8 +1131,6 @@ func (c *configValue) Bool(defaultValue ...bool) bool {
 	}
 }
 
-// Time returns a value of time.Time.
-// Layout is required when the env value is a string.
 func (c *configValue) Time(layout string, defaultValue ...time.Time) time.Time {
 	var dv time.Time
 
@@ -1128,7 +1158,6 @@ func (c *configValue) Time(layout string, defaultValue ...time.Time) time.Time {
 	}
 }
 
-// Map returns a value of X.
 func (c *configValue) Map() X {
 	if c.value == nil {
 		return X{}
@@ -1143,7 +1172,6 @@ func (c *configValue) Map() X {
 	return v.ToMap()
 }
 
-// Unmarshal attempts to unmarshal the Tree into a Go struct pointed by dest.
 func (c *configValue) Unmarshal(dest interface{}) error {
 	if c.value == nil {
 		return nil
