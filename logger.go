@@ -4,7 +4,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/pelletier/go-toml"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/natefinch/lumberjack.v2"
@@ -56,42 +55,24 @@ func newLogger(cfg *logConfig, debug bool) *zap.Logger {
 }
 
 func initLogger() {
-	tree, ok := env.get("log").(*toml.Tree)
+	configs := make(map[string]*logConfig, 0)
 
-	if !ok {
+	if err := env.Get("log").Unmarshal(&configs); err != nil {
+		logger.Panic("yiigo: logger init error", zap.Error(err))
+	}
+
+	if len(configs) == 0 {
 		return
 	}
 
-	keys := tree.Keys()
-
-	if len(keys) == 0 {
-		return
-	}
-
-	for _, v := range keys {
-		node, ok := tree.Get(v).(*toml.Tree)
-
-		if !ok {
-			continue
-		}
-
-		cfg := &logConfig{
-			Path:       "app.log",
-			MaxSize:    500,
-			MaxBackups: 0,
-			MaxAge:     0,
-			Compress:   true,
-		}
-
-		node.Unmarshal(cfg)
-
+	for name, cfg := range configs {
 		l := newLogger(cfg, debug)
 
-		if v == AsDefault {
+		if name == AsDefault {
 			logger = l
 		}
 
-		logMap.Store(v, l)
+		logMap.Store(name, l)
 	}
 }
 

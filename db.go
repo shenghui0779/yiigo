@@ -6,12 +6,11 @@ import (
 	"sync"
 	"time"
 
-	entsql "github.com/facebook/ent/dialect/sql"
+	entsql "entgo.io/ent/dialect/sql"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	_ "github.com/mattn/go-sqlite3"
-	"github.com/pelletier/go-toml"
 	"go.uber.org/zap"
 )
 
@@ -66,31 +65,17 @@ func dbDial(cfg *dbConfig) (*sql.DB, error) {
 }
 
 func initDB() {
-	tree, ok := env.get("db").(*toml.Tree)
+	configs := make(map[string]*dbConfig, 0)
 
-	if !ok {
+	if err := env.Get("db").Unmarshal(&configs); err != nil {
+		logger.Panic("yiigo: db init error", zap.Error(err))
+	}
+
+	if len(configs) == 0 {
 		return
 	}
 
-	keys := tree.Keys()
-
-	if len(keys) == 0 {
-		return
-	}
-
-	for _, name := range keys {
-		node, ok := tree.Get(name).(*toml.Tree)
-
-		if !ok {
-			continue
-		}
-
-		cfg := new(dbConfig)
-
-		if err := node.Unmarshal(cfg); err != nil {
-			logger.Panic("yiigo: db init error", zap.String("name", name), zap.Error(err))
-		}
-
+	for name, cfg := range configs {
 		db, err := dbDial(cfg)
 
 		if err != nil {

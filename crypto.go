@@ -31,24 +31,13 @@ type AESCrypto interface {
 	Decrypt(cipherText []byte) ([]byte, error)
 }
 
-// CBCCrypto aes-cbc crypto
-type CBCCrypto struct {
+type cbccrypto struct {
 	key  []byte
 	iv   []byte
 	mode PaddingMode
 }
 
-// NewCBCCrypto returns new aes-cbc crypto
-func NewCBCCrypto(key, iv []byte, mode PaddingMode) AESCrypto {
-	return &CBCCrypto{
-		key:  key,
-		iv:   iv,
-		mode: mode,
-	}
-}
-
-// Encrypt aes-cbc encrypt
-func (c *CBCCrypto) Encrypt(plainText []byte) ([]byte, error) {
+func (c *cbccrypto) Encrypt(plainText []byte) ([]byte, error) {
 	block, err := aes.NewCipher(c.key)
 
 	if err != nil {
@@ -76,8 +65,7 @@ func (c *CBCCrypto) Encrypt(plainText []byte) ([]byte, error) {
 	return cipherText, nil
 }
 
-// Decrypt aes-cbc decrypt
-func (c *CBCCrypto) Decrypt(cipherText []byte) ([]byte, error) {
+func (c *cbccrypto) Decrypt(cipherText []byte) ([]byte, error) {
 	block, err := aes.NewCipher(c.key)
 
 	if err != nil {
@@ -105,22 +93,21 @@ func (c *CBCCrypto) Decrypt(cipherText []byte) ([]byte, error) {
 	return plainText, nil
 }
 
-// ECBCrypto aes-ecb crypto
-type ECBCrypto struct {
-	key  []byte
-	mode PaddingMode
-}
-
-// NewECBCrypto returns new aes-ecb crypto
-func NewECBCrypto(key []byte, mode PaddingMode) AESCrypto {
-	return &ECBCrypto{
+// NewCBCCrypto returns new aes-cbc crypto
+func NewCBCCrypto(key, iv []byte, mode PaddingMode) AESCrypto {
+	return &cbccrypto{
 		key:  key,
+		iv:   iv,
 		mode: mode,
 	}
 }
 
-// Encrypt aes-ecb encrypt
-func (c *ECBCrypto) Encrypt(plainText []byte) ([]byte, error) {
+type ecbcrypto struct {
+	key  []byte
+	mode PaddingMode
+}
+
+func (c *ecbcrypto) Encrypt(plainText []byte) ([]byte, error) {
 	block, err := aes.NewCipher(c.key)
 
 	if err != nil {
@@ -144,8 +131,7 @@ func (c *ECBCrypto) Encrypt(plainText []byte) ([]byte, error) {
 	return cipherText, nil
 }
 
-// Decrypt aes-ecb decrypt
-func (c *ECBCrypto) Decrypt(cipherText []byte) ([]byte, error) {
+func (c *ecbcrypto) Decrypt(cipherText []byte) ([]byte, error) {
 	block, err := aes.NewCipher(c.key)
 
 	if err != nil {
@@ -169,22 +155,20 @@ func (c *ECBCrypto) Decrypt(cipherText []byte) ([]byte, error) {
 	return plainText, nil
 }
 
-// CFBCrypto aes-cfb crypto
-type CFBCrypto struct {
+// NewECBCrypto returns new aes-ecb crypto
+func NewECBCrypto(key []byte, mode PaddingMode) AESCrypto {
+	return &ecbcrypto{
+		key:  key,
+		mode: mode,
+	}
+}
+
+type cfbcrypto struct {
 	key []byte
 	iv  []byte
 }
 
-// NewCFBCrypto returns new aes-cfb crypto
-func NewCFBCrypto(key, iv []byte) AESCrypto {
-	return &CFBCrypto{
-		key: key,
-		iv:  iv,
-	}
-}
-
-// Encrypt aes-cfb encrypt
-func (c *CFBCrypto) Encrypt(plainText []byte) ([]byte, error) {
+func (c *cfbcrypto) Encrypt(plainText []byte) ([]byte, error) {
 	block, err := aes.NewCipher(c.key)
 
 	if err != nil {
@@ -203,8 +187,7 @@ func (c *CFBCrypto) Encrypt(plainText []byte) ([]byte, error) {
 	return cipherText, nil
 }
 
-// Decrypt aes-cfb decrypt
-func (c *CFBCrypto) Decrypt(cipherText []byte) ([]byte, error) {
+func (c *cfbcrypto) Decrypt(cipherText []byte) ([]byte, error) {
 	block, err := aes.NewCipher(c.key)
 
 	if err != nil {
@@ -223,76 +206,71 @@ func (c *CFBCrypto) Decrypt(cipherText []byte) ([]byte, error) {
 	return plainText, nil
 }
 
-// OFBCrypto aes-ofb crypto
-type OFBCrypto struct {
+// NewCFBCrypto returns new aes-cfb crypto
+func NewCFBCrypto(key, iv []byte) AESCrypto {
+	return &cfbcrypto{
+		key: key,
+		iv:  iv,
+	}
+}
+
+type ofbcrypto struct {
 	key []byte
 	iv  []byte
+}
+
+func (c *ofbcrypto) Encrypt(plainText []byte) ([]byte, error) {
+	block, err := aes.NewCipher(c.key)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if len(c.iv) != block.BlockSize() {
+		return nil, errors.New("yiigo: IV length must equal block size")
+	}
+
+	cipherText := make([]byte, len(plainText))
+
+	stream := cipher.NewOFB(block, c.iv)
+	stream.XORKeyStream(cipherText, plainText)
+
+	return cipherText, nil
+}
+
+func (c *ofbcrypto) Decrypt(cipherText []byte) ([]byte, error) {
+	block, err := aes.NewCipher(c.key)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if len(c.iv) != block.BlockSize() {
+		return nil, errors.New("yiigo: IV length must equal block size")
+	}
+
+	plainText := make([]byte, len(cipherText))
+
+	stream := cipher.NewOFB(block, c.iv)
+	stream.XORKeyStream(plainText, cipherText)
+
+	return plainText, nil
 }
 
 // NewOFBCrypto returns new aes-ofb crypto
 func NewOFBCrypto(key, iv []byte) AESCrypto {
-	return &OFBCrypto{
+	return &ofbcrypto{
 		key: key,
 		iv:  iv,
 	}
 }
 
-// Encrypt aes-ofb encrypt
-func (c *OFBCrypto) Encrypt(plainText []byte) ([]byte, error) {
-	block, err := aes.NewCipher(c.key)
-
-	if err != nil {
-		return nil, err
-	}
-
-	if len(c.iv) != block.BlockSize() {
-		return nil, errors.New("yiigo: IV length must equal block size")
-	}
-
-	cipherText := make([]byte, len(plainText))
-
-	stream := cipher.NewOFB(block, c.iv)
-	stream.XORKeyStream(cipherText, plainText)
-
-	return cipherText, nil
-}
-
-// Decrypt aes-ofb decrypt
-func (c *OFBCrypto) Decrypt(cipherText []byte) ([]byte, error) {
-	block, err := aes.NewCipher(c.key)
-
-	if err != nil {
-		return nil, err
-	}
-
-	if len(c.iv) != block.BlockSize() {
-		return nil, errors.New("yiigo: IV length must equal block size")
-	}
-
-	plainText := make([]byte, len(cipherText))
-
-	stream := cipher.NewOFB(block, c.iv)
-	stream.XORKeyStream(plainText, cipherText)
-
-	return plainText, nil
-}
-
-// CTRCrypto aes-ctr crypto
-type CTRCrypto struct {
+type ctrcrypto struct {
 	key []byte
 	iv  []byte
 }
 
-// NewCTRCrypto returns new aes-ctr crypto
-func NewCTRCrypto(key, iv []byte) AESCrypto {
-	return &CTRCrypto{
-		key: key,
-		iv:  iv,
-	}
-}
-
-// Encrypt aes-ctr encrypt
-func (c *CTRCrypto) Encrypt(plainText []byte) ([]byte, error) {
+func (c *ctrcrypto) Encrypt(plainText []byte) ([]byte, error) {
 	block, err := aes.NewCipher(c.key)
 
 	if err != nil {
@@ -311,8 +289,7 @@ func (c *CTRCrypto) Encrypt(plainText []byte) ([]byte, error) {
 	return cipherText, nil
 }
 
-// Decrypt aes-ctr decrypt
-func (c *CTRCrypto) Decrypt(cipherText []byte) ([]byte, error) {
+func (c *ctrcrypto) Decrypt(cipherText []byte) ([]byte, error) {
 	block, err := aes.NewCipher(c.key)
 
 	if err != nil {
@@ -331,22 +308,20 @@ func (c *CTRCrypto) Decrypt(cipherText []byte) ([]byte, error) {
 	return plainText, nil
 }
 
-// GCMCrypto aes-gcm crypto
-type GCMCrypto struct {
+// NewCTRCrypto returns new aes-ctr crypto
+func NewCTRCrypto(key, iv []byte) AESCrypto {
+	return &ctrcrypto{
+		key: key,
+		iv:  iv,
+	}
+}
+
+type gcmcrypto struct {
 	key   []byte
 	nonce []byte
 }
 
-// NewGCMCrypto returns new aes-gcm crypto
-func NewGCMCrypto(key, nonce []byte) AESCrypto {
-	return &GCMCrypto{
-		key:   key,
-		nonce: nonce,
-	}
-}
-
-// Encrypt aes-gcm encrypt
-func (c *GCMCrypto) Encrypt(plainText []byte) ([]byte, error) {
+func (c *gcmcrypto) Encrypt(plainText []byte) ([]byte, error) {
 	block, err := aes.NewCipher(c.key)
 
 	if err != nil {
@@ -366,8 +341,7 @@ func (c *GCMCrypto) Encrypt(plainText []byte) ([]byte, error) {
 	return aesgcm.Seal(nil, c.nonce, plainText, nil), nil
 }
 
-// Decrypt aes-gcm decrypt
-func (c *GCMCrypto) Decrypt(cipherText []byte) ([]byte, error) {
+func (c *gcmcrypto) Decrypt(cipherText []byte) ([]byte, error) {
 	block, err := aes.NewCipher(c.key)
 
 	if err != nil {
@@ -385,6 +359,14 @@ func (c *GCMCrypto) Decrypt(cipherText []byte) ([]byte, error) {
 	}
 
 	return aesgcm.Open(nil, c.nonce, cipherText, nil)
+}
+
+// NewGCMCrypto returns new aes-gcm crypto
+func NewGCMCrypto(key, nonce []byte) AESCrypto {
+	return &gcmcrypto{
+		key:   key,
+		nonce: nonce,
+	}
 }
 
 // GenerateRSAKey returns rsa private and public key

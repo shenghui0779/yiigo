@@ -95,16 +95,23 @@ func NewUploadForm(fieldname, filename string, extraFields map[string]string) *U
 	}
 }
 
-// HTTPClient http client
-type HTTPClient struct {
+// HTTPClient is the interface for an http client.
+type HTTPClient interface {
+	Do(ctx context.Context, req *http.Request, options ...HTTPOption) ([]byte, error)
+	Get(ctx context.Context, url string, options ...HTTPOption) ([]byte, error)
+	Post(ctx context.Context, url string, body []byte, options ...HTTPOption) ([]byte, error)
+	Upload(ctx context.Context, url string, form *UploadForm, options ...HTTPOption) ([]byte, error)
+}
+
+type yiiclient struct {
 	client  *http.Client
 	timeout time.Duration
 }
 
-func (h *HTTPClient) Do(ctx context.Context, req *http.Request, options ...HTTPOption) ([]byte, error) {
+func (c *yiiclient) Do(ctx context.Context, req *http.Request, options ...HTTPOption) ([]byte, error) {
 	settings := &httpSettings{
 		headers: make(map[string]string),
-		timeout: h.timeout,
+		timeout: c.timeout,
 	}
 
 	if len(options) != 0 {
@@ -136,7 +143,7 @@ func (h *HTTPClient) Do(ctx context.Context, req *http.Request, options ...HTTPO
 
 	defer cancel()
 
-	resp, err := h.client.Do(req.WithContext(ctx))
+	resp, err := c.client.Do(req.WithContext(ctx))
 
 	if err != nil {
 		// If the context has been canceled, the context's error is probably more useful.
@@ -167,29 +174,29 @@ func (h *HTTPClient) Do(ctx context.Context, req *http.Request, options ...HTTPO
 }
 
 // Get http get request
-func (h *HTTPClient) Get(ctx context.Context, url string, options ...HTTPOption) ([]byte, error) {
+func (c *yiiclient) Get(ctx context.Context, url string, options ...HTTPOption) ([]byte, error) {
 	req, err := http.NewRequest("GET", url, nil)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return h.Do(ctx, req, options...)
+	return c.Do(ctx, req, options...)
 }
 
 // Post http post request
-func (h *HTTPClient) Post(ctx context.Context, url string, body []byte, options ...HTTPOption) ([]byte, error) {
+func (c *yiiclient) Post(ctx context.Context, url string, body []byte, options ...HTTPOption) ([]byte, error) {
 	req, err := http.NewRequest("POST", url, bytes.NewReader(body))
 
 	if err != nil {
 		return nil, err
 	}
 
-	return h.Do(ctx, req, options...)
+	return c.Do(ctx, req, options...)
 }
 
 // Upload http upload media
-func (h *HTTPClient) Upload(ctx context.Context, url string, form *UploadForm, options ...HTTPOption) ([]byte, error) {
+func (c *yiiclient) Upload(ctx context.Context, url string, form *UploadForm, options ...HTTPOption) ([]byte, error) {
 	media, err := form.Buffer()
 
 	if err != nil {
@@ -230,32 +237,12 @@ func (h *HTTPClient) Upload(ctx context.Context, url string, form *UploadForm, o
 		return nil, err
 	}
 
-	return h.Do(ctx, req, options...)
-}
-
-// defaultHTTPClient default http client
-var defaultHTTPClient = &HTTPClient{
-	client: &http.Client{
-		Transport: &http.Transport{
-			Proxy: http.ProxyFromEnvironment,
-			DialContext: (&net.Dialer{
-				Timeout:   30 * time.Second,
-				KeepAlive: 60 * time.Second,
-			}).DialContext,
-			MaxIdleConns:          0,
-			MaxIdleConnsPerHost:   1000,
-			MaxConnsPerHost:       1000,
-			IdleConnTimeout:       60 * time.Second,
-			TLSHandshakeTimeout:   10 * time.Second,
-			ExpectContinueTimeout: 1 * time.Second,
-		},
-	},
-	timeout: defaultHTTPTimeout,
+	return c.Do(ctx, req, options...)
 }
 
 // NewHTTPClient returns a new http client
-func NewHTTPClient(client *http.Client, defaultTimeout ...time.Duration) *HTTPClient {
-	c := &HTTPClient{
+func NewHTTPClient(client *http.Client, defaultTimeout ...time.Duration) HTTPClient {
+	c := &yiiclient{
 		client:  client,
 		timeout: defaultHTTPTimeout,
 	}
@@ -266,6 +253,23 @@ func NewHTTPClient(client *http.Client, defaultTimeout ...time.Duration) *HTTPCl
 
 	return c
 }
+
+// defaultHTTPClient default http client
+var defaultHTTPClient = NewHTTPClient(&http.Client{
+	Transport: &http.Transport{
+		Proxy: http.ProxyFromEnvironment,
+		DialContext: (&net.Dialer{
+			Timeout:   30 * time.Second,
+			KeepAlive: 60 * time.Second,
+		}).DialContext,
+		MaxIdleConns:          0,
+		MaxIdleConnsPerHost:   1000,
+		MaxConnsPerHost:       1000,
+		IdleConnTimeout:       60 * time.Second,
+		TLSHandshakeTimeout:   10 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+	},
+}, defaultHTTPTimeout)
 
 // HTTPGet http get request
 func HTTPGet(ctx context.Context, url string, options ...HTTPOption) ([]byte, error) {

@@ -3,7 +3,6 @@ package yiigo
 import (
 	"sync"
 
-	"github.com/pelletier/go-toml"
 	"go.uber.org/zap"
 	"gopkg.in/gomail.v2"
 )
@@ -70,38 +69,24 @@ var (
 )
 
 func initMailer() {
-	tree, ok := env.get("email").(*toml.Tree)
+	configs := make(map[string]*emailConfig, 0)
 
-	if !ok {
+	if err := env.Get("email").Unmarshal(&configs); err != nil {
+		logger.Panic("yiigo: email dialer init error", zap.Error(err))
+	}
+
+	if len(configs) == 0 {
 		return
 	}
 
-	keys := tree.Keys()
-
-	if len(keys) == 0 {
-		return
-	}
-
-	for _, v := range keys {
-		node, ok := tree.Get(v).(*toml.Tree)
-
-		if !ok {
-			continue
-		}
-
-		cfg := new(emailConfig)
-
-		if err := node.Unmarshal(cfg); err != nil {
-			logger.Error("yiigo: email dialer init error", zap.String("name", v), zap.Error(err))
-		}
-
+	for name, cfg := range configs {
 		dialer := &EMailDialer{dialer: gomail.NewDialer(cfg.Host, cfg.Port, cfg.Username, cfg.Password)}
 
-		if v == AsDefault {
+		if name == AsDefault {
 			defaultMailer = dialer
 		}
 
-		mailerMap.Store(v, dialer)
+		mailerMap.Store(name, dialer)
 	}
 }
 

@@ -15,7 +15,6 @@ Go 轻量级开发通用库
 - 支持 [MongoDB](https://github.com/mongodb/mongo-go-driver)
 - 支持 [Redis](https://github.com/gomodule/redigo)
 - 支持 [NSQ](https://github.com/nsqio/go-nsq)
-- 支持 [Apollo](https://github.com/philchia/agollo)
 - 邮件使用 [gomail](https://github.com/go-gomail/gomail)
 - 配置使用 [toml](https://github.com/pelletier/go-toml)
 - SQL使用 [sqlx](https://github.com/jmoiron/sqlx)
@@ -43,15 +42,6 @@ go get -u github.com/shenghui0779/yiigo
 [app]
 env = "dev" # dev | beta | prod
 debug = true
-
-[apollo]
-app_id = "test"
-cluster = "default"
-address = "127.0.0.1:8080"
-namespace = ["apollo_test"]
-cache_dir = "./"
-accesskey_secret = ""
-insecure_skip_verify = true
 
 [db]
 
@@ -109,9 +99,9 @@ nsqd = "127.0.0.1:4150"
     max_backups = 0
     compress = true
 
-# apollo namespace
+# 自定义配置
 
-[apollo_namespace]
+[foo]
 name = "yiigo"
 ```
 
@@ -120,16 +110,8 @@ name = "yiigo"
 ```go
 yiigo.Env("app.env").String("dev")
 yiigo.Env("app.debug").Bool(true)
-yiigo.Env("apollo_namespace.name").String("foo")
+yiigo.Env("foo.name").String("bar")
 ```
-
-> ⚠️ 注意
->
-> 如果配置了 `apollo`，则：
->
-> 1. `namespace` 默认包含 `application`；
-> 2. `namespace` 中的配置项优先从 `apollo` 读取，若不存在，则从 `yiigo.toml` 中读取；
-> 3. 若 `namespace` 不在 `apollo` 配置中，则其配置项从 `yiigo.toml` 中获取;
 
 #### MySQL
 

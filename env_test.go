@@ -112,7 +112,7 @@ func Test_env_Time(t *testing.T) {
 }
 
 func Test_env_Map(t *testing.T) {
-	assert.Equal(t, map[string]interface{}{
+	assert.Equal(t, X{
 		"env":    "dev",
 		"debug":  true,
 		"time":   "2016-03-19 15:03:19",

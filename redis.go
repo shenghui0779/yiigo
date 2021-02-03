@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/gomodule/redigo/redis"
-	"github.com/pelletier/go-toml"
 	"github.com/shenghui0779/vitess_pool"
 	"go.uber.org/zap"
 )
@@ -131,42 +130,28 @@ var (
 )
 
 func initRedis() {
-	tree, ok := env.get("redis").(*toml.Tree)
+	configs := make(map[string]*redisConfig, 0)
 
-	if !ok {
+	if err := env.Get("redis").Unmarshal(&configs); err != nil {
+		logger.Panic("yiigo: redis init error", zap.Error(err))
+	}
+
+	if len(configs) == 0 {
 		return
 	}
 
-	keys := tree.Keys()
-
-	if len(keys) == 0 {
-		return
-	}
-
-	for _, v := range keys {
-		node, ok := tree.Get(v).(*toml.Tree)
-
-		if !ok {
-			continue
-		}
-
-		cfg := new(redisConfig)
-
-		if err := node.Unmarshal(cfg); err != nil {
-			logger.Panic("yiigo: redis init error", zap.String("name", v), zap.Error(err))
-		}
-
+	for name, cfg := range configs {
 		poolResource := &RedisPoolResource{config: cfg}
 
 		poolResource.init()
 
-		if v == AsDefault {
+		if name == AsDefault {
 			defaultRedis = poolResource
 		}
 
-		redisMap.Store(v, poolResource)
+		redisMap.Store(name, poolResource)
 
-		logger.Info(fmt.Sprintf("yiigo: redis.%s is OK.", v))
+		logger.Info(fmt.Sprintf("yiigo: redis.%s is OK.", name))
 	}
 }
 

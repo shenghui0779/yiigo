@@ -27,6 +27,4 @@ func init() {
 	initRedis()
 	// init mailer
 	initMailer()
-	// init apollo
-	initApollo()
 }

@@ -6,7 +6,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/pelletier/go-toml"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
@@ -73,44 +72,30 @@ func mongoDial(cfg *mongoConfig) (*mongo.Client, error) {
 }
 
 func initMongoDB() {
-	tree, ok := env.get("mongo").(*toml.Tree)
+	configs := make(map[string]*mongoConfig, 0)
 
-	if !ok {
+	if err := env.Get("mongo").Unmarshal(&configs); err != nil {
+		logger.Panic("yiigo: mongodb init error", zap.Error(err))
+	}
+
+	if len(configs) == 0 {
 		return
 	}
 
-	keys := tree.Keys()
-
-	if len(keys) == 0 {
-		return
-	}
-
-	for _, v := range keys {
-		node, ok := tree.Get(v).(*toml.Tree)
-
-		if !ok {
-			continue
-		}
-
-		cfg := new(mongoConfig)
-
-		if err := node.Unmarshal(cfg); err != nil {
-			logger.Panic("yiigo: mongodb init error", zap.String("name", v), zap.Error(err))
-		}
-
+	for name, cfg := range configs {
 		client, err := mongoDial(cfg)
 
 		if err != nil {
-			logger.Panic("yiigo: mongodb init error", zap.String("name", v), zap.Error(err))
+			logger.Panic("yiigo: mongodb init error", zap.String("name", name), zap.Error(err))
 		}
 
-		if v == AsDefault {
+		if name == AsDefault {
 			defaultMongo = client
 		}
 
-		mgoMap.Store(v, client)
+		mgoMap.Store(name, client)
 
-		logger.Info(fmt.Sprintf("yiigo: mongodb.%s is OK.", v))
+		logger.Info(fmt.Sprintf("yiigo: mongodb.%s is OK.", name))
 	}
 }
 
