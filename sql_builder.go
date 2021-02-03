@@ -8,29 +8,42 @@ import (
 	"go.uber.org/zap"
 )
 
-// SQLBuilder is the interface that wrap query options
+// SQLBuilder is the interface for wrapping query options
 type SQLBuilder interface {
+	// Wrap wrapping query options
 	Wrap(options ...QueryOption) SQLWrapper
 }
 
-// SQLWrapper is the interface that build sql statement
+// SQLWrapper is the interface for building sql statement
 type SQLWrapper interface {
+	// ToQuery returns query statement and binds.
 	ToQuery() (string, []interface{})
+
+	// ToInsert returns insert statement and binds.
+	// data expects `struct`, `*struct`, `yiigo.X`.
 	ToInsert(data interface{}) (string, []interface{})
+
+	// ToBatchInsert returns batch insert statement and binds.
+	// data expects `[]struct`, `[]*struct`, `[]yiigo.X`.
 	ToBatchInsert(data interface{}) (string, []interface{})
+
+	// ToUpdate returns update statement and binds.
+	// data expects `struct`, `*struct`, `yiigo.X`.
 	ToUpdate(data interface{}) (string, []interface{})
+
+	// ToDelete returns delete statement and binds.
 	ToDelete() (string, []interface{})
+
+	// ToTruncate returns truncate statement
 	ToTruncate() string
 }
 
-// QueryBuilder is a SQLBuilder implementation
-type QueryBuilder struct {
+type queryBuilder struct {
 	driver DBDriver
 }
 
-// Wrap wrap query options
-func (b *QueryBuilder) Wrap(options ...QueryOption) SQLWrapper {
-	wrapper := &QueryWrapper{
+func (b *queryBuilder) Wrap(options ...QueryOption) SQLWrapper {
+	wrapper := &queryWrapper{
 		driver:  b.driver,
 		columns: []string{"*"},
 	}
@@ -44,7 +57,7 @@ func (b *QueryBuilder) Wrap(options ...QueryOption) SQLWrapper {
 
 // NewSQLBuilder returns new SQLBuilder
 func NewSQLBuilder(driver DBDriver) SQLBuilder {
-	return &QueryBuilder{driver: driver}
+	return &queryBuilder{driver: driver}
 }
 
 // SQLClause SQL clause
@@ -63,8 +76,7 @@ func Clause(query string, binds ...interface{}) *SQLClause {
 	}
 }
 
-// QueryWrapper is a SQLWrapper implementation
-type QueryWrapper struct {
+type queryWrapper struct {
 	driver   DBDriver
 	table    string
 	columns  []string
@@ -80,8 +92,7 @@ type QueryWrapper struct {
 	whereIn  bool
 }
 
-// ToQuery returns query statement and binds.
-func (w *QueryWrapper) ToQuery() (string, []interface{}) {
+func (w *queryWrapper) ToQuery() (string, []interface{}) {
 	query, binds := w.subquery()
 
 	// unions
@@ -127,7 +138,7 @@ func (w *QueryWrapper) ToQuery() (string, []interface{}) {
 	return query, binds
 }
 
-func (w *QueryWrapper) subquery() (string, []interface{}) {
+func (w *queryWrapper) subquery() (string, []interface{}) {
 	binds := make([]interface{}, 0)
 
 	var builder strings.Builder
@@ -206,9 +217,7 @@ func (w *QueryWrapper) subquery() (string, []interface{}) {
 	return builder.String(), binds
 }
 
-// ToInsert returns insert statement and binds.
-// data expects `struct`, `*struct`, `yiigo.X`.
-func (w *QueryWrapper) ToInsert(data interface{}) (string, []interface{}) {
+func (w *queryWrapper) ToInsert(data interface{}) (string, []interface{}) {
 	var (
 		columns []string
 		binds   []interface{}
@@ -274,7 +283,7 @@ func (w *QueryWrapper) ToInsert(data interface{}) (string, []interface{}) {
 	return query, binds
 }
 
-func (w *QueryWrapper) insertWithMap(data X) (columns []string, binds []interface{}) {
+func (w *queryWrapper) insertWithMap(data X) (columns []string, binds []interface{}) {
 	fieldNum := len(data)
 
 	columns = make([]string, 0, fieldNum)
@@ -288,7 +297,7 @@ func (w *QueryWrapper) insertWithMap(data X) (columns []string, binds []interfac
 	return
 }
 
-func (w *QueryWrapper) insertWithStruct(v reflect.Value) (columns []string, binds []interface{}) {
+func (w *queryWrapper) insertWithStruct(v reflect.Value) (columns []string, binds []interface{}) {
 	fieldNum := v.NumField()
 
 	columns = make([]string, 0, fieldNum)
@@ -314,9 +323,7 @@ func (w *QueryWrapper) insertWithStruct(v reflect.Value) (columns []string, bind
 	return
 }
 
-// ToBatchInsert returns batch insert statement and binds.
-// data expects `[]struct`, `[]*struct`, `[]yiigo.X`.
-func (w *QueryWrapper) ToBatchInsert(data interface{}) (string, []interface{}) {
+func (w *queryWrapper) ToBatchInsert(data interface{}) (string, []interface{}) {
 	v := reflect.Indirect(reflect.ValueOf(data))
 
 	if v.Kind() != reflect.Slice {
@@ -414,7 +421,7 @@ func (w *QueryWrapper) ToBatchInsert(data interface{}) (string, []interface{}) {
 	return query, binds
 }
 
-func (w *QueryWrapper) batchInsertWithMap(data []X) (columns []string, binds []interface{}) {
+func (w *queryWrapper) batchInsertWithMap(data []X) (columns []string, binds []interface{}) {
 	dataLen := len(data)
 	fieldNum := len(data[0])
 
@@ -434,7 +441,7 @@ func (w *QueryWrapper) batchInsertWithMap(data []X) (columns []string, binds []i
 	return
 }
 
-func (w *QueryWrapper) batchInsertWithStruct(v reflect.Value) (columns []string, binds []interface{}) {
+func (w *queryWrapper) batchInsertWithStruct(v reflect.Value) (columns []string, binds []interface{}) {
 	first := reflect.Indirect(v.Index(0))
 
 	dataLen := v.Len()
@@ -468,9 +475,7 @@ func (w *QueryWrapper) batchInsertWithStruct(v reflect.Value) (columns []string,
 	return
 }
 
-// ToUpdate returns update statement and binds.
-// data expects `struct`, `*struct`, `yiigo.X`.
-func (w *QueryWrapper) ToUpdate(data interface{}) (string, []interface{}) {
+func (w *queryWrapper) ToUpdate(data interface{}) (string, []interface{}) {
 	var (
 		columns []string
 		exprs   map[string]string
@@ -558,7 +563,7 @@ func (w *QueryWrapper) ToUpdate(data interface{}) (string, []interface{}) {
 	return query, binds
 }
 
-func (w *QueryWrapper) updateWithMap(data X) (columns []string, exprs map[string]string, binds []interface{}) {
+func (w *queryWrapper) updateWithMap(data X) (columns []string, exprs map[string]string, binds []interface{}) {
 	fieldNum := len(data)
 
 	columns = make([]string, 0, fieldNum)
@@ -581,7 +586,7 @@ func (w *QueryWrapper) updateWithMap(data X) (columns []string, exprs map[string
 	return
 }
 
-func (w *QueryWrapper) updateWithStruct(v reflect.Value) (columns []string, binds []interface{}) {
+func (w *queryWrapper) updateWithStruct(v reflect.Value) (columns []string, binds []interface{}) {
 	fieldNum := v.NumField()
 
 	columns = make([]string, 0, fieldNum)
@@ -607,8 +612,7 @@ func (w *QueryWrapper) updateWithStruct(v reflect.Value) (columns []string, bind
 	return
 }
 
-// ToDelete returns delete clause and binds.
-func (w *QueryWrapper) ToDelete() (string, []interface{}) {
+func (w *queryWrapper) ToDelete() (string, []interface{}) {
 	binds := make([]interface{}, 0)
 
 	var builder strings.Builder
@@ -646,8 +650,7 @@ func (w *QueryWrapper) ToDelete() (string, []interface{}) {
 	return query, binds
 }
 
-// ToTruncate returns truncate clause
-func (w *QueryWrapper) ToTruncate() string {
+func (w *queryWrapper) ToTruncate() string {
 	var builder strings.Builder
 
 	builder.WriteString("TRUNCATE ")
@@ -663,25 +666,25 @@ func (w *QueryWrapper) ToTruncate() string {
 }
 
 // QueryOption configures how we set up the SQL query statement
-type QueryOption func(w *QueryWrapper)
+type QueryOption func(w *queryWrapper)
 
 // Table specifies the query table.
 func Table(name string) QueryOption {
-	return func(w *QueryWrapper) {
+	return func(w *queryWrapper) {
 		w.table = name
 	}
 }
 
 // Select specifies the query columns.
 func Select(columns ...string) QueryOption {
-	return func(w *QueryWrapper) {
+	return func(w *queryWrapper) {
 		w.columns = columns
 	}
 }
 
 // Distinct specifies the `distinct` clause.
 func Distinct(columns ...string) QueryOption {
-	return func(w *QueryWrapper) {
+	return func(w *queryWrapper) {
 		w.columns = columns
 		w.distinct = true
 	}
@@ -689,7 +692,7 @@ func Distinct(columns ...string) QueryOption {
 
 // Join specifies the `inner join` clause.
 func Join(table, on string) QueryOption {
-	return func(w *QueryWrapper) {
+	return func(w *queryWrapper) {
 		w.joins = append(w.joins, &SQLClause{
 			table:   table,
 			keyword: "INNER",
@@ -700,7 +703,7 @@ func Join(table, on string) QueryOption {
 
 // LeftJoin specifies the `left join` clause.
 func LeftJoin(table, on string) QueryOption {
-	return func(w *QueryWrapper) {
+	return func(w *queryWrapper) {
 		w.joins = append(w.joins, &SQLClause{
 			table:   table,
 			keyword: "LEFT",
@@ -711,7 +714,7 @@ func LeftJoin(table, on string) QueryOption {
 
 // RightJoin specifies the `right join` clause.
 func RightJoin(table, on string) QueryOption {
-	return func(w *QueryWrapper) {
+	return func(w *queryWrapper) {
 		w.joins = append(w.joins, &SQLClause{
 			table:   table,
 			keyword: "RIGHT",
@@ -722,7 +725,7 @@ func RightJoin(table, on string) QueryOption {
 
 // FullJoin specifies the `full join` clause.
 func FullJoin(table, on string) QueryOption {
-	return func(w *QueryWrapper) {
+	return func(w *queryWrapper) {
 		w.joins = append(w.joins, &SQLClause{
 			table:   table,
 			keyword: "FULL",
@@ -733,7 +736,7 @@ func FullJoin(table, on string) QueryOption {
 
 // Where specifies the `where` clause.
 func Where(query string, binds ...interface{}) QueryOption {
-	return func(w *QueryWrapper) {
+	return func(w *queryWrapper) {
 		w.where = &SQLClause{
 			query: query,
 			binds: binds,
@@ -743,7 +746,7 @@ func Where(query string, binds ...interface{}) QueryOption {
 
 // WhereIn specifies the `where in` clause.
 func WhereIn(query string, binds ...interface{}) QueryOption {
-	return func(w *QueryWrapper) {
+	return func(w *queryWrapper) {
 		w.where = &SQLClause{
 			query: query,
 			binds: binds,
@@ -755,14 +758,14 @@ func WhereIn(query string, binds ...interface{}) QueryOption {
 
 // GroupBy specifies the `group by` clause.
 func GroupBy(columns ...string) QueryOption {
-	return func(w *QueryWrapper) {
+	return func(w *queryWrapper) {
 		w.groups = columns
 	}
 }
 
 // Having specifies the `having` clause.
 func Having(query string, binds ...interface{}) QueryOption {
-	return func(w *QueryWrapper) {
+	return func(w *queryWrapper) {
 		w.having = &SQLClause{
 			query: query,
 			binds: binds,
@@ -772,30 +775,30 @@ func Having(query string, binds ...interface{}) QueryOption {
 
 // OrderBy specifies the `order by` clause.
 func OrderBy(columns ...string) QueryOption {
-	return func(w *QueryWrapper) {
+	return func(w *queryWrapper) {
 		w.orders = columns
 	}
 }
 
 // Offset specifies the `offset` clause.
 func Offset(n int) QueryOption {
-	return func(w *QueryWrapper) {
+	return func(w *queryWrapper) {
 		w.offset = n
 	}
 }
 
 // Limit specifies the `limit` clause.
 func Limit(n int) QueryOption {
-	return func(w *QueryWrapper) {
+	return func(w *queryWrapper) {
 		w.limit = n
 	}
 }
 
 // Union specifies the `union` clause.
 func Union(wrappers ...SQLWrapper) QueryOption {
-	return func(w *QueryWrapper) {
+	return func(w *queryWrapper) {
 		for _, wrapper := range wrappers {
-			v, ok := wrapper.(*QueryWrapper)
+			v, ok := wrapper.(*queryWrapper)
 
 			if !ok {
 				continue
@@ -818,9 +821,9 @@ func Union(wrappers ...SQLWrapper) QueryOption {
 
 // UnionAll specifies the `union all` clause.
 func UnionAll(wrappers ...SQLWrapper) QueryOption {
-	return func(w *QueryWrapper) {
+	return func(w *queryWrapper) {
 		for _, wrapper := range wrappers {
-			v, ok := wrapper.(*QueryWrapper)
+			v, ok := wrapper.(*queryWrapper)
 
 			if !ok {
 				continue
