@@ -57,26 +57,33 @@ func WithHTTPTimeout(timeout time.Duration) HTTPOption {
 	}
 }
 
-// UploadForm upload form
-type UploadForm struct {
+// UploadForm is the interface for http upload
+type UploadForm interface {
+	FieldName() string
+	FileName() string
+	ExtraFields() map[string]string
+	Buffer() ([]byte, error)
+}
+
+type httpUploadForm struct {
 	fieldname   string
 	filename    string
 	extraFields map[string]string
 }
 
-func (f *UploadForm) FieldName() string {
+func (f *httpUploadForm) FieldName() string {
 	return f.fieldname
 }
 
-func (f *UploadForm) FileName() string {
+func (f *httpUploadForm) FileName() string {
 	return f.filename
 }
 
-func (f *UploadForm) ExtraFields() map[string]string {
+func (f *httpUploadForm) ExtraFields() map[string]string {
 	return f.extraFields
 }
 
-func (f *UploadForm) Buffer() ([]byte, error) {
+func (f *httpUploadForm) Buffer() ([]byte, error) {
 	path, err := filepath.Abs(f.filename)
 
 	if err != nil {
@@ -87,8 +94,8 @@ func (f *UploadForm) Buffer() ([]byte, error) {
 }
 
 // NewUploadForm returns new upload form
-func NewUploadForm(fieldname, filename string, extraFields map[string]string) *UploadForm {
-	return &UploadForm{
+func NewUploadForm(fieldname, filename string, extraFields map[string]string) UploadForm {
+	return &httpUploadForm{
 		fieldname:   fieldname,
 		filename:    filename,
 		extraFields: extraFields,
@@ -100,7 +107,7 @@ type HTTPClient interface {
 	Do(ctx context.Context, req *http.Request, options ...HTTPOption) ([]byte, error)
 	Get(ctx context.Context, url string, options ...HTTPOption) ([]byte, error)
 	Post(ctx context.Context, url string, body []byte, options ...HTTPOption) ([]byte, error)
-	Upload(ctx context.Context, url string, form *UploadForm, options ...HTTPOption) ([]byte, error)
+	Upload(ctx context.Context, url string, form UploadForm, options ...HTTPOption) ([]byte, error)
 }
 
 type yiiclient struct {
@@ -196,7 +203,7 @@ func (c *yiiclient) Post(ctx context.Context, url string, body []byte, options .
 }
 
 // Upload http upload media
-func (c *yiiclient) Upload(ctx context.Context, url string, form *UploadForm, options ...HTTPOption) ([]byte, error) {
+func (c *yiiclient) Upload(ctx context.Context, url string, form UploadForm, options ...HTTPOption) ([]byte, error) {
 	media, err := form.Buffer()
 
 	if err != nil {
@@ -282,6 +289,6 @@ func HTTPPost(ctx context.Context, url string, body []byte, options ...HTTPOptio
 }
 
 // HTTPUpload http upload media
-func HTTPUpload(ctx context.Context, url string, form *UploadForm, options ...HTTPOption) ([]byte, error) {
+func HTTPUpload(ctx context.Context, url string, form UploadForm, options ...HTTPOption) ([]byte, error) {
 	return defaultHTTPClient.Upload(ctx, url, form, options...)
 }

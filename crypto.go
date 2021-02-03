@@ -25,7 +25,7 @@ const (
 	PKCS7 PaddingMode = "PKCS#7"
 )
 
-// AESCrypto aes crypto
+// AESCrypto is the interface for aes crypto
 type AESCrypto interface {
 	Encrypt(plainText []byte) ([]byte, error)
 	Decrypt(cipherText []byte) ([]byte, error)
@@ -93,7 +93,7 @@ func (c *cbccrypto) Decrypt(cipherText []byte) ([]byte, error) {
 	return plainText, nil
 }
 
-// NewCBCCrypto returns new aes-cbc crypto
+// NewCBCCrypto returns a new aes-cbc crypto
 func NewCBCCrypto(key, iv []byte, mode PaddingMode) AESCrypto {
 	return &cbccrypto{
 		key:  key,
@@ -155,7 +155,7 @@ func (c *ecbcrypto) Decrypt(cipherText []byte) ([]byte, error) {
 	return plainText, nil
 }
 
-// NewECBCrypto returns new aes-ecb crypto
+// NewECBCrypto returns a new aes-ecb crypto
 func NewECBCrypto(key []byte, mode PaddingMode) AESCrypto {
 	return &ecbcrypto{
 		key:  key,
@@ -206,7 +206,7 @@ func (c *cfbcrypto) Decrypt(cipherText []byte) ([]byte, error) {
 	return plainText, nil
 }
 
-// NewCFBCrypto returns new aes-cfb crypto
+// NewCFBCrypto returns a new aes-cfb crypto
 func NewCFBCrypto(key, iv []byte) AESCrypto {
 	return &cfbcrypto{
 		key: key,
@@ -257,7 +257,7 @@ func (c *ofbcrypto) Decrypt(cipherText []byte) ([]byte, error) {
 	return plainText, nil
 }
 
-// NewOFBCrypto returns new aes-ofb crypto
+// NewOFBCrypto returns a new aes-ofb crypto
 func NewOFBCrypto(key, iv []byte) AESCrypto {
 	return &ofbcrypto{
 		key: key,
@@ -308,7 +308,7 @@ func (c *ctrcrypto) Decrypt(cipherText []byte) ([]byte, error) {
 	return plainText, nil
 }
 
-// NewCTRCrypto returns new aes-ctr crypto
+// NewCTRCrypto returns a new aes-ctr crypto
 func NewCTRCrypto(key, iv []byte) AESCrypto {
 	return &ctrcrypto{
 		key: key,
@@ -361,7 +361,7 @@ func (c *gcmcrypto) Decrypt(cipherText []byte) ([]byte, error) {
 	return aesgcm.Open(nil, c.nonce, cipherText, nil)
 }
 
-// NewGCMCrypto returns new aes-gcm crypto
+// NewGCMCrypto returns a new aes-gcm crypto
 func NewGCMCrypto(key, nonce []byte) AESCrypto {
 	return &gcmcrypto{
 		key:   key,
