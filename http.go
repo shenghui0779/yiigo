@@ -104,9 +104,16 @@ func NewUploadForm(fieldname, filename string, extraFields map[string]string) Up
 
 // HTTPClient is the interface for an http client.
 type HTTPClient interface {
+	// Do sends an HTTP request and returns an HTTP response.
 	Do(ctx context.Context, req *http.Request, options ...HTTPOption) ([]byte, error)
+
+	// Get sends an HTTP get request
 	Get(ctx context.Context, url string, options ...HTTPOption) ([]byte, error)
+
+	// Post sends an HTTP post request
 	Post(ctx context.Context, url string, body []byte, options ...HTTPOption) ([]byte, error)
+
+	// Upload sends an HTTP post request for uploading media
 	Upload(ctx context.Context, url string, form UploadForm, options ...HTTPOption) ([]byte, error)
 }
 
@@ -180,7 +187,6 @@ func (c *yiiclient) Do(ctx context.Context, req *http.Request, options ...HTTPOp
 	return b, nil
 }
 
-// Get http get request
 func (c *yiiclient) Get(ctx context.Context, url string, options ...HTTPOption) ([]byte, error) {
 	req, err := http.NewRequest("GET", url, nil)
 
@@ -191,7 +197,6 @@ func (c *yiiclient) Get(ctx context.Context, url string, options ...HTTPOption) 
 	return c.Do(ctx, req, options...)
 }
 
-// Post http post request
 func (c *yiiclient) Post(ctx context.Context, url string, body []byte, options ...HTTPOption) ([]byte, error) {
 	req, err := http.NewRequest("POST", url, bytes.NewReader(body))
 
@@ -202,7 +207,6 @@ func (c *yiiclient) Post(ctx context.Context, url string, body []byte, options .
 	return c.Do(ctx, req, options...)
 }
 
-// Upload http upload media
 func (c *yiiclient) Upload(ctx context.Context, url string, form UploadForm, options ...HTTPOption) ([]byte, error) {
 	media, err := form.Buffer()
 
