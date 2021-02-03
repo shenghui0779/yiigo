@@ -27,7 +27,10 @@ const (
 
 // AESCrypto is the interface for aes crypto
 type AESCrypto interface {
+	// Encrypt encrypts the plain text
 	Encrypt(plainText []byte) ([]byte, error)
+
+	// Decrypt decrypts the cipher text
 	Decrypt(cipherText []byte) ([]byte, error)
 }
 
