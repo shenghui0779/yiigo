@@ -59,9 +59,16 @@ func WithHTTPTimeout(timeout time.Duration) HTTPOption {
 
 // UploadForm is the interface for http upload
 type UploadForm interface {
+	// FieldName returns field name for upload
 	FieldName() string
+
+	// FileName returns filename for upload
 	FileName() string
+
+	// ExtraFields returns extra fields for upload
 	ExtraFields() map[string]string
+
+	// Buffer returns the buffer of media
 	Buffer() ([]byte, error)
 }
 
