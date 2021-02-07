@@ -36,14 +36,14 @@ func Test_env_Bool(t *testing.T) {
 }
 
 func Test_env_Time(t *testing.T) {
-	assert.Equal(t, time.Date(2016, 3, 19, 15, 3, 19, 0, time.UTC), Env("app.time").Time("2006-01-02 15:04:05"))
+	assert.Equal(t, time.Date(2019, 7, 12, 13, 3, 19, 0, time.UTC), Env("app.time").Time("2006-01-02 15:04:05"))
 }
 
 func Test_env_Map(t *testing.T) {
 	assert.Equal(t, X{
 		"env":    "dev",
 		"debug":  true,
-		"time":   "2016-03-19 15:03:19",
+		"time":   "2019-07-12 13:03:19",
 		"amount": int64(100),
 		"hosts":  []interface{}{"127.0.0.1", "192.168.1.1", "192.168.1.80"},
 		"ports":  []interface{}{int64(80), int64(81), int64(82)},
@@ -78,7 +78,7 @@ func TestMain(m *testing.M) {
 	LoadEnvFromBytes([]byte(`[app]
 env = "dev"
 debug = true
-time = "2016-03-19 15:03:19"
+time = "2019-07-12 13:03:19"
 amount = 100
 hosts = ["127.0.0.1", "192.168.1.1", "192.168.1.80"]
 ports = [80, 81, 82]
