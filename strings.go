@@ -11,6 +11,7 @@ import (
 	"hash"
 )
 
+// HashAlgo hash algorithm
 type HashAlgo string
 
 const (
