@@ -23,12 +23,12 @@ func Test_env_Ints(t *testing.T) {
 	assert.Equal(t, []int64{80, 81, 82}, Env("app.ports").Ints())
 }
 
-func Test_env_Float64(t *testing.T) {
-	assert.Equal(t, 50.6, Env("app.weight").Float64())
+func Test_env_Float(t *testing.T) {
+	assert.Equal(t, 50.6, Env("app.weight").Float())
 }
 
-func Test_env_Float64s(t *testing.T) {
-	assert.Equal(t, []float64{23.5, 46.7, 45.9}, Env("app.prices").Float64s())
+func Test_env_Floats(t *testing.T) {
+	assert.Equal(t, []float64{23.5, 46.7, 45.9}, Env("app.prices").Floats())
 }
 
 func Test_env_Bool(t *testing.T) {

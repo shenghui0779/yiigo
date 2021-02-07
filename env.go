@@ -31,11 +31,11 @@ type EnvValue interface {
 	// Ints returns a value of []int64.
 	Ints(defaultValue ...int64) []int64
 
-	// Float64 returns a value of float64.
-	Float64(defaultValue ...float64) float64
+	// Float returns a value of float64.
+	Float(defaultValue ...float64) float64
 
-	// Float64s returns a value of []float64.
-	Float64s(defaultValue ...float64) []float64
+	// Floats returns a value of []float64.
+	Floats(defaultValue ...float64) []float64
 
 	// Bool returns a value of bool.
 	Bool(defaultValue ...bool) bool
@@ -163,7 +163,7 @@ func (c *configValue) Ints(defaultValue ...int64) []int64 {
 	return result
 }
 
-func (c *configValue) Float64(defaultValue ...float64) float64 {
+func (c *configValue) Float(defaultValue ...float64) float64 {
 	var dv float64
 
 	if len(defaultValue) != 0 {
@@ -183,7 +183,7 @@ func (c *configValue) Float64(defaultValue ...float64) float64 {
 	return result
 }
 
-func (c *configValue) Float64s(defaultValue ...float64) []float64 {
+func (c *configValue) Floats(defaultValue ...float64) []float64 {
 	if c.value == nil {
 		return defaultValue
 	}
