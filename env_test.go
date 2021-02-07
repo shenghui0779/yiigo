@@ -16,83 +16,11 @@ func Test_env_Strings(t *testing.T) {
 }
 
 func Test_env_Int(t *testing.T) {
-	assert.Equal(t, 100, Env("app.amount").Int())
+	assert.Equal(t, int64(100), Env("app.amount").Int())
 }
 
 func Test_env_Ints(t *testing.T) {
-	assert.Equal(t, []int{80, 81, 82}, Env("app.ports").Ints())
-}
-
-func Test_env_Uint(t *testing.T) {
-	assert.Equal(t, uint(100), Env("app.amount").Uint())
-}
-
-func Test_env_Uints(t *testing.T) {
-	assert.Equal(t, []uint{80, 81, 82}, Env("app.ports").Uints())
-}
-
-func Test_env_Int8(t *testing.T) {
-	assert.Equal(t, int8(100), Env("app.amount").Int8())
-}
-
-func Test_env_Int8s(t *testing.T) {
-	assert.Equal(t, []int8{80, 81, 82}, Env("app.ports").Int8s())
-}
-
-func Test_env_Uint8(t *testing.T) {
-	assert.Equal(t, uint8(100), Env("app.amount").Uint8())
-}
-
-func Test_env_Uint8s(t *testing.T) {
-	assert.Equal(t, []uint8{80, 81, 82}, Env("app.ports").Uint8s())
-}
-
-func Test_env_Int16(t *testing.T) {
-	assert.Equal(t, int16(100), Env("app.amount").Int16())
-}
-
-func Test_env_Int16s(t *testing.T) {
-	assert.Equal(t, []int16{80, 81, 82}, Env("app.ports").Int16s())
-}
-
-func Test_env_Uint16(t *testing.T) {
-	assert.Equal(t, uint16(100), Env("app.amount").Uint16())
-}
-
-func Test_env_Uint16s(t *testing.T) {
-	assert.Equal(t, []uint16{80, 81, 82}, Env("app.ports").Uint16s())
-}
-
-func Test_env_Int32(t *testing.T) {
-	assert.Equal(t, int32(100), Env("app.amount").Int32())
-}
-
-func Test_env_Int32s(t *testing.T) {
-	assert.Equal(t, []int32{80, 81, 82}, Env("app.ports").Int32s())
-}
-
-func Test_env_Uint32(t *testing.T) {
-	assert.Equal(t, uint32(100), Env("app.amount").Uint32())
-}
-
-func Test_env_Uint32s(t *testing.T) {
-	assert.Equal(t, []uint32{80, 81, 82}, Env("app.ports").Uint32s())
-}
-
-func Test_env_Int64(t *testing.T) {
-	assert.Equal(t, int64(100), Env("app.amount").Int64())
-}
-
-func Test_env_Int64s(t *testing.T) {
-	assert.Equal(t, []int64{80, 81, 82}, Env("app.ports").Int64s())
-}
-
-func Test_env_Uint64(t *testing.T) {
-	assert.Equal(t, uint64(100), Env("app.amount").Uint64())
-}
-
-func Test_env_Uint64s(t *testing.T) {
-	assert.Equal(t, []uint64{80, 81, 82}, Env("app.ports").Uint64s())
+	assert.Equal(t, []int64{80, 81, 82}, Env("app.ports").Ints())
 }
 
 func Test_env_Float64(t *testing.T) {
