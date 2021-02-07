@@ -19,12 +19,6 @@ type Environment interface {
 
 // EnvValue is the interface for config value
 type EnvValue interface {
-	// String returns a value of string.
-	String(defaultValue ...string) string
-
-	// Strings returns a value of []string.
-	Strings(defaultValue ...string) []string
-
 	// Int returns a value of int64.
 	Int(defaultValue ...int64) int64
 
@@ -36,6 +30,12 @@ type EnvValue interface {
 
 	// Floats returns a value of []float64.
 	Floats(defaultValue ...float64) []float64
+
+	// String returns a value of string.
+	String(defaultValue ...string) string
+
+	// Strings returns a value of []string.
+	Strings(defaultValue ...string) []string
 
 	// Bool returns a value of bool.
 	Bool(defaultValue ...bool) bool
@@ -65,54 +65,6 @@ func (c *config) Get(key string) EnvValue {
 
 type configValue struct {
 	value interface{}
-}
-
-func (c *configValue) String(defaultValue ...string) string {
-	dv := ""
-
-	if len(defaultValue) != 0 {
-		dv = defaultValue[0]
-	}
-
-	if c.value == nil {
-		return dv
-	}
-
-	result, ok := c.value.(string)
-
-	if !ok {
-		return ""
-	}
-
-	return result
-}
-
-func (c *configValue) Strings(defaultValue ...string) []string {
-	if c.value == nil {
-		return defaultValue
-	}
-
-	arr, ok := c.value.([]interface{})
-
-	if !ok {
-		return []string{}
-	}
-
-	l := len(arr)
-
-	result := make([]string, 0, l)
-
-	for _, v := range arr {
-		if s, ok := v.(string); ok {
-			result = append(result, s)
-		}
-	}
-
-	if len(result) < l {
-		return []string{}
-	}
-
-	return result
 }
 
 func (c *configValue) Int(defaultValue ...int64) int64 {
@@ -206,6 +158,54 @@ func (c *configValue) Floats(defaultValue ...float64) []float64 {
 
 	if len(result) < l {
 		return []float64{}
+	}
+
+	return result
+}
+
+func (c *configValue) String(defaultValue ...string) string {
+	dv := ""
+
+	if len(defaultValue) != 0 {
+		dv = defaultValue[0]
+	}
+
+	if c.value == nil {
+		return dv
+	}
+
+	result, ok := c.value.(string)
+
+	if !ok {
+		return ""
+	}
+
+	return result
+}
+
+func (c *configValue) Strings(defaultValue ...string) []string {
+	if c.value == nil {
+		return defaultValue
+	}
+
+	arr, ok := c.value.([]interface{})
+
+	if !ok {
+		return []string{}
+	}
+
+	l := len(arr)
+
+	result := make([]string, 0, l)
+
+	for _, v := range arr {
+		if s, ok := v.(string); ok {
+			result = append(result, s)
+		}
+	}
+
+	if len(result) < l {
+		return []string{}
 	}
 
 	return result

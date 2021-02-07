@@ -7,14 +7,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func Test_env_String(t *testing.T) {
-	assert.Equal(t, "dev", Env("app.env").String())
-}
-
-func Test_env_Strings(t *testing.T) {
-	assert.Equal(t, []string{"127.0.0.1", "192.168.1.1", "192.168.1.80"}, Env("app.hosts").Strings())
-}
-
 func Test_env_Int(t *testing.T) {
 	assert.Equal(t, int64(100), Env("app.amount").Int())
 }
@@ -29,6 +21,14 @@ func Test_env_Float(t *testing.T) {
 
 func Test_env_Floats(t *testing.T) {
 	assert.Equal(t, []float64{23.5, 46.7, 45.9}, Env("app.prices").Floats())
+}
+
+func Test_env_String(t *testing.T) {
+	assert.Equal(t, "dev", Env("app.env").String())
+}
+
+func Test_env_Strings(t *testing.T) {
+	assert.Equal(t, []string{"127.0.0.1", "192.168.1.1", "192.168.1.80"}, Env("app.hosts").Strings())
 }
 
 func Test_env_Bool(t *testing.T) {
