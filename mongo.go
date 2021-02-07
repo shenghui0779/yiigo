@@ -106,7 +106,7 @@ func initMongoDB() {
 			logger.Panic("yiigo: mongodb init error", zap.String("name", name), zap.Error(err))
 		}
 
-		if name == AsDefault {
+		if name == defalutConn {
 			defaultMongo = client
 		}
 
@@ -120,7 +120,7 @@ func initMongoDB() {
 func Mongo(name ...string) *mongo.Client {
 	if len(name) == 0 {
 		if defaultMongo == nil {
-			logger.Panic(fmt.Sprintf("yiigo: unknown mongodb.%s (forgotten configure?)", AsDefault))
+			logger.Panic(fmt.Sprintf("yiigo: unknown mongodb.%s (forgotten configure?)", defalutConn))
 		}
 
 		return defaultMongo

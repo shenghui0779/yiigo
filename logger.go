@@ -68,7 +68,7 @@ func initLogger() {
 	for name, cfg := range configs {
 		l := newLogger(cfg, debug)
 
-		if name == AsDefault {
+		if name == defalutConn {
 			logger = l
 		}
 

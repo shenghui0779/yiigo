@@ -82,7 +82,7 @@ func initMailer() {
 	for name, cfg := range configs {
 		dialer := &EMailDialer{dialer: gomail.NewDialer(cfg.Host, cfg.Port, cfg.Username, cfg.Password)}
 
-		if name == AsDefault {
+		if name == defalutConn {
 			defaultMailer = dialer
 		}
 
@@ -94,7 +94,7 @@ func initMailer() {
 func Mailer(name ...string) *EMailDialer {
 	if len(name) == 0 {
 		if defaultMailer == nil {
-			logger.Panic("yiigo: invalid email dialer", zap.String("name", AsDefault))
+			logger.Panic("yiigo: invalid email dialer", zap.String("name", defalutConn))
 		}
 
 		return defaultMailer
