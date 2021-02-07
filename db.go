@@ -40,7 +40,7 @@ type dbConfig struct {
 }
 
 func dbDial(cfg *dbConfig) (*sql.DB, error) {
-	if !InStrings(cfg.Driver, string(MySQL), string(Postgres), string(SQLite)) {
+	if !InStrings(cfg.Driver, []string{string(MySQL), string(Postgres), string(SQLite)}) {
 		return nil, fmt.Errorf("yiigo: unknown db driver %s, expects mysql, postgres, sqlite3", cfg.Driver)
 	}
 
