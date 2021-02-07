@@ -102,15 +102,25 @@ nsqd = "127.0.0.1:4150"
 # 自定义配置
 
 [foo]
-name = "yiigo"
+amount = 100
+ports = [80, 81, 82]
+weight = 50.6
+prices = [23.5, 46.7, 45.9]
+hosts = ["127.0.0.1", "192.168.1.1", "192.168.1.80"]
+time = "2019-07-12 13:03:19"
 ```
 
 - usage
 
 ```go
-yiigo.Env("app.env").String("dev")
-yiigo.Env("app.debug").Bool(true)
-yiigo.Env("foo.name").String("bar")
+yiigo.Env("app.env").String()
+yiigo.Env("app.debug").Bool()
+yiigo.Env("foo.amount").Int()
+yiigo.Env("foo.ports").Ints()
+yiigo.Env("foo.weight").Float()
+yiigo.Env("foo.price").Floats()
+yiigo.Env("foo.hosts").Strings()
+yiigo.Env("foo.time").Time("2006-01-02 15:04:05")
 ```
 
 #### MySQL
