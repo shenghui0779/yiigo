@@ -46,17 +46,23 @@ func mongoDial(cfg *mongoConfig) (*mongo.Client, error) {
 	clientOptions.SetMaxPoolSize(uint64(cfg.MaxPoolSize))
 	clientOptions.SetMaxConnIdleTime(time.Duration(cfg.MaxConnIdleTime) * time.Second)
 
+	var rp *readpref.ReadPref
+
 	switch cfg.Mode {
 	case Primary:
-		clientOptions.SetReadPreference(readpref.Primary())
+		rp = readpref.Primary()
 	case PrimaryPreferred:
-		clientOptions.SetReadPreference(readpref.PrimaryPreferred())
+		rp = readpref.PrimaryPreferred()
 	case Secondary:
-		clientOptions.SetReadPreference(readpref.Secondary())
+		rp = readpref.Secondary()
 	case SecondaryPreferred:
-		clientOptions.SetReadPreference(readpref.SecondaryPreferred())
+		rp = readpref.SecondaryPreferred()
 	case Nearest:
-		clientOptions.SetReadPreference(readpref.Nearest())
+		rp = readpref.Nearest()
+	}
+
+	if rp != nil {
+		clientOptions.SetReadPreference(rp)
 	}
 
 	// validates the client options
@@ -68,7 +74,18 @@ func mongoDial(cfg *mongoConfig) (*mongo.Client, error) {
 
 	defer cancel()
 
-	return mongo.Connect(ctx, clientOptions)
+	c, err := mongo.Connect(ctx, clientOptions)
+
+	if err != nil {
+		return nil, err
+	}
+
+	// verify connection
+	if err = c.Ping(context.TODO(), rp); err != nil {
+		return nil, err
+	}
+
+	return c, nil
 }
 
 func initMongoDB() {

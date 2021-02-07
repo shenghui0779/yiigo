@@ -141,15 +141,28 @@ func initRedis() {
 	}
 
 	for name, cfg := range configs {
-		poolResource := &RedisPoolResource{config: cfg}
+		rc := &RedisPoolResource{config: cfg}
 
-		poolResource.init()
+		rc.init()
 
-		if name == AsDefault {
-			defaultRedis = poolResource
+		// verify connection
+		conn, err := rc.Get()
+
+		if err != nil {
+			logger.Panic("yiigo: redis init error", zap.String("name", name), zap.Error(err))
 		}
 
-		redisMap.Store(name, poolResource)
+		defer rc.Put(conn)
+
+		if _, err = conn.Do("PING"); err != nil {
+			logger.Panic("yiigo: redis init error", zap.String("name", name), zap.Error(err))
+		}
+
+		if name == AsDefault {
+			defaultRedis = rc
+		}
+
+		redisMap.Store(name, rc)
 
 		logger.Info(fmt.Sprintf("yiigo: redis.%s is OK.", name))
 	}
