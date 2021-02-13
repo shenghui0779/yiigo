@@ -31,7 +31,7 @@
 // Redis
 //
 //    // default redis
-//    conn, err := yiigo.Redis().Get()
+//    conn, err := yiigo.Redis().Get(context.Background())
 //
 //    if err != nil {
 //        log.Fatal(err)
@@ -42,7 +42,7 @@
 //    conn.Do("SET", "test_key", "hello world")
 //
 //    // other redis
-//    conn, err := yiigo.Redis("foo").Get()
+//    conn, err := yiigo.Redis("foo").Get(context.Background())
 //
 //    if err != nil {
 //        log.Fatal(err)

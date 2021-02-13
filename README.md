@@ -159,7 +159,7 @@ yiigo.Mongo("other").Database("test").Collection("numbers").InsertOne(context.Ba
 
 ```go
 // default redis
-conn, err := yiigo.Redis().Get()
+conn, err := yiigo.Redis().Get(context.Background())
 
 if err != nil {
     log.Fatal(err)
@@ -170,7 +170,7 @@ defer yiigo.Redis().Put(conn)
 conn.Do("SET", "test_key", "hello world")
 
 // other redis
-conn, err := yiigo.Redis("other").Get()
+conn, err := yiigo.Redis("other").Get(context.Background())
 
 if err != nil {
     log.Fatal(err)
