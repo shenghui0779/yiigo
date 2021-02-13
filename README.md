@@ -20,7 +20,7 @@ Go 轻量级开发通用库
 - SQL使用 [sqlx](https://github.com/jmoiron/sqlx)
 - ORM推荐 [ent](https://github.com/facebook/ent)
 - 日志使用 [zap](https://github.com/uber-go/zap)
-- 包含一些实用的帮助方法，如：http、cypto、date、IP、SQL Builder 等
+- 包含一些实用的帮助方法，如：http、cypto、date、IP、version compare、SQL Builder 等
 
 ## Requirements
 
