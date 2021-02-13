@@ -71,8 +71,8 @@
 //    yiigo.HTTPGet(context.Background(), "URL", yiigo.WithHTTPTimeout(5*time.Second))
 //
 //    // new client
-//    client := yiigo.NewHTTPClient(*http.Client)
-//    client.Get(context.Background(), "URL", yiigo.WithHTTPTimeout(5*time.Second))
+//    c := yiigo.NewHTTPClient(*http.Client)
+//    c.Get(context.Background(), "URL", yiigo.WithHTTPTimeout(5*time.Second))
 //
 // Logger
 //
