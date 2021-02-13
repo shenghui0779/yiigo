@@ -81,7 +81,7 @@ func mongoDial(cfg *mongoConfig) (*mongo.Client, error) {
 	}
 
 	// verify connection
-	if err = c.Ping(context.TODO(), rp); err != nil {
+	if err = c.Ping(ctx, rp); err != nil {
 		return nil, err
 	}
 
