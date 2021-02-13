@@ -19,12 +19,16 @@ func init() {
 
 	// init logger
 	initLogger()
+
 	// init db
 	initDB()
+
 	// init mongodb
 	initMongoDB()
+
 	// init redis
 	initRedis()
+
 	// init mailer
 	initMailer()
 }
