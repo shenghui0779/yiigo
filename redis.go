@@ -78,14 +78,12 @@ func (r *RedisPoolResource) init() {
 }
 
 // Get get a connection resource from the pool.
-func (r *RedisPoolResource) Get() (RedisConn, error) {
+func (r *RedisPoolResource) Get(ctx context.Context) (RedisConn, error) {
 	if r.pool.IsClosed() {
 		r.init()
 	}
 
-	ctx := context.TODO()
-
-	if r.config.WaitTimeout != 0 {
+	if r.config.WaitTimeout > 0 {
 		var cancel context.CancelFunc
 
 		ctx, cancel = context.WithTimeout(ctx, time.Duration(r.config.WaitTimeout)*time.Second)
@@ -146,7 +144,7 @@ func initRedis() {
 		rc.init()
 
 		// verify connection
-		conn, err := rc.Get()
+		conn, err := rc.Get(context.TODO())
 
 		if err != nil {
 			logger.Panic("yiigo: redis init error", zap.String("name", name), zap.Error(err))
