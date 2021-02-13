@@ -2,6 +2,19 @@
 //
 // Basic usage
 //
+// Config
+//
+//    // yiigo.toml
+//    //
+//    // [app]
+//    // env = "dev"
+//    // debug = true
+//    // port = 50001
+//
+//    yiigo.Env("app.env").String()
+//    yiigo.Env("app.debug").Bool()
+//    yiigo.Env("app.port").Int()
+//
 // MySQL
 //
 //    // default db
@@ -51,19 +64,6 @@
 //    defer yiigo.Redis("foo").Put(conn)
 //
 //    conn.Do("SET", "test_key", "hello world")
-//
-// Config
-//
-//    // yiigo.toml
-//    //
-//    // [app]
-//    // env = "dev"
-//    // debug = true
-//    // port = 50001
-//
-//    yiigo.Env("app.env").String("dev")
-//    yiigo.Env("app.debug").Bool(true)
-//    yiigo.Env("app.port").Int(8000)
 //
 // HTTP
 //
