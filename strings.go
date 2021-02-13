@@ -1,7 +1,6 @@
 package yiigo
 
 import (
-	"bytes"
 	"crypto/hmac"
 	"crypto/md5"
 	"crypto/sha1"
@@ -9,6 +8,7 @@ import (
 	"crypto/sha512"
 	"encoding/hex"
 	"hash"
+	"strings"
 )
 
 // HashAlgo hash algorithm
@@ -93,28 +93,28 @@ func HMAC(algo HashAlgo, s, key string) string {
 
 // AddSlashes returns a string with backslashes added before characters that need to be escaped.
 func AddSlashes(s string) string {
-	var buf bytes.Buffer
+	var builder strings.Builder
 
 	for _, ch := range s {
 		if ch == '\'' || ch == '"' || ch == '\\' {
-			buf.WriteRune('\\')
+			builder.WriteRune('\\')
 		}
 
-		buf.WriteRune(ch)
+		builder.WriteRune(ch)
 	}
 
-	return buf.String()
+	return builder.String()
 }
 
 // StripSlashes returns a string with backslashes stripped off. (\' becomes ' and so on.) Double backslashes (\\) are made into a single backslash (\).
 func StripSlashes(s string) string {
-	var buf bytes.Buffer
+	var builder strings.Builder
 
 	l, skip := len(s), false
 
 	for i, ch := range s {
 		if skip {
-			buf.WriteRune(ch)
+			builder.WriteRune(ch)
 			skip = false
 
 			continue
@@ -128,24 +128,24 @@ func StripSlashes(s string) string {
 			continue
 		}
 
-		buf.WriteRune(ch)
+		builder.WriteRune(ch)
 	}
 
-	return buf.String()
+	return builder.String()
 }
 
 // QuoteMeta returns a version of str with a backslash character (\) before every character that is among these: . \ + * ? [ ^ ] ( $ )
 func QuoteMeta(s string) string {
-	var buf bytes.Buffer
+	var builder strings.Builder
 
 	for _, ch := range s {
 		switch ch {
 		case '.', '+', '\\', '(', '$', ')', '[', '^', ']', '*', '?':
-			buf.WriteRune('\\')
+			builder.WriteRune('\\')
 		}
 
-		buf.WriteRune(ch)
+		builder.WriteRune(ch)
 	}
 
-	return buf.String()
+	return builder.String()
 }
