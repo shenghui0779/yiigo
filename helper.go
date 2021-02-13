@@ -175,7 +175,8 @@ func VersionCompare(rangeVer, curVer string) bool {
 
 	// invalid semantic version
 	if err != nil {
-		// add error log ?
+		logger.Warn("yiigo: invalid semantic version", zap.Error(err))
+
 		return true
 	}
 
