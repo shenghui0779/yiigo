@@ -1,4 +1,4 @@
-// Package yiigo makes Golang development easier !
+// Package yiigo makes Golang development easier!
 //
 // Basic usage
 //
