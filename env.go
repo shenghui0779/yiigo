@@ -4,7 +4,6 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
-	"sync"
 	"time"
 
 	"github.com/pelletier/go-toml"
@@ -52,22 +51,18 @@ type EnvValue interface {
 }
 
 type config struct {
-	tree  *toml.Tree
-	mutex sync.RWMutex
+	tree *toml.Tree
 }
 
 func (c *config) Get(key string) EnvValue {
-	c.mutex.RLock()
-	defer c.mutex.RUnlock()
-
-	return &configValue{value: c.tree.Get(key)}
+	return &cfgValue{value: c.tree.Get(key)}
 }
 
-type configValue struct {
+type cfgValue struct {
 	value interface{}
 }
 
-func (c *configValue) Int(defaultValue ...int64) int64 {
+func (c *cfgValue) Int(defaultValue ...int64) int64 {
 	var dv int64
 
 	if len(defaultValue) != 0 {
@@ -87,7 +82,7 @@ func (c *configValue) Int(defaultValue ...int64) int64 {
 	return result
 }
 
-func (c *configValue) Ints(defaultValue ...int64) []int64 {
+func (c *cfgValue) Ints(defaultValue ...int64) []int64 {
 	if c.value == nil {
 		return defaultValue
 	}
@@ -115,7 +110,7 @@ func (c *configValue) Ints(defaultValue ...int64) []int64 {
 	return result
 }
 
-func (c *configValue) Float(defaultValue ...float64) float64 {
+func (c *cfgValue) Float(defaultValue ...float64) float64 {
 	var dv float64
 
 	if len(defaultValue) != 0 {
@@ -135,7 +130,7 @@ func (c *configValue) Float(defaultValue ...float64) float64 {
 	return result
 }
 
-func (c *configValue) Floats(defaultValue ...float64) []float64 {
+func (c *cfgValue) Floats(defaultValue ...float64) []float64 {
 	if c.value == nil {
 		return defaultValue
 	}
@@ -163,7 +158,7 @@ func (c *configValue) Floats(defaultValue ...float64) []float64 {
 	return result
 }
 
-func (c *configValue) String(defaultValue ...string) string {
+func (c *cfgValue) String(defaultValue ...string) string {
 	dv := ""
 
 	if len(defaultValue) != 0 {
@@ -183,7 +178,7 @@ func (c *configValue) String(defaultValue ...string) string {
 	return result
 }
 
-func (c *configValue) Strings(defaultValue ...string) []string {
+func (c *cfgValue) Strings(defaultValue ...string) []string {
 	if c.value == nil {
 		return defaultValue
 	}
@@ -211,7 +206,7 @@ func (c *configValue) Strings(defaultValue ...string) []string {
 	return result
 }
 
-func (c *configValue) Bool(defaultValue ...bool) bool {
+func (c *cfgValue) Bool(defaultValue ...bool) bool {
 	var dv bool
 
 	if len(defaultValue) != 0 {
@@ -231,7 +226,7 @@ func (c *configValue) Bool(defaultValue ...bool) bool {
 	return result
 }
 
-func (c *configValue) Time(layout string, defaultValue ...time.Time) time.Time {
+func (c *cfgValue) Time(layout string, defaultValue ...time.Time) time.Time {
 	var dv time.Time
 
 	if len(defaultValue) != 0 {
@@ -254,7 +249,7 @@ func (c *configValue) Time(layout string, defaultValue ...time.Time) time.Time {
 	return result
 }
 
-func (c *configValue) Map() X {
+func (c *cfgValue) Map() X {
 	if c.value == nil {
 		return X{}
 	}
@@ -268,7 +263,7 @@ func (c *configValue) Map() X {
 	return v.ToMap()
 }
 
-func (c *configValue) Unmarshal(dest interface{}) error {
+func (c *cfgValue) Unmarshal(dest interface{}) error {
 	if c.value == nil {
 		return nil
 	}
