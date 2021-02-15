@@ -17,12 +17,8 @@ debug = true
 [mongo]
 
     [mongo.default]
-    dsn = "mongodb://username:password@localhost:27017"
-    connect_timeout = 10 # 秒
-    min_pool_size = 10
-    max_pool_size = 20
-    max_conn_idle_time = 60 # 秒
-    mode = "primary" # primary | primary_preferred | secondary | secondary_preferred | nearest
+    # 参考：https://docs.mongodb.com/manual/reference/connection-string
+    dsn = "mongodb://localhost:27017/?connectTimeoutMS=10000&minPoolSize=10&maxPoolSize=20&maxIdleTimeMS=60000&readPreference=primary"
 
 [redis]
 

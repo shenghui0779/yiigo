@@ -4,32 +4,14 @@ import (
 	"context"
 	"fmt"
 	"sync"
-	"time"
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"go.uber.org/zap"
 )
 
-// MongoMode indicates the user's preference on reads.
-type MongoMode string
-
-const (
-	Primary            MongoMode = "primary"             // Default mode. All operations read from the current replica set primary.
-	PrimaryPreferred   MongoMode = "primary_preferred"   // Read from the primary if available. Read from the secondary otherwise.
-	Secondary          MongoMode = "secondary"           // Read from one of the nearest secondary members of the replica set.
-	SecondaryPreferred MongoMode = "secondary_preferred" // Read from one of the nearest secondaries if available. Read from primary otherwise.
-	Nearest            MongoMode = "nearest"             // Read from one of the nearest members, irrespective of it being primary or secondary.
-)
-
 type mongoConfig struct {
-	DSN             string    `toml:"dsn"`
-	ConnectTimeout  int       `toml:"connect_timeout"`
-	MinPoolSize     int       `toml:"min_pool_size"`
-	MaxPoolSize     int       `toml:"max_pool_size"`
-	MaxConnIdleTime int       `toml:"max_conn_idle_time"`
-	Mode            MongoMode `toml:"mode"`
+	DSN string `toml:"dsn"`
 }
 
 var (
@@ -38,50 +20,26 @@ var (
 )
 
 func mongoDial(cfg *mongoConfig) (*mongo.Client, error) {
-	clientOptions := options.Client()
+	opts := options.Client().ApplyURI(cfg.DSN)
 
-	clientOptions.ApplyURI(cfg.DSN)
-	clientOptions.SetConnectTimeout(time.Duration(cfg.ConnectTimeout) * time.Second)
-	clientOptions.SetMinPoolSize(uint64(cfg.MinPoolSize))
-	clientOptions.SetMaxPoolSize(uint64(cfg.MaxPoolSize))
-	clientOptions.SetMaxConnIdleTime(time.Duration(cfg.MaxConnIdleTime) * time.Second)
+	ctx := context.TODO()
 
-	var rp *readpref.ReadPref
+	if opts.ConnectTimeout != nil {
+		var cancel context.CancelFunc
 
-	switch cfg.Mode {
-	case Primary:
-		rp = readpref.Primary()
-	case PrimaryPreferred:
-		rp = readpref.PrimaryPreferred()
-	case Secondary:
-		rp = readpref.Secondary()
-	case SecondaryPreferred:
-		rp = readpref.SecondaryPreferred()
-	case Nearest:
-		rp = readpref.Nearest()
+		ctx, cancel = context.WithTimeout(ctx, *opts.ConnectTimeout)
+
+		defer cancel()
 	}
 
-	if rp != nil {
-		clientOptions.SetReadPreference(rp)
-	}
-
-	// validates the client options
-	if err := clientOptions.Validate(); err != nil {
-		return nil, err
-	}
-
-	ctx, cancel := context.WithTimeout(context.TODO(), time.Duration(cfg.ConnectTimeout)*time.Second)
-
-	defer cancel()
-
-	c, err := mongo.Connect(ctx, clientOptions)
+	c, err := mongo.Connect(ctx, opts)
 
 	if err != nil {
 		return nil, err
 	}
 
 	// verify connection
-	if err = c.Ping(ctx, rp); err != nil {
+	if err = c.Ping(ctx, opts.ReadPreference); err != nil {
 		return nil, err
 	}
 
