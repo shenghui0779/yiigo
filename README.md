@@ -320,43 +320,93 @@ builder.Wrap(Table("user")).ToTruncate()
 - Insert
 
 ```go
-builder.Wrap(yiigo.Table("user")).ToInsert(yiigo.X{
-    "name": "shenghui0779",
-    "age":  29,
+type User struct {
+    ID     int    `db:"-"`
+    Name   string `db:"name"`
+    Age    int    `db:"age"`
+    Phone  string `db:"phone,omitempty"`
+}
+
+builder.Wrap(Table("user")).ToInsert(&User{
+    Name: "yiigo",
+    Age:  29,
 })
 // INSERT INTO user (name, age) VALUES (?, ?)
 // [shenghui0779 29]
+
+builder.Wrap(yiigo.Table("user")).ToInsert(yiigo.X{
+    "name": "yiigo",
+    "age":  29,
+})
+// INSERT INTO user (name, age) VALUES (?, ?)
+// [yiigo 29]
 ```
 
 - Batch Insert
 
 ```go
-builder.Wrap(yiigo.Table("user")).ToBatchInsert([]yiigo.X{
+type User struct {
+    ID     int    `db:"-"`
+    Name   string `db:"name"`
+    Age    int    `db:"age"`
+    Phone  string `db:"phone,omitempty"`
+}
+
+builder.Wrap(Table("user")).ToBatchInsert([]*User{
     {
-        "name": "shenghui0779",
-        "age":  29,
+        Name: "shenghui0779",
+        Age:  20,
     },
     {
-        "name": "iiinsomnia",
-        "age":  30,
+        Name: "yiigo",
+        Age:  29,
     },
 })
 // INSERT INTO user (name, age) VALUES (?, ?), (?, ?)
-// [shenghui0779 29 iiinsomnia 30]
+// [shenghui0779 20 yiigo 29]
+
+builder.Wrap(yiigo.Table("user")).ToBatchInsert([]yiigo.X{
+    {
+        "name": "shenghui0779",
+        "age":  20,
+    },
+    {
+        "name": "yiigo",
+        "age":  29,
+    },
+})
+// INSERT INTO user (name, age) VALUES (?, ?), (?, ?)
+// [shenghui0779 20 yiigo 29]
 ```
 
 - Update
 
 ```go
+type User struct {
+    Name   string `db:"name"`
+    Age    int    `db:"age"`
+    Phone  string `db:"phone,omitempty"`
+}
+
+builder.Wrap(
+    Table("user"),
+    Where("id = ?", 1),
+).ToUpdate(&User{
+    Name: "yiigo",
+    Age:  29,
+})
+// "UPDATE user SET name = ?, age = ? WHERE id = ?"
+// [yiigo M 29 1]
+
 builder.Wrap(
     yiigo.Table("user"),
     yiigo.Where("id = ?", 1),
 ).ToUpdate(yiigo.X{
-    "name": "shenghui0779",
+    "name": "yiigo",
     "age":  29,
 })
 // UPDATE user SET name = ?, age = ? WHERE id = ?
-// [shenghui0779 29 1]
+// [yiigo 29 1]
 
 builder.Wrap(
     yiigo.Table("product"),
