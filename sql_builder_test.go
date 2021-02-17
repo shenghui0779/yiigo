@@ -171,6 +171,7 @@ func TestToInsert(t *testing.T) {
 		Name   string `db:"name"`
 		Gender string `db:"gender"`
 		Age    int    `db:"age"`
+		Phone  string `db:"phone,omitempty"`
 	}
 
 	query, binds := builder.Wrap(Table("user")).ToInsert(&User{
@@ -199,6 +200,7 @@ func TestToBatchInsert(t *testing.T) {
 		Name   string `db:"name"`
 		Gender string `db:"gender"`
 		Age    int    `db:"age"`
+		Phone  string `db:"phone,omitempty"`
 	}
 
 	query, binds := builder.Wrap(Table("user")).ToBatchInsert([]*User{
@@ -240,6 +242,7 @@ func TestToUpdate(t *testing.T) {
 		Name   string `db:"name"`
 		Gender string `db:"gender"`
 		Age    int    `db:"age"`
+		Phone  string `db:"phone,omitempty"`
 	}
 
 	query, binds := builder.Wrap(
