@@ -332,7 +332,7 @@ builder.Wrap(Table("user")).ToInsert(&User{
     Age:  29,
 })
 // INSERT INTO user (name, age) VALUES (?, ?)
-// [shenghui0779 29]
+// [yiigo 29]
 
 builder.Wrap(yiigo.Table("user")).ToInsert(yiigo.X{
     "name": "yiigo",
@@ -396,7 +396,7 @@ builder.Wrap(
     Age:  29,
 })
 // "UPDATE user SET name = ?, age = ? WHERE id = ?"
-// [yiigo M 29 1]
+// [yiigo 29 1]
 
 builder.Wrap(
     yiigo.Table("user"),
