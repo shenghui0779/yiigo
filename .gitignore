@@ -14,9 +14,9 @@
 # Dependency directories (remove the comment below to include it)
 # vendor/
 
-.vscode
-.idea
-vendor
-yiigo.toml
-logs
+.vscode/
+.idea/
+vendor/
+logs/
 *.log
+yiigo.toml
