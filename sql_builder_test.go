@@ -183,6 +183,16 @@ func TestToInsert(t *testing.T) {
 	assert.Equal(t, "INSERT INTO user (name, gender, age) VALUES (?, ?, ?)", query)
 	assert.Equal(t, []interface{}{"yiigo", "M", 29}, binds)
 
+	query, binds = builder.Wrap(Table("user")).ToInsert(&User{
+		Name:   "yiigo",
+		Gender: "M",
+		Age:    29,
+		Phone:  "13605109425",
+	})
+
+	assert.Equal(t, "INSERT INTO user (name, gender, age, phone) VALUES (?, ?, ?, ?)", query)
+	assert.Equal(t, []interface{}{"yiigo", "M", 29, "13605109425"}, binds)
+
 	// map 字段顺序不一定
 	// query, binds = builder.Wrap(Table("user")).ToInsert(X{
 	// 	"age":    29,
@@ -218,6 +228,24 @@ func TestToBatchInsert(t *testing.T) {
 
 	assert.Equal(t, "INSERT INTO user (name, gender, age) VALUES (?, ?, ?), (?, ?, ?)", query)
 	assert.Equal(t, []interface{}{"yiigo", "M", 29, "test", "W", 20}, binds)
+
+	query, binds = builder.Wrap(Table("user")).ToBatchInsert([]*User{
+		{
+			Name:   "yiigo",
+			Gender: "M",
+			Age:    29,
+			Phone:  "13605109425",
+		},
+		{
+			Name:   "test",
+			Gender: "W",
+			Age:    20,
+			Phone:  "13605105471",
+		},
+	})
+
+	assert.Equal(t, "INSERT INTO user (name, gender, age, phone) VALUES (?, ?, ?, ?), (?, ?, ?, ?)", query)
+	assert.Equal(t, []interface{}{"yiigo", "M", 29, "13605109425", "test", "W", 20, "13605105471"}, binds)
 
 	// map 字段顺序不一定
 	// query, binds = builder.Wrap(Table("user")).ToBatchInsert([]X{
