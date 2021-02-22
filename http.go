@@ -72,26 +72,26 @@ type UploadForm interface {
 	Buffer() ([]byte, error)
 }
 
-type httpUploadForm struct {
+type httpUpload struct {
 	fieldname   string
 	filename    string
 	extraFields map[string]string
 }
 
-func (f *httpUploadForm) FieldName() string {
-	return f.fieldname
+func (u *httpUpload) FieldName() string {
+	return u.fieldname
 }
 
-func (f *httpUploadForm) FileName() string {
-	return f.filename
+func (u *httpUpload) FileName() string {
+	return u.filename
 }
 
-func (f *httpUploadForm) ExtraFields() map[string]string {
-	return f.extraFields
+func (u *httpUpload) ExtraFields() map[string]string {
+	return u.extraFields
 }
 
-func (f *httpUploadForm) Buffer() ([]byte, error) {
-	path, err := filepath.Abs(f.filename)
+func (u *httpUpload) Buffer() ([]byte, error) {
+	path, err := filepath.Abs(u.filename)
 
 	if err != nil {
 		return nil, err
@@ -102,7 +102,7 @@ func (f *httpUploadForm) Buffer() ([]byte, error) {
 
 // NewUploadForm returns new upload form
 func NewUploadForm(fieldname, filename string, extraFields map[string]string) UploadForm {
-	return &httpUploadForm{
+	return &httpUpload{
 		fieldname:   fieldname,
 		filename:    filename,
 		extraFields: extraFields,
