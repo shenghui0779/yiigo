@@ -24,7 +24,7 @@ type httpSettings struct {
 	timeout time.Duration
 }
 
-// HTTPOption configures how we set up the http request
+// HTTPOption configures how we set up the http request.
 type HTTPOption func(s *httpSettings)
 
 // WithHTTPHeader specifies the header to http request.
@@ -100,13 +100,32 @@ func (u *httpUpload) Buffer() ([]byte, error) {
 	return ioutil.ReadFile(path)
 }
 
-// NewUploadForm returns new upload form
-func NewUploadForm(fieldname, filename string, extraFields map[string]string) UploadForm {
-	return &httpUpload{
-		fieldname:   fieldname,
-		filename:    filename,
-		extraFields: extraFields,
+// UploadOption configures how we set up the http upload from.
+type UploadOption func(u *httpUpload)
+
+// WithExtraField specifies the extra field to http upload from.
+func WithExtraField(key, value string) UploadOption {
+	return func(u *httpUpload) {
+		u.extraFields[key] = value
 	}
+}
+
+// NewUploadForm returns new upload form
+func NewUploadForm(fieldname, filename string, options ...UploadOption) UploadForm {
+	form := &httpUpload{
+		fieldname: fieldname,
+		filename:  filename,
+	}
+
+	if len(options) != 0 {
+		form.extraFields = make(map[string]string)
+
+		for _, f := range options {
+			f(form)
+		}
+	}
+
+	return form
 }
 
 // HTTPClient is the interface for an http client.
@@ -130,12 +149,11 @@ type yiiclient struct {
 }
 
 func (c *yiiclient) Do(ctx context.Context, req *http.Request, options ...HTTPOption) ([]byte, error) {
-	settings := &httpSettings{
-		headers: make(map[string]string),
-		timeout: c.timeout,
-	}
+	settings := &httpSettings{timeout: c.timeout}
 
 	if len(options) != 0 {
+		settings.headers = make(map[string]string)
+
 		for _, f := range options {
 			f(settings)
 		}
