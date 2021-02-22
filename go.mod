@@ -8,7 +8,7 @@ require (
 	github.com/go-playground/universal-translator v0.17.0
 	github.com/go-playground/validator/v10 v10.4.1
 	github.com/go-sql-driver/mysql v1.5.1-0.20210202043019-fe2230a8b20c
-	github.com/gomodule/redigo v1.8.3
+	github.com/gomodule/redigo v1.8.4
 	github.com/hashicorp/go-version v1.2.1
 	github.com/jmoiron/sqlx v1.3.1
 	github.com/lib/pq v1.9.0
@@ -20,7 +20,7 @@ require (
 	github.com/stretchr/testify v1.7.0
 	go.mongodb.org/mongo-driver v1.4.6
 	go.uber.org/zap v1.16.0
-	golang.org/x/net v0.0.0-20210119194325-5f4716e94777 // indirect
+	golang.org/x/net v0.0.0-20210220033124-5f55cee0dc0d // indirect
 	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
 	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
