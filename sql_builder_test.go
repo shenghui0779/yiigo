@@ -159,10 +159,6 @@ func TestToQuery(t *testing.T) {
 
 	assert.Equal(t, "(SELECT * FROM user_0 WHERE id = ?) UNION (SELECT * FROM user_1 WHERE id = ?) UNION ALL (SELECT * FROM user_2 WHERE id = ?)", query)
 	assert.Equal(t, []interface{}{1, 2, 3}, binds)
-
-	query = builder.Wrap(Table("user")).ToTruncate()
-
-	assert.Equal(t, "TRUNCATE user", query)
 }
 
 func TestToInsert(t *testing.T) {
@@ -287,15 +283,16 @@ func TestToUpdate(t *testing.T) {
 
 	query, binds = builder.Wrap(
 		Table("user"),
-		WhereIn("id IN (?)", []int{1, 2}),
+		Where("id = ?", 1),
 	).ToUpdate(&User{
 		Name:   "yiigo",
 		Gender: "M",
 		Age:    29,
+		Phone:  "13605109425",
 	})
 
-	assert.Equal(t, "UPDATE user SET name = ?, gender = ?, age = ? WHERE id IN (?, ?)", query)
-	assert.Equal(t, []interface{}{"yiigo", "M", 29, 1, 2}, binds)
+	assert.Equal(t, "UPDATE user SET name = ?, gender = ?, age = ?, phone = ? WHERE id = ?", query)
+	assert.Equal(t, []interface{}{"yiigo", "M", 29, "13605109425", 1}, binds)
 
 	// map 字段顺序不一定
 	// query, binds = builder.Wrap(
@@ -309,6 +306,18 @@ func TestToUpdate(t *testing.T) {
 	//
 	// assert.Equal(t, "UPDATE user SET age = ?, gender = ?, name = ? WHERE id = ?", query)
 	// assert.Equal(t, []interface{}{29, "M", "yiigo", 1}, binds)
+
+	query, binds = builder.Wrap(
+		Table("user"),
+		WhereIn("id IN (?)", []int{1, 2}),
+	).ToUpdate(&User{
+		Name:   "yiigo",
+		Gender: "M",
+		Age:    29,
+	})
+
+	assert.Equal(t, "UPDATE user SET name = ?, gender = ?, age = ? WHERE id IN (?, ?)", query)
+	assert.Equal(t, []interface{}{"yiigo", "M", 29, 1, 2}, binds)
 
 	query, binds = builder.Wrap(
 		Table("product"),
@@ -335,4 +344,8 @@ func TestToDelete(t *testing.T) {
 
 	assert.Equal(t, "DELETE FROM user WHERE id IN (?, ?)", query)
 	assert.Equal(t, []interface{}{1, 2}, binds)
+}
+
+func TestToTruncate(t *testing.T) {
+	assert.Equal(t, "TRUNCATE user", builder.Wrap(Table("user")).ToTruncate())
 }
