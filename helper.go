@@ -5,6 +5,7 @@ import (
 	"errors"
 	"math"
 	"net"
+	"reflect"
 	"strings"
 	"time"
 
@@ -118,6 +119,10 @@ type GinValidator struct {
 
 // ValidateStruct receives any kind of type, but only performed struct or pointer to struct type.
 func (v *GinValidator) ValidateStruct(obj interface{}) error {
+	if reflect.Indirect(reflect.ValueOf(obj)).Kind() != reflect.Struct {
+		return nil
+	}
+
 	if err := v.validator.Struct(obj); err != nil {
 		e, ok := err.(validator.ValidationErrors)
 
