@@ -151,7 +151,8 @@ func (v *GinValidator) Engine() interface{} {
 	return v.validator
 }
 
-// NewGinValidator returns a validator for gin
+// NewGinValidator returns a validator for gin.
+// binding.Validator = yiigo.NewGinValidator()
 func NewGinValidator() *GinValidator {
 	locale := zh.New()
 	uniTrans := ut.New(locale)
