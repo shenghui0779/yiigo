@@ -17,7 +17,7 @@ import (
 	"go.uber.org/zap"
 )
 
-const defalutConn = "default"
+const defaultConn = "default"
 
 // X is a convenient alias for a map[string]interface{}.
 type X map[string]interface{}
@@ -181,7 +181,7 @@ func VersionCompare(rangeVer, curVer string) bool {
 
 	// invalid semantic version
 	if err != nil {
-		logger.Warn("yiigo: invalid semantic version", zap.Error(err))
+		logger.Warn("yiigo: invalid semantic version", zap.Error(err), zap.String("range_version", rangeVer), zap.String("cur_version", curVer))
 
 		return true
 	}
