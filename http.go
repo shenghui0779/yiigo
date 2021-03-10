@@ -75,6 +75,7 @@ type UploadForm interface {
 type httpUpload struct {
 	fieldname   string
 	filename    string
+	resourceURL string
 	extraFields map[string]string
 }
 
@@ -91,6 +92,22 @@ func (u *httpUpload) ExtraFields() map[string]string {
 }
 
 func (u *httpUpload) Buffer() ([]byte, error) {
+	if len(u.resourceURL) != 0 {
+		resp, err := http.Get(u.resourceURL)
+
+		if err != nil {
+			return nil, err
+		}
+
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			return nil, fmt.Errorf("error http code: %d", resp.StatusCode)
+		}
+
+		return ioutil.ReadAll(resp.Body)
+	}
+
 	path, err := filepath.Abs(u.filename)
 
 	if err != nil {
@@ -102,6 +119,13 @@ func (u *httpUpload) Buffer() ([]byte, error) {
 
 // UploadOption configures how we set up the http upload from.
 type UploadOption func(u *httpUpload)
+
+// WithResourceURL specifies http upload by resource url.
+func WithResourceURL(url string) UploadOption {
+	return func(u *httpUpload) {
+		u.resourceURL = url
+	}
+}
 
 // WithExtraField specifies the extra field to http upload from.
 func WithExtraField(key, value string) UploadOption {
