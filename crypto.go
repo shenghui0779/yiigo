@@ -399,6 +399,46 @@ func GenerateRSAKey(bitSize int) (privateKey, publicKey []byte, err error) {
 	return
 }
 
+// RSAEncrypt rsa encrypt with public key
+func RSAEncrypt(plainText, publicKey []byte) ([]byte, error) {
+	block, _ := pem.Decode(publicKey)
+
+	if block == nil {
+		return nil, errors.New("invalid rsa public key")
+	}
+
+	pubKey, err := x509.ParsePKIXPublicKey(block.Bytes)
+
+	if err != nil {
+		return nil, err
+	}
+
+	key, ok := pubKey.(*rsa.PublicKey)
+
+	if !ok {
+		return nil, errors.New("invalid rsa public key")
+	}
+
+	return rsa.EncryptPKCS1v15(rand.Reader, key, plainText)
+}
+
+// RSADecrypt rsa decrypt with private key
+func RSADecrypt(cipherText, privateKey []byte) ([]byte, error) {
+	block, _ := pem.Decode(privateKey)
+
+	if block == nil {
+		return nil, errors.New("invalid rsa private key")
+	}
+
+	key, err := x509.ParsePKCS1PrivateKey(block.Bytes)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return rsa.DecryptPKCS1v15(rand.Reader, key, cipherText)
+}
+
 // RSASignWithSha256 returns rsa signature with sha256
 func RSASignWithSha256(data, privateKey []byte) ([]byte, error) {
 	block, _ := pem.Decode(privateKey)
@@ -448,46 +488,6 @@ func RSAVerifyWithSha256(data, signature, publicKey []byte) error {
 	hashed := sha256.Sum256(data)
 
 	return rsa.VerifyPKCS1v15(key, crypto.SHA256, hashed[:], signature)
-}
-
-// RSAEncrypt rsa encrypt with public key
-func RSAEncrypt(plainText, publicKey []byte) ([]byte, error) {
-	block, _ := pem.Decode(publicKey)
-
-	if block == nil {
-		return nil, errors.New("invalid rsa public key")
-	}
-
-	pubKey, err := x509.ParsePKIXPublicKey(block.Bytes)
-
-	if err != nil {
-		return nil, err
-	}
-
-	key, ok := pubKey.(*rsa.PublicKey)
-
-	if !ok {
-		return nil, errors.New("invalid rsa public key")
-	}
-
-	return rsa.EncryptPKCS1v15(rand.Reader, key, plainText)
-}
-
-// RSADecrypt rsa decrypt with private key
-func RSADecrypt(cipherText, privateKey []byte) ([]byte, error) {
-	block, _ := pem.Decode(privateKey)
-
-	if block == nil {
-		return nil, errors.New("invalid rsa private key")
-	}
-
-	key, err := x509.ParsePKCS1PrivateKey(block.Bytes)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return rsa.DecryptPKCS1v15(rand.Reader, key, cipherText)
 }
 
 func ZeroPadding(cipherText []byte, blockSize int) []byte {
