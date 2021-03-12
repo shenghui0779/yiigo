@@ -3,7 +3,7 @@ module github.com/shenghui0779/yiigo
 go 1.15
 
 require (
-	entgo.io/ent v0.6.0
+	entgo.io/ent v0.7.0
 	github.com/go-playground/locales v0.13.0
 	github.com/go-playground/universal-translator v0.17.0
 	github.com/go-playground/validator/v10 v10.4.1
