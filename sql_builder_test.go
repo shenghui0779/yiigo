@@ -85,6 +85,13 @@ func TestToQuery(t *testing.T) {
 	assert.Equal(t, "SELECT * FROM user FULL JOIN address ON user.id = address.user_id WHERE user.id = ?", query)
 	assert.Equal(t, []interface{}{1}, binds)
 
+	query, _ = builder.Wrap(
+		Table("sizes"),
+		CrossJoin("colors"),
+	).ToQuery()
+
+	assert.Equal(t, "SELECT * FROM sizes CROSS JOIN colors", query)
+
 	query, binds = builder.Wrap(
 		Table("user"),
 		LeftJoin("address", "user.id = address.user_id"),

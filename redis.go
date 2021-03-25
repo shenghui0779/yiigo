@@ -156,7 +156,7 @@ func initRedis() {
 			logger.Panic("yiigo: redis init error", zap.String("name", name), zap.Error(err))
 		}
 
-		if name == defalutConn {
+		if name == defaultConn {
 			defaultRedis = rc
 		}
 
@@ -170,7 +170,7 @@ func initRedis() {
 func Redis(name ...string) *RedisPoolResource {
 	if len(name) == 0 {
 		if defaultRedis == nil {
-			logger.Panic(fmt.Sprintf("yiigo: unknown redis.%s (forgotten configure?)", defalutConn))
+			logger.Panic(fmt.Sprintf("yiigo: unknown redis.%s (forgotten configure?)", defaultConn))
 		}
 
 		return defaultRedis

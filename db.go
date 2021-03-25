@@ -85,7 +85,7 @@ func initDB() {
 		sqlxDB := sqlx.NewDb(db, cfg.Driver)
 		entDriver := entsql.OpenDB(cfg.Driver, db)
 
-		if name == defalutConn {
+		if name == defaultConn {
 			defaultDB = sqlxDB
 			defaultEntDriver = entDriver
 		}
@@ -101,7 +101,7 @@ func initDB() {
 func DB(name ...string) *sqlx.DB {
 	if len(name) == 0 {
 		if defaultDB == nil {
-			logger.Panic(fmt.Sprintf("yiigo: unknown db.%s (forgotten configure?)", defalutConn))
+			logger.Panic(fmt.Sprintf("yiigo: unknown db.%s (forgotten configure?)", defaultConn))
 		}
 
 		return defaultDB
@@ -118,9 +118,9 @@ func DB(name ...string) *sqlx.DB {
 
 // EntDriver returns an ent dialect.Driver.
 func EntDriver(name ...string) *entsql.Driver {
-	if len(name) == 0 || name[0] == defalutConn {
+	if len(name) == 0 || name[0] == defaultConn {
 		if defaultEntDriver == nil {
-			logger.Panic(fmt.Sprintf("yiigo: unknown db.%s (forgotten configure?)", defalutConn))
+			logger.Panic(fmt.Sprintf("yiigo: unknown db.%s (forgotten configure?)", defaultConn))
 		}
 
 		return defaultEntDriver

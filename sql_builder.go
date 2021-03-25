@@ -165,8 +165,11 @@ func (w *queryWrapper) subquery() (string, []interface{}) {
 			builder.WriteString(join.keyword)
 			builder.WriteString(" JOIN ")
 			builder.WriteString(join.table)
-			builder.WriteString(" ON ")
-			builder.WriteString(join.query)
+
+			if len(join.query) != 0 {
+				builder.WriteString(" ON ")
+				builder.WriteString(join.query)
+			}
 		}
 	}
 
@@ -761,6 +764,16 @@ func FullJoin(table, on string) QueryOption {
 			table:   table,
 			keyword: "FULL",
 			query:   on,
+		})
+	}
+}
+
+// CrossJoin specifies the `cross join` clause.
+func CrossJoin(table string) QueryOption {
+	return func(w *queryWrapper) {
+		w.joins = append(w.joins, &SQLClause{
+			table:   table,
+			keyword: "CROSS",
 		})
 	}
 }

@@ -31,3 +31,23 @@ func TestHTTPOption(t *testing.T) {
 	assert.True(t, settings.close)
 	assert.Equal(t, 5*time.Second, settings.timeout)
 }
+
+func TestUploadOption(t *testing.T) {
+	options := []UploadOption{
+		WithResourceURL("https://img.test.com/test.jpg"),
+		WithExtraField("title", "TITLE"),
+		WithExtraField("introduction", "INTRODUCTION"),
+	}
+
+	upload := &httpUpload{extraFields: make(map[string]string)}
+
+	for _, f := range options {
+		f(upload)
+	}
+
+	assert.Equal(t, "https://img.test.com/test.jpg", upload.resourceURL)
+	assert.Equal(t, map[string]string{
+		"title":        "TITLE",
+		"introduction": "INTRODUCTION",
+	}, upload.extraFields)
+}
