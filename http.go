@@ -213,7 +213,7 @@ func (c *yiiclient) Do(ctx context.Context, req *http.Request, options ...HTTPOp
 }
 
 func (c *yiiclient) Get(ctx context.Context, url string, options ...HTTPOption) ([]byte, error) {
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest(http.MethodGet, url, nil)
 
 	if err != nil {
 		return nil, err
@@ -223,7 +223,7 @@ func (c *yiiclient) Get(ctx context.Context, url string, options ...HTTPOption) 
 }
 
 func (c *yiiclient) Post(ctx context.Context, url string, body []byte, options ...HTTPOption) ([]byte, error) {
-	req, err := http.NewRequest("POST", url, bytes.NewReader(body))
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(body))
 
 	if err != nil {
 		return nil, err
