@@ -3,7 +3,6 @@ package yiigo
 import (
 	"encoding/xml"
 	"errors"
-	"math"
 	"net"
 	"reflect"
 	"strings"
@@ -104,10 +103,6 @@ func IP2Long(ip string) uint32 {
 
 // Long2IP converts an long integer address into a string in (IPv4) Internet standard dotted format.
 func Long2IP(ip uint32) string {
-	if ip > math.MaxUint32 {
-		return ""
-	}
-
 	return net.IPv4(byte(ip>>24), byte(ip>>16), byte(ip>>8), byte(ip)).String()
 }
 

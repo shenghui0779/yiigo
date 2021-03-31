@@ -55,7 +55,7 @@ func newLogger(cfg *logConfig, debug bool) *zap.Logger {
 }
 
 func initLogger() {
-	configs := make(map[string]*logConfig, 0)
+	configs := make(map[string]*logConfig)
 
 	if err := env.Get("log").Unmarshal(&configs); err != nil {
 		logger.Panic("yiigo: logger init error", zap.Error(err))

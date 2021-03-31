@@ -128,7 +128,7 @@ var (
 )
 
 func initRedis() {
-	configs := make(map[string]*redisConfig, 0)
+	configs := make(map[string]*redisConfig)
 
 	if err := env.Get("redis").Unmarshal(&configs); err != nil {
 		logger.Panic("yiigo: redis init error", zap.Error(err))

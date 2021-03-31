@@ -47,7 +47,7 @@ func mongoDial(cfg *mongoConfig) (*mongo.Client, error) {
 }
 
 func initMongoDB() {
-	configs := make(map[string]*mongoConfig, 0)
+	configs := make(map[string]*mongoConfig)
 
 	if err := env.Get("mongo").Unmarshal(&configs); err != nil {
 		logger.Panic("yiigo: mongodb init error", zap.Error(err))

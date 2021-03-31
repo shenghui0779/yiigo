@@ -69,7 +69,7 @@ var (
 )
 
 func initMailer() {
-	configs := make(map[string]*emailConfig, 0)
+	configs := make(map[string]*emailConfig)
 
 	if err := env.Get("email").Unmarshal(&configs); err != nil {
 		logger.Panic("yiigo: email dialer init error", zap.Error(err))
