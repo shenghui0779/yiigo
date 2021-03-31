@@ -66,7 +66,7 @@ func dbDial(cfg *dbConfig) (*sql.DB, error) {
 }
 
 func initDB() {
-	configs := make(map[string]*dbConfig, 0)
+	configs := make(map[string]*dbConfig)
 
 	if err := env.Get("db").Unmarshal(&configs); err != nil {
 		logger.Panic("yiigo: db init error", zap.Error(err))
