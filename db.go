@@ -1,6 +1,7 @@
 package yiigo
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"sync"
@@ -133,4 +134,48 @@ func EntDriver(name ...string) *entsql.Driver {
 	}
 
 	return v.(*entsql.Driver)
+}
+
+func DBTransaction(db *sqlx.DB, process func(tx *sqlx.Tx) error) error {
+	tx, err := db.Beginx()
+
+	if err != nil {
+		return err
+	}
+
+	if err = process(tx); err != nil {
+		tx.Rollback()
+
+		return err
+	}
+
+	if err = tx.Commit(); err != nil {
+		tx.Rollback()
+
+		return err
+	}
+
+	return nil
+}
+
+func DBTransactionX(ctx context.Context, db *sqlx.DB, process func(tx *sqlx.Tx) error) error {
+	tx, err := db.BeginTxx(ctx, nil)
+
+	if err != nil {
+		return err
+	}
+
+	if err = process(tx); err != nil {
+		tx.Rollback()
+
+		return err
+	}
+
+	if err = tx.Commit(); err != nil {
+		tx.Rollback()
+
+		return err
+	}
+
+	return nil
 }
