@@ -136,6 +136,7 @@ func EntDriver(name ...string) *entsql.Driver {
 	return v.(*entsql.Driver)
 }
 
+// DBTransaction Executes db transaction with callback function.
 func DBTransaction(db *sqlx.DB, process func(tx *sqlx.Tx) error) error {
 	tx, err := db.Beginx()
 
@@ -158,6 +159,8 @@ func DBTransaction(db *sqlx.DB, process func(tx *sqlx.Tx) error) error {
 	return nil
 }
 
+// DBTransactionX Executes db transaction with callback function.
+// The provided context is used until the transaction is committed or rolledback.
 func DBTransactionX(ctx context.Context, db *sqlx.DB, process func(tx *sqlx.Tx) error) error {
 	tx, err := db.BeginTxx(ctx, nil)
 
