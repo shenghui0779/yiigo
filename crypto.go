@@ -380,7 +380,7 @@ func GenerateRSAKey(bitSize int) (privateKey, publicKey []byte, err error) {
 		return
 	}
 
-	pkixb, err := x509.MarshalPKIXPublicKey(&prvKey.PublicKey)
+	pkixb, err := x509.MarshalPKIXPublicKey(prvKey.Public())
 
 	if err != nil {
 		return
