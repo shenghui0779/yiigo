@@ -197,7 +197,7 @@ func txRecover(tx *sqlx.Tx) {
 }
 
 func txRollback(tx *sqlx.Tx) {
-	if err := tx.Rollback(); err != nil {
+	if err := tx.Rollback(); err != nil && err != sql.ErrTxDone {
 		logger.Error("yiigo: db transaction rollback error", zap.Error(err))
 	}
 }
