@@ -106,14 +106,14 @@ func Long2IP(ip uint32) string {
 	return net.IPv4(byte(ip>>24), byte(ip>>16), byte(ip>>8), byte(ip)).String()
 }
 
-// GinValidator validator for gin
-type GinValidator struct {
+// Validator validator can be used for Gin
+type Validator struct {
 	validator  *validator.Validate
 	translator ut.Translator
 }
 
 // ValidateStruct receives any kind of type, but only performed struct or pointer to struct type.
-func (v *GinValidator) ValidateStruct(obj interface{}) error {
+func (v *Validator) ValidateStruct(obj interface{}) error {
 	if reflect.Indirect(reflect.ValueOf(obj)).Kind() != reflect.Struct {
 		return nil
 	}
@@ -142,13 +142,13 @@ func (v *GinValidator) ValidateStruct(obj interface{}) error {
 // Validator instance. This is useful if you want to register custom validations
 // or struct level validations. See validator GoDoc for more info -
 // https://godoc.org/gopkg.in/go-playground/validator.v10
-func (v *GinValidator) Engine() interface{} {
+func (v *Validator) Engine() interface{} {
 	return v.validator
 }
 
-// NewGinValidator returns a validator for gin.
-// binding.Validator = yiigo.NewGinValidator()
-func NewGinValidator() *GinValidator {
+// NewValidator returns a new validator.
+// Used for Gin: binding.Validator = yiigo.NewValidator()
+func NewValidator() *Validator {
 	locale := zh.New()
 	uniTrans := ut.New(locale)
 
@@ -159,7 +159,7 @@ func NewGinValidator() *GinValidator {
 
 	zhcn.RegisterDefaultTranslations(validate, translator)
 
-	return &GinValidator{
+	return &Validator{
 		validator:  validate,
 		translator: translator,
 	}
