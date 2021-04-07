@@ -122,7 +122,7 @@ func (v *Validator) ValidateStruct(obj interface{}) error {
 		e, ok := err.(validator.ValidationErrors)
 
 		if !ok {
-			return e
+			return err
 		}
 
 		errM := e.Translate(v.translator)
