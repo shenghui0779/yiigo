@@ -146,7 +146,13 @@ func DBTransaction(ctx context.Context, db *sqlx.DB, process func(tx *sqlx.Tx) e
 		return err
 	}
 
-	defer txRecover(tx)
+	defer func() {
+		if r := recover(); r != nil {
+			logger.Fatal("yiigo: db transaction process panic", zap.Any("error", r), zap.ByteString("stack", rdebug.Stack()))
+
+			txRollback(tx)
+		}
+	}()
 
 	if err = process(tx); err != nil {
 		txRollback(tx)
@@ -161,14 +167,6 @@ func DBTransaction(ctx context.Context, db *sqlx.DB, process func(tx *sqlx.Tx) e
 	}
 
 	return nil
-}
-
-func txRecover(tx *sqlx.Tx) {
-	if r := recover(); r != nil {
-		logger.Fatal("yiigo: db transaction process panic", zap.Any("error", r), zap.ByteString("stack", rdebug.Stack()))
-
-		txRollback(tx)
-	}
 }
 
 func txRollback(tx *sqlx.Tx) {
