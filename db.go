@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	rdebug "runtime/debug"
 	"sync"
 	"time"
 
@@ -189,7 +190,7 @@ func DBTransactionX(ctx context.Context, db *sqlx.DB, process func(tx *sqlx.Tx) 
 
 func txRecover(tx *sqlx.Tx) {
 	if r := recover(); r != nil {
-		logger.Fatal("yiigo: db transaction process panic", zap.Any("error", r))
+		logger.Fatal("yiigo: db transaction process panic", zap.Any("error", r), zap.ByteString("stack", rdebug.Stack()))
 
 		txRollback(tx)
 	}

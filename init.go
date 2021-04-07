@@ -10,7 +10,7 @@ func init() {
 		MaxBackups: 0,
 		MaxAge:     0,
 		Compress:   true,
-	}, false)
+	})
 
 	// load env file: yiigo.toml
 	initEnv()

@@ -23,7 +23,7 @@ type logConfig struct {
 }
 
 // newLogger returns a new logger.
-func newLogger(cfg *logConfig, debug bool) *zap.Logger {
+func newLogger(cfg *logConfig) *zap.Logger {
 	if debug {
 		cfg := zap.NewDevelopmentConfig()
 
@@ -66,7 +66,7 @@ func initLogger() {
 	}
 
 	for name, cfg := range configs {
-		l := newLogger(cfg, debug)
+		l := newLogger(cfg)
 
 		if name == defaultConn {
 			logger = l
