@@ -32,7 +32,9 @@ type RedisConn struct {
 
 // Close close connection resorce
 func (r RedisConn) Close() {
-	r.Conn.Close()
+	if err := r.Conn.Close(); err != nil {
+		logger.Error("yiigo: redis conn closed error", zap.Error(err))
+	}
 }
 
 // RedisPoolResource redis pool resource
