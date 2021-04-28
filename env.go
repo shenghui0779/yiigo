@@ -63,7 +63,15 @@ func (c *config) Get(key string) EnvValue {
 }
 
 func (c *config) Reload() error {
-	return LoadEnvFromFile(c.path)
+	t, err := toml.LoadFile(c.path)
+
+	if err != nil {
+		return err
+	}
+
+	c.tree = t
+
+	return nil
 }
 
 type cfgValue struct {
