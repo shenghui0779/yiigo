@@ -14,6 +14,9 @@ import (
 type Environment interface {
 	// Get returns an env value
 	Get(key string) EnvValue
+
+	// Reload reloads env config
+	Reload() error
 }
 
 // EnvValue is the interface for config value
@@ -52,10 +55,15 @@ type EnvValue interface {
 
 type config struct {
 	tree *toml.Tree
+	path string
 }
 
 func (c *config) Get(key string) EnvValue {
 	return &cfgValue{value: c.tree.Get(key)}
+}
+
+func (c *config) Reload() error {
+	return LoadEnvFromFile(c.path)
 }
 
 type cfgValue struct {
@@ -310,7 +318,10 @@ func LoadEnvFromFile(path string) error {
 		return err
 	}
 
-	env = &config{tree: t}
+	env = &config{
+		tree: t,
+		path: path,
+	}
 
 	return nil
 }

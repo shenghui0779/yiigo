@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/nsqio/go-nsq"
-	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )
 
@@ -48,14 +47,10 @@ func NSQPublish(topic string, msg NSQMessage) error {
 	b, err := msg.Bytes()
 
 	if err != nil {
-		return errors.Wrap(err, "yiigo: publish nsq message error")
+		return err
 	}
 
-	if err = producer.Publish(topic, b); err != nil {
-		return errors.Wrap(err, "yiigo: publish nsq message error")
-	}
-
-	return nil
+	return producer.Publish(topic, b)
 }
 
 // DeferredPublish synchronously publishes a message body to the specified topic
@@ -64,14 +59,10 @@ func NSQDeferredPublish(topic string, msg NSQMessage, duration time.Duration) er
 	b, err := msg.Bytes()
 
 	if err != nil {
-		return errors.Wrap(err, "yiigo: deferred publish nsq message error")
+		return err
 	}
 
-	if err = producer.DeferredPublish(topic, duration, b); err != nil {
-		return errors.Wrap(err, "yiigo: deferred publish nsq message error")
-	}
-
-	return nil
+	return producer.DeferredPublish(topic, duration, b)
 }
 
 // NSQConsumer NSQ consumer
@@ -129,12 +120,12 @@ func StartNSQ(consumers ...NSQConsumer) error {
 
 	// init producer
 	if err := initProducer(cfg.Nsqd); err != nil {
-		return errors.Wrap(err, "yiigo: init nsq producer error")
+		return err
 	}
 
 	// set consumers
 	if err := setConsumers(cfg.Lookupd, consumers...); err != nil {
-		return errors.Wrap(err, "yiigo: set nsq consumers error")
+		return err
 	}
 
 	logger.Info("yiigo: nsq is OK.")
