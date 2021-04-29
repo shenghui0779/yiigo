@@ -301,6 +301,11 @@ func initEnv() {
 	}
 }
 
+// ReloadEnv reloads env config
+func ReloadEnv() error {
+	return env.Reload()
+}
+
 // LoadEnvFromFile load env from file
 func LoadEnvFromFile(path string) error {
 	path, err := filepath.Abs(path)
