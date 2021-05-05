@@ -120,8 +120,8 @@ func TestToQuery(t *testing.T) {
 		Limit(10),
 	).ToQuery()
 
-	assert.Equal(t, "SELECT * FROM user WHERE age > ? ORDER BY age ASC, id DESC OFFSET ? LIMIT ?", query)
-	assert.Equal(t, []interface{}{20, 5, 10}, binds)
+	assert.Equal(t, "SELECT * FROM user WHERE age > ? ORDER BY age ASC, id DESC LIMIT ? OFFSET ?", query)
+	assert.Equal(t, []interface{}{20, 10, 5}, binds)
 
 	query, binds = builder.Wrap(
 		Table("user_0"),

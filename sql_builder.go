@@ -207,14 +207,14 @@ func (w *queryWrapper) subquery() (string, []interface{}) {
 		}
 	}
 
-	if w.offset != 0 {
-		builder.WriteString(" OFFSET ?")
-		binds = append(binds, w.offset)
-	}
-
 	if w.limit != 0 {
 		builder.WriteString(" LIMIT ?")
 		binds = append(binds, w.limit)
+	}
+
+	if w.offset != 0 {
+		builder.WriteString(" OFFSET ?")
+		binds = append(binds, w.offset)
 	}
 
 	return builder.String(), binds
