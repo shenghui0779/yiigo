@@ -4,8 +4,10 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
+	"github.com/fsnotify/fsnotify"
 	"github.com/pelletier/go-toml"
 	"go.uber.org/zap"
 )
@@ -17,6 +19,9 @@ type Environment interface {
 
 	// Reload reloads env config
 	Reload() error
+
+	// Watcher watching env change and reload
+	Watcher()
 }
 
 // EnvValue is the interface for config value
@@ -54,15 +59,22 @@ type EnvValue interface {
 }
 
 type config struct {
-	tree *toml.Tree
-	path string
+	mutex sync.RWMutex
+	tree  *toml.Tree
+	path  string
 }
 
 func (c *config) Get(key string) EnvValue {
+	c.mutex.RLock()
+	defer c.mutex.RUnlock()
+
 	return &cfgValue{value: c.tree.Get(key)}
 }
 
 func (c *config) Reload() error {
+	defer c.mutex.Lock()
+	c.mutex.Unlock()
+
 	t, err := toml.LoadFile(c.path)
 
 	if err != nil {
@@ -72,6 +84,53 @@ func (c *config) Reload() error {
 	c.tree = t
 
 	return nil
+}
+
+func (c *config) Watcher() {
+	watcher, err := fsnotify.NewWatcher()
+
+	if err != nil {
+		logger.Error("yiigo: env watcher error", zap.Error(err))
+
+		return
+	}
+
+	defer watcher.Close()
+
+	var wg sync.WaitGroup
+
+	wg.Add(1)
+
+	go func() {
+		defer wg.Done()
+
+		for {
+			select {
+			case event, ok := <-watcher.Events:
+				if !ok {
+					return
+				}
+
+				if debug {
+					logger.Info("yiigo: env watcher event", zap.String("event", event.String()))
+				}
+
+				if event.Op&fsnotify.Write == fsnotify.Write {
+					c.Reload()
+				}
+			case err, ok := <-watcher.Errors:
+				if ok {
+					logger.Error("yiigo: env watcher error", zap.Error(err))
+				}
+
+				return
+			}
+		}
+	}()
+
+	watcher.Add(c.path)
+
+	wg.Wait()
 }
 
 type cfgValue struct {
@@ -304,6 +363,11 @@ func initEnv() {
 // ReloadEnv reloads env config
 func ReloadEnv() error {
 	return env.Reload()
+}
+
+// WatchEnv watching env change and reload
+func WatchEnv() {
+	go env.Watcher()
 }
 
 // LoadEnvFromFile load env from file
