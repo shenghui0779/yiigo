@@ -4,6 +4,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	rdebug "runtime/debug"
 	"sync"
 	"time"
 
@@ -21,7 +22,7 @@ type Environment interface {
 	Reload() error
 
 	// Watcher watching env change and reload
-	Watcher()
+	Watcher(onchange func(event fsnotify.Event))
 }
 
 // EnvValue is the interface for config value
@@ -86,7 +87,7 @@ func (c *config) Reload() error {
 	return nil
 }
 
-func (c *config) Watcher() {
+func (c *config) Watcher(onchange func(event fsnotify.Event)) {
 	watcher, err := fsnotify.NewWatcher()
 
 	if err != nil {
@@ -102,24 +103,35 @@ func (c *config) Watcher() {
 	wg.Add(1)
 
 	go func() {
-		defer wg.Done()
+		defer func() {
+			if err := recover(); err != nil {
+				logger.Error("yiigo: env watcher panic",
+					zap.Any("error", err),
+					zap.ByteString("stack", rdebug.Stack()),
+				)
+			}
+
+			wg.Done()
+		}()
 
 		for {
 			select {
 			case event, ok := <-watcher.Events:
-				if !ok {
+				if !ok { // 'Events' channel is closed
 					return
 				}
 
-				if debug {
-					logger.Info("yiigo: env watcher event", zap.String("event", event.String()))
-				}
-
 				if event.Op&fsnotify.Write == fsnotify.Write {
-					c.Reload()
+					if err := c.Reload(); err != nil {
+						logger.Error("yiigo: env reload error", zap.Error(err))
+					}
+
+					if onchange != nil {
+						onchange(event)
+					}
 				}
 			case err, ok := <-watcher.Errors:
-				if ok {
+				if ok { // 'Errors' channel is not closed
 					logger.Error("yiigo: env watcher error", zap.Error(err))
 				}
 
@@ -366,8 +378,8 @@ func ReloadEnv() error {
 }
 
 // WatchEnv watching env change and reload
-func WatchEnv() {
-	go env.Watcher()
+func WatchEnv(onchange func(event fsnotify.Event)) {
+	go env.Watcher(onchange)
 }
 
 // LoadEnvFromFile load env from file
