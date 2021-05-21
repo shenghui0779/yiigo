@@ -72,8 +72,8 @@ func (c *config) Get(key string) EnvValue {
 }
 
 func (c *config) Reload() error {
-	defer c.mutex.Lock()
-	c.mutex.Unlock()
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
 
 	t, err := toml.LoadFile(c.path)
 
