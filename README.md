@@ -39,7 +39,8 @@ go get -u github.com/shenghui0779/yiigo
 ```go
 yiigo.Init(
     yiigo.WithEnvDir("/data/config"), // 自定义配置文件路径
-    yiigo.WithEnvWatcher(),       // 配置文件热更新
+    yiigo.WithEnvWatcher(),           // 配置文件热更新
+    yiigo.WithNSQ(consumers...),      // 初始化NSQ（需配置NSQ）
 )
 ```
 
