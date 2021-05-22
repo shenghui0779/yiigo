@@ -17,6 +17,12 @@ type Environment interface {
 	// Get returns an env value
 	Get(key string) EnvValue
 
+	// LoadEnvFromFile loads env from file
+	LoadEnvFromFile(path string) error
+
+	// LoadEnvFromBytes loads env from bytes
+	LoadEnvFromBytes(b []byte) error
+
 	// Reload reloads env config
 	Reload() error
 
@@ -68,12 +74,45 @@ func (c *config) Get(key string) EnvValue {
 	c.mutex.RLock()
 	defer c.mutex.RUnlock()
 
+	if c.tree == nil {
+		return new(cfgValue)
+	}
+
 	return &cfgValue{value: c.tree.Get(key)}
+}
+
+func (c *config) LoadEnvFromFile(path string) error {
+	t, err := toml.LoadFile(path)
+
+	if err != nil {
+		return err
+	}
+
+	c.tree = t
+	c.path = path
+
+	return nil
+}
+
+func (c *config) LoadEnvFromBytes(b []byte) error {
+	t, err := toml.LoadBytes(b)
+
+	if err != nil {
+		return err
+	}
+
+	c.tree = t
+
+	return nil
 }
 
 func (c *config) Reload() error {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
+
+	if len(c.path) == 0 {
+		return nil
+	}
 
 	t, err := toml.LoadFile(c.path)
 
@@ -350,68 +389,45 @@ func (c *cfgValue) Unmarshal(dest interface{}) error {
 	return v.Unmarshal(dest)
 }
 
-var env Environment
+var env Environment = new(config)
 
-func initEnv() {
-	if err := LoadEnvFromFile("yiigo.toml"); err != nil {
-		logger.Panic("yiigo: load config file error", zap.Error(err))
-	}
-}
-
-// ReloadEnv reloads env config
-func ReloadEnv() error {
-	return env.Reload()
-}
-
-// WatchEnv watching env change and reload
-func WatchEnv() {
-	go env.Watcher()
-}
-
-// LoadEnvFromFile load env from file
-func LoadEnvFromFile(path string) error {
-	path, err := filepath.Abs(path)
+func initEnv(settings *initSettings) {
+	path, err := filepath.Abs(filepath.Join(settings.envDir, "yiigo.toml"))
 
 	if err != nil {
-		return err
+		logger.Panic("yiigo: load config file error", zap.Error(err))
 	}
 
 	if _, err := os.Stat(path); err != nil {
 		if os.IsNotExist(err) {
-			if f, err := os.Create(path); err == nil {
-				f.WriteString(defaultEnvContent)
-				f.Close()
+			if len(settings.envDir) != 0 {
+				if err := os.MkdirAll(settings.envDir, 0755); err != nil {
+					logger.Panic("yiigo: load config file error", zap.Error(err))
+				}
 			}
+
+			f, err := os.Create(path)
+
+			if err != nil {
+				logger.Panic("yiigo: load config file error", zap.Error(err))
+			}
+
+			f.WriteString(defaultEnvContent)
+			f.Close()
 		} else if os.IsPermission(err) {
-			os.Chmod(path, os.ModePerm)
+			os.Chmod(path, 0755)
 		}
 	}
 
-	t, err := toml.LoadFile(path)
-
-	if err != nil {
-		return err
+	if err := env.LoadEnvFromFile(path); err != nil {
+		logger.Panic("yiigo: load config file error", zap.Error(err))
 	}
 
-	env = &config{
-		tree: t,
-		path: path,
+	debug = Env("app.debug").Bool(false)
+
+	if settings.envWatcher {
+		go env.Watcher()
 	}
-
-	return nil
-}
-
-// LoadEnvFromBytes load env from bytes
-func LoadEnvFromBytes(b []byte) error {
-	t, err := toml.LoadBytes(b)
-
-	if err != nil {
-		return err
-	}
-
-	env = &config{tree: t}
-
-	return nil
 }
 
 // Env returns an env value

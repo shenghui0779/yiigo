@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	logger *zap.Logger
+	logger = debugLogger()
 	logMap sync.Map
 )
 
@@ -25,14 +25,7 @@ type logConfig struct {
 // newLogger returns a new logger.
 func newLogger(cfg *logConfig) *zap.Logger {
 	if debug {
-		cfg := zap.NewDevelopmentConfig()
-
-		cfg.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
-		cfg.EncoderConfig.EncodeTime = MyTimeEncoder
-
-		l, _ := cfg.Build()
-
-		return l
+		return debugLogger()
 	}
 
 	w := zapcore.AddSync(&lumberjack.Logger{
@@ -52,6 +45,17 @@ func newLogger(cfg *logConfig) *zap.Logger {
 	core := zapcore.NewCore(zapcore.NewJSONEncoder(c), w, zap.DebugLevel)
 
 	return zap.New(core, zap.AddCaller())
+}
+
+func debugLogger() *zap.Logger {
+	cfg := zap.NewDevelopmentConfig()
+
+	cfg.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
+	cfg.EncoderConfig.EncodeTime = MyTimeEncoder
+
+	l, _ := cfg.Build()
+
+	return l
 }
 
 func initLogger() {

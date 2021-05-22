@@ -87,7 +87,8 @@ var (
 )
 
 func TestMain(m *testing.M) {
-	LoadEnvFromBytes([]byte(`[app]
+	debug = true
+	env.LoadEnvFromBytes([]byte(`[app]
 env = "dev"
 debug = true
 birthday = "2019-07-12 13:03:19"
