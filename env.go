@@ -17,6 +17,12 @@ type Environment interface {
 	// Get returns an env value
 	Get(key string) EnvValue
 
+	// LoadEnvFromFile loads env from file
+	LoadEnvFromFile(path string) error
+
+	// LoadEnvFromBytes loads env from bytes
+	LoadEnvFromBytes(b []byte) error
+
 	// Reload reloads env config
 	Reload() error
 
@@ -75,9 +81,38 @@ func (c *config) Get(key string) EnvValue {
 	return &cfgValue{value: c.tree.Get(key)}
 }
 
+func (c *config) LoadEnvFromFile(path string) error {
+	t, err := toml.LoadFile(path)
+
+	if err != nil {
+		return err
+	}
+
+	c.tree = t
+	c.path = path
+
+	return nil
+}
+
+func (c *config) LoadEnvFromBytes(b []byte) error {
+	t, err := toml.LoadBytes(b)
+
+	if err != nil {
+		return err
+	}
+
+	c.tree = t
+
+	return nil
+}
+
 func (c *config) Reload() error {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
+
+	if len(c.path) == 0 {
+		return nil
+	}
 
 	t, err := toml.LoadFile(c.path)
 
@@ -384,7 +419,7 @@ func initEnv(settings *initSettings) {
 		}
 	}
 
-	if err := loadEnvFromFile(path); err != nil {
+	if err := env.LoadEnvFromFile(path); err != nil {
 		logger.Panic("yiigo: load config file error", zap.Error(err))
 	}
 
@@ -393,33 +428,6 @@ func initEnv(settings *initSettings) {
 	if settings.envWatcher {
 		go env.Watcher()
 	}
-}
-
-func loadEnvFromFile(path string) error {
-	t, err := toml.LoadFile(path)
-
-	if err != nil {
-		return err
-	}
-
-	env = &config{
-		tree: t,
-		path: path,
-	}
-
-	return nil
-}
-
-func loadEnvFromBytes(b []byte) error {
-	t, err := toml.LoadBytes(b)
-
-	if err != nil {
-		return err
-	}
-
-	env = &config{tree: t}
-
-	return nil
 }
 
 // Env returns an env value
