@@ -1,5 +1,7 @@
 package yiigo
 
+import "path/filepath"
+
 var debug bool
 
 func init() {
@@ -22,9 +24,9 @@ type initSettings struct {
 type InitOption func(s *initSettings)
 
 // WithEnvDir specifies the dir to load env.
-func WithEnvDir(path string) InitOption {
+func WithEnvDir(dir string) InitOption {
 	return func(s *initSettings) {
-		s.envDir = path
+		s.envDir = filepath.Clean(dir)
 	}
 }
 

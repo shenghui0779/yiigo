@@ -68,6 +68,10 @@ func (c *config) Get(key string) EnvValue {
 	c.mutex.RLock()
 	defer c.mutex.RUnlock()
 
+	if c.tree == nil {
+		return new(cfgValue)
+	}
+
 	return &cfgValue{value: c.tree.Get(key)}
 }
 
@@ -350,10 +354,37 @@ func (c *cfgValue) Unmarshal(dest interface{}) error {
 	return v.Unmarshal(dest)
 }
 
-var env Environment
+var env Environment = new(config)
 
 func initEnv(settings *initSettings) {
-	if err := loadEnvFromFile(filepath.Join(settings.envDir, "yiigo.toml")); err != nil {
+	path, err := filepath.Abs(filepath.Join(settings.envDir, "yiigo.toml"))
+
+	if err != nil {
+		logger.Panic("yiigo: load config file error", zap.Error(err))
+	}
+
+	if _, err := os.Stat(path); err != nil {
+		if os.IsNotExist(err) {
+			if len(settings.envDir) != 0 {
+				if err := os.MkdirAll(settings.envDir, 0755); err != nil {
+					logger.Panic("yiigo: load config file error", zap.Error(err))
+				}
+			}
+
+			f, err := os.Create(path)
+
+			if err != nil {
+				logger.Panic("yiigo: load config file error", zap.Error(err))
+			}
+
+			f.WriteString(defaultEnvContent)
+			f.Close()
+		} else if os.IsPermission(err) {
+			os.Chmod(path, 0755)
+		}
+	}
+
+	if err := loadEnvFromFile(path); err != nil {
 		logger.Panic("yiigo: load config file error", zap.Error(err))
 	}
 
@@ -365,23 +396,6 @@ func initEnv(settings *initSettings) {
 }
 
 func loadEnvFromFile(path string) error {
-	path, err := filepath.Abs(path)
-
-	if err != nil {
-		return err
-	}
-
-	if _, err := os.Stat(path); err != nil {
-		if os.IsNotExist(err) {
-			if f, err := os.Create(path); err == nil {
-				f.WriteString(defaultEnvContent)
-				f.Close()
-			}
-		} else if os.IsPermission(err) {
-			os.Chmod(path, os.ModePerm)
-		}
-	}
-
 	t, err := toml.LoadFile(path)
 
 	if err != nil {
