@@ -110,27 +110,24 @@ type nsqConfig struct {
 	Nsqd    string   `toml:"nsqd"`
 }
 
-// StartNSQ starts NSQ
-func StartNSQ(consumers ...NSQConsumer) error {
+func initNSQ(consumers ...NSQConsumer) {
 	cfg := new(nsqConfig)
 
 	if err := Env("nsq").Unmarshal(cfg); err != nil {
-		return err
+		logger.Panic("yiigo: init nsq error", zap.Error(err))
 	}
 
 	// init producer
 	if err := initProducer(cfg.Nsqd); err != nil {
-		return err
+		logger.Panic("yiigo: init nsq error", zap.Error(err))
 	}
 
 	// set consumers
 	if err := setConsumers(cfg.Lookupd, consumers...); err != nil {
-		return err
+		logger.Panic("yiigo: init nsq error", zap.Error(err))
 	}
 
 	logger.Info("yiigo: nsq is OK.")
-
-	return nil
 }
 
 // NextAttemptDuration helper for attempt duration
