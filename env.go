@@ -423,7 +423,7 @@ func initEnv(settings *initSettings) {
 		logger.Panic("yiigo: load config file error", zap.Error(err))
 	}
 
-	debug = Env("app.debug").Bool(false)
+	debug = Env("app.debug").Bool()
 
 	if settings.envWatcher {
 		go env.Watcher()
