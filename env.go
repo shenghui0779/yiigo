@@ -352,24 +352,19 @@ func (c *cfgValue) Unmarshal(dest interface{}) error {
 
 var env Environment
 
-func initEnv() {
-	if err := LoadEnvFromFile("yiigo.toml"); err != nil {
+func initEnv(settings *initSettings) {
+	if err := loadEnvFromFile(filepath.Join(settings.envDir, "yiigo.toml")); err != nil {
 		logger.Panic("yiigo: load config file error", zap.Error(err))
+	}
+
+	debug = Env("app.debug").Bool(false)
+
+	if settings.envWatcher {
+		go env.Watcher()
 	}
 }
 
-// ReloadEnv reloads env config
-func ReloadEnv() error {
-	return env.Reload()
-}
-
-// WatchEnv watching env change and reload
-func WatchEnv() {
-	go env.Watcher()
-}
-
-// LoadEnvFromFile load env from file
-func LoadEnvFromFile(path string) error {
+func loadEnvFromFile(path string) error {
 	path, err := filepath.Abs(path)
 
 	if err != nil {
@@ -401,8 +396,7 @@ func LoadEnvFromFile(path string) error {
 	return nil
 }
 
-// LoadEnvFromBytes load env from bytes
-func LoadEnvFromBytes(b []byte) error {
+func loadEnvFromBytes(b []byte) error {
 	t, err := toml.LoadBytes(b)
 
 	if err != nil {

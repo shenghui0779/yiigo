@@ -11,24 +11,42 @@ func init() {
 		MaxAge:     0,
 		Compress:   true,
 	})
+}
 
-	// load env file: yiigo.toml
-	initEnv()
+type initSettings struct {
+	envDir     string
+	envWatcher bool
+}
 
-	debug = Env("app.debug").Bool(false)
+// HTTPOption configures how we set up the yiigo init.
+type InitOption func(s *initSettings)
 
-	// init logger
+// WithEnvDir specifies the dir to load env.
+func WithEnvDir(path string) InitOption {
+	return func(s *initSettings) {
+		s.envDir = path
+	}
+}
+
+// WithEnvWatcher specifies watching env change.
+func WithEnvWatcher() InitOption {
+	return func(s *initSettings) {
+		s.envWatcher = true
+	}
+}
+
+// Init yiigo init
+func Init(options ...InitOption) {
+	settings := new(initSettings)
+
+	for _, f := range options {
+		f(settings)
+	}
+
+	initEnv(settings)
 	initLogger()
-
-	// init db
 	initDB()
-
-	// init mongodb
 	initMongoDB()
-
-	// init redis
 	initRedis()
-
-	// init mailer
 	initMailer()
 }
