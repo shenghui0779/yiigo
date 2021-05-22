@@ -18,7 +18,7 @@ type initSettings struct {
 	envWatcher bool
 }
 
-// HTTPOption configures how we set up the yiigo init.
+// HTTPOption configures how we set up the yiigo initialization.
 type InitOption func(s *initSettings)
 
 // WithEnvDir specifies the dir to load env.
@@ -35,7 +35,7 @@ func WithEnvWatcher() InitOption {
 	}
 }
 
-// Init yiigo init
+// Init yiigo initialization
 func Init(options ...InitOption) {
 	settings := new(initSettings)
 
