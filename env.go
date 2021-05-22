@@ -4,7 +4,6 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
-	rdebug "runtime/debug"
 	"sync"
 	"time"
 
@@ -22,7 +21,7 @@ type Environment interface {
 	Reload() error
 
 	// Watcher watching env change and reload
-	Watcher(onchange func(event fsnotify.Event))
+	Watcher()
 }
 
 // EnvValue is the interface for config value
@@ -87,7 +86,7 @@ func (c *config) Reload() error {
 	return nil
 }
 
-func (c *config) Watcher(onchange func(event fsnotify.Event)) {
+func (c *config) Watcher() {
 	watcher, err := fsnotify.NewWatcher()
 
 	if err != nil {
@@ -103,16 +102,7 @@ func (c *config) Watcher(onchange func(event fsnotify.Event)) {
 	wg.Add(1)
 
 	go func() {
-		defer func() {
-			if err := recover(); err != nil {
-				logger.Error("yiigo: env watcher panic",
-					zap.Any("error", err),
-					zap.ByteString("stack", rdebug.Stack()),
-				)
-			}
-
-			wg.Done()
-		}()
+		defer wg.Done()
 
 		for {
 			select {
@@ -124,10 +114,6 @@ func (c *config) Watcher(onchange func(event fsnotify.Event)) {
 				if event.Op&fsnotify.Write == fsnotify.Write {
 					if err := c.Reload(); err != nil {
 						logger.Error("yiigo: env reload error", zap.Error(err))
-					}
-
-					if onchange != nil {
-						onchange(event)
 					}
 				}
 			case err, ok := <-watcher.Errors:
@@ -378,8 +364,8 @@ func ReloadEnv() error {
 }
 
 // WatchEnv watching env change and reload
-func WatchEnv(onchange func(event fsnotify.Event)) {
-	go env.Watcher(onchange)
+func WatchEnv() {
+	go env.Watcher()
 }
 
 // LoadEnvFromFile load env from file
