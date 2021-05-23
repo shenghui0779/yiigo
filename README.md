@@ -141,7 +141,7 @@ yiigo.DB().Get(&User{}, "SELECT * FROM user WHERE id = ?", 1)
 yiigo.DB("other").Get(&User{}, "SELECT * FROM user WHERE id = ?", 1)
 ```
 
-#### ORM(ent)
+#### ORM (ent)
 
 ```go
 import "<your_project>/ent"
