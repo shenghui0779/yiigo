@@ -41,7 +41,7 @@ func Date(timestamp int64, layout ...string) string {
 		l = layout[0]
 	}
 
-	date := time.Unix(timestamp, 0).Format(l)
+	date := time.Unix(timestamp, 0).Local().Format(l)
 
 	return date
 }
@@ -64,7 +64,7 @@ func StrToTime(datetime string, layout ...string) int64 {
 		return 0
 	}
 
-	return t.Unix()
+	return t.Local().Unix()
 }
 
 // WeekAround returns the date of monday and sunday for current week
