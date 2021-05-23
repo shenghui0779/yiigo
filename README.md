@@ -101,7 +101,7 @@ nsqd = "127.0.0.1:4150"
 [log]
 
     [log.default]
-    path = "app.log"
+    path = "logs/app.log"
     max_size = 500
     max_age = 0
     max_backups = 0
