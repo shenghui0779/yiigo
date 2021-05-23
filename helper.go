@@ -69,7 +69,10 @@ func StrToTime(datetime string, layout ...string) int64 {
 
 // WeekAround returns the date of monday and sunday for current week
 func WeekAround(t time.Time) (monday, sunday string) {
-	offset := int(time.Monday - t.Weekday())
+	weekday := t.Local().Weekday()
+
+	// monday
+	offset := int(time.Monday - weekday)
 
 	if offset > 0 {
 		offset = -6
@@ -79,7 +82,8 @@ func WeekAround(t time.Time) (monday, sunday string) {
 
 	monday = today.AddDate(0, 0, offset).Format("20060102")
 
-	offset = int(time.Sunday - t.Weekday())
+	// sunday
+	offset = int(time.Sunday - weekday)
 
 	if offset < 0 {
 		offset += 7
