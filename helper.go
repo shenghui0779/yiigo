@@ -64,7 +64,7 @@ func StrToTime(datetime string, layout ...string) int64 {
 		return 0
 	}
 
-	return t.Local().Unix()
+	return t.Unix()
 }
 
 // WeekAround returns the date of monday and sunday for current week
