@@ -136,12 +136,17 @@ func (c *config) Watcher() {
 
 	defer watcher.Close()
 
+	envDir, _ := filepath.Split(c.path)
+	realEnvFile, _ := filepath.EvalSymlinks(c.path)
+
 	var wg sync.WaitGroup
 
 	wg.Add(1)
 
 	go func() {
 		defer wg.Done()
+
+		writeOrCreateMask := fsnotify.Write | fsnotify.Create
 
 		for {
 			select {
@@ -150,10 +155,18 @@ func (c *config) Watcher() {
 					return
 				}
 
-				if event.Op&fsnotify.Write == fsnotify.Write {
+				eventFile := filepath.Clean(event.Name)
+				currentEnvFile, _ := filepath.EvalSymlinks(c.path)
+
+				// the env file was modified or created || the real path to the env file changed (eg: k8s ConfigMap replacement)
+				if (eventFile == c.path && event.Op&writeOrCreateMask != 0) || (currentEnvFile != "" && currentEnvFile != realEnvFile) {
+					realEnvFile = currentEnvFile
+
 					if err := c.Reload(); err != nil {
 						logger.Error("yiigo: env reload error", zap.Error(err))
 					}
+				} else if eventFile == c.path && event.Op&fsnotify.Remove&fsnotify.Remove != 0 {
+					logger.Warn("yiigo: env file removed")
 				}
 			case err, ok := <-watcher.Errors:
 				if ok { // 'Errors' channel is not closed
@@ -165,7 +178,7 @@ func (c *config) Watcher() {
 		}
 	}()
 
-	watcher.Add(c.path)
+	watcher.Add(envDir)
 
 	wg.Wait()
 }
