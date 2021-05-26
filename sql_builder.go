@@ -60,6 +60,21 @@ func NewSQLBuilder(driver DBDriver) SQLBuilder {
 	return &queryBuilder{driver: driver}
 }
 
+// NewMySQLBuilder returns new SQLBuilder for MySQL
+func NewMySQLBuilder() SQLBuilder {
+	return NewSQLBuilder(MySQL)
+}
+
+// NewPGSQLBuilder returns new SQLBuilder for Postgres
+func NewPGSQLBuilder() SQLBuilder {
+	return NewSQLBuilder(Postgres)
+}
+
+// NewSQLiteBuilder returns new SQLBuilder for SQLite
+func NewSQLiteBuilder() SQLBuilder {
+	return NewSQLBuilder(SQLite)
+}
+
 // SQLClause SQL clause
 type SQLClause struct {
 	table   string
