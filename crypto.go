@@ -25,6 +25,14 @@ const (
 	PKCS7 PaddingMode = "PKCS#7"
 )
 
+// PemBlockType pem block type which taken from the preamble
+type PemBlockType string
+
+const (
+	RSAPKCS1 PemBlockType = "RSA PRIVATE KEY"
+	RSAPKCS8 PemBlockType = "PRIVATE KEY"
+)
+
 // AESCrypto is the interface for aes crypto
 type AESCrypto interface {
 	// Encrypt encrypts the plain text
@@ -373,7 +381,7 @@ func NewGCMCrypto(key, nonce []byte) AESCrypto {
 }
 
 // GenerateRSAKey returns rsa private and public key
-func GenerateRSAKey(bitSize int) (privateKey, publicKey []byte, err error) {
+func GenerateRSAKey(bitSize int, blockType PemBlockType) (privateKey, publicKey []byte, err error) {
 	prvKey, err := rsa.GenerateKey(rand.Reader, bitSize)
 
 	if err != nil {
@@ -386,10 +394,20 @@ func GenerateRSAKey(bitSize int) (privateKey, publicKey []byte, err error) {
 		return
 	}
 
-	privateKey = pem.EncodeToMemory(&pem.Block{
-		Type:  "RSA PRIVATE KEY",
-		Bytes: x509.MarshalPKCS1PrivateKey(prvKey),
-	})
+	privateBlock := &pem.Block{Type: string(blockType)}
+
+	switch blockType {
+	case RSAPKCS1:
+		privateBlock.Bytes = x509.MarshalPKCS1PrivateKey(prvKey)
+	case RSAPKCS8:
+		privateBlock.Bytes, err = x509.MarshalPKCS8PrivateKey(prvKey)
+
+		if err != nil {
+			return
+		}
+	}
+
+	privateKey = pem.EncodeToMemory(privateBlock)
 
 	publicKey = pem.EncodeToMemory(&pem.Block{
 		Type:  "PUBLIC KEY",
@@ -430,13 +448,29 @@ func RSADecrypt(cipherText, privateKey []byte) ([]byte, error) {
 		return nil, errors.New("yiigo: invalid rsa private key")
 	}
 
-	key, err := x509.ParsePKCS1PrivateKey(block.Bytes)
+	var (
+		key interface{}
+		err error
+	)
+
+	switch PemBlockType(block.Type) {
+	case RSAPKCS1:
+		key, err = x509.ParsePKCS1PrivateKey(block.Bytes)
+	case RSAPKCS8:
+		key, err = x509.ParsePKCS8PrivateKey(block.Bytes)
+	}
 
 	if err != nil {
 		return nil, err
 	}
 
-	return rsa.DecryptPKCS1v15(rand.Reader, key, cipherText)
+	rsaKey, ok := key.(*rsa.PrivateKey)
+
+	if !ok {
+		return nil, errors.New("yiigo: invalid rsa private key")
+	}
+
+	return rsa.DecryptPKCS1v15(rand.Reader, rsaKey, cipherText)
 }
 
 // RSASignWithSha256 returns rsa signature with sha256
@@ -447,16 +481,32 @@ func RSASignWithSha256(data, privateKey []byte) ([]byte, error) {
 		return nil, errors.New("yiigo: invalid rsa private key")
 	}
 
-	key, err := x509.ParsePKCS1PrivateKey(block.Bytes)
+	var (
+		key interface{}
+		err error
+	)
+
+	switch PemBlockType(block.Type) {
+	case RSAPKCS1:
+		key, err = x509.ParsePKCS1PrivateKey(block.Bytes)
+	case RSAPKCS8:
+		key, err = x509.ParsePKCS8PrivateKey(block.Bytes)
+	}
 
 	if err != nil {
 		return nil, err
 	}
 
+	rsaKey, ok := key.(*rsa.PrivateKey)
+
+	if !ok {
+		return nil, errors.New("yiigo: invalid rsa private key")
+	}
+
 	h := sha256.New()
 	h.Write(data)
 
-	signature, err := rsa.SignPKCS1v15(rand.Reader, key, crypto.SHA256, h.Sum(nil))
+	signature, err := rsa.SignPKCS1v15(rand.Reader, rsaKey, crypto.SHA256, h.Sum(nil))
 
 	if err != nil {
 		return nil, err

@@ -100,7 +100,8 @@ prices = [23.5, 46.7, 45.9]`))
 
 	builder = NewSQLBuilder(MySQL)
 
-	privateKey, publicKey, _ = GenerateRSAKey(2048)
+	privateKey, publicKey, _ = GenerateRSAKey(2048, RSAPKCS1)
+	// privateKey, publicKey, _ = GenerateRSAKey(2048, RSAPKCS8)
 
 	m.Run()
 }
