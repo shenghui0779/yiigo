@@ -404,7 +404,7 @@ func RSAEncrypt(plainText, publicKey []byte) ([]byte, error) {
 	block, _ := pem.Decode(publicKey)
 
 	if block == nil {
-		return nil, errors.New("invalid rsa public key")
+		return nil, errors.New("yiigo: invalid rsa public key")
 	}
 
 	pubKey, err := x509.ParsePKIXPublicKey(block.Bytes)
@@ -416,7 +416,7 @@ func RSAEncrypt(plainText, publicKey []byte) ([]byte, error) {
 	key, ok := pubKey.(*rsa.PublicKey)
 
 	if !ok {
-		return nil, errors.New("invalid rsa public key")
+		return nil, errors.New("yiigo: invalid rsa public key")
 	}
 
 	return rsa.EncryptPKCS1v15(rand.Reader, key, plainText)
@@ -427,7 +427,7 @@ func RSADecrypt(cipherText, privateKey []byte) ([]byte, error) {
 	block, _ := pem.Decode(privateKey)
 
 	if block == nil {
-		return nil, errors.New("invalid rsa private key")
+		return nil, errors.New("yiigo: invalid rsa private key")
 	}
 
 	key, err := x509.ParsePKCS1PrivateKey(block.Bytes)
@@ -444,7 +444,7 @@ func RSASignWithSha256(data, privateKey []byte) ([]byte, error) {
 	block, _ := pem.Decode(privateKey)
 
 	if block == nil {
-		return nil, errors.New("invalid rsa private key")
+		return nil, errors.New("yiigo: invalid rsa private key")
 	}
 
 	key, err := x509.ParsePKCS1PrivateKey(block.Bytes)
@@ -470,7 +470,7 @@ func RSAVerifyWithSha256(data, signature, publicKey []byte) error {
 	block, _ := pem.Decode(publicKey)
 
 	if block == nil {
-		return errors.New("invalid rsa public key")
+		return errors.New("yiigo: invalid rsa public key")
 	}
 
 	pubKey, err := x509.ParsePKIXPublicKey(block.Bytes)
@@ -482,7 +482,7 @@ func RSAVerifyWithSha256(data, signature, publicKey []byte) error {
 	key, ok := pubKey.(*rsa.PublicKey)
 
 	if !ok {
-		return errors.New("invalid rsa public key")
+		return errors.New("yiigo: invalid rsa public key")
 	}
 
 	hashed := sha256.Sum256(data)
