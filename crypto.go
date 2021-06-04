@@ -7,6 +7,7 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/sha1"
 	"crypto/sha256"
 	"crypto/x509"
 	"encoding/pem"
@@ -473,6 +474,62 @@ func RSADecrypt(cipherText, privateKey []byte) ([]byte, error) {
 	}
 
 	return rsa.DecryptPKCS1v15(rand.Reader, rsaKey, cipherText)
+}
+
+// RSAEncryptOEAP rsa encrypt with PKCS #1 OEAP
+func RSAEncryptOEAP(plainText, publicKey []byte) ([]byte, error) {
+	block, _ := pem.Decode(publicKey)
+
+	if block == nil {
+		return nil, errors.New("yiigo: invalid rsa public key")
+	}
+
+	pubKey, err := x509.ParsePKIXPublicKey(block.Bytes)
+
+	if err != nil {
+		return nil, err
+	}
+
+	key, ok := pubKey.(*rsa.PublicKey)
+
+	if !ok {
+		return nil, errors.New("yiigo: invalid rsa public key")
+	}
+
+	return rsa.EncryptOAEP(sha1.New(), rand.Reader, key, plainText, nil)
+}
+
+// RSADecryptOEAP rsa decrypt with PKCS #1 OEAP
+func RSADecryptOEAP(cipherText, privateKey []byte) ([]byte, error) {
+	block, _ := pem.Decode(privateKey)
+
+	if block == nil {
+		return nil, errors.New("yiigo: invalid rsa private key")
+	}
+
+	var (
+		key interface{}
+		err error
+	)
+
+	switch PemBlockType(block.Type) {
+	case RSAPKCS1:
+		key, err = x509.ParsePKCS1PrivateKey(block.Bytes)
+	case RSAPKCS8:
+		key, err = x509.ParsePKCS8PrivateKey(block.Bytes)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	rsaKey, ok := key.(*rsa.PrivateKey)
+
+	if !ok {
+		return nil, errors.New("yiigo: invalid rsa private key")
+	}
+
+	return rsa.DecryptOAEP(sha1.New(), rand.Reader, rsaKey, cipherText, nil)
 }
 
 // RSASignWithSha256 returns rsa signature with sha256
