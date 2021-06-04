@@ -419,7 +419,7 @@ func GenerateRSAKey(bitSize int, blockType PemBlockType) (privateKey, publicKey 
 	return
 }
 
-// RSAEncrypt rsa encrypt with public key
+// RSAEncrypt rsa encrypt with PKCS #1 v1.5
 func RSAEncrypt(plainText, publicKey []byte) ([]byte, error) {
 	block, _ := pem.Decode(publicKey)
 
@@ -442,7 +442,7 @@ func RSAEncrypt(plainText, publicKey []byte) ([]byte, error) {
 	return rsa.EncryptPKCS1v15(rand.Reader, key, plainText)
 }
 
-// RSADecrypt rsa decrypt with private key
+// RSADecrypt rsa decrypt with PKCS #1 v1.5
 func RSADecrypt(cipherText, privateKey []byte) ([]byte, error) {
 	block, _ := pem.Decode(privateKey)
 
