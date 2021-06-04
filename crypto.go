@@ -29,7 +29,9 @@ const (
 type PemBlockType string
 
 const (
+	// RSAPKCS1 private key in PKCS#1
 	RSAPKCS1 PemBlockType = "RSA PRIVATE KEY"
+	// RSAPKCS8 private key in PKCS#8
 	RSAPKCS8 PemBlockType = "PRIVATE KEY"
 )
 
