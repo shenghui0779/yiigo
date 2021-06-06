@@ -79,11 +79,15 @@ type UploadForm interface {
 type httpUpload struct {
 	filefield *UploadField
 	filebytes []byte
-	metadata  []*UploadField
+	metadata  *UploadField
 }
 
 func (u *httpUpload) Do(w *multipart.Writer) error {
-	return nil
+	if err := u.createFormFile(w); err != nil {
+		return err
+	}
+
+	return u.createFormField(w)
 }
 
 func (u *httpUpload) createFormFile(w *multipart.Writer) error {
@@ -108,57 +112,31 @@ func (u *httpUpload) createFormFile(w *multipart.Writer) error {
 }
 
 func (u *httpUpload) createFormField(w *multipart.Writer) error {
-	if len(u.metadata) == 0 {
+	if u.metadata == nil {
 		return nil
 	}
 
-	for _, field := range u.metadata {
-		h := make(textproto.MIMEHeader)
-		h.Set("Content-Disposition", fmt.Sprintf(`form-data; name="%s";`, escapeQuotes(field.name)))
+	h := make(textproto.MIMEHeader)
+	h.Set("Content-Disposition", fmt.Sprintf(`form-data; name="%s";`, escapeQuotes(u.metadata.name)))
 
-		if len(field.contentType) != 0 {
-			h.Set("Content-Type", field.contentType)
-		}
+	if len(u.metadata.contentType) != 0 {
+		h.Set("Content-Type", u.metadata.contentType)
+	}
 
-		part, err := w.CreatePart(h)
+	part, err := w.CreatePart(h)
 
-		if err != nil {
-			return err
-		}
-
-		_, err = part.Write([]byte(field.value))
-
+	if err != nil {
 		return err
 	}
 
-	return nil
-}
+	_, err = part.Write([]byte(u.metadata.value))
 
-// UploadOption configures how we set up the http upload from.
-type UploadOption func(u *httpUpload)
-
-// WithMetaData specifies the extra field to http upload from.
-func WithMetaData(key, value string) UploadOption {
-	return func(u *httpUpload) {
-		u.metadata[key] = value
-	}
+	return err
 }
 
 // NewUploadForm returns new upload form
-func NewUploadForm(fieldname, filename string, filebody []byte, options ...UploadOption) UploadForm {
-	form := &httpUpload{
-		fieldname: fieldname,
-		filename:  filename,
-		filebody:  filebody,
-	}
-
-	if len(options) != 0 {
-		form.metadata = make(map[string]string)
-
-		for _, f := range options {
-			f(form)
-		}
-	}
+func NewUploadForm(fieldname, filename string, filebody []byte) UploadForm {
+	form := new(httpUpload)
 
 	return form
 }
@@ -271,23 +249,8 @@ func (c *yiiclient) Upload(ctx context.Context, url string, form UploadForm, opt
 	buf := bytes.NewBuffer(make([]byte, 0, 4<<10)) // 4kb
 	w := multipart.NewWriter(buf)
 
-	fw, err := w.CreateFormFile(form.FieldName(), form.FileName())
-
-	if err != nil {
+	if err := form.Do(w); err != nil {
 		return nil, err
-	}
-
-	if _, err = fw.Write(form.FileBody()); err != nil {
-		return nil, err
-	}
-
-	// add metadata
-	if metadata := form.MetaData(); len(metadata) != 0 {
-		for k, v := range metadata {
-			if err = w.WriteField(k, v); err != nil {
-				return nil, err
-			}
-		}
 	}
 
 	options = append(options, WithHTTPHeader("Content-Type", w.FormDataContentType()))
