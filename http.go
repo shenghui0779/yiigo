@@ -9,6 +9,7 @@ import (
 	"mime/multipart"
 	"net"
 	"net/http"
+	"path/filepath"
 	"time"
 )
 
@@ -68,9 +69,14 @@ type httpUpload struct {
 	filebytes []byte
 	metafield string
 	metadata  string
+	err       error
 }
 
 func (u *httpUpload) Write(w *multipart.Writer) error {
+	if u.err != nil {
+		return u.err
+	}
+
 	part, err := w.CreateFormFile(u.filefield, u.filename)
 
 	if err != nil {
@@ -94,6 +100,51 @@ func (u *httpUpload) Write(w *multipart.Writer) error {
 // UploadOption configures how we set up the upload from.
 type UploadOption func(u *httpUpload)
 
+// UploadByPath uploads by file path
+func UploadByPath(path string) UploadOption {
+	return func(u *httpUpload) {
+		path, err := filepath.Abs(path)
+
+		if err != nil {
+			u.err = err
+
+			return
+		}
+
+		b, err := ioutil.ReadFile(path)
+
+		if err != nil {
+			u.err = err
+
+			return
+		}
+
+		u.filebytes = b
+	}
+}
+
+// UploadByFileContent uploads by file content
+func UploadByFileContent(content []byte) UploadOption {
+	return func(u *httpUpload) {
+		u.filebytes = content
+	}
+}
+
+// UploadByResourceURL uploads file by resource url
+func UploadByResourceURL(url string) UploadOption {
+	return func(u *httpUpload) {
+		b, err := HTTPGet(context.TODO(), url)
+
+		if err != nil {
+			u.err = err
+
+			return
+		}
+
+		u.filebytes = b
+	}
+}
+
 // WithMetaField specifies the metadata field to upload from.
 func WithMetaField(name, value string) UploadOption {
 	return func(u *httpUpload) {
@@ -103,11 +154,10 @@ func WithMetaField(name, value string) UploadOption {
 }
 
 // NewUploadForm returns an upload form
-func NewUploadForm(fieldname, filename string, fileContent []byte, options ...UploadOption) UploadForm {
+func NewUploadForm(fieldname, filename string, options ...UploadOption) UploadForm {
 	form := &httpUpload{
 		filefield: fieldname,
 		filename:  filename,
-		filebytes: fileContent,
 	}
 
 	for _, f := range options {
