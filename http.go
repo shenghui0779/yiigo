@@ -103,7 +103,7 @@ type UploadOption func(u *httpUpload)
 // UploadByPath uploads by file path
 func UploadByPath(path string) UploadOption {
 	return func(u *httpUpload) {
-		path, err := filepath.Abs(path)
+		path, err := filepath.Abs(filepath.Clean(path))
 
 		if err != nil {
 			u.err = fmt.Errorf("read content by path error: %s", err.Error())
