@@ -15,7 +15,7 @@ require (
 	github.com/lib/pq v1.10.2
 	github.com/mattn/go-sqlite3 v1.14.7
 	github.com/nsqio/go-nsq v1.0.8
-	github.com/pelletier/go-toml v1.9.1
+	github.com/pelletier/go-toml v1.9.2
 	github.com/shenghui0779/vitess_pool v1.0.1
 	github.com/stretchr/testify v1.7.0
 	go.mongodb.org/mongo-driver v1.5.3
