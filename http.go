@@ -106,7 +106,7 @@ func UploadByPath(path string) UploadOption {
 		path, err := filepath.Abs(path)
 
 		if err != nil {
-			u.err = err
+			u.err = fmt.Errorf("read content by path error: %s", err.Error())
 
 			return
 		}
@@ -114,7 +114,7 @@ func UploadByPath(path string) UploadOption {
 		b, err := ioutil.ReadFile(path)
 
 		if err != nil {
-			u.err = err
+			u.err = fmt.Errorf("read content by path error: %s", err.Error())
 
 			return
 		}
@@ -136,7 +136,7 @@ func UploadByResourceURL(url string) UploadOption {
 		b, err := HTTPGet(context.TODO(), url)
 
 		if err != nil {
-			u.err = err
+			u.err = fmt.Errorf("get content by resource url error: %s", err.Error())
 
 			return
 		}
