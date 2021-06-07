@@ -9,8 +9,6 @@ import (
 	"mime/multipart"
 	"net"
 	"net/http"
-	"net/textproto"
-	"strings"
 	"time"
 )
 
@@ -58,85 +56,63 @@ func WithHTTPTimeout(timeout time.Duration) HTTPOption {
 	}
 }
 
-var quoteEscaper = strings.NewReplacer("\\", "\\\\", `"`, "\\\"")
-
-func escapeQuotes(s string) string {
-	return quoteEscaper.Replace(s)
-}
-
-type UploadField struct {
-	name        string
-	value       string
-	contentType string
-}
-
 // UploadForm is the interface for http upload
 type UploadForm interface {
-	// FieldName returns field name for upload
-	Do(w *multipart.Writer) error
+	// Write writes fields to multipart writer
+	Write(w *multipart.Writer) error
 }
 
 type httpUpload struct {
-	filefield *UploadField
+	filefield string
+	filename  string
 	filebytes []byte
-	metadata  *UploadField
+	metafield string
+	metadata  string
 }
 
-func (u *httpUpload) Do(w *multipart.Writer) error {
-	if err := u.createFormFile(w); err != nil {
-		return err
-	}
-
-	return u.createFormField(w)
-}
-
-func (u *httpUpload) createFormFile(w *multipart.Writer) error {
-	h := make(textproto.MIMEHeader)
-	h.Set("Content-Disposition", fmt.Sprintf(`form-data; name="%s"; filename="%s"`, escapeQuotes(u.filefield.name), escapeQuotes(u.filefield.value)))
-
-	if len(u.filefield.contentType) != 0 {
-		h.Set("Content-Type", u.filefield.contentType)
-	} else {
-		h.Set("Content-Type", "application/octet-stream")
-	}
-
-	part, err := w.CreatePart(h)
+func (u *httpUpload) Write(w *multipart.Writer) error {
+	part, err := w.CreateFormFile(u.filefield, u.filename)
 
 	if err != nil {
 		return err
 	}
 
-	_, err = part.Write(u.filebytes)
-
-	return err
-}
-
-func (u *httpUpload) createFormField(w *multipart.Writer) error {
-	if u.metadata == nil {
-		return nil
-	}
-
-	h := make(textproto.MIMEHeader)
-	h.Set("Content-Disposition", fmt.Sprintf(`form-data; name="%s";`, escapeQuotes(u.metadata.name)))
-
-	if len(u.metadata.contentType) != 0 {
-		h.Set("Content-Type", u.metadata.contentType)
-	}
-
-	part, err := w.CreatePart(h)
-
-	if err != nil {
+	if _, err = part.Write(u.filebytes); err != nil {
 		return err
 	}
 
-	_, err = part.Write([]byte(u.metadata.value))
+	// metadata
+	if len(u.metafield) != 0 {
+		if err = w.WriteField(u.metafield, u.metadata); err != nil {
+			return err
+		}
+	}
 
-	return err
+	return nil
 }
 
-// NewUploadForm returns new upload form
-func NewUploadForm(fieldname, filename string, filebody []byte) UploadForm {
-	form := new(httpUpload)
+// UploadOption configures how we set up the upload from.
+type UploadOption func(u *httpUpload)
+
+// WithMetaField specifies the metadata field to upload from.
+func WithMetaField(fieldName, fieldValue string) UploadOption {
+	return func(u *httpUpload) {
+		u.metafield = fieldName
+		u.metadata = fieldValue
+	}
+}
+
+// NewUploadForm returns an upload form
+func NewUploadForm(fileField, filename string, fileContent []byte, options ...UploadOption) UploadForm {
+	form := &httpUpload{
+		filefield: fileField,
+		filename:  filename,
+		filebytes: fileContent,
+	}
+
+	for _, f := range options {
+		f(form)
+	}
 
 	return form
 }
@@ -249,7 +225,7 @@ func (c *yiiclient) Upload(ctx context.Context, url string, form UploadForm, opt
 	buf := bytes.NewBuffer(make([]byte, 0, 4<<10)) // 4kb
 	w := multipart.NewWriter(buf)
 
-	if err := form.Do(w); err != nil {
+	if err := form.Write(w); err != nil {
 		return nil, err
 	}
 
