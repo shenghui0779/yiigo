@@ -123,8 +123,8 @@ func UploadByPath(path string) UploadOption {
 	}
 }
 
-// UploadByFileContent uploads by file content
-func UploadByFileContent(content []byte) UploadOption {
+// UploadByContent uploads by file content
+func UploadByContent(content []byte) UploadOption {
 	return func(u *httpUpload) {
 		u.filebytes = content
 	}
