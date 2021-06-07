@@ -95,17 +95,17 @@ func (u *httpUpload) Write(w *multipart.Writer) error {
 type UploadOption func(u *httpUpload)
 
 // WithMetaField specifies the metadata field to upload from.
-func WithMetaField(fieldName, fieldValue string) UploadOption {
+func WithMetaField(name, value string) UploadOption {
 	return func(u *httpUpload) {
-		u.metafield = fieldName
-		u.metadata = fieldValue
+		u.metafield = name
+		u.metadata = value
 	}
 }
 
 // NewUploadForm returns an upload form
-func NewUploadForm(fileField, filename string, fileContent []byte, options ...UploadOption) UploadForm {
+func NewUploadForm(fieldname, filename string, fileContent []byte, options ...UploadOption) UploadForm {
 	form := &httpUpload{
-		filefield: fileField,
+		filefield: fieldname,
 		filename:  filename,
 		filebytes: fileContent,
 	}
