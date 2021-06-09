@@ -182,12 +182,12 @@ type HTTPClient interface {
 	Upload(ctx context.Context, url string, form UploadForm, options ...HTTPOption) ([]byte, error)
 }
 
-type yiiclient struct {
+type httpclient struct {
 	client  *http.Client
 	timeout time.Duration
 }
 
-func (c *yiiclient) Do(ctx context.Context, req *http.Request, options ...HTTPOption) ([]byte, error) {
+func (c *httpclient) Do(ctx context.Context, req *http.Request, options ...HTTPOption) ([]byte, error) {
 	settings := &httpSettings{timeout: c.timeout}
 
 	if len(options) != 0 {
@@ -251,7 +251,7 @@ func (c *yiiclient) Do(ctx context.Context, req *http.Request, options ...HTTPOp
 	return b, nil
 }
 
-func (c *yiiclient) Get(ctx context.Context, url string, options ...HTTPOption) ([]byte, error) {
+func (c *httpclient) Get(ctx context.Context, url string, options ...HTTPOption) ([]byte, error) {
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 
 	if err != nil {
@@ -261,7 +261,7 @@ func (c *yiiclient) Get(ctx context.Context, url string, options ...HTTPOption) 
 	return c.Do(ctx, req, options...)
 }
 
-func (c *yiiclient) Post(ctx context.Context, url string, body []byte, options ...HTTPOption) ([]byte, error) {
+func (c *httpclient) Post(ctx context.Context, url string, body []byte, options ...HTTPOption) ([]byte, error) {
 	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(body))
 
 	if err != nil {
@@ -271,7 +271,7 @@ func (c *yiiclient) Post(ctx context.Context, url string, body []byte, options .
 	return c.Do(ctx, req, options...)
 }
 
-func (c *yiiclient) Upload(ctx context.Context, url string, form UploadForm, options ...HTTPOption) ([]byte, error) {
+func (c *httpclient) Upload(ctx context.Context, url string, form UploadForm, options ...HTTPOption) ([]byte, error) {
 	buf := bytes.NewBuffer(make([]byte, 0, 4<<10)) // 4kb
 	w := multipart.NewWriter(buf)
 
@@ -296,7 +296,7 @@ func (c *yiiclient) Upload(ctx context.Context, url string, form UploadForm, opt
 
 // NewHTTPClient returns a new http client
 func NewHTTPClient(client *http.Client, defaultTimeout ...time.Duration) HTTPClient {
-	c := &yiiclient{
+	c := &httpclient{
 		client:  client,
 		timeout: defaultHTTPTimeout,
 	}
