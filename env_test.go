@@ -87,7 +87,7 @@ var (
 )
 
 func TestMain(m *testing.M) {
-	debug = true
+	Debug = true
 	env.LoadEnvFromBytes([]byte(`[app]
 env = "dev"
 debug = true

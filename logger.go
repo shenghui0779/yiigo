@@ -24,7 +24,7 @@ type logConfig struct {
 
 // newLogger returns a new logger.
 func newLogger(cfg *logConfig) *zap.Logger {
-	if debug {
+	if Debug {
 		return debugLogger()
 	}
 

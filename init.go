@@ -2,7 +2,7 @@ package yiigo
 
 import "path/filepath"
 
-var debug bool
+var Debug bool
 
 type initSettings struct {
 	envDir       string
