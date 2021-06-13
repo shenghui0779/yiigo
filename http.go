@@ -57,33 +57,49 @@ func WithHTTPTimeout(timeout time.Duration) HTTPOption {
 	}
 }
 
+type uploadmethod int
+
+const (
+	uploadbycontent uploadmethod = iota
+	uploadbypath
+	uploadbyurl
+)
+
 // UploadForm is the interface for http upload
 type UploadForm interface {
 	// Write writes fields to multipart writer
-	Write(w *multipart.Writer) error
+	Write(ctx context.Context, w *multipart.Writer) error
 }
 
 type httpUpload struct {
-	filefield string
-	filename  string
-	filebytes []byte
-	metafield string
-	metadata  string
-	err       error
+	filefield   string
+	filename    string
+	method      uploadmethod
+	filefrom    string
+	filecontent []byte
+	metafield   string
+	metadata    string
 }
 
-func (u *httpUpload) Write(w *multipart.Writer) error {
-	if u.err != nil {
-		return u.err
-	}
-
+func (u *httpUpload) Write(ctx context.Context, w *multipart.Writer) error {
 	part, err := w.CreateFormFile(u.filefield, u.filename)
 
 	if err != nil {
 		return err
 	}
 
-	if _, err = part.Write(u.filebytes); err != nil {
+	switch u.method {
+	case uploadbypath:
+		if err = u.getContentByPath(); err != nil {
+			return err
+		}
+	case uploadbyurl:
+		if err = u.getContentByURL(ctx); err != nil {
+			return err
+		}
+	}
+
+	if _, err = part.Write(u.filecontent); err != nil {
 		return err
 	}
 
@@ -97,51 +113,48 @@ func (u *httpUpload) Write(w *multipart.Writer) error {
 	return nil
 }
 
+func (u *httpUpload) getContentByPath() error {
+	path, err := filepath.Abs(u.filefrom)
+
+	if err != nil {
+		return err
+	}
+
+	u.filecontent, err = ioutil.ReadFile(path)
+
+	return err
+}
+
+func (u *httpUpload) getContentByURL(ctx context.Context) (err error) {
+	u.filecontent, err = HTTPGet(ctx, u.filefrom)
+
+	return
+}
+
 // UploadOption configures how we set up the upload from.
 type UploadOption func(u *httpUpload)
-
-// UploadByPath uploads by file path
-func UploadByPath(path string) UploadOption {
-	return func(u *httpUpload) {
-		path, err := filepath.Abs(filepath.Clean(path))
-
-		if err != nil {
-			u.err = fmt.Errorf("read content by path error: %s", err.Error())
-
-			return
-		}
-
-		b, err := ioutil.ReadFile(path)
-
-		if err != nil {
-			u.err = fmt.Errorf("read content by path error: %s", err.Error())
-
-			return
-		}
-
-		u.filebytes = b
-	}
-}
 
 // UploadByContent uploads by file content
 func UploadByContent(content []byte) UploadOption {
 	return func(u *httpUpload) {
-		u.filebytes = content
+		u.method = uploadbycontent
+		u.filecontent = content
 	}
 }
 
-// UploadByResourceURL uploads file by resource url
-func UploadByResourceURL(url string) UploadOption {
+// UploadByPath uploads by file path
+func UploadByPath(path string) UploadOption {
 	return func(u *httpUpload) {
-		b, err := HTTPGet(context.TODO(), url)
+		u.method = uploadbypath
+		u.filefrom = filepath.Clean(path)
+	}
+}
 
-		if err != nil {
-			u.err = fmt.Errorf("get content by resource url error: %s", err.Error())
-
-			return
-		}
-
-		u.filebytes = b
+// UploadByURL uploads file by resource url
+func UploadByURL(url string) UploadOption {
+	return func(u *httpUpload) {
+		u.method = uploadbyurl
+		u.filefrom = url
 	}
 }
 
@@ -275,7 +288,7 @@ func (c *httpclient) Upload(ctx context.Context, url string, form UploadForm, op
 	buf := bytes.NewBuffer(make([]byte, 0, 4<<10)) // 4kb
 	w := multipart.NewWriter(buf)
 
-	if err := form.Write(w); err != nil {
+	if err := form.Write(ctx, w); err != nil {
 		return nil, err
 	}
 
