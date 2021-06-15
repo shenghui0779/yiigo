@@ -60,7 +60,7 @@ func WithHTTPTimeout(timeout time.Duration) HTTPOption {
 type uploadmethod int
 
 const (
-	uploadbycontent uploadmethod = iota
+	uploadbybyptes uploadmethod = iota
 	uploadbypath
 	uploadbyurl
 )
@@ -134,10 +134,10 @@ func (u *httpUpload) getContentByURL(ctx context.Context) (err error) {
 // UploadOption configures how we set up the upload from.
 type UploadOption func(u *httpUpload)
 
-// UploadByContent uploads by file content
-func UploadByContent(content []byte) UploadOption {
+// UploadByBytes uploads by file content
+func UploadByBytes(content []byte) UploadOption {
 	return func(u *httpUpload) {
-		u.method = uploadbycontent
+		u.method = uploadbybyptes
 		u.filecontent = content
 	}
 }
@@ -348,7 +348,7 @@ func HTTPPost(ctx context.Context, url string, body []byte, options ...HTTPOptio
 	return defaultHTTPClient.Post(ctx, url, body, options...)
 }
 
-// HTTPUpload http upload media
+// HTTPUpload http upload file
 func HTTPUpload(ctx context.Context, url string, form UploadForm, options ...HTTPOption) ([]byte, error) {
 	return defaultHTTPClient.Upload(ctx, url, form, options...)
 }
