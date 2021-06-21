@@ -27,7 +27,7 @@ type Environment interface {
 	Reload() error
 
 	// Watcher watching env change and reload
-	Watcher()
+	Watcher(onchange func(event fsnotify.Event))
 }
 
 // EnvValue is the interface for config value
@@ -125,7 +125,7 @@ func (c *config) Reload() error {
 	return nil
 }
 
-func (c *config) Watcher() {
+func (c *config) Watcher(onchange func(event fsnotify.Event)) {
 	watcher, err := fsnotify.NewWatcher()
 
 	if err != nil {
@@ -166,7 +166,12 @@ func (c *config) Watcher() {
 						logger.Error("yiigo: env reload error", zap.Error(err))
 					}
 
+					// reassign the 'Debug' variable
 					Debug = c.Get("app.debug").Bool()
+
+					if onchange != nil {
+						onchange(event)
+					}
 				} else if eventFile == c.path && event.Op&fsnotify.Remove&fsnotify.Remove != 0 {
 					logger.Warn("yiigo: env file removed")
 				}
@@ -438,10 +443,11 @@ func initEnv(settings *initSettings) {
 		logger.Panic("yiigo: load config file error", zap.Error(err))
 	}
 
+	// assign the 'Debug' variable
 	Debug = Env("app.debug").Bool()
 
 	if settings.envWatcher {
-		go env.Watcher()
+		go env.Watcher(settings.envOnChange)
 	}
 }
 

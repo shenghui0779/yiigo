@@ -1,12 +1,17 @@
 package yiigo
 
-import "path/filepath"
+import (
+	"path/filepath"
+
+	"github.com/fsnotify/fsnotify"
+)
 
 var Debug bool
 
 type initSettings struct {
 	envDir       string
 	envWatcher   bool
+	envOnChange  func(event fsnotify.Event)
 	nsqInit      bool
 	nsqConsumers []NSQConsumer
 }
@@ -22,9 +27,13 @@ func WithEnvDir(dir string) InitOption {
 }
 
 // WithEnvWatcher specifies watching env change.
-func WithEnvWatcher() InitOption {
+func WithEnvWatcher(onchange ...func(event fsnotify.Event)) InitOption {
 	return func(s *initSettings) {
 		s.envWatcher = true
+
+		if len(onchange) != 0 {
+			s.envOnChange = onchange[0]
+		}
 	}
 }
 
