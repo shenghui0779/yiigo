@@ -4,6 +4,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"runtime/debug"
 	"sync"
 	"time"
 
@@ -144,7 +145,13 @@ func (c *config) Watcher(onchange func(event fsnotify.Event)) {
 	wg.Add(1)
 
 	go func() {
-		defer wg.Done()
+		defer func() {
+			if r := recover(); r != nil {
+				logger.Error("yiigo: env watcher panic", zap.Any("error", r), zap.ByteString("stack", debug.Stack()))
+			}
+
+			wg.Done()
+		}()
 
 		writeOrCreateMask := fsnotify.Write | fsnotify.Create
 

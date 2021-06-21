@@ -2,8 +2,10 @@ package yiigo
 
 import (
 	"path/filepath"
+	"runtime/debug"
 
 	"github.com/fsnotify/fsnotify"
+	"go.uber.org/zap"
 )
 
 var Debug bool
@@ -27,12 +29,22 @@ func WithEnvDir(dir string) InitOption {
 }
 
 // WithEnvWatcher specifies watching env change.
-func WithEnvWatcher(onchange ...func(event fsnotify.Event)) InitOption {
+func WithEnvWatcher(onchanges ...func(event fsnotify.Event)) InitOption {
 	return func(s *initSettings) {
 		s.envWatcher = true
 
-		if len(onchange) != 0 {
-			s.envOnChange = onchange[0]
+		if len(onchanges) != 0 {
+			s.envOnChange = func(event fsnotify.Event) {
+				defer func() {
+					if r := recover(); r != nil {
+						logger.Error("yiigo: env onchange callback panic", zap.Any("error", r), zap.ByteString("stack", debug.Stack()))
+					}
+				}()
+
+				for _, f := range onchanges {
+					f(event)
+				}
+			}
 		}
 	}
 }
