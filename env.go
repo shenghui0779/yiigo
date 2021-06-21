@@ -165,6 +165,8 @@ func (c *config) Watcher() {
 					if err := c.Reload(); err != nil {
 						logger.Error("yiigo: env reload error", zap.Error(err))
 					}
+
+					Debug = c.Get("app.debug").Bool()
 				} else if eventFile == c.path && event.Op&fsnotify.Remove&fsnotify.Remove != 0 {
 					logger.Warn("yiigo: env file removed")
 				}
