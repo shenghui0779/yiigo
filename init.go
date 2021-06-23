@@ -8,6 +8,7 @@ import (
 	"go.uber.org/zap"
 )
 
+// Debug specifies the debug mode
 var Debug bool
 
 type initSettings struct {
@@ -18,7 +19,7 @@ type initSettings struct {
 	nsqConsumers []NSQConsumer
 }
 
-// HTTPOption configures how we set up the yiigo initialization.
+// InitOption configures how we set up the yiigo initialization.
 type InitOption func(s *initSettings)
 
 // WithEnvDir specifies the dir to load env.
