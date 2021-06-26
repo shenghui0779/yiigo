@@ -5,7 +5,7 @@
 [![pkg.go.dev](https://img.shields.io/badge/dev-reference-007d9c?logo=go&logoColor=white&style=flat)](https://pkg.go.dev/github.com/shenghui0779/yiigo)
 [![MIT license](http://img.shields.io/badge/license-MIT-brightgreen.svg)](http://opensource.org/licenses/MIT)
 
-一个好用的 Go 轻量级开发通用库，让 Go 开发更加简单快捷
+一个好用的 Go 轻量级开发通用库，有了它，省去了开发时到处找库封装的烦恼，让 Go 开发更加简单快捷
 
 ## Features
 
