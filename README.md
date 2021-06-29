@@ -5,7 +5,7 @@
 [![pkg.go.dev](https://img.shields.io/badge/dev-reference-007d9c?logo=go&logoColor=white&style=flat)](https://pkg.go.dev/github.com/shenghui0779/yiigo)
 [![MIT license](http://img.shields.io/badge/license-MIT-brightgreen.svg)](http://opensource.org/licenses/MIT)
 
-一个好用的 Go 轻量级开发通用库，让 Go 开发更加简单快捷
+一个好用的 Go 轻量级开发通用库，有了它，省去了开发时到处找库封装的烦恼，让 Go 开发更加简单快捷
 
 ## Features
 
@@ -38,9 +38,9 @@ go get -u github.com/shenghui0779/yiigo
 
 ```go
 yiigo.Init(
-    yiigo.WithEnvDir("/data/config"), // 自定义配置文件路径（/data/config/yiigo.toml）
-    yiigo.WithEnvWatcher(),           // 监听配置文件变化并热更新
-    yiigo.WithNSQ(consumers...),      // 初始化NSQ（需配置NSQ）
+    yiigo.WithEnvDir("/data/config"),  // 自定义配置文件路径（/data/config/yiigo.toml）
+    yiigo.WithEnvWatcher(onchange...), // 监听配置文件变化并热更新
+    yiigo.WithNSQ(consumers...),       // 初始化NSQ（需配置NSQ）
 )
 ```
 
