@@ -2,14 +2,17 @@ package yiigo
 
 import (
 	"bytes"
+	"compress/gzip"
 	"context"
-	"fmt"
+	"errors"
 	"io"
 	"io/ioutil"
 	"mime/multipart"
 	"net"
 	"net/http"
+	"net/url"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -64,6 +67,81 @@ const (
 	uploadbypath
 	uploadbyurl
 )
+
+// HTTPClient is the interface for an http client.
+type HTTPClient interface {
+	// Do sends an HTTP request and returns an HTTP response.
+	Do(ctx context.Context, req *http.Request, options ...HTTPOption) (*http.Response, error)
+}
+
+type httpclient struct {
+	client  *http.Client
+	timeout time.Duration
+}
+
+func (c *httpclient) Do(ctx context.Context, req *http.Request, options ...HTTPOption) (*http.Response, error) {
+	settings := &httpSettings{timeout: c.timeout}
+
+	if len(options) != 0 {
+		settings.headers = make(map[string]string)
+
+		for _, f := range options {
+			f(settings)
+		}
+	}
+
+	// headers
+	if len(settings.headers) != 0 {
+		for k, v := range settings.headers {
+			req.Header.Set(k, v)
+		}
+	}
+
+	// cookies
+	if len(settings.cookies) != 0 {
+		for _, v := range settings.cookies {
+			req.AddCookie(v)
+		}
+	}
+
+	if settings.close {
+		req.Close = true
+	}
+
+	// timeout
+	ctx, cancel := context.WithTimeout(ctx, settings.timeout)
+
+	defer cancel()
+
+	resp, err := c.client.Do(req.WithContext(ctx))
+
+	if err != nil {
+		// If the context has been canceled, the context's error is probably more useful.
+		select {
+		case <-ctx.Done():
+			err = ctx.Err()
+		default:
+		}
+
+		return nil, err
+	}
+
+	return resp, err
+}
+
+// NewHTTPClient returns a new http client
+func NewHTTPClient(client *http.Client, defaultTimeout ...time.Duration) HTTPClient {
+	c := &httpclient{
+		client:  client,
+		timeout: defaultHTTPTimeout,
+	}
+
+	if len(defaultTimeout) != 0 {
+		c.timeout = defaultTimeout[0]
+	}
+
+	return c
+}
 
 // UploadForm is the interface for http upload
 type UploadForm interface {
@@ -125,10 +203,38 @@ func (u *httpUpload) getContentByPath() error {
 	return err
 }
 
-func (u *httpUpload) getContentByURL(ctx context.Context) (err error) {
-	u.filecontent, err = HTTPGet(ctx, u.filefrom)
+func (u *httpUpload) getContentByURL(ctx context.Context) error {
+	resp, err := HTTPGet(ctx, u.filefrom)
 
-	return
+	if err != nil {
+		return err
+	}
+
+	defer resp.Body.Close()
+
+	bodyReader := resp.Body
+
+	if resp.Header.Get("Content-Encoding") == "gzip" {
+		bodyReader, err = gzip.NewReader(resp.Body)
+
+		if err != nil {
+			return err
+		}
+
+		defer bodyReader.Close()
+	}
+
+	u.filecontent, err = ioutil.ReadAll(bodyReader)
+
+	if err != nil {
+		return err
+	}
+
+	if len(u.filecontent) == 0 {
+		return errors.New("yiigo: empty body from url")
+	}
+
+	return nil
 }
 
 // UploadOption configures how we set up the upload from.
@@ -180,147 +286,6 @@ func NewUploadForm(fieldname, filename string, options ...UploadOption) UploadFo
 	return form
 }
 
-// HTTPClient is the interface for an http client.
-type HTTPClient interface {
-	// Do sends an HTTP request and returns an HTTP response.
-	Do(ctx context.Context, req *http.Request, options ...HTTPOption) ([]byte, error)
-
-	// Get sends an HTTP get request
-	Get(ctx context.Context, url string, options ...HTTPOption) ([]byte, error)
-
-	// Post sends an HTTP post request
-	Post(ctx context.Context, url string, body []byte, options ...HTTPOption) ([]byte, error)
-
-	// Upload sends an HTTP post request for uploading media
-	Upload(ctx context.Context, url string, form UploadForm, options ...HTTPOption) ([]byte, error)
-}
-
-type httpclient struct {
-	client  *http.Client
-	timeout time.Duration
-}
-
-func (c *httpclient) Do(ctx context.Context, req *http.Request, options ...HTTPOption) ([]byte, error) {
-	settings := &httpSettings{timeout: c.timeout}
-
-	if len(options) != 0 {
-		settings.headers = make(map[string]string)
-
-		for _, f := range options {
-			f(settings)
-		}
-	}
-
-	// headers
-	if len(settings.headers) != 0 {
-		for k, v := range settings.headers {
-			req.Header.Set(k, v)
-		}
-	}
-
-	// cookies
-	if len(settings.cookies) != 0 {
-		for _, v := range settings.cookies {
-			req.AddCookie(v)
-		}
-	}
-
-	if settings.close {
-		req.Close = true
-	}
-
-	// timeout
-	ctx, cancel := context.WithTimeout(ctx, settings.timeout)
-
-	defer cancel()
-
-	resp, err := c.client.Do(req.WithContext(ctx))
-
-	if err != nil {
-		// If the context has been canceled, the context's error is probably more useful.
-		select {
-		case <-ctx.Done():
-			err = ctx.Err()
-		default:
-		}
-
-		return nil, err
-	}
-
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		io.Copy(ioutil.Discard, resp.Body)
-
-		return nil, fmt.Errorf("error http code: %d", resp.StatusCode)
-	}
-
-	b, err := ioutil.ReadAll(resp.Body)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return b, nil
-}
-
-func (c *httpclient) Get(ctx context.Context, url string, options ...HTTPOption) ([]byte, error) {
-	req, err := http.NewRequest(http.MethodGet, url, nil)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return c.Do(ctx, req, options...)
-}
-
-func (c *httpclient) Post(ctx context.Context, url string, body []byte, options ...HTTPOption) ([]byte, error) {
-	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(body))
-
-	if err != nil {
-		return nil, err
-	}
-
-	return c.Do(ctx, req, options...)
-}
-
-func (c *httpclient) Upload(ctx context.Context, url string, form UploadForm, options ...HTTPOption) ([]byte, error) {
-	buf := bytes.NewBuffer(make([]byte, 0, 4<<10)) // 4kb
-	w := multipart.NewWriter(buf)
-
-	if err := form.Write(ctx, w); err != nil {
-		return nil, err
-	}
-
-	options = append(options, WithHTTPHeader("Content-Type", w.FormDataContentType()))
-
-	// Don't forget to close the multipart writer.
-	// If you don't close it, your request will be missing the terminating boundary.
-	w.Close()
-
-	req, err := http.NewRequest(http.MethodPost, url, buf)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return c.Do(ctx, req, options...)
-}
-
-// NewHTTPClient returns a new http client
-func NewHTTPClient(client *http.Client, defaultTimeout ...time.Duration) HTTPClient {
-	c := &httpclient{
-		client:  client,
-		timeout: defaultHTTPTimeout,
-	}
-
-	if len(defaultTimeout) != 0 {
-		c.timeout = defaultTimeout[0]
-	}
-
-	return c
-}
-
 // defaultHTTPClient default http client
 var defaultHTTPClient = NewHTTPClient(&http.Client{
 	Transport: &http.Transport{
@@ -338,17 +303,66 @@ var defaultHTTPClient = NewHTTPClient(&http.Client{
 	},
 }, defaultHTTPTimeout)
 
-// HTTPGet http get request
-func HTTPGet(ctx context.Context, url string, options ...HTTPOption) ([]byte, error) {
-	return defaultHTTPClient.Get(ctx, url, options...)
+// HTTPGet issues a GET to the specified URL.
+func HTTPGet(ctx context.Context, reqURL string, options ...HTTPOption) (*http.Response, error) {
+	req, err := http.NewRequest(http.MethodGet, reqURL, nil)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return defaultHTTPClient.Do(ctx, req, options...)
 }
 
-// HTTPPost http post request
-func HTTPPost(ctx context.Context, url string, body []byte, options ...HTTPOption) ([]byte, error) {
-	return defaultHTTPClient.Post(ctx, url, body, options...)
+// HTTPPost issues a POST to the specified URL.
+func HTTPPost(ctx context.Context, reqURL string, body io.Reader, options ...HTTPOption) (*http.Response, error) {
+	req, err := http.NewRequest(http.MethodPost, reqURL, body)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return defaultHTTPClient.Do(ctx, req, options...)
+}
+
+// HTTPPostForm issues a POST to the specified URL, with data's keys and values URL-encoded as the request body.
+func HTTPPostForm(ctx context.Context, reqURL string, data url.Values, options ...HTTPOption) (*http.Response, error) {
+	options = append(options, WithHTTPHeader("Content-Type", "application/x-www-form-urlencoded"))
+
+	req, err := http.NewRequest(http.MethodPost, reqURL, strings.NewReader(data.Encode()))
+
+	if err != nil {
+		return nil, err
+	}
+
+	return defaultHTTPClient.Do(ctx, req, options...)
 }
 
 // HTTPUpload http upload file
-func HTTPUpload(ctx context.Context, url string, form UploadForm, options ...HTTPOption) ([]byte, error) {
-	return defaultHTTPClient.Upload(ctx, url, form, options...)
+func HTTPUpload(ctx context.Context, reqURL string, form UploadForm, options ...HTTPOption) (*http.Response, error) {
+	buf := bytes.NewBuffer(make([]byte, 0, 4<<10)) // 4kb
+	w := multipart.NewWriter(buf)
+
+	if err := form.Write(ctx, w); err != nil {
+		return nil, err
+	}
+
+	options = append(options, WithHTTPHeader("Content-Type", w.FormDataContentType()))
+
+	// Don't forget to close the multipart writer.
+	// If you don't close it, your request will be missing the terminating boundary.
+	w.Close()
+
+	req, err := http.NewRequest(http.MethodPost, reqURL, buf)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return defaultHTTPClient.Do(ctx, req, options...)
+}
+
+// HTTPDo sends an HTTP request and returns an HTTP response
+func HTTPDo(ctx context.Context, req *http.Request, options ...HTTPOption) (*http.Response, error) {
+	return defaultHTTPClient.Do(ctx, req, options...)
 }
