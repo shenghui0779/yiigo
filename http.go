@@ -72,6 +72,9 @@ const (
 type HTTPClient interface {
 	// Do sends an HTTP request and returns an HTTP response.
 	Do(ctx context.Context, req *http.Request, options ...HTTPOption) (*http.Response, error)
+
+	// Upload issues a UPLOAD to the specified URL.
+	Upload(ctx context.Context, reqURL string, form UploadForm, options ...HTTPOption) (*http.Response, error)
 }
 
 type httpclient struct {
@@ -127,6 +130,29 @@ func (c *httpclient) Do(ctx context.Context, req *http.Request, options ...HTTPO
 	}
 
 	return resp, err
+}
+
+func (c *httpclient) Upload(ctx context.Context, reqURL string, form UploadForm, options ...HTTPOption) (*http.Response, error) {
+	buf := bytes.NewBuffer(make([]byte, 0, 4<<10)) // 4kb
+	w := multipart.NewWriter(buf)
+
+	if err := form.Write(ctx, w); err != nil {
+		return nil, err
+	}
+
+	options = append(options, WithHTTPHeader("Content-Type", w.FormDataContentType()))
+
+	// Don't forget to close the multipart writer.
+	// If you don't close it, your request will be missing the terminating boundary.
+	w.Close()
+
+	req, err := http.NewRequest(http.MethodPost, reqURL, buf)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return c.Do(ctx, req, options...)
 }
 
 // NewHTTPClient returns a new http client
@@ -257,10 +283,10 @@ func UploadByPath(path string) UploadOption {
 }
 
 // UploadByURL uploads file by resource url
-func UploadByURL(url string) UploadOption {
+func UploadByURL(resourceURL string) UploadOption {
 	return func(u *httpUpload) {
 		u.method = uploadbyurl
-		u.filefrom = url
+		u.filefrom = resourceURL
 	}
 }
 
@@ -338,28 +364,9 @@ func HTTPPostForm(ctx context.Context, reqURL string, data url.Values, options .
 	return defaultHTTPClient.Do(ctx, req, options...)
 }
 
-// HTTPUpload http upload file
+// HTTPUpload issues a UPLOAD to the specified URL.
 func HTTPUpload(ctx context.Context, reqURL string, form UploadForm, options ...HTTPOption) (*http.Response, error) {
-	buf := bytes.NewBuffer(make([]byte, 0, 4<<10)) // 4kb
-	w := multipart.NewWriter(buf)
-
-	if err := form.Write(ctx, w); err != nil {
-		return nil, err
-	}
-
-	options = append(options, WithHTTPHeader("Content-Type", w.FormDataContentType()))
-
-	// Don't forget to close the multipart writer.
-	// If you don't close it, your request will be missing the terminating boundary.
-	w.Close()
-
-	req, err := http.NewRequest(http.MethodPost, reqURL, buf)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return defaultHTTPClient.Do(ctx, req, options...)
+	return defaultHTTPClient.Upload(ctx, reqURL, form, options...)
 }
 
 // HTTPDo sends an HTTP request and returns an HTTP response
