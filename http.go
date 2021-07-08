@@ -172,23 +172,23 @@ type UploadForm interface {
 	Write(w *multipart.Writer) error
 }
 
-type uploadFileField struct {
+type fileField struct {
 	fieldname string
 	filename  string
 	body      []byte
 }
 
-type httpUpload struct {
-	filefield []*uploadFileField
+type uploadform struct {
+	filefield []*fileField
 	formfield map[string]string
 }
 
-func (u *httpUpload) Write(w *multipart.Writer) error {
-	if len(u.filefield) == 0 {
+func (f *uploadform) Write(w *multipart.Writer) error {
+	if len(f.filefield) == 0 {
 		return errors.New("yiigo: empty file field")
 	}
 
-	for _, field := range u.filefield {
+	for _, field := range f.filefield {
 		part, err := w.CreateFormFile(field.fieldname, field.filename)
 
 		if err != nil {
@@ -200,7 +200,7 @@ func (u *httpUpload) Write(w *multipart.Writer) error {
 		}
 	}
 
-	for name, value := range u.formfield {
+	for name, value := range f.formfield {
 		if err := w.WriteField(name, value); err != nil {
 			return err
 		}
@@ -209,13 +209,13 @@ func (u *httpUpload) Write(w *multipart.Writer) error {
 	return nil
 }
 
-// UploadOption configures how we set up the upload from.
-type UploadOption func(u *httpUpload)
+// UploadField configures how we set up the upload from.
+type UploadField func(f *uploadform)
 
 // WithFileField specifies the file field to upload from.
-func WithFileField(fieldname, filename string, body []byte) UploadOption {
-	return func(u *httpUpload) {
-		u.filefield = append(u.filefield, &uploadFileField{
+func WithFileField(fieldname, filename string, body []byte) UploadField {
+	return func(f *uploadform) {
+		f.filefield = append(f.filefield, &fileField{
 			fieldname: fieldname,
 			filename:  filename,
 			body:      body,
@@ -224,20 +224,20 @@ func WithFileField(fieldname, filename string, body []byte) UploadOption {
 }
 
 // WithFormField specifies the form field to upload from.
-func WithFormField(fieldname, fieldvalue string) UploadOption {
-	return func(u *httpUpload) {
+func WithFormField(fieldname, fieldvalue string) UploadField {
+	return func(u *uploadform) {
 		u.formfield[fieldname] = fieldvalue
 	}
 }
 
 // NewUploadForm returns an upload form
-func NewUploadForm(options ...UploadOption) UploadForm {
-	form := &httpUpload{
-		filefield: make([]*uploadFileField, 0),
+func NewUploadForm(fields ...UploadField) UploadForm {
+	form := &uploadform{
+		filefield: make([]*fileField, 0),
 		formfield: make(map[string]string),
 	}
 
-	for _, f := range options {
+	for _, f := range fields {
 		f(form)
 	}
 
