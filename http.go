@@ -133,7 +133,7 @@ func (c *httpclient) Upload(ctx context.Context, reqURL string, form UploadForm,
 	buf := bytes.NewBuffer(make([]byte, 0, 4<<10)) // 4kb
 	w := multipart.NewWriter(buf)
 
-	if err := form.Write(ctx, w); err != nil {
+	if err := form.Write(w); err != nil {
 		return nil, err
 	}
 
@@ -169,7 +169,7 @@ func NewHTTPClient(client *http.Client, defaultTimeout ...time.Duration) HTTPCli
 // UploadForm is the interface for http upload
 type UploadForm interface {
 	// Write writes fields to multipart writer
-	Write(ctx context.Context, w *multipart.Writer) error
+	Write(w *multipart.Writer) error
 }
 
 type uploadFileField struct {
@@ -183,7 +183,7 @@ type httpUpload struct {
 	formfield map[string]string
 }
 
-func (u *httpUpload) Write(ctx context.Context, w *multipart.Writer) error {
+func (u *httpUpload) Write(w *multipart.Writer) error {
 	if len(u.filefield) == 0 {
 		return errors.New("yiigo: empty file field")
 	}
