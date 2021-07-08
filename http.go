@@ -2,16 +2,13 @@ package yiigo
 
 import (
 	"bytes"
-	"compress/gzip"
 	"context"
 	"errors"
 	"io"
-	"io/ioutil"
 	"mime/multipart"
 	"net"
 	"net/http"
 	"net/url"
-	"path/filepath"
 	"strings"
 	"time"
 )
@@ -175,89 +172,38 @@ type UploadForm interface {
 	Write(ctx context.Context, w *multipart.Writer) error
 }
 
+type uploadFileField struct {
+	fieldname string
+	filename  string
+	body      []byte
+}
+
 type httpUpload struct {
-	filefield   string
-	filename    string
-	method      uploadmethod
-	filefrom    string
-	filecontent []byte
-	metafield   string
-	metadata    string
+	filefield []*uploadFileField
+	formfield map[string]string
 }
 
 func (u *httpUpload) Write(ctx context.Context, w *multipart.Writer) error {
-	part, err := w.CreateFormFile(u.filefield, u.filename)
-
-	if err != nil {
-		return err
+	if len(u.filefield) == 0 {
+		return errors.New("yiigo: empty file field")
 	}
 
-	switch u.method {
-	case uploadbypath:
-		if err = u.getContentByPath(); err != nil {
-			return err
-		}
-	case uploadbyurl:
-		if err = u.getContentByURL(ctx); err != nil {
-			return err
-		}
-	}
-
-	if _, err = part.Write(u.filecontent); err != nil {
-		return err
-	}
-
-	// metadata
-	if len(u.metafield) != 0 {
-		if err = w.WriteField(u.metafield, u.metadata); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (u *httpUpload) getContentByPath() error {
-	path, err := filepath.Abs(u.filefrom)
-
-	if err != nil {
-		return err
-	}
-
-	u.filecontent, err = ioutil.ReadFile(path)
-
-	return err
-}
-
-func (u *httpUpload) getContentByURL(ctx context.Context) error {
-	resp, err := HTTPGet(ctx, u.filefrom)
-
-	if err != nil {
-		return err
-	}
-
-	defer resp.Body.Close()
-
-	bodyReader := resp.Body
-
-	if resp.Header.Get("Content-Encoding") == "gzip" {
-		bodyReader, err = gzip.NewReader(resp.Body)
+	for _, field := range u.filefield {
+		part, err := w.CreateFormFile(field.fieldname, field.filename)
 
 		if err != nil {
 			return err
 		}
 
-		defer bodyReader.Close()
+		if _, err = part.Write(field.body); err != nil {
+			return err
+		}
 	}
 
-	u.filecontent, err = ioutil.ReadAll(bodyReader)
-
-	if err != nil {
-		return err
-	}
-
-	if len(u.filecontent) == 0 {
-		return errors.New("yiigo: empty body from url")
+	for name, value := range u.formfield {
+		if err := w.WriteField(name, value); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -266,43 +212,29 @@ func (u *httpUpload) getContentByURL(ctx context.Context) error {
 // UploadOption configures how we set up the upload from.
 type UploadOption func(u *httpUpload)
 
-// UploadByBytes uploads by file content
-func UploadByBytes(content []byte) UploadOption {
+// WithFieldField specifies the file field to upload from.
+func WithFieldField(fieldname, filename string, body []byte) UploadOption {
 	return func(u *httpUpload) {
-		u.method = uploadbybyptes
-		u.filecontent = content
+		u.filefield = append(u.filefield, &uploadFileField{
+			fieldname: fieldname,
+			filename:  filename,
+			body:      body,
+		})
 	}
 }
 
-// UploadByPath uploads by file path
-func UploadByPath(path string) UploadOption {
+// WithFormField specifies the form field to upload from.
+func WithFormField(fieldname, fieldvalue string) UploadOption {
 	return func(u *httpUpload) {
-		u.method = uploadbypath
-		u.filefrom = filepath.Clean(path)
-	}
-}
-
-// UploadByURL uploads file by resource url
-func UploadByURL(resourceURL string) UploadOption {
-	return func(u *httpUpload) {
-		u.method = uploadbyurl
-		u.filefrom = resourceURL
-	}
-}
-
-// WithMetaField specifies the metadata field to upload from.
-func WithMetaField(name, value string) UploadOption {
-	return func(u *httpUpload) {
-		u.metafield = name
-		u.metadata = value
+		u.formfield[fieldname] = fieldvalue
 	}
 }
 
 // NewUploadForm returns an upload form
-func NewUploadForm(fieldname, filename string, options ...UploadOption) UploadForm {
+func NewUploadForm(options ...UploadOption) UploadForm {
 	form := &httpUpload{
-		filefield: fieldname,
-		filename:  filename,
+		filefield: make([]*uploadFileField, 0),
+		formfield: make(map[string]string),
 	}
 
 	for _, f := range options {
