@@ -212,8 +212,8 @@ func (u *httpUpload) Write(w *multipart.Writer) error {
 // UploadOption configures how we set up the upload from.
 type UploadOption func(u *httpUpload)
 
-// WithFieldField specifies the file field to upload from.
-func WithFieldField(fieldname, filename string, body []byte) UploadOption {
+// WithFileField specifies the file field to upload from.
+func WithFileField(fieldname, filename string, body []byte) UploadOption {
 	return func(u *httpUpload) {
 		u.filefield = append(u.filefield, &uploadFileField{
 			fieldname: fieldname,
