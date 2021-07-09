@@ -13,9 +13,6 @@ import (
 	"time"
 )
 
-// defaultHTTPTimeout default http request timeout
-const defaultHTTPTimeout = 10 * time.Second
-
 // httpSettings http request settings
 type httpSettings struct {
 	headers map[string]string
@@ -50,37 +47,27 @@ func WithHTTPClose() HTTPOption {
 	}
 }
 
-// WithHTTPTimeout specifies the timeout to http request.
-func WithHTTPTimeout(timeout time.Duration) HTTPOption {
-	return func(s *httpSettings) {
-		s.timeout = timeout
-	}
-}
-
-type uploadmethod int
-
-const (
-	uploadbybyptes uploadmethod = iota
-	uploadbypath
-	uploadbyurl
-)
-
 // HTTPClient is the interface for an http client.
 type HTTPClient interface {
 	// Do sends an HTTP request and returns an HTTP response.
-	Do(ctx context.Context, req *http.Request, options ...HTTPOption) (*http.Response, error)
+	Do(ctx context.Context, method, reqURL string, body io.Reader, options ...HTTPOption) (*http.Response, error)
 
 	// Upload issues a UPLOAD to the specified URL.
 	Upload(ctx context.Context, reqURL string, form UploadForm, options ...HTTPOption) (*http.Response, error)
 }
 
 type httpclient struct {
-	client  *http.Client
-	timeout time.Duration
+	client *http.Client
 }
 
-func (c *httpclient) Do(ctx context.Context, req *http.Request, options ...HTTPOption) (*http.Response, error) {
-	settings := &httpSettings{timeout: c.timeout}
+func (c *httpclient) Do(ctx context.Context, method, reqURL string, body io.Reader, options ...HTTPOption) (*http.Response, error) {
+	req, err := http.NewRequest(method, reqURL, body)
+
+	if err != nil {
+		return nil, err
+	}
+
+	settings := new(httpSettings)
 
 	if len(options) != 0 {
 		settings.headers = make(map[string]string)
@@ -107,11 +94,6 @@ func (c *httpclient) Do(ctx context.Context, req *http.Request, options ...HTTPO
 	if settings.close {
 		req.Close = true
 	}
-
-	// timeout
-	ctx, cancel := context.WithTimeout(ctx, settings.timeout)
-
-	defer cancel()
 
 	resp, err := c.client.Do(req.WithContext(ctx))
 
@@ -143,24 +125,13 @@ func (c *httpclient) Upload(ctx context.Context, reqURL string, form UploadForm,
 	// If you don't close it, your request will be missing the terminating boundary.
 	w.Close()
 
-	req, err := http.NewRequest(http.MethodPost, reqURL, buf)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return c.Do(ctx, req, options...)
+	return c.Do(ctx, http.MethodPost, reqURL, buf, options...)
 }
 
 // NewHTTPClient returns a new http client
-func NewHTTPClient(client *http.Client, defaultTimeout ...time.Duration) HTTPClient {
+func NewHTTPClient(client *http.Client) HTTPClient {
 	c := &httpclient{
-		client:  client,
-		timeout: defaultHTTPTimeout,
-	}
-
-	if len(defaultTimeout) != 0 {
-		c.timeout = defaultTimeout[0]
+		client: client,
 	}
 
 	return c
@@ -259,41 +230,23 @@ var defaultHTTPClient = NewHTTPClient(&http.Client{
 		TLSHandshakeTimeout:   10 * time.Second,
 		ExpectContinueTimeout: 1 * time.Second,
 	},
-}, defaultHTTPTimeout)
+})
 
 // HTTPGet issues a GET to the specified URL.
 func HTTPGet(ctx context.Context, reqURL string, options ...HTTPOption) (*http.Response, error) {
-	req, err := http.NewRequest(http.MethodGet, reqURL, nil)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return defaultHTTPClient.Do(ctx, req, options...)
+	return defaultHTTPClient.Do(ctx, http.MethodGet, reqURL, nil, options...)
 }
 
 // HTTPPost issues a POST to the specified URL.
 func HTTPPost(ctx context.Context, reqURL string, body io.Reader, options ...HTTPOption) (*http.Response, error) {
-	req, err := http.NewRequest(http.MethodPost, reqURL, body)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return defaultHTTPClient.Do(ctx, req, options...)
+	return defaultHTTPClient.Do(ctx, http.MethodPost, reqURL, body, options...)
 }
 
 // HTTPPostForm issues a POST to the specified URL, with data's keys and values URL-encoded as the request body.
 func HTTPPostForm(ctx context.Context, reqURL string, data url.Values, options ...HTTPOption) (*http.Response, error) {
 	options = append(options, WithHTTPHeader("Content-Type", "application/x-www-form-urlencoded"))
 
-	req, err := http.NewRequest(http.MethodPost, reqURL, strings.NewReader(data.Encode()))
-
-	if err != nil {
-		return nil, err
-	}
-
-	return defaultHTTPClient.Do(ctx, req, options...)
+	return defaultHTTPClient.Do(ctx, http.MethodPost, reqURL, strings.NewReader(data.Encode()), options...)
 }
 
 // HTTPUpload issues a UPLOAD to the specified URL.
@@ -302,6 +255,6 @@ func HTTPUpload(ctx context.Context, reqURL string, form UploadForm, options ...
 }
 
 // HTTPDo sends an HTTP request and returns an HTTP response
-func HTTPDo(ctx context.Context, req *http.Request, options ...HTTPOption) (*http.Response, error) {
-	return defaultHTTPClient.Do(ctx, req, options...)
+func HTTPDo(ctx context.Context, method, reqURL string, body io.Reader, options ...HTTPOption) (*http.Response, error) {
+	return defaultHTTPClient.Do(ctx, method, reqURL, body, options...)
 }
