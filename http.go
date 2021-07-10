@@ -238,8 +238,8 @@ func HTTPGet(ctx context.Context, reqURL string, options ...HTTPOption) (*http.R
 }
 
 // HTTPPost issues a POST to the specified URL.
-func HTTPPost(ctx context.Context, reqURL string, body io.Reader, options ...HTTPOption) (*http.Response, error) {
-	return defaultHTTPClient.Do(ctx, http.MethodPost, reqURL, body, options...)
+func HTTPPost(ctx context.Context, reqURL string, body []byte, options ...HTTPOption) (*http.Response, error) {
+	return defaultHTTPClient.Do(ctx, http.MethodPost, reqURL, bytes.NewReader(body), options...)
 }
 
 // HTTPPostForm issues a POST to the specified URL, with data's keys and values URL-encoded as the request body.
