@@ -13,6 +13,84 @@ import (
 	"time"
 )
 
+// UploadForm is the interface for http upload
+type UploadForm interface {
+	// Write writes fields to multipart writer
+	Write(w *multipart.Writer) error
+}
+
+type fileField struct {
+	fieldname string
+	filename  string
+	body      []byte
+}
+
+type uploadform struct {
+	filefield []*fileField
+	formfield map[string]string
+}
+
+func (f *uploadform) Write(w *multipart.Writer) error {
+	if len(f.filefield) == 0 {
+		return errors.New("yiigo: empty file field")
+	}
+
+	for _, field := range f.filefield {
+		part, err := w.CreateFormFile(field.fieldname, field.filename)
+
+		if err != nil {
+			return err
+		}
+
+		if _, err = part.Write(field.body); err != nil {
+			return err
+		}
+	}
+
+	for name, value := range f.formfield {
+		if err := w.WriteField(name, value); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// UploadField configures how we set up the upload from.
+type UploadField func(f *uploadform)
+
+// WithFileField specifies the file field to upload from.
+func WithFileField(fieldname, filename string, body []byte) UploadField {
+	return func(f *uploadform) {
+		f.filefield = append(f.filefield, &fileField{
+			fieldname: fieldname,
+			filename:  filename,
+			body:      body,
+		})
+	}
+}
+
+// WithFormField specifies the form field to upload from.
+func WithFormField(fieldname, fieldvalue string) UploadField {
+	return func(u *uploadform) {
+		u.formfield[fieldname] = fieldvalue
+	}
+}
+
+// NewUploadForm returns an upload form
+func NewUploadForm(fields ...UploadField) UploadForm {
+	form := &uploadform{
+		filefield: make([]*fileField, 0),
+		formfield: make(map[string]string),
+	}
+
+	for _, f := range fields {
+		f(form)
+	}
+
+	return form
+}
+
 // httpSettings http request settings
 type httpSettings struct {
 	headers map[string]string
@@ -130,89 +208,9 @@ func (c *httpclient) Upload(ctx context.Context, reqURL string, form UploadForm,
 
 // NewHTTPClient returns a new http client
 func NewHTTPClient(client *http.Client) HTTPClient {
-	c := &httpclient{
+	return &httpclient{
 		client: client,
 	}
-
-	return c
-}
-
-// UploadForm is the interface for http upload
-type UploadForm interface {
-	// Write writes fields to multipart writer
-	Write(w *multipart.Writer) error
-}
-
-type fileField struct {
-	fieldname string
-	filename  string
-	body      []byte
-}
-
-type uploadform struct {
-	filefield []*fileField
-	formfield map[string]string
-}
-
-func (f *uploadform) Write(w *multipart.Writer) error {
-	if len(f.filefield) == 0 {
-		return errors.New("yiigo: empty file field")
-	}
-
-	for _, field := range f.filefield {
-		part, err := w.CreateFormFile(field.fieldname, field.filename)
-
-		if err != nil {
-			return err
-		}
-
-		if _, err = part.Write(field.body); err != nil {
-			return err
-		}
-	}
-
-	for name, value := range f.formfield {
-		if err := w.WriteField(name, value); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-// UploadField configures how we set up the upload from.
-type UploadField func(f *uploadform)
-
-// WithFileField specifies the file field to upload from.
-func WithFileField(fieldname, filename string, body []byte) UploadField {
-	return func(f *uploadform) {
-		f.filefield = append(f.filefield, &fileField{
-			fieldname: fieldname,
-			filename:  filename,
-			body:      body,
-		})
-	}
-}
-
-// WithFormField specifies the form field to upload from.
-func WithFormField(fieldname, fieldvalue string) UploadField {
-	return func(u *uploadform) {
-		u.formfield[fieldname] = fieldvalue
-	}
-}
-
-// NewUploadForm returns an upload form
-func NewUploadForm(fields ...UploadField) UploadForm {
-	form := &uploadform{
-		filefield: make([]*fileField, 0),
-		formfield: make(map[string]string),
-	}
-
-	for _, f := range fields {
-		f(form)
-	}
-
-	return form
 }
 
 // defaultHTTPClient default http client
