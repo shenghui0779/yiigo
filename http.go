@@ -13,6 +13,40 @@ import (
 	"time"
 )
 
+// httpSettings http request settings
+type httpSettings struct {
+	headers map[string]string
+	cookies []*http.Cookie
+	close   bool
+	timeout time.Duration
+}
+
+// HTTPOption configures how we set up the http request.
+type HTTPOption func(s *httpSettings)
+
+// WithHTTPHeader specifies the header to http request.
+func WithHTTPHeader(key, value string) HTTPOption {
+	return func(s *httpSettings) {
+		s.headers[key] = value
+	}
+}
+
+// WithHTTPCookies specifies the cookies to http request.
+func WithHTTPCookies(cookies ...*http.Cookie) HTTPOption {
+	return func(s *httpSettings) {
+		s.cookies = cookies
+	}
+}
+
+// WithHTTPClose specifies close the connection after
+// replying to this request (for servers) or after sending this
+// request and reading its response (for clients).
+func WithHTTPClose() HTTPOption {
+	return func(s *httpSettings) {
+		s.close = true
+	}
+}
+
 // UploadForm is the interface for http upload
 type UploadForm interface {
 	// Write writes fields to multipart writer
@@ -89,40 +123,6 @@ func NewUploadForm(fields ...UploadField) UploadForm {
 	}
 
 	return form
-}
-
-// httpSettings http request settings
-type httpSettings struct {
-	headers map[string]string
-	cookies []*http.Cookie
-	close   bool
-	timeout time.Duration
-}
-
-// HTTPOption configures how we set up the http request.
-type HTTPOption func(s *httpSettings)
-
-// WithHTTPHeader specifies the header to http request.
-func WithHTTPHeader(key, value string) HTTPOption {
-	return func(s *httpSettings) {
-		s.headers[key] = value
-	}
-}
-
-// WithHTTPCookies specifies the cookies to http request.
-func WithHTTPCookies(cookies ...*http.Cookie) HTTPOption {
-	return func(s *httpSettings) {
-		s.cookies = cookies
-	}
-}
-
-// WithHTTPClose specifies close the connection after
-// replying to this request (for servers) or after sending this
-// request and reading its response (for clients).
-func WithHTTPClose() HTTPOption {
-	return func(s *httpSettings) {
-		s.close = true
-	}
 }
 
 // HTTPClient is the interface for an http client.
