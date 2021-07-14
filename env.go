@@ -494,7 +494,6 @@ debug = true
 	# pool_size = 10
 	# pool_limit = 20
 	# idle_timeout = 60
-	# wait_timeout = 10
 	# prefill_parallelism = 0
 
 # [nsq]
