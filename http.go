@@ -202,7 +202,9 @@ func (c *httpclient) Upload(ctx context.Context, reqURL string, form UploadForm,
 
 	// Don't forget to close the multipart writer.
 	// If you don't close it, your request will be missing the terminating boundary.
-	w.Close()
+	if err := w.Close(); err != nil {
+		return nil, err
+	}
 
 	return c.Do(ctx, http.MethodPost, reqURL, buf, options...)
 }
