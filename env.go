@@ -146,11 +146,11 @@ func (c *config) Watcher(onchange func(event fsnotify.Event)) {
 
 	go func() {
 		defer func() {
+			wg.Done()
+
 			if r := recover(); r != nil {
 				logger.Error("yiigo: env watcher panic", zap.Any("error", r), zap.ByteString("stack", debug.Stack()))
 			}
-
-			wg.Done()
 		}()
 
 		writeOrCreateMask := fsnotify.Write | fsnotify.Create
