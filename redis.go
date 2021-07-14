@@ -80,6 +80,7 @@ func (r *RedisPoolResource) init() {
 }
 
 // Get get a connection resource from the pool.
+// Context with timeout can specify the wait timeout for pool.
 func (r *RedisPoolResource) Get(ctx context.Context) (RedisConn, error) {
 	if r.pool.IsClosed() {
 		r.init()
