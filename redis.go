@@ -85,14 +85,6 @@ func (r *RedisPoolResource) Get(ctx context.Context) (RedisConn, error) {
 		r.init()
 	}
 
-	if r.config.WaitTimeout > 0 {
-		var cancel context.CancelFunc
-
-		ctx, cancel = context.WithTimeout(ctx, time.Duration(r.config.WaitTimeout)*time.Second)
-
-		defer cancel()
-	}
-
 	resource, err := r.pool.Get(ctx)
 
 	if err != nil {
