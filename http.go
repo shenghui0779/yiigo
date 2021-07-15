@@ -131,6 +131,7 @@ type HTTPClient interface {
 	Do(ctx context.Context, method, reqURL string, body io.Reader, options ...HTTPOption) (*http.Response, error)
 
 	// Upload issues a UPLOAD to the specified URL.
+	// Should use context to specify the timeout for request.
 	Upload(ctx context.Context, reqURL string, form UploadForm, options ...HTTPOption) (*http.Response, error)
 }
 
