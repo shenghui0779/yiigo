@@ -18,7 +18,6 @@ type httpSettings struct {
 	headers map[string]string
 	cookies []*http.Cookie
 	close   bool
-	timeout time.Duration
 }
 
 // HTTPOption configures how we set up the http request.
