@@ -21,7 +21,6 @@ type redisConfig struct {
 	PoolSize           int    `toml:"pool_size"`
 	PoolLimit          int    `toml:"pool_limit"`
 	IdleTimeout        int    `toml:"idle_timeout"`
-	WaitTimeout        int    `toml:"wait_timeout"`
 	PrefillParallelism int    `toml:"prefill_parallelism"`
 }
 
