@@ -494,7 +494,7 @@ debug = true
 	# pool_size = 10
 	# pool_limit = 20
 	# idle_timeout = 60
-	# prefill_parallelism = 0
+	# pool_prefill = 0
 
 # [nsq]
 # lookupd = ["127.0.0.1:4161"]

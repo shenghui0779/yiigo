@@ -12,16 +12,16 @@ import (
 )
 
 type redisConfig struct {
-	Address            string `toml:"address"`
-	Password           string `toml:"password"`
-	Database           int    `toml:"database"`
-	ConnTimeout        int    `toml:"conn_timeout"`
-	ReadTimeout        int    `toml:"read_timeout"`
-	WriteTimeout       int    `toml:"write_timeout"`
-	PoolSize           int    `toml:"pool_size"`
-	PoolLimit          int    `toml:"pool_limit"`
-	IdleTimeout        int    `toml:"idle_timeout"`
-	PrefillParallelism int    `toml:"prefill_parallelism"`
+	Address      string `toml:"address"`
+	Password     string `toml:"password"`
+	Database     int    `toml:"database"`
+	ConnTimeout  int    `toml:"conn_timeout"`
+	ReadTimeout  int    `toml:"read_timeout"`
+	WriteTimeout int    `toml:"write_timeout"`
+	PoolSize     int    `toml:"pool_size"`
+	PoolLimit    int    `toml:"pool_limit"`
+	IdleTimeout  int    `toml:"idle_timeout"`
+	PoolPrefill  int    `toml:"pool_prefill"`
 }
 
 // RedisConn redis connection resource
@@ -72,10 +72,10 @@ func (r *RedisPoolResource) init() {
 			return nil, err
 		}
 
-		return RedisConn{conn}, nil
+		return &RedisConn{conn}, nil
 	}
 
-	r.pool = vitess_pool.NewResourcePool(df, r.config.PoolSize, r.config.PoolLimit, time.Duration(r.config.IdleTimeout)*time.Second, r.config.PrefillParallelism)
+	r.pool = vitess_pool.NewResourcePool(df, r.config.PoolSize, r.config.PoolLimit, time.Duration(r.config.IdleTimeout)*time.Second, r.config.PoolPrefill)
 }
 
 // Get get a connection resource from the pool.
