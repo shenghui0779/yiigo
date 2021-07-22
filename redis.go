@@ -144,11 +144,13 @@ func initRedis() {
 			logger.Panic("yiigo: redis init error", zap.String("name", name), zap.Error(err))
 		}
 
-		defer rc.Put(conn)
-
 		if _, err = conn.Do("PING"); err != nil {
+			conn.Close()
+
 			logger.Panic("yiigo: redis init error", zap.String("name", name), zap.Error(err))
 		}
+
+		rc.Put(conn)
 
 		if name == defaultConn {
 			defaultRedis = rc
