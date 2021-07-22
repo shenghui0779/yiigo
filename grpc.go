@@ -2,6 +2,7 @@ package yiigo
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -11,16 +12,19 @@ import (
 	"google.golang.org/grpc/connectivity"
 )
 
-type GrpcConn struct {
+// GRPCConn grpc connection resource
+type GRPCConn struct {
 	*grpc.ClientConn
 }
 
-func (gc GrpcConn) Close() {
+// Close close connection resorce
+func (gc GRPCConn) Close() {
 	if err := gc.ClientConn.Close(); err != nil {
 		logger.Error("yiigo: grpc client conn closed error", zap.Error(err))
 	}
 }
 
+// PoolSettings pool settings
 type PoolSettings struct {
 	poolSize    int
 	poolLimit   int
@@ -28,40 +32,48 @@ type PoolSettings struct {
 	poolPrefill int
 }
 
+// PoolOption configures how we set up the pool.
 type PoolOption func(s *PoolSettings)
 
+// WithPoolSize specifies the number of possible resources in the pool.
 func WithPoolSize(size int) PoolOption {
 	return func(s *PoolSettings) {
 		s.poolSize = size
 	}
 }
 
+// WithPoolLimit specifies the extent to which the pool can be resized in the future.
+// You cannot resize the pool beyond poolLimit.
 func WithPoolLimit(limit int) PoolOption {
 	return func(s *PoolSettings) {
 		s.poolLimit = limit
 	}
 }
 
+// WithIdleTimeout specifies the maximum amount of time a connection may be idle.
+// An idleTimeout of 0 means that there is no timeout.
 func WithIdleTimeout(duration time.Duration) PoolOption {
 	return func(s *PoolSettings) {
 		s.idleTimeout = duration
 	}
 }
 
+// WithPoolPrefill specifies how many resources can be opened in parallel.
 func WithPoolPrefill(prefill int) PoolOption {
 	return func(s *PoolSettings) {
 		s.poolPrefill = prefill
 	}
 }
 
-type GrpcPoolResource struct {
+// GRPCPoolResource grpc pool resource
+type GRPCPoolResource struct {
 	dialFunc func() (*grpc.ClientConn, error)
 	settings *PoolSettings
 	pool     *vitess_pool.ResourcePool
 	mutex    sync.Mutex
 }
 
-func (r *GrpcPoolResource) init() {
+func (r *GRPCPoolResource) init() {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 
@@ -76,7 +88,7 @@ func (r *GrpcPoolResource) init() {
 			return nil, err
 		}
 
-		return GrpcConn{conn}, nil
+		return GRPCConn{conn}, nil
 	}
 
 	r.pool = vitess_pool.NewResourcePool(df, r.settings.poolSize, r.settings.poolLimit, r.settings.idleTimeout, r.settings.poolPrefill)
@@ -84,7 +96,7 @@ func (r *GrpcPoolResource) init() {
 
 // Get get a connection resource from the pool.
 // Context with timeout can specify the wait timeout for pool.
-func (r *GrpcPoolResource) Get(ctx context.Context) (GrpcConn, error) {
+func (r *GRPCPoolResource) Get(ctx context.Context) (GRPCConn, error) {
 	if r.pool.IsClosed() {
 		r.init()
 	}
@@ -92,12 +104,12 @@ func (r *GrpcPoolResource) Get(ctx context.Context) (GrpcConn, error) {
 	resource, err := r.pool.Get(ctx)
 
 	if err != nil {
-		return GrpcConn{}, err
+		return GRPCConn{}, err
 	}
 
-	rc := resource.(GrpcConn)
+	rc := resource.(GRPCConn)
 
-	// If rc is in, close and reconnect
+	// If rc is in unexpected state, close and reconnect
 	if state := rc.GetState(); state == connectivity.TransientFailure || state == connectivity.Shutdown {
 		conn, err := r.dialFunc()
 
@@ -109,13 +121,46 @@ func (r *GrpcPoolResource) Get(ctx context.Context) (GrpcConn, error) {
 
 		rc.Close()
 
-		return GrpcConn{conn}, nil
+		return GRPCConn{conn}, nil
 	}
 
 	return rc, nil
 }
 
 // Put returns a connection resource to the pool.
-func (r *GrpcPoolResource) Put(rc GrpcConn) {
+func (r *GRPCPoolResource) Put(rc GRPCConn) {
 	r.pool.Put(rc)
+}
+
+var grpcMap sync.Map
+
+// SetGRPCPool set an grpc pool
+func SetGRPCPool(name string, dial func() (*grpc.ClientConn, error), options ...PoolOption) {
+	rc := &GRPCPoolResource{
+		dialFunc: dial,
+		settings: &PoolSettings{
+			poolSize:    10,
+			poolLimit:   20,
+			idleTimeout: 60,
+		},
+	}
+
+	for _, f := range options {
+		f(rc.settings)
+	}
+
+	rc.init()
+
+	grpcMap.Store(name, rc)
+}
+
+// GetGRPCPool get an grpc pool
+func GetGRPCPool(name string) *GRPCPoolResource {
+	v, ok := grpcMap.Load(name)
+
+	if !ok {
+		logger.Panic(fmt.Sprintf("yiigo: unknown grpc.%s (forgotten set?)", name))
+	}
+
+	return v.(*GRPCPoolResource)
 }
