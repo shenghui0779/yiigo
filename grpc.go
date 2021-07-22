@@ -65,15 +65,15 @@ func WithPoolPrefill(prefill int) PoolOption {
 	}
 }
 
-// GRPCPoolResource grpc pool resource
-type GRPCPoolResource struct {
+// GRPCPool grpc pool resource
+type GRPCPool struct {
 	dialFunc func() (*grpc.ClientConn, error)
 	settings *PoolSettings
 	pool     *vitess_pool.ResourcePool
 	mutex    sync.Mutex
 }
 
-func (r *GRPCPoolResource) init() {
+func (r *GRPCPool) init() {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 
@@ -96,7 +96,7 @@ func (r *GRPCPoolResource) init() {
 
 // Get get a connection resource from the pool.
 // Context with timeout can specify the wait timeout for pool.
-func (r *GRPCPoolResource) Get(ctx context.Context) (GRPCConn, error) {
+func (r *GRPCPool) Get(ctx context.Context) (GRPCConn, error) {
 	if r.pool.IsClosed() {
 		r.init()
 	}
@@ -107,36 +107,36 @@ func (r *GRPCPoolResource) Get(ctx context.Context) (GRPCConn, error) {
 		return GRPCConn{}, err
 	}
 
-	rc := resource.(GRPCConn)
+	gc := resource.(GRPCConn)
 
 	// If rc is in unexpected state, close and reconnect
-	if state := rc.GetState(); state == connectivity.TransientFailure || state == connectivity.Shutdown {
+	if state := gc.GetState(); state == connectivity.TransientFailure || state == connectivity.Shutdown {
 		conn, err := r.dialFunc()
 
 		if err != nil {
-			r.pool.Put(rc)
+			r.pool.Put(gc)
 
-			return rc, err
+			return gc, err
 		}
 
-		rc.Close()
+		gc.Close()
 
 		return GRPCConn{conn}, nil
 	}
 
-	return rc, nil
+	return gc, nil
 }
 
 // Put returns a connection resource to the pool.
-func (r *GRPCPoolResource) Put(rc GRPCConn) {
-	r.pool.Put(rc)
+func (r *GRPCPool) Put(gc GRPCConn) {
+	r.pool.Put(gc)
 }
 
 var grpcMap sync.Map
 
 // SetGRPCPool set an grpc pool
 func SetGRPCPool(name string, dial func() (*grpc.ClientConn, error), options ...PoolOption) {
-	rc := &GRPCPoolResource{
+	pool := &GRPCPool{
 		dialFunc: dial,
 		settings: &PoolSettings{
 			poolSize:    10,
@@ -146,21 +146,21 @@ func SetGRPCPool(name string, dial func() (*grpc.ClientConn, error), options ...
 	}
 
 	for _, f := range options {
-		f(rc.settings)
+		f(pool.settings)
 	}
 
-	rc.init()
+	pool.init()
 
-	grpcMap.Store(name, rc)
+	grpcMap.Store(name, pool)
 }
 
 // GetGRPCPool get an grpc pool
-func GetGRPCPool(name string) *GRPCPoolResource {
+func GetGRPCPool(name string) *GRPCPool {
 	v, ok := grpcMap.Load(name)
 
 	if !ok {
 		logger.Panic(fmt.Sprintf("yiigo: unknown grpc.%s (forgotten set?)", name))
 	}
 
-	return v.(*GRPCPoolResource)
+	return v.(*GRPCPool)
 }

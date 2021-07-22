@@ -36,14 +36,14 @@ func (r RedisConn) Close() {
 	}
 }
 
-// RedisPoolResource redis pool resource
-type RedisPoolResource struct {
+// RedisPool redis pool resource
+type RedisPool struct {
 	config *redisConfig
 	pool   *vitess_pool.ResourcePool
 	mutex  sync.Mutex
 }
 
-func (r *RedisPoolResource) dial() (redis.Conn, error) {
+func (r *RedisPool) dial() (redis.Conn, error) {
 	dialOptions := []redis.DialOption{
 		redis.DialPassword(r.config.Password),
 		redis.DialDatabase(r.config.Database),
@@ -57,7 +57,7 @@ func (r *RedisPoolResource) dial() (redis.Conn, error) {
 	return conn, err
 }
 
-func (r *RedisPoolResource) init() {
+func (r *RedisPool) init() {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 
@@ -80,7 +80,7 @@ func (r *RedisPoolResource) init() {
 
 // Get get a connection resource from the pool.
 // Context with timeout can specify the wait timeout for pool.
-func (r *RedisPoolResource) Get(ctx context.Context) (RedisConn, error) {
+func (r *RedisPool) Get(ctx context.Context) (RedisConn, error) {
 	if r.pool.IsClosed() {
 		r.init()
 	}
@@ -112,12 +112,12 @@ func (r *RedisPoolResource) Get(ctx context.Context) (RedisConn, error) {
 }
 
 // Put returns a connection resource to the pool.
-func (r *RedisPoolResource) Put(rc RedisConn) {
+func (r *RedisPool) Put(rc RedisConn) {
 	r.pool.Put(rc)
 }
 
 var (
-	defaultRedis *RedisPoolResource
+	defaultRedis *RedisPool
 	redisMap     sync.Map
 )
 
@@ -133,12 +133,12 @@ func initRedis() {
 	}
 
 	for name, cfg := range configs {
-		rc := &RedisPoolResource{config: cfg}
+		pool := &RedisPool{config: cfg}
 
-		rc.init()
+		pool.init()
 
 		// verify connection
-		conn, err := rc.Get(context.TODO())
+		conn, err := pool.Get(context.TODO())
 
 		if err != nil {
 			logger.Panic("yiigo: redis init error", zap.String("name", name), zap.Error(err))
@@ -150,20 +150,20 @@ func initRedis() {
 			logger.Panic("yiigo: redis init error", zap.String("name", name), zap.Error(err))
 		}
 
-		rc.Put(conn)
+		pool.Put(conn)
 
 		if name == defaultConn {
-			defaultRedis = rc
+			defaultRedis = pool
 		}
 
-		redisMap.Store(name, rc)
+		redisMap.Store(name, pool)
 
 		logger.Info(fmt.Sprintf("yiigo: redis.%s is OK.", name))
 	}
 }
 
 // Redis returns a redis pool.
-func Redis(name ...string) *RedisPoolResource {
+func Redis(name ...string) *RedisPool {
 	if len(name) == 0 {
 		if defaultRedis == nil {
 			logger.Panic(fmt.Sprintf("yiigo: unknown redis.%s (forgotten configure?)", defaultConn))
@@ -178,5 +178,5 @@ func Redis(name ...string) *RedisPoolResource {
 		logger.Panic(fmt.Sprintf("yiigo: unknown redis.%s (forgotten configure?)", name[0]))
 	}
 
-	return v.(*RedisPoolResource)
+	return v.(*RedisPool)
 }
