@@ -66,14 +66,23 @@ func WithPoolPrefill(prefill int) PoolOption {
 }
 
 // GRPCPool grpc pool resource
-type GRPCPool struct {
+type GRPCPool interface {
+	// Get get a connection resource from the pool.
+	// Context with timeout can specify the wait timeout for pool.
+	Get(ctx context.Context) (GRPCConn, error)
+
+	// Put returns a connection resource to the pool.
+	Put(gc GRPCConn)
+}
+
+type gRPCPoolResource struct {
 	dialFunc func() (*grpc.ClientConn, error)
 	settings *PoolSettings
 	pool     *vitess_pool.ResourcePool
 	mutex    sync.Mutex
 }
 
-func (r *GRPCPool) init() {
+func (r *gRPCPoolResource) init() {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 
@@ -94,9 +103,7 @@ func (r *GRPCPool) init() {
 	r.pool = vitess_pool.NewResourcePool(df, r.settings.poolSize, r.settings.poolLimit, r.settings.idleTimeout, r.settings.poolPrefill)
 }
 
-// Get get a connection resource from the pool.
-// Context with timeout can specify the wait timeout for pool.
-func (r *GRPCPool) Get(ctx context.Context) (GRPCConn, error) {
+func (r *gRPCPoolResource) Get(ctx context.Context) (GRPCConn, error) {
 	if r.pool.IsClosed() {
 		r.init()
 	}
@@ -127,8 +134,7 @@ func (r *GRPCPool) Get(ctx context.Context) (GRPCConn, error) {
 	return gc, nil
 }
 
-// Put returns a connection resource to the pool.
-func (r *GRPCPool) Put(gc GRPCConn) {
+func (r *gRPCPoolResource) Put(gc GRPCConn) {
 	r.pool.Put(gc)
 }
 
@@ -136,7 +142,7 @@ var grpcMap sync.Map
 
 // SetGRPCPool set an grpc pool
 func SetGRPCPool(name string, dial func() (*grpc.ClientConn, error), options ...PoolOption) {
-	pool := &GRPCPool{
+	pool := &gRPCPoolResource{
 		dialFunc: dial,
 		settings: &PoolSettings{
 			poolSize:    10,
@@ -155,12 +161,12 @@ func SetGRPCPool(name string, dial func() (*grpc.ClientConn, error), options ...
 }
 
 // GetGRPCPool get an grpc pool
-func GetGRPCPool(name string) *GRPCPool {
+func GetGRPCPool(name string) GRPCPool {
 	v, ok := grpcMap.Load(name)
 
 	if !ok {
 		logger.Panic(fmt.Sprintf("yiigo: unknown grpc.%s (forgotten set?)", name))
 	}
 
-	return v.(*GRPCPool)
+	return v.(GRPCPool)
 }
