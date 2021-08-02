@@ -18,7 +18,7 @@ type GRPCConn struct {
 }
 
 // Close close connection resorce
-func (gc GRPCConn) Close() {
+func (gc *GRPCConn) Close() {
 	if err := gc.ClientConn.Close(); err != nil {
 		logger.Error("yiigo: grpc client conn closed error", zap.Error(err))
 	}
@@ -69,10 +69,10 @@ func WithPoolPrefill(prefill int) PoolOption {
 type GRPCPool interface {
 	// Get get a connection resource from the pool.
 	// Context with timeout can specify the wait timeout for pool.
-	Get(ctx context.Context) (GRPCConn, error)
+	Get(ctx context.Context) (*GRPCConn, error)
 
 	// Put returns a connection resource to the pool.
-	Put(gc GRPCConn)
+	Put(gc *GRPCConn)
 }
 
 type gRPCPoolResource struct {
@@ -97,13 +97,13 @@ func (r *gRPCPoolResource) init() {
 			return nil, err
 		}
 
-		return GRPCConn{conn}, nil
+		return &GRPCConn{conn}, nil
 	}
 
 	r.pool = vitess_pool.NewResourcePool(df, r.settings.poolSize, r.settings.poolLimit, r.settings.idleTimeout, r.settings.poolPrefill)
 }
 
-func (r *gRPCPoolResource) Get(ctx context.Context) (GRPCConn, error) {
+func (r *gRPCPoolResource) Get(ctx context.Context) (*GRPCConn, error) {
 	if r.pool.IsClosed() {
 		r.init()
 	}
@@ -111,10 +111,10 @@ func (r *gRPCPoolResource) Get(ctx context.Context) (GRPCConn, error) {
 	resource, err := r.pool.Get(ctx)
 
 	if err != nil {
-		return GRPCConn{}, err
+		return &GRPCConn{}, err
 	}
 
-	gc := resource.(GRPCConn)
+	gc := resource.(*GRPCConn)
 
 	// If rc is in unexpected state, close and reconnect
 	if state := gc.GetState(); state == connectivity.TransientFailure || state == connectivity.Shutdown {
@@ -128,13 +128,13 @@ func (r *gRPCPoolResource) Get(ctx context.Context) (GRPCConn, error) {
 
 		gc.Close()
 
-		return GRPCConn{conn}, nil
+		return &GRPCConn{conn}, nil
 	}
 
 	return gc, nil
 }
 
-func (r *gRPCPoolResource) Put(gc GRPCConn) {
+func (r *gRPCPoolResource) Put(gc *GRPCConn) {
 	r.pool.Put(gc)
 }
 
