@@ -81,7 +81,7 @@ func (r *redisPoolResource) init() {
 			return nil, err
 		}
 
-		return &RedisConn{conn}, nil
+		return RedisConn{conn}, nil
 	}
 
 	r.pool = vitess_pool.NewResourcePool(df, r.config.PoolSize, r.config.PoolLimit, time.Duration(r.config.IdleTimeout)*time.Second, r.config.PoolPrefill)
