@@ -30,8 +30,8 @@ type RedisConn struct {
 }
 
 // Close close connection resorce
-func (r RedisConn) Close() {
-	if err := r.Conn.Close(); err != nil {
+func (rc *RedisConn) Close() {
+	if err := rc.Conn.Close(); err != nil {
 		logger.Error("yiigo: redis conn closed error", zap.Error(err))
 	}
 }
@@ -40,10 +40,10 @@ func (r RedisConn) Close() {
 type RedisPool interface {
 	// Get get a connection resource from the pool.
 	// Context with timeout can specify the wait timeout for pool.
-	Get(ctx context.Context) (RedisConn, error)
+	Get(ctx context.Context) (*RedisConn, error)
 
 	// Put returns a connection resource to the pool.
-	Put(rc RedisConn)
+	Put(rc *RedisConn)
 }
 
 type redisPoolResource struct {
@@ -81,13 +81,13 @@ func (r *redisPoolResource) init() {
 			return nil, err
 		}
 
-		return RedisConn{conn}, nil
+		return &RedisConn{conn}, nil
 	}
 
 	r.pool = vitess_pool.NewResourcePool(df, r.config.PoolSize, r.config.PoolLimit, time.Duration(r.config.IdleTimeout)*time.Second, r.config.PoolPrefill)
 }
 
-func (r *redisPoolResource) Get(ctx context.Context) (RedisConn, error) {
+func (r *redisPoolResource) Get(ctx context.Context) (*RedisConn, error) {
 	if r.pool.IsClosed() {
 		r.init()
 	}
@@ -95,10 +95,10 @@ func (r *redisPoolResource) Get(ctx context.Context) (RedisConn, error) {
 	resource, err := r.pool.Get(ctx)
 
 	if err != nil {
-		return RedisConn{}, err
+		return &RedisConn{}, err
 	}
 
-	rc := resource.(RedisConn)
+	rc := resource.(*RedisConn)
 
 	// If rc is error, close and reconnect
 	if rc.Err() != nil {
@@ -112,13 +112,13 @@ func (r *redisPoolResource) Get(ctx context.Context) (RedisConn, error) {
 
 		rc.Close()
 
-		return RedisConn{conn}, nil
+		return &RedisConn{conn}, nil
 	}
 
 	return rc, nil
 }
 
-func (r *redisPoolResource) Put(rc RedisConn) {
+func (r *redisPoolResource) Put(rc *RedisConn) {
 	r.pool.Put(rc)
 }
 
