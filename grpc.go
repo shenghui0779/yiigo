@@ -2,7 +2,6 @@ package yiigo
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"time"
 
@@ -138,10 +137,8 @@ func (r *gRPCPoolResource) Put(gc *GRPCConn) {
 	r.pool.Put(gc)
 }
 
-var grpcMap sync.Map
-
-// SetGRPCPool set an grpc pool
-func SetGRPCPool(name string, dial func() (*grpc.ClientConn, error), options ...PoolOption) {
+// NewGRPCPool returns a new grpc pool with dial func.
+func NewGRPCPool(name string, dial func() (*grpc.ClientConn, error), options ...PoolOption) GRPCPool {
 	pool := &gRPCPoolResource{
 		dialFunc: dial,
 		settings: &PoolSettings{
@@ -157,16 +154,5 @@ func SetGRPCPool(name string, dial func() (*grpc.ClientConn, error), options ...
 
 	pool.init()
 
-	grpcMap.Store(name, pool)
-}
-
-// GetGRPCPool get an grpc pool
-func GetGRPCPool(name string) GRPCPool {
-	v, ok := grpcMap.Load(name)
-
-	if !ok {
-		logger.Panic(fmt.Sprintf("yiigo: unknown grpc.%s (forgotten set?)", name))
-	}
-
-	return v.(GRPCPool)
+	return pool
 }
