@@ -16,7 +16,7 @@ type GRPCConn struct {
 	*grpc.ClientConn
 }
 
-// Close close connection resorce
+// Close closes the connection resource
 func (gc *GRPCConn) Close() {
 	if err := gc.ClientConn.Close(); err != nil {
 		logger.Error("yiigo: grpc client conn closed error", zap.Error(err))
@@ -66,7 +66,7 @@ func WithPoolPrefill(prefill int) PoolOption {
 
 // GRPCPool grpc pool resource
 type GRPCPool interface {
-	// Get get a connection resource from the pool.
+	// Get returns a connection resource from the pool.
 	// Context with timeout can specify the wait timeout for pool.
 	Get(ctx context.Context) (*GRPCConn, error)
 

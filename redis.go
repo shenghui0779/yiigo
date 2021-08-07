@@ -29,7 +29,7 @@ type RedisConn struct {
 	redis.Conn
 }
 
-// Close close connection resorce
+// Close closes the connection resource
 func (rc *RedisConn) Close() {
 	if err := rc.Conn.Close(); err != nil {
 		logger.Error("yiigo: redis conn closed error", zap.Error(err))
@@ -38,7 +38,7 @@ func (rc *RedisConn) Close() {
 
 // RedisPool redis pool resource
 type RedisPool interface {
-	// Get get a connection resource from the pool.
+	// Get returns a connection resource from the pool.
 	// Context with timeout can specify the wait timeout for pool.
 	Get(ctx context.Context) (*RedisConn, error)
 
