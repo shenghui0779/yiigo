@@ -118,8 +118,8 @@ func (r *redisPoolResource) Get(ctx context.Context) (*RedisConn, error) {
 	return rc, nil
 }
 
-func (r *redisPoolResource) Put(rc *RedisConn) {
-	r.pool.Put(rc)
+func (r *redisPoolResource) Put(conn *RedisConn) {
+	r.pool.Put(conn)
 }
 
 var (

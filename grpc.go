@@ -133,8 +133,8 @@ func (r *gRPCPoolResource) Get(ctx context.Context) (*GRPCConn, error) {
 	return gc, nil
 }
 
-func (r *gRPCPoolResource) Put(gc *GRPCConn) {
-	r.pool.Put(gc)
+func (r *gRPCPoolResource) Put(conn *GRPCConn) {
+	r.pool.Put(conn)
 }
 
 // NewGRPCPool returns a new grpc pool with dial func.
