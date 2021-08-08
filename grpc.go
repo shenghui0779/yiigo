@@ -138,7 +138,7 @@ func (r *gRPCPoolResource) Put(gc *GRPCConn) {
 }
 
 // NewGRPCPool returns a new grpc pool with dial func.
-func NewGRPCPool(name string, dial func() (*grpc.ClientConn, error), options ...PoolOption) GRPCPool {
+func NewGRPCPool(dial func() (*grpc.ClientConn, error), options ...PoolOption) GRPCPool {
 	pool := &gRPCPoolResource{
 		dialFunc: dial,
 		settings: &PoolSettings{
