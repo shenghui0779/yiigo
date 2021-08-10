@@ -139,7 +139,7 @@ func EntDriver(name ...string) *entsql.Driver {
 
 // DBTransaction Executes db transaction with callback function.
 // The provided context is used until the transaction is committed or rolledback.
-func DBTransaction(ctx context.Context, db *sqlx.DB, process func(tx *sqlx.Tx) error) error {
+func DBTransaction(ctx context.Context, db *sqlx.DB, process func(ctx context.Context, tx *sqlx.Tx) error) error {
 	tx, err := db.BeginTxx(ctx, nil)
 
 	if err != nil {
@@ -154,7 +154,7 @@ func DBTransaction(ctx context.Context, db *sqlx.DB, process func(tx *sqlx.Tx) e
 		}
 	}()
 
-	if err = process(tx); err != nil {
+	if err = process(ctx, tx); err != nil {
 		txRollback(tx)
 
 		return err
