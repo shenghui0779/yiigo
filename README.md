@@ -212,10 +212,9 @@ pool := yiigo.NewGRPCPool(
             }),
         )
     },
-    yiigo.WithPoolSize(100),
-    yiigo.WithPoolLimit(200),
+    yiigo.WithPoolSize(10),
+    yiigo.WithPoolLimit(20),
     yiigo.WithIdleTimeout(600*time.Second),
-    yiigo.WithPoolPrefill(10),
 )
 
 // use pool
