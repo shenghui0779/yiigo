@@ -17,7 +17,9 @@
 - SQL使用 [sqlx](https://github.com/jmoiron/sqlx)
 - ORM推荐 [ent](https://github.com/ent/ent)
 - 日志使用 [zap](https://github.com/uber-go/zap)
-- 包含一些实用的辅助方法，如：http、cypto、date、IP、version compare、SQL Builder 等
+- gRPC 连接池
+- 轻量的 SQL Builder
+- 实用的辅助方法，包含：http、cypto、date、IP、version compare 等
 
 ## Requirements
 
@@ -185,6 +187,49 @@ defer yiigo.Redis("other").Put(conn)
 conn.Do("SET", "test_key", "hello world")
 ```
 
+#### Logger
+
+```go
+// default logger
+yiigo.Logger().Info("hello world")
+
+// other logger
+yiigo.Logger("other").Info("hello world")
+```
+
+#### gRPC Pool
+
+```go
+// create pool
+pool := yiigo.NewGRPCPool(
+    func() (*grpc.ClientConn, error) {
+        return grpc.DialContext(context.Background(), "target",
+            grpc.WithInsecure(),
+            grpc.WithBlock(),
+            grpc.WithKeepaliveParams(keepalive.ClientParameters{
+                Time:    time.Second * 30,
+                Timeout: time.Second * 10,
+            }),
+        )
+    },
+    yiigo.WithPoolSize(100),
+    yiigo.WithPoolLimit(200),
+    yiigo.WithIdleTimeout(600*time.Second),
+    yiigo.WithPoolPrefill(10),
+)
+
+// use pool
+conn, err := pool.Get(context.Background())
+
+if err != nil {
+    return err
+}
+
+defer pool.Put(conn)
+
+// coding...
+```
+
 #### HTTP
 
 ```go
@@ -197,16 +242,6 @@ client := yiigo.NewHTTPClient(*http.Client)
 
 ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 client.Do(ctx, http.MethodGet, "URL", nil)
-```
-
-#### Logger
-
-```go
-// default logger
-yiigo.Logger().Info("hello world")
-
-// other logger
-yiigo.Logger("other").Info("hello world")
 ```
 
 #### SQL Builder
