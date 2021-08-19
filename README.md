@@ -2,7 +2,7 @@
 
 [![golang](https://img.shields.io/badge/Language-Go-green.svg?style=flat)](https://golang.org) [![GitHub release](https://img.shields.io/github/release/shenghui0779/yiigo.svg)](https://github.com/shenghui0779/yiigo/releases/latest) [![pkg.go.dev](https://img.shields.io/badge/dev-reference-007d9c?logo=go&logoColor=white&style=flat)](https://pkg.go.dev/github.com/shenghui0779/yiigo) [![Apache 2.0 license](http://img.shields.io/badge/license-Apache%202.0-brightgreen.svg)](http://opensource.org/licenses/apache2.0)
 
-一个好用的 Go 轻量级开发通用库，省去你开发时到处找库封装的烦恼，让 Go 开发更加简单快捷
+一个好用的 Go 轻量级开发通用库，省去你到处找库封装的烦恼，让 Go 开发更加简单快捷
 
 ## Features
 
