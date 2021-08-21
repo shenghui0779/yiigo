@@ -31,7 +31,7 @@ type EMailDialer struct {
 	dialer *gomail.Dialer
 }
 
-// Send send an email.
+// Send sends an email.
 func (m *EMailDialer) Send(email *EMail, settings ...gomail.MessageSetting) error {
 	msg := gomail.NewMessage(settings...)
 

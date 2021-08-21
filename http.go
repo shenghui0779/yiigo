@@ -124,7 +124,7 @@ func NewUploadForm(fields ...UploadField) UploadForm {
 	return form
 }
 
-// HTTPClient is the interface for an http client.
+// HTTPClient is the interface for a http client.
 type HTTPClient interface {
 	// Do sends an HTTP request and returns an HTTP response.
 	// Should use context to specify the timeout for request.

@@ -53,7 +53,7 @@ func NSQPublish(topic string, msg NSQMessage) error {
 	return producer.Publish(topic, b)
 }
 
-// DeferredPublish synchronously publishes a message body to the specified topic
+// NSQDeferredPublish synchronously publishes a message body to the specified topic
 // where the message will queue at the channel level until the timeout expires.
 func NSQDeferredPublish(topic string, msg NSQMessage, duration time.Duration) error {
 	b, err := msg.Bytes()

@@ -23,7 +23,7 @@ const (
 	AlgoSha512 HashAlgo = "sha512"
 )
 
-// MD5 calculate the md5 hash of a string.
+// MD5 calculates the md5 hash of a string.
 func MD5(s string) string {
 	h := md5.New()
 	h.Write([]byte(s))
@@ -31,7 +31,7 @@ func MD5(s string) string {
 	return hex.EncodeToString(h.Sum(nil))
 }
 
-// SHA1 calculate the sha1 hash of a string.
+// SHA1 calculates the sha1 hash of a string.
 func SHA1(s string) string {
 	h := sha1.New()
 	h.Write([]byte(s))
@@ -39,7 +39,7 @@ func SHA1(s string) string {
 	return hex.EncodeToString(h.Sum(nil))
 }
 
-// Hash Generate a hash value, expects: MD5, SHA1, SHA224, SHA256, SHA384, SHA512.
+// Hash generates a hash value, expects: MD5, SHA1, SHA224, SHA256, SHA384, SHA512.
 func Hash(algo HashAlgo, s string) string {
 	var h hash.Hash
 
@@ -65,7 +65,7 @@ func Hash(algo HashAlgo, s string) string {
 	return hex.EncodeToString(h.Sum(nil))
 }
 
-// HMAC Generate a keyed hash value, expects: MD5, SHA1, SHA224, SHA256, SHA384, SHA512.
+// HMAC generates a keyed hash value, expects: MD5, SHA1, SHA224, SHA256, SHA384, SHA512.
 func HMAC(algo HashAlgo, s, key string) string {
 	var mac hash.Hash
 
