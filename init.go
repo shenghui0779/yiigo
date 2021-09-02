@@ -35,9 +35,9 @@ type cfgredis struct {
 }
 
 type cfgnsq struct {
-	nsqd      string
-	lookupd   []string
-	consumers []NSQConsumer
+	nsqd    string
+	lookupd []string
+	options []NSQOption
 }
 
 type cfgmailer struct {
@@ -121,12 +121,12 @@ func WithRedis(name, address string, options ...RedisOption) InitOption {
 }
 
 // WithNSQ specifies initialize the nsq
-func WithNSQ(nsqd string, lookupd []string, consumers ...NSQConsumer) InitOption {
+func WithNSQ(nsqd string, lookupd []string, options ...NSQOption) InitOption {
 	return func(s *initSetting) {
 		s.nsq = &cfgnsq{
-			nsqd:      nsqd,
-			lookupd:   lookupd,
-			consumers: consumers,
+			nsqd:    nsqd,
+			lookupd: lookupd,
+			options: options,
 		}
 	}
 }
@@ -205,7 +205,7 @@ func Init(options ...InitOption) {
 		go func() {
 			defer wg.Done()
 
-			initNSQ(setting.nsq.nsqd, setting.nsq.lookupd, setting.nsq.consumers...)
+			initNSQ(setting.nsq.nsqd, setting.nsq.lookupd, setting.nsq.options...)
 		}()
 	}
 
