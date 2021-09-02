@@ -67,7 +67,7 @@ func StrToTime(datetime string, layout ...string) int64 {
 	return t.Unix()
 }
 
-// WeekAround returns the date of monday and sunday for current week
+// WeekAround returns the date of monday and sunday for current week.
 func WeekAround(t time.Time) (monday, sunday string) {
 	weekday := t.Local().Weekday()
 
@@ -169,7 +169,7 @@ func NewValidator() *Validator {
 	}
 }
 
-// VersionCompare compares semantic versions range, support: >, >=, =, !=, <, <=, | (or), & (and)
+// VersionCompare compares semantic versions range, support: >, >=, =, !=, <, <=, | (or), & (and).
 // eg: 1.0.0, =1.0.0, >2.0.0, >=1.0.0&<2.0.0, <2.0.0|>3.0.0, !=4.0.4
 func VersionCompare(rangeVer, curVer string) bool {
 	if rangeVer == "" || curVer == "" {
