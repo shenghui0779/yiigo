@@ -488,7 +488,7 @@ func initEnv(path string, options ...EnvOption) {
 	}
 }
 
-// Env returns an env value
+// Env returns an env value.
 func Env(key string) EnvValue {
 	return env.Get(key)
 }
