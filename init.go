@@ -5,8 +5,6 @@ import (
 	"sync"
 )
 
-var debugMode bool
-
 type cfgenv struct {
 	path    string
 	options []EnvOption
@@ -50,8 +48,7 @@ type cfgmailer struct {
 	password string
 }
 
-type initSettings struct {
-	debug  bool
+type initSetting struct {
 	env    *cfgenv
 	logger []*cfglogger
 	db     []*cfgdb
@@ -62,18 +59,11 @@ type initSettings struct {
 }
 
 // InitOption configures how we set up the yiigo initialization.
-type InitOption func(s *initSettings)
-
-// WithDebug specifies the debug mode
-func WithDebug() InitOption {
-	return func(s *initSettings) {
-		s.debug = true
-	}
-}
+type InitOption func(s *initSetting)
 
 // WithEnvFile register env file, only support toml.
 func WithEnvFile(path string, options ...EnvOption) InitOption {
-	return func(s *initSettings) {
+	return func(s *initSetting) {
 		s.env = &cfgenv{
 			path:    filepath.Clean(path),
 			options: options,
@@ -83,7 +73,7 @@ func WithEnvFile(path string, options ...EnvOption) InitOption {
 
 // WithLogger register logger
 func WithLogger(name, path string, options ...LoggerOption) InitOption {
-	return func(s *initSettings) {
+	return func(s *initSetting) {
 		s.logger = append(s.logger, &cfglogger{
 			name:    name,
 			path:    path,
@@ -97,7 +87,7 @@ func WithLogger(name, path string, options ...LoggerOption) InitOption {
 // [PgSQL] host=localhost port=5432 user=root password=secret dbname=test connect_timeout=10 sslmode=disable
 // [SQLite] file::memory:?cache=shared"
 func WithDB(name string, driver DBDriver, dsn string, options ...DBOption) InitOption {
-	return func(s *initSettings) {
+	return func(s *initSetting) {
 		s.db = append(s.db, &cfgdb{
 			name:    name,
 			driver:  driver,
@@ -108,10 +98,10 @@ func WithDB(name string, driver DBDriver, dsn string, options ...DBOption) InitO
 }
 
 // WithMongo register mongodb
-// mongodb://localhost:27017/?connectTimeoutMS=10000&minPoolSize=10&maxPoolSize=20&maxIdleTimeMS=60000&readPreference=primary
+// [DSN] mongodb://localhost:27017/?connectTimeoutMS=10000&minPoolSize=10&maxPoolSize=20&maxIdleTimeMS=60000&readPreference=primary
 // [reference] https://docs.mongodb.com/manual/reference/connection-string
 func WithMongo(name string, dsn string) InitOption {
-	return func(s *initSettings) {
+	return func(s *initSetting) {
 		s.mongo = append(s.mongo, &cfgmongo{
 			name: name,
 			dsn:  dsn,
@@ -121,7 +111,7 @@ func WithMongo(name string, dsn string) InitOption {
 
 // WithRedis register redis
 func WithRedis(name, address string, options ...RedisOption) InitOption {
-	return func(s *initSettings) {
+	return func(s *initSetting) {
 		s.redis = append(s.redis, &cfgredis{
 			name:    name,
 			address: address,
@@ -132,7 +122,7 @@ func WithRedis(name, address string, options ...RedisOption) InitOption {
 
 // WithNSQ specifies initialize the nsq
 func WithNSQ(nsqd string, lookupd []string, consumers ...NSQConsumer) InitOption {
-	return func(s *initSettings) {
+	return func(s *initSetting) {
 		s.nsq = &cfgnsq{
 			nsqd:      nsqd,
 			lookupd:   lookupd,
@@ -143,91 +133,89 @@ func WithNSQ(nsqd string, lookupd []string, consumers ...NSQConsumer) InitOption
 
 // Init yiigo initialization
 func Init(options ...InitOption) {
-	settings := new(initSettings)
+	setting := new(initSetting)
 
 	for _, f := range options {
-		f(settings)
+		f(setting)
 	}
-
-	debugMode = settings.debug
 
 	var wg sync.WaitGroup
 
-	if settings.env != nil {
+	if setting.env != nil {
 		wg.Add(1)
 
 		go func() {
 			defer wg.Done()
 
-			initEnv(settings.env.path, settings.env.options...)
+			initEnv(setting.env.path, setting.env.options...)
 		}()
 	}
 
-	if len(settings.logger) != 0 {
+	if len(setting.logger) != 0 {
 		wg.Add(1)
 
 		go func() {
 			defer wg.Done()
 
-			for _, v := range settings.logger {
+			for _, v := range setting.logger {
 				initLogger(v.name, v.path, v.options...)
 			}
 		}()
 	}
 
-	if len(settings.db) != 0 {
+	if len(setting.db) != 0 {
 		wg.Add(1)
 
 		go func() {
 			defer wg.Done()
 
-			for _, v := range settings.db {
+			for _, v := range setting.db {
 				initDB(v.name, v.driver, v.dsn, v.options...)
 			}
 		}()
 	}
 
-	if len(settings.mongo) != 0 {
+	if len(setting.mongo) != 0 {
 		wg.Add(1)
 
 		go func() {
 			defer wg.Done()
 
-			for _, v := range settings.mongo {
+			for _, v := range setting.mongo {
 				initMongoDB(v.name, v.dsn)
 			}
 		}()
 	}
 
-	if len(settings.redis) != 0 {
+	if len(setting.redis) != 0 {
 		wg.Add(1)
 
 		go func() {
 			defer wg.Done()
 
-			for _, v := range settings.redis {
+			for _, v := range setting.redis {
 				initRedis(v.name, v.address, v.options...)
 			}
 		}()
 	}
 
-	if settings.nsq != nil {
+	if setting.nsq != nil {
 		wg.Add(1)
 
 		go func() {
 			defer wg.Done()
 
-			initNSQ(settings.nsq.nsqd, settings.nsq.lookupd, settings.nsq.consumers...)
+			initNSQ(setting.nsq.nsqd, setting.nsq.lookupd, setting.nsq.consumers...)
 		}()
 	}
 
-	if len(settings.mailer) != 0 {
+	if len(setting.mailer) != 0 {
 		wg.Add(1)
 
 		go func() {
 			defer wg.Done()
 
-			for _, v := range settings.mailer {
+			for _, v := range setting.mailer {
 				initMailer(v.name, v.host, v.port, v.account, v.account)
 			}
 		}()

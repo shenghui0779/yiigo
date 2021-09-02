@@ -1,6 +1,7 @@
 package yiigo
 
 import (
+	"strings"
 	"sync"
 	"time"
 
@@ -14,7 +15,7 @@ var (
 	logMap sync.Map
 )
 
-type loggerSettings struct {
+type loggerSetting struct {
 	maxSize    int
 	maxBackups int
 	maxAge     int
@@ -22,48 +23,48 @@ type loggerSettings struct {
 }
 
 // LoggerOption configures how we set up the logger.
-type LoggerOption func(s *loggerSettings)
+type LoggerOption func(s *loggerSetting)
 
 // WithLogMaxSize specifies the `MaxSize(Mi)` for logger.
 func WithLogMaxSize(n int) LoggerOption {
-	return func(s *loggerSettings) {
+	return func(s *loggerSetting) {
 		s.maxSize = n
 	}
 }
 
 // WithLogMaxBackups specifies the `MaxBackups` for logger.
 func WithLogMaxBackups(n int) LoggerOption {
-	return func(s *loggerSettings) {
+	return func(s *loggerSetting) {
 		s.maxBackups = n
 	}
 }
 
 // WithLogMaxAge specifies the `MaxAge(days)` for logger.
 func WithLogMaxAge(n int) LoggerOption {
-	return func(s *loggerSettings) {
+	return func(s *loggerSetting) {
 		s.maxAge = n
 	}
 }
 
 // WithLogCompress specifies the `Compress` for logger.
 func WithLogCompress() LoggerOption {
-	return func(s *loggerSettings) {
+	return func(s *loggerSetting) {
 		s.compress = true
 	}
 }
 
 // newLogger returns a new logger.
-func newLogger(path string, settings *loggerSettings) *zap.Logger {
-	if debugMode {
+func newLogger(path string, setting *loggerSetting) *zap.Logger {
+	if len(strings.TrimSpace(path)) == 0 {
 		return debugLogger()
 	}
 
 	w := zapcore.AddSync(&lumberjack.Logger{
 		Filename:   path,
-		MaxSize:    settings.maxSize,
-		MaxBackups: settings.maxBackups,
-		MaxAge:     settings.maxAge,
-		Compress:   settings.compress,
+		MaxSize:    setting.maxSize,
+		MaxBackups: setting.maxBackups,
+		MaxAge:     setting.maxAge,
+		Compress:   setting.compress,
 		LocalTime:  true,
 	})
 
@@ -90,15 +91,15 @@ func debugLogger() *zap.Logger {
 }
 
 func initLogger(name, path string, options ...LoggerOption) {
-	settings := &loggerSettings{
+	setting := &loggerSetting{
 		maxSize: 100,
 	}
 
 	for _, f := range options {
-		f(settings)
+		f(setting)
 	}
 
-	l := newLogger(path, settings)
+	l := newLogger(path, setting)
 
 	if name == Default {
 		logger = l
@@ -109,7 +110,7 @@ func initLogger(name, path string, options ...LoggerOption) {
 
 // Logger returns a logger
 func Logger(name ...string) *zap.Logger {
-	if len(name) == 0 {
+	if len(name) == 0 || name[0] == Default {
 		return logger
 	}
 

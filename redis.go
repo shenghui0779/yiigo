@@ -23,50 +23,50 @@ func (rc *RedisConn) Close() {
 	}
 }
 
-type redisSettings struct {
+type redisSetting struct {
 	address      string
 	password     string
 	database     int
 	connTimeout  time.Duration
 	readTimeout  time.Duration
 	writeTimeout time.Duration
-	pool         *poolSettings
+	pool         *poolSetting
 }
 
 // RedisOption configures how we set up the redis.
-type RedisOption func(s *redisSettings)
+type RedisOption func(s *redisSetting)
 
 // WithRedisDatabase specifies the database for redis.
 func WithRedisDatabase(db int) RedisOption {
-	return func(s *redisSettings) {
+	return func(s *redisSetting) {
 		s.database = db
 	}
 }
 
 // WithRedisConnTimeout specifies the `ConnectTimeout` for redis.
 func WithRedisConnTimeout(t time.Duration) RedisOption {
-	return func(s *redisSettings) {
+	return func(s *redisSetting) {
 		s.connTimeout = t
 	}
 }
 
 // WithRedisReadTimeout specifies the `ReadTimeout` for redis.
 func WithRedisReadTimeout(t time.Duration) RedisOption {
-	return func(s *redisSettings) {
+	return func(s *redisSetting) {
 		s.readTimeout = t
 	}
 }
 
 // WithRedisWriteTimeout specifies the `WriteTimeout` for redis.
 func WithRedisWriteTimeout(t time.Duration) RedisOption {
-	return func(s *redisSettings) {
+	return func(s *redisSetting) {
 		s.writeTimeout = t
 	}
 }
 
 // WithRedisPool specifies the pool for redis.
 func WithRedisPool(options ...PoolOption) RedisOption {
-	return func(s *redisSettings) {
+	return func(s *redisSetting) {
 		for _, f := range options {
 			f(s.pool)
 		}
@@ -84,7 +84,7 @@ type RedisPool interface {
 }
 
 type redisPoolResource struct {
-	config *redisSettings
+	config *redisSetting
 	pool   *vitess_pool.ResourcePool
 	mutex  sync.Mutex
 }
@@ -166,12 +166,12 @@ var (
 
 func newRedis(address string, options ...RedisOption) RedisPool {
 	pool := &redisPoolResource{
-		config: &redisSettings{
+		config: &redisSetting{
 			address:      address,
 			connTimeout:  10 * time.Second,
 			readTimeout:  10 * time.Second,
 			writeTimeout: 10 * time.Second,
-			pool: &poolSettings{
+			pool: &poolSetting{
 				size:        10,
 				idleTimeout: 60 * time.Second,
 			},

@@ -13,26 +13,26 @@ import (
 	"time"
 )
 
-// httpSettings http request settings
-type httpSettings struct {
+// httpSetting http request setting
+type httpSetting struct {
 	headers map[string]string
 	cookies []*http.Cookie
 	close   bool
 }
 
 // HTTPOption configures how we set up the http request.
-type HTTPOption func(s *httpSettings)
+type HTTPOption func(s *httpSetting)
 
 // WithHTTPHeader specifies the header to http request.
 func WithHTTPHeader(key, value string) HTTPOption {
-	return func(s *httpSettings) {
+	return func(s *httpSetting) {
 		s.headers[key] = value
 	}
 }
 
 // WithHTTPCookies specifies the cookies to http request.
 func WithHTTPCookies(cookies ...*http.Cookie) HTTPOption {
-	return func(s *httpSettings) {
+	return func(s *httpSetting) {
 		s.cookies = cookies
 	}
 }
@@ -41,7 +41,7 @@ func WithHTTPCookies(cookies ...*http.Cookie) HTTPOption {
 // replying to this request (for servers) or after sending this
 // request and reading its response (for clients).
 func WithHTTPClose() HTTPOption {
-	return func(s *httpSettings) {
+	return func(s *httpSetting) {
 		s.close = true
 	}
 }
@@ -146,31 +146,31 @@ func (c *httpclient) Do(ctx context.Context, method, reqURL string, body io.Read
 		return nil, err
 	}
 
-	settings := new(httpSettings)
+	setting := new(httpSetting)
 
 	if len(options) != 0 {
-		settings.headers = make(map[string]string)
+		setting.headers = make(map[string]string)
 
 		for _, f := range options {
-			f(settings)
+			f(setting)
 		}
 	}
 
 	// headers
-	if len(settings.headers) != 0 {
-		for k, v := range settings.headers {
+	if len(setting.headers) != 0 {
+		for k, v := range setting.headers {
 			req.Header.Set(k, v)
 		}
 	}
 
 	// cookies
-	if len(settings.cookies) != 0 {
-		for _, v := range settings.cookies {
+	if len(setting.cookies) != 0 {
+		for _, v := range setting.cookies {
 			req.AddCookie(v)
 		}
 	}
 
-	if settings.close {
+	if setting.close {
 		req.Close = true
 	}
 

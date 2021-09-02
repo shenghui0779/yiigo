@@ -33,7 +33,7 @@ var (
 	entmap           sync.Map
 )
 
-type dbSettings struct {
+type dbSetting struct {
 	maxOpenConns    int
 	maxIdleConns    int
 	connMaxIdleTime time.Duration
@@ -41,32 +41,32 @@ type dbSettings struct {
 }
 
 // DBOption configures how we set up the db.
-type DBOption func(s *dbSettings)
+type DBOption func(s *dbSetting)
 
 // WithDBMaxOpenConns specifies the `MaxOpenConns` for db.
 func WithDBMaxOpenConns(n int) DBOption {
-	return func(s *dbSettings) {
+	return func(s *dbSetting) {
 		s.maxOpenConns = n
 	}
 }
 
 // WithDBMaxIdleConns specifies the `MaxIdleConns` for db.
 func WithDBMaxIdleConns(n int) DBOption {
-	return func(s *dbSettings) {
+	return func(s *dbSetting) {
 		s.maxIdleConns = n
 	}
 }
 
 // WithDBConnMaxIdleTime specifies the `ConnMaxIdleTime` for db.
 func WithDBConnMaxIdleTime(t time.Duration) DBOption {
-	return func(s *dbSettings) {
+	return func(s *dbSetting) {
 		s.connMaxIdleTime = t
 	}
 }
 
 // WithDBConnMaxLifetime specifies the `ConnMaxLifetime` for db.
 func WithDBConnMaxLifetime(t time.Duration) DBOption {
-	return func(s *dbSettings) {
+	return func(s *dbSetting) {
 		s.connMaxLifetime = t
 	}
 }
@@ -84,7 +84,7 @@ func initDB(name string, driver DBDriver, dsn string, options ...DBOption) {
 		logger.Panic("yiigo: db init error", zap.String("name", name), zap.Error(err))
 	}
 
-	settings := &dbSettings{
+	setting := &dbSetting{
 		maxOpenConns:    20,
 		maxIdleConns:    10,
 		connMaxIdleTime: 60 * time.Second,
@@ -92,13 +92,13 @@ func initDB(name string, driver DBDriver, dsn string, options ...DBOption) {
 	}
 
 	for _, f := range options {
-		f(settings)
+		f(setting)
 	}
 
-	db.SetMaxOpenConns(settings.maxOpenConns)
-	db.SetMaxIdleConns(settings.maxIdleConns)
-	db.SetConnMaxIdleTime(settings.connMaxIdleTime)
-	db.SetConnMaxLifetime(settings.connMaxLifetime)
+	db.SetMaxOpenConns(setting.maxOpenConns)
+	db.SetMaxIdleConns(setting.maxIdleConns)
+	db.SetConnMaxIdleTime(setting.connMaxIdleTime)
+	db.SetConnMaxLifetime(setting.connMaxLifetime)
 
 	sqlxDB := sqlx.NewDb(db, string(driver))
 	entDriver := entsql.OpenDB(string(driver), db)
@@ -152,9 +152,12 @@ func EntDriver(name ...string) *entsql.Driver {
 	return v.(*entsql.Driver)
 }
 
+// DBTxFunc db tx function
+type DBTxFunc func(ctx context.Context, tx *sqlx.Tx) error
+
 // DBTransaction Executes db transaction with callback function.
 // The provided context is used until the transaction is committed or rolledback.
-func DBTransaction(ctx context.Context, db *sqlx.DB, process func(ctx context.Context, tx *sqlx.Tx) error) error {
+func DBTransaction(ctx context.Context, db *sqlx.DB, process DBTxFunc) error {
 	tx, err := db.BeginTxx(ctx, nil)
 
 	if err != nil {

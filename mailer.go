@@ -25,8 +25,8 @@ type EMailDialer struct {
 }
 
 // Send sends an email.
-func (m *EMailDialer) Send(email *EMail, settings ...gomail.MessageSetting) error {
-	msg := gomail.NewMessage(settings...)
+func (m *EMailDialer) Send(email *EMail, setting ...gomail.MessageSetting) error {
+	msg := gomail.NewMessage(setting...)
 
 	msg.SetHeader("Subject", email.Subject)
 	msg.SetAddressHeader("From", email.From, email.Title)
@@ -73,7 +73,7 @@ func initMailer(name, host string, port int, account, password string) {
 
 // Mailer returns an email dialer.
 func Mailer(name ...string) *EMailDialer {
-	if len(name) == 0 {
+	if len(name) == 0 || name[0] == Default {
 		if defaultMailer == nil {
 			logger.Panic("yiigo: invalid email dialer", zap.String("name", Default))
 		}

@@ -415,17 +415,17 @@ func (c *cfgValue) Unmarshal(dest interface{}) error {
 
 type EnvEventFunc func(event fsnotify.Event)
 
-type envSettings struct {
+type envSetting struct {
 	watcher  bool
 	onchange EnvEventFunc
 }
 
 // EnvOption configures how we set up the env file.
-type EnvOption func(s *envSettings)
+type EnvOption func(s *envSetting)
 
 // WithEnvWatcher specifies the `watcher` for env file.
 func WithEnvWatcher(onchanges ...EnvEventFunc) EnvOption {
-	return func(s *envSettings) {
+	return func(s *envSetting) {
 		s.watcher = true
 
 		if len(onchanges) != 0 {
@@ -477,14 +477,14 @@ func initEnv(path string, options ...EnvOption) {
 		logger.Panic("yiigo: load env file error", zap.Error(err))
 	}
 
-	settings := new(envSettings)
+	setting := new(envSetting)
 
 	for _, f := range options {
-		f(settings)
+		f(setting)
 	}
 
-	if settings.watcher {
-		go env.Watcher(settings.onchange)
+	if setting.watcher {
+		go env.Watcher(setting.onchange)
 	}
 }
 

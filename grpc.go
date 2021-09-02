@@ -23,8 +23,8 @@ func (gc *GRPCConn) Close() {
 	}
 }
 
-// poolSettings pool settings
-type poolSettings struct {
+// poolSetting pool setting
+type poolSetting struct {
 	size        int
 	limit       int
 	idleTimeout time.Duration
@@ -32,11 +32,11 @@ type poolSettings struct {
 }
 
 // PoolOption configures how we set up the pool.
-type PoolOption func(s *poolSettings)
+type PoolOption func(s *poolSetting)
 
 // WithPoolSize specifies the number of possible resources in the pool.
 func WithPoolSize(size int) PoolOption {
-	return func(s *poolSettings) {
+	return func(s *poolSetting) {
 		s.size = size
 	}
 }
@@ -44,22 +44,22 @@ func WithPoolSize(size int) PoolOption {
 // WithPoolLimit specifies the extent to which the pool can be resized in the future.
 // You cannot resize the pool beyond poolLimit.
 func WithPoolLimit(limit int) PoolOption {
-	return func(s *poolSettings) {
+	return func(s *poolSetting) {
 		s.limit = limit
 	}
 }
 
-// WithIdleTimeout specifies the maximum amount of time a connection may be idle.
+// WithPoolIdleTimeout specifies the maximum amount of time a connection may be idle.
 // An idleTimeout of 0 means that there is no timeout.
-func WithIdleTimeout(duration time.Duration) PoolOption {
-	return func(s *poolSettings) {
+func WithPoolIdleTimeout(duration time.Duration) PoolOption {
+	return func(s *poolSetting) {
 		s.idleTimeout = duration
 	}
 }
 
 // WithPoolPrefill specifies how many resources can be opened in parallel.
 func WithPoolPrefill(prefill int) PoolOption {
-	return func(s *poolSettings) {
+	return func(s *poolSetting) {
 		s.prefill = prefill
 	}
 }
@@ -79,7 +79,7 @@ type GRPCDialFunc func() (*grpc.ClientConn, error)
 
 type gRPCPoolResource struct {
 	dialFunc GRPCDialFunc
-	config   *poolSettings
+	config   *poolSetting
 	pool     *vitess_pool.ResourcePool
 	mutex    sync.Mutex
 }
@@ -144,7 +144,7 @@ func (r *gRPCPoolResource) Put(conn *GRPCConn) {
 func NewGRPCPool(dial GRPCDialFunc, options ...PoolOption) GRPCPool {
 	pool := &gRPCPoolResource{
 		dialFunc: dial,
-		config: &poolSettings{
+		config: &poolSetting{
 			size:        10,
 			limit:       20,
 			idleTimeout: 60,
