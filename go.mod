@@ -3,8 +3,8 @@ module github.com/shenghui0779/yiigo
 go 1.15
 
 require (
-	entgo.io/ent v0.9.0
-	github.com/fsnotify/fsnotify v1.4.9
+	entgo.io/ent v0.9.1
+	github.com/fsnotify/fsnotify v1.5.1
 	github.com/go-playground/locales v0.14.0
 	github.com/go-playground/universal-translator v0.18.0
 	github.com/go-playground/validator/v10 v10.9.0
@@ -20,10 +20,10 @@ require (
 	github.com/stretchr/testify v1.7.0
 	go.mongodb.org/mongo-driver v1.7.1
 	go.uber.org/zap v1.19.0
-	golang.org/x/crypto v0.0.0-20210813211128-0a44fdfbc16e
-	golang.org/x/net v0.0.0-20210813160813-60bc85c4be6d // indirect
-	golang.org/x/sys v0.0.0-20210809222454-d867a43fc93e // indirect
-	google.golang.org/genproto v0.0.0-20210813162853-db860fec028c // indirect
+	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5
+	golang.org/x/net v0.0.0-20210825183410-e898025ed96a // indirect
+	golang.org/x/sys v0.0.0-20210902050250-f475640dd07b // indirect
+	google.golang.org/genproto v0.0.0-20210831024726-fe130286e0e2 // indirect
 	google.golang.org/grpc v1.40.0
 	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
 	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df

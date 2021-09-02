@@ -74,8 +74,11 @@ type GRPCPool interface {
 	Put(gc *GRPCConn)
 }
 
+// GRPCDialFunc grpc dial function
+type GRPCDialFunc func() (*grpc.ClientConn, error)
+
 type gRPCPoolResource struct {
-	dialFunc func() (*grpc.ClientConn, error)
+	dialFunc GRPCDialFunc
 	config   *poolSettings
 	pool     *vitess_pool.ResourcePool
 	mutex    sync.Mutex
@@ -138,7 +141,7 @@ func (r *gRPCPoolResource) Put(conn *GRPCConn) {
 }
 
 // NewGRPCPool returns a new grpc pool with dial func.
-func NewGRPCPool(dial func() (*grpc.ClientConn, error), options ...PoolOption) GRPCPool {
+func NewGRPCPool(dial GRPCDialFunc, options ...PoolOption) GRPCPool {
 	pool := &gRPCPoolResource{
 		dialFunc: dial,
 		config: &poolSettings{

@@ -165,26 +165,26 @@ var (
 )
 
 func newRedis(name, address string, options ...RedisOption) RedisPool {
-	settings := &redisSettings{
-		address:      address,
-		connTimeout:  10 * time.Second,
-		readTimeout:  10 * time.Second,
-		writeTimeout: 10 * time.Second,
-		pool: &poolSettings{
-			size:        10,
-			idleTimeout: 60 * time.Second,
+	pool := &redisPoolResource{
+		config: &redisSettings{
+			address:      address,
+			connTimeout:  10 * time.Second,
+			readTimeout:  10 * time.Second,
+			writeTimeout: 10 * time.Second,
+			pool: &poolSettings{
+				size:        10,
+				idleTimeout: 60 * time.Second,
+			},
 		},
 	}
 
 	for _, f := range options {
-		f(settings)
+		f(pool.config)
 	}
 
-	if settings.pool.limit == 0 {
-		settings.pool.limit = settings.pool.size
+	if pool.config.pool.limit == 0 {
+		pool.config.pool.limit = pool.config.pool.size
 	}
-
-	pool := &redisPoolResource{config: settings}
 
 	pool.init()
 
