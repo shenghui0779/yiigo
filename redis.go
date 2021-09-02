@@ -165,7 +165,7 @@ var (
 )
 
 func newRedis(address string, options ...RedisOption) RedisPool {
-	pool := &redisPoolResource{
+	rp := &redisPoolResource{
 		config: &redisSetting{
 			address:      address,
 			connTimeout:  10 * time.Second,
@@ -179,16 +179,16 @@ func newRedis(address string, options ...RedisOption) RedisPool {
 	}
 
 	for _, f := range options {
-		f(pool.config)
+		f(rp.config)
 	}
 
-	if pool.config.pool.limit == 0 {
-		pool.config.pool.limit = pool.config.pool.size
+	if rp.config.pool.limit < rp.config.pool.size {
+		rp.config.pool.limit = rp.config.pool.size
 	}
 
-	pool.init()
+	rp.init()
 
-	return pool
+	return rp
 }
 
 func initRedis(name, address string, options ...RedisOption) {

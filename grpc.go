@@ -142,20 +142,23 @@ func (r *gRPCPoolResource) Put(conn *GRPCConn) {
 
 // NewGRPCPool returns a new grpc pool with dial func.
 func NewGRPCPool(dial GRPCDialFunc, options ...PoolOption) GRPCPool {
-	pool := &gRPCPoolResource{
+	rp := &gRPCPoolResource{
 		dialFunc: dial,
 		config: &poolSetting{
 			size:        10,
-			limit:       20,
 			idleTimeout: 60,
 		},
 	}
 
 	for _, f := range options {
-		f(pool.config)
+		f(rp.config)
 	}
 
-	pool.init()
+	if rp.config.limit < rp.config.size {
+		rp.config.limit = rp.config.size
+	}
 
-	return pool
+	rp.init()
+
+	return rp
 }
