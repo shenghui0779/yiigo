@@ -54,28 +54,28 @@ func Test_env_Map(t *testing.T) {
 
 func Test_env_Unmarshal(t *testing.T) {
 	type App struct {
-		Env       string    `toml:"env"`
-		debugMode bool      `toml:"debug"`
-		Birthday  string    `toml:"birthday"`
-		Amount    int       `toml:"amount"`
-		Hosts     []string  `toml:"hosts"`
-		Ports     []int     `toml:"ports"`
-		Weight    float64   `toml:"weight"`
-		Prices    []float64 `toml:"prices"`
+		Env      string    `toml:"env"`
+		Debug    bool      `toml:"debug"`
+		Birthday string    `toml:"birthday"`
+		Amount   int       `toml:"amount"`
+		Hosts    []string  `toml:"hosts"`
+		Ports    []int     `toml:"ports"`
+		Weight   float64   `toml:"weight"`
+		Prices   []float64 `toml:"prices"`
 	}
 
 	result := new(App)
 
 	assert.Nil(t, Env("app").Unmarshal(result))
 	assert.Equal(t, &App{
-		Env:       "dev",
-		debugMode: true,
-		Birthday:  "2019-07-12 13:03:19",
-		Amount:    100,
-		Hosts:     []string{"127.0.0.1", "192.168.1.1", "192.168.1.80"},
-		Ports:     []int{80, 81, 82},
-		Weight:    50.6,
-		Prices:    []float64{23.5, 46.7, 45.9},
+		Env:      "dev",
+		Debug:    true,
+		Birthday: "2019-07-12 13:03:19",
+		Amount:   100,
+		Hosts:    []string{"127.0.0.1", "192.168.1.1", "192.168.1.80"},
+		Ports:    []int{80, 81, 82},
+		Weight:   50.6,
+		Prices:   []float64{23.5, 46.7, 45.9},
 	}, result)
 }
 
@@ -87,7 +87,6 @@ var (
 )
 
 func TestMain(m *testing.M) {
-	debugMode = true
 	env.LoadEnvFromBytes([]byte(`[app]
 env = "dev"
 debug = true

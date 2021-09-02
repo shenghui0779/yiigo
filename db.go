@@ -87,8 +87,8 @@ func initDB(name string, driver DBDriver, dsn string, options ...DBOption) {
 	settings := &dbSettings{
 		maxOpenConns:    20,
 		maxIdleConns:    10,
-		connMaxIdleTime: 60,
-		connMaxLifetime: 600,
+		connMaxIdleTime: 60 * time.Second,
+		connMaxLifetime: 10 * time.Minute,
 	}
 
 	for _, f := range options {

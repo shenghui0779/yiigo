@@ -64,13 +64,14 @@ type initSettings struct {
 // InitOption configures how we set up the yiigo initialization.
 type InitOption func(s *initSettings)
 
+// WithDebug specifies the debug mode
 func WithDebug() InitOption {
 	return func(s *initSettings) {
 		s.debug = true
 	}
 }
 
-// WithEnvFile specifies the file to load env, only support toml.
+// WithEnvFile register env file, only support toml.
 func WithEnvFile(path string, options ...EnvOption) InitOption {
 	return func(s *initSettings) {
 		s.env = &cfgenv{
@@ -80,6 +81,7 @@ func WithEnvFile(path string, options ...EnvOption) InitOption {
 	}
 }
 
+// WithLogger register logger
 func WithLogger(name, path string, options ...LoggerOption) InitOption {
 	return func(s *initSettings) {
 		s.logger = append(s.logger, &cfglogger{
@@ -90,6 +92,10 @@ func WithLogger(name, path string, options ...LoggerOption) InitOption {
 	}
 }
 
+// WithDB register db
+// [MySQL] username:password@tcp(localhost:3306)/dbname?timeout=10s&charset=utf8mb4&collation=utf8mb4_general_ci&parseTime=True&loc=Local
+// [PgSQL] host=localhost port=5432 user=root password=secret dbname=test connect_timeout=10 sslmode=disable
+// [SQLite] file::memory:?cache=shared"
 func WithDB(name string, driver DBDriver, dsn string, options ...DBOption) InitOption {
 	return func(s *initSettings) {
 		s.db = append(s.db, &cfgdb{
@@ -101,6 +107,9 @@ func WithDB(name string, driver DBDriver, dsn string, options ...DBOption) InitO
 	}
 }
 
+// WithMongo register mongodb
+// mongodb://localhost:27017/?connectTimeoutMS=10000&minPoolSize=10&maxPoolSize=20&maxIdleTimeMS=60000&readPreference=primary
+// [reference] https://docs.mongodb.com/manual/reference/connection-string
 func WithMongo(name string, dsn string) InitOption {
 	return func(s *initSettings) {
 		s.mongo = append(s.mongo, &cfgmongo{
@@ -110,6 +119,7 @@ func WithMongo(name string, dsn string) InitOption {
 	}
 }
 
+// WithRedis register redis
 func WithRedis(name, address string, options ...RedisOption) InitOption {
 	return func(s *initSettings) {
 		s.redis = append(s.redis, &cfgredis{

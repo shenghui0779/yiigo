@@ -164,7 +164,7 @@ var (
 	redisMap     sync.Map
 )
 
-func newRedis(name, address string, options ...RedisOption) RedisPool {
+func newRedis(address string, options ...RedisOption) RedisPool {
 	pool := &redisPoolResource{
 		config: &redisSettings{
 			address:      address,
@@ -192,7 +192,7 @@ func newRedis(name, address string, options ...RedisOption) RedisPool {
 }
 
 func initRedis(name, address string, options ...RedisOption) {
-	pool := newRedis(name, address, options...)
+	pool := newRedis(address, options...)
 
 	// verify connection
 	conn, err := pool.Get(context.TODO())

@@ -148,7 +148,7 @@ func TestToQuery(t *testing.T) {
 		Union(
 			builder.Wrap(
 				Table("user_1"),
-				Where("age IN (?)", []int{30, 40}),
+				WhereIn("age IN (?)", []int{30, 40}),
 				Limit(5),
 			),
 		),

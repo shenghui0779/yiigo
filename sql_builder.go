@@ -146,9 +146,7 @@ func (w *queryWrapper) ToQuery() (string, []interface{}) {
 
 	query = sqlx.Rebind(sqlx.BindType(string(w.driver)), query)
 
-	if debugMode {
-		logger.Info(query, zap.Any("binds", binds))
-	}
+	logger.Info("[SQL Info]", zap.String("sql", query), zap.Any("args", binds))
 
 	return query, binds
 }
@@ -294,9 +292,7 @@ func (w *queryWrapper) ToInsert(data interface{}) (string, []interface{}) {
 
 	query := sqlx.Rebind(sqlx.BindType(string(w.driver)), builder.String())
 
-	if debugMode {
-		logger.Info(query, zap.Any("binds", binds))
-	}
+	logger.Info("[SQL Info]", zap.String("sql", query), zap.Any("args", binds))
 
 	return query, binds
 }
@@ -442,9 +438,7 @@ func (w *queryWrapper) ToBatchInsert(data interface{}) (string, []interface{}) {
 
 	query := sqlx.Rebind(sqlx.BindType(string(w.driver)), builder.String())
 
-	if debugMode {
-		logger.Info(query, zap.Any("binds", binds))
-	}
+	logger.Info("[SQL Info]", zap.String("sql", query), zap.Any("args", binds))
 
 	return query, binds
 }
@@ -595,9 +589,7 @@ func (w *queryWrapper) ToUpdate(data interface{}) (string, []interface{}) {
 
 	query = sqlx.Rebind(sqlx.BindType(string(w.driver)), query)
 
-	if debugMode {
-		logger.Info(query, zap.Any("binds", binds))
-	}
+	logger.Info("[SQL Info]", zap.String("sql", query), zap.Any("args", binds))
 
 	return query, binds
 }
@@ -692,9 +684,7 @@ func (w *queryWrapper) ToDelete() (string, []interface{}) {
 
 	query = sqlx.Rebind(sqlx.BindType(string(w.driver)), query)
 
-	if debugMode {
-		logger.Info(query, zap.Any("binds", binds))
-	}
+	logger.Info("[SQL Info]", zap.String("sql", query), zap.Any("args", binds))
 
 	return query, binds
 }
@@ -707,9 +697,7 @@ func (w *queryWrapper) ToTruncate() string {
 
 	query := builder.String()
 
-	if debugMode {
-		logger.Info(query)
-	}
+	logger.Info("[SQL Info]", zap.String("sql", query))
 
 	return query
 }
