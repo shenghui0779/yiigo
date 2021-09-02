@@ -45,7 +45,7 @@ func initMongoDB(name, dsn string) {
 
 	mgoMap.Store(name, client)
 
-	logger.Info(fmt.Sprintf("yiigo: mongodb.%s is OK.", name))
+	logger.Info(fmt.Sprintf("yiigo: mongodb.%s is OK", name))
 }
 
 // Mongo returns a mongo client.

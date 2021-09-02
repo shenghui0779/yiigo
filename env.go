@@ -13,25 +13,25 @@ import (
 	"go.uber.org/zap"
 )
 
-// Environment is the interface for config
+// Environment is the interface for config.
 type Environment interface {
-	// Get returns an env value
+	// Get returns an env value.
 	Get(key string) EnvValue
 
-	// LoadEnvFromFile loads env from file
+	// LoadEnvFromFile loads env from file.
 	LoadEnvFromFile(path string) error
 
-	// LoadEnvFromBytes loads env from bytes
+	// LoadEnvFromBytes loads env from bytes.
 	LoadEnvFromBytes(b []byte) error
 
-	// Reload reloads env config
+	// Reload reloads env config.
 	Reload() error
 
-	// Watcher watching env change and reload
+	// Watcher watching env change and reload.
 	Watcher(onchange func(event fsnotify.Event))
 }
 
-// EnvValue is the interface for config value
+// EnvValue is the interface for config value.
 type EnvValue interface {
 	// Int returns a value of int64.
 	Int(defaultValue ...int64) int64

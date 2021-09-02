@@ -104,6 +104,7 @@ func WithMaxInFlight(n int) NSQOption {
 	}
 }
 
+// WithNSQConsumer specifies the consumer for nsq.
 func WithNSQConsumer(consumer NSQConsumer) NSQOption {
 	return func(s *nsqSetting) {
 		s.consumers = append(s.consumers, consumer)
@@ -163,10 +164,10 @@ func initNSQ(nsqd string, lookupd []string, options ...NSQOption) {
 		logger.Panic("yiigo: init nsq error", zap.Error(err))
 	}
 
-	logger.Info("yiigo: nsq is OK.")
+	logger.Info("yiigo: nsq is OK")
 }
 
-// NextAttemptDuration helper for attempt duration
+// NextAttemptDuration helper for attempt duration.
 func NextAttemptDuration(attempts uint16) time.Duration {
 	var d time.Duration
 

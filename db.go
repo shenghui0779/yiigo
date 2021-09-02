@@ -111,7 +111,7 @@ func initDB(name string, driver DBDriver, dsn string, options ...DBOption) {
 	dbmap.Store(name, sqlxDB)
 	entmap.Store(name, entDriver)
 
-	logger.Info(fmt.Sprintf("yiigo: db.%s is OK.", name))
+	logger.Info(fmt.Sprintf("yiigo: db.%s is OK", name))
 }
 
 // DB returns a db.

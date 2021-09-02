@@ -71,7 +71,7 @@ func WithEnvFile(path string, options ...EnvOption) InitOption {
 	}
 }
 
-// WithLogger register logger
+// WithLogger register logger.
 func WithLogger(name, path string, options ...LoggerOption) InitOption {
 	return func(s *initSetting) {
 		s.logger = append(s.logger, &cfglogger{
@@ -82,10 +82,10 @@ func WithLogger(name, path string, options ...LoggerOption) InitOption {
 	}
 }
 
-// WithDB register db
+// WithDB register db.
 // [MySQL] username:password@tcp(localhost:3306)/dbname?timeout=10s&charset=utf8mb4&collation=utf8mb4_general_ci&parseTime=True&loc=Local
 // [PgSQL] host=localhost port=5432 user=root password=secret dbname=test connect_timeout=10 sslmode=disable
-// [SQLite] file::memory:?cache=shared"
+// [SQLite] file::memory:?cache=shared
 func WithDB(name string, driver DBDriver, dsn string, options ...DBOption) InitOption {
 	return func(s *initSetting) {
 		s.db = append(s.db, &cfgdb{
@@ -97,7 +97,7 @@ func WithDB(name string, driver DBDriver, dsn string, options ...DBOption) InitO
 	}
 }
 
-// WithMongo register mongodb
+// WithMongo register mongodb.
 // [DSN] mongodb://localhost:27017/?connectTimeoutMS=10000&minPoolSize=10&maxPoolSize=20&maxIdleTimeMS=60000&readPreference=primary
 // [reference] https://docs.mongodb.com/manual/reference/connection-string
 func WithMongo(name string, dsn string) InitOption {
@@ -109,7 +109,7 @@ func WithMongo(name string, dsn string) InitOption {
 	}
 }
 
-// WithRedis register redis
+// WithRedis register redis.
 func WithRedis(name, address string, options ...RedisOption) InitOption {
 	return func(s *initSetting) {
 		s.redis = append(s.redis, &cfgredis{
@@ -120,7 +120,7 @@ func WithRedis(name, address string, options ...RedisOption) InitOption {
 	}
 }
 
-// WithNSQ specifies initialize the nsq
+// WithNSQ specifies initialize the nsq.
 func WithNSQ(nsqd string, lookupd []string, options ...NSQOption) InitOption {
 	return func(s *initSetting) {
 		s.nsq = &cfgnsq{
@@ -131,7 +131,7 @@ func WithNSQ(nsqd string, lookupd []string, options ...NSQOption) InitOption {
 	}
 }
 
-// Init yiigo initialization
+// Init yiigo initialization.
 func Init(options ...InitOption) {
 	setting := new(initSetting)
 

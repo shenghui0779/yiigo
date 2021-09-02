@@ -84,8 +84,9 @@ func debugLogger() *zap.Logger {
 
 	cfg.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 	cfg.EncoderConfig.EncodeTime = MyTimeEncoder
+	cfg.EncoderConfig.EncodeCaller = zapcore.FullCallerEncoder
 
-	l, _ := cfg.Build()
+	l, _ := cfg.Build(zap.AddCaller())
 
 	return l
 }

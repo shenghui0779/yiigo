@@ -215,7 +215,7 @@ func initRedis(name, address string, options ...RedisOption) {
 
 	redisMap.Store(name, pool)
 
-	logger.Info(fmt.Sprintf("yiigo: redis.%s is OK.", name))
+	logger.Info(fmt.Sprintf("yiigo: redis.%s is OK", name))
 }
 
 // Redis returns a redis pool.

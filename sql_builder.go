@@ -8,13 +8,13 @@ import (
 	"go.uber.org/zap"
 )
 
-// SQLBuilder is the interface for wrapping query options
+// SQLBuilder is the interface for wrapping query options.
 type SQLBuilder interface {
 	// Wrap wrapping query options
 	Wrap(options ...QueryOption) SQLWrapper
 }
 
-// SQLWrapper is the interface for building sql statement
+// SQLWrapper is the interface for building sql statement.
 type SQLWrapper interface {
 	// ToQuery returns query statement and binds.
 	ToQuery() (string, []interface{})
