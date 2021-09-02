@@ -37,9 +37,9 @@ go get -u github.com/shenghui0779/yiigo
 
 ```go
 yiigo.Init(
-yiigo.WithEnvDir("/data/config"),  // 自定义配置文件路径（/data/config/yiigo.toml）
-yiigo.WithEnvWatcher(onchange...), // 监听配置文件变化并热更新
-yiigo.WithNSQ(consumers...), // 初始化NSQ（需配置NSQ）
+    yiigo.WithEnvDir("/data/config"),  // 自定义配置文件路径（/data/config/yiigo.toml）
+    yiigo.WithEnvWatcher(onchange...), // 监听配置文件变化并热更新
+    yiigo.WithNSQ(consumers...),       // 初始化NSQ（需配置NSQ）
 )
 ```
 
@@ -54,35 +54,35 @@ debug = true
 
 [db]
 
-[db.default]
-driver = "mysql" # mysql | postgres | sqlite3
-dsn = "username:password@tcp(localhost:3306)/dbname?timeout=10s&charset=utf8mb4&collation=utf8mb4_general_ci&parseTime=True&loc=Local" # mysql
-# dsn = "host=localhost port=5432 user=root password=secret dbname=test connect_timeout=10 sslmode=disable" # postgres
-# dsn = "file::memory:?cache=shared" # sqlite3
-max_open_conns = 20
-max_idle_conns = 10
-conn_max_idle_time = 60 # 秒
-conn_max_lifetime = 60 # 秒
+    [db.default]
+    driver = "mysql" # mysql | postgres | sqlite3
+    dsn = "username:password@tcp(localhost:3306)/dbname?timeout=10s&charset=utf8mb4&collation=utf8mb4_general_ci&parseTime=True&loc=Local" # mysql
+    # dsn = "host=localhost port=5432 user=root password=secret dbname=test connect_timeout=10 sslmode=disable" # postgres
+    # dsn = "file::memory:?cache=shared" # sqlite3
+    max_open_conns = 20
+    max_idle_conns = 10
+    conn_max_idle_time = 60 # 秒
+    conn_max_lifetime = 60 # 秒
 
 [mongo]
 
-[mongo.default]
-# 参考：https://docs.mongodb.com/manual/reference/connection-string
-dsn = "mongodb://localhost:27017/?connectTimeoutMS=10000&minPoolSize=10&maxPoolSize=20&maxIdleTimeMS=60000&readPreference=primary"
+    [mongo.default]
+    # 参考：https://docs.mongodb.com/manual/reference/connection-string
+    dsn = "mongodb://localhost:27017/?connectTimeoutMS=10000&minPoolSize=10&maxPoolSize=20&maxIdleTimeMS=60000&readPreference=primary"
 
 [redis]
 
-[redis.default]
-address = "127.0.0.1:6379"
-password = ""
-database = 0
-connect_timeout = 10 # 秒
-read_timeout = 10 # 秒
-write_timeout = 10 # 秒
-pool_size = 10
-pool_limit = 20
-idle_timeout = 60 # 秒
-prefill_parallelism = 0 # 预填充连接数
+    [redis.default]
+    address = "127.0.0.1:6379"
+    password = ""
+    database = 0
+    connect_timeout = 10 # 秒
+    read_timeout = 10 # 秒
+    write_timeout = 10 # 秒
+    pool_size = 10
+    pool_limit = 20
+    idle_timeout = 60 # 秒
+    prefill_parallelism = 0 # 预填充连接数
 
 [nsq]
 lookupd = ["127.0.0.1:4161"]
@@ -90,20 +90,20 @@ nsqd = "127.0.0.1:4150"
 
 [email]
 
-[email.default]
-host = "smtp.exmail.qq.com"
-port = 25
-username = ""
-password = ""
+    [email.default]
+    host = "smtp.exmail.qq.com"
+    port = 25
+    username = ""
+    password = ""
 
 [log]
 
-[log.default]
-path = "logs/app.log"
-max_size = 500
-max_age = 0
-max_backups = 0
-compress = true
+    [log.default]
+    path = "logs/app.log"
+    max_size = 500
+    max_age = 0
+    max_backups = 0
+    compress = true
 
 # 自定义配置
 
@@ -168,7 +168,7 @@ yiigo.Mongo("other").Database("test").Collection("numbers").InsertOne(context.Ba
 conn, err := yiigo.Redis().Get(context.Background())
 
 if err != nil {
-log.Fatal(err)
+    log.Fatal(err)
 }
 
 defer yiigo.Redis().Put(conn)
@@ -179,7 +179,7 @@ conn.Do("SET", "test_key", "hello world")
 conn, err := yiigo.Redis("other").Get(context.Background())
 
 if err != nil {
-log.Fatal(err)
+    log.Fatal(err)
 }
 
 defer yiigo.Redis("other").Put(conn)
@@ -202,26 +202,26 @@ yiigo.Logger("other").Info("hello world")
 ```go
 // create pool
 pool := yiigo.NewGRPCPool(
-func () (*grpc.ClientConn, error) {
-return grpc.DialContext(context.Background(), "target",
-grpc.WithInsecure(),
-grpc.WithBlock(),
-grpc.WithKeepaliveParams(keepalive.ClientParameters{
-Time:    time.Second * 30,
-Timeout: time.Second * 10,
-}),
-)
-},
-yiigo.WithPoolSize(10),
-yiigo.WithPoolLimit(20),
-yiigo.WithIdleTimeout(600*time.Second),
+    func() (*grpc.ClientConn, error) {
+        return grpc.DialContext(context.Background(), "target",
+            grpc.WithInsecure(),
+            grpc.WithBlock(),
+            grpc.WithKeepaliveParams(keepalive.ClientParameters{
+                Time:    time.Second * 30,
+                Timeout: time.Second * 10,
+            }),
+        )
+    },
+    yiigo.WithPoolSize(10),
+    yiigo.WithPoolLimit(20),
+    yiigo.WithIdleTimeout(600*time.Second),
 )
 
 // use pool
 conn, err := pool.Get(context.Background())
 
 if err != nil {
-return err
+    return err
 }
 
 defer pool.Put(conn)
@@ -257,101 +257,101 @@ builder := yiigo.NewSQLBuilder(yiigo.MySQL)
 
 ```go
 builder.Wrap(
-yiigo.Table("user"),
-yiigo.Where("id = ?", 1),
+    yiigo.Table("user"),
+    yiigo.Where("id = ?", 1),
 ).ToQuery()
 // SELECT * FROM user WHERE id = ?
 // [1]
 
 builder.Wrap(
-yiigo.Table("user"),
-yiigo.Where("name = ? AND age > ?", "shenghui0779", 20),
+    yiigo.Table("user"),
+    yiigo.Where("name = ? AND age > ?", "shenghui0779", 20),
 ).ToQuery()
 // SELECT * FROM user WHERE name = ? AND age > ?
 // [shenghui0779 20]
 
 builder.Wrap(
-yiigo.Table("user"),
-yiigo.WhereIn("age IN (?)", []int{20, 30}),
+    yiigo.Table("user"),
+    yiigo.WhereIn("age IN (?)", []int{20, 30}),
 ).ToQuery()
 // SELECT * FROM user WHERE age IN (?, ?)
 // [20 30]
 
 builder.Wrap(
-yiigo.Table("user"),
-yiigo.Select("id", "name", "age"),
-yiigo.Where("id = ?", 1),
+    yiigo.Table("user"),
+    yiigo.Select("id", "name", "age"),
+    yiigo.Where("id = ?", 1),
 ).ToQuery()
 // SELECT id, name, age FROM user WHERE id = ?
 // [1]
 
 builder.Wrap(
-yiigo.Table("user"),
-yiigo.Distinct("name"),
-yiigo.Where("id = ?", 1),
+    yiigo.Table("user"),
+    yiigo.Distinct("name"),
+    yiigo.Where("id = ?", 1),
 ).ToQuery()
 // SELECT DISTINCT name FROM user WHERE id = ?
 // [1]
 
 builder.Wrap(
-yiigo.Table("user"),
-yiigo.LeftJoin("address", "user.id = address.user_id"),
-yiigo.Where("user.id = ?", 1),
+    yiigo.Table("user"),
+    yiigo.LeftJoin("address", "user.id = address.user_id"),
+    yiigo.Where("user.id = ?", 1),
 ).ToQuery()
 // SELECT * FROM user LEFT JOIN address ON user.id = address.user_id WHERE user.id = ?
 // [1]
 
 builder.Wrap(
-yiigo.Table("address"),
-yiigo.Select("user_id", "COUNT(*) AS total"),
-yiigo.GroupBy("user_id"),
-yiigo.Having("user_id = ?", 1),
+    yiigo.Table("address"),
+    yiigo.Select("user_id", "COUNT(*) AS total"),
+    yiigo.GroupBy("user_id"),
+    yiigo.Having("user_id = ?", 1),
 ).ToQuery()
 // SELECT user_id, COUNT(*) AS total FROM address GROUP BY user_id HAVING user_id = ?
 // [1]
 
 builder.Wrap(
-yiigo.Table("user"),
-yiigo.Where("age > ?", 20),
-yiigo.OrderBy("age ASC", "id DESC"),
-yiigo.Offset(5),
-yiigo.Limit(10),
+    yiigo.Table("user"),
+    yiigo.Where("age > ?", 20),
+    yiigo.OrderBy("age ASC", "id DESC"),
+    yiigo.Offset(5),
+    yiigo.Limit(10),
 ).ToQuery()
 // SELECT * FROM user WHERE age > ? ORDER BY age ASC, id DESC LIMIT ? OFFSET ?
 // [20, 10, 5]
 
 wrap1 := builder.Wrap(
-Table("user_1"),
-Where("id = ?", 2),
+    Table("user_1"),
+    Where("id = ?", 2),
 )
 
 builder.Wrap(
-Table("user_0"),
-Where("id = ?", 1),
-Union(wrap1),
+    Table("user_0"),
+    Where("id = ?", 1),
+    Union(wrap1),
 ).ToQuery()
 // (SELECT * FROM user_0 WHERE id = ?) UNION (SELECT * FROM user_1 WHERE id = ?)
 // [1, 2]
 
 builder.Wrap(
-Table("user_0"),
-Where("id = ?", 1),
-UnionAll(wrap1),
+    Table("user_0"),
+    Where("id = ?", 1),
+    UnionAll(wrap1),
 ).ToQuery()
 // (SELECT * FROM user_0 WHERE id = ?) UNION ALL (SELECT * FROM user_1 WHERE id = ?)
 // [1, 2]
 
 builder.Wrap(
-Table("user_0"),
-WhereIn("age IN (?)", []int{10, 20}),
-Limit(5),
-Union(
-builder.Wrap(
-Table("user_1"),
-Where("age IN (?)", []int{30, 40}),
-Limit(5),
-),
-),
+    Table("user_0"),
+    WhereIn("age IN (?)", []int{10, 20}),
+    Limit(5),
+    Union(
+        builder.Wrap(
+            Table("user_1"),
+            Where("age IN (?)", []int{30, 40}),
+            Limit(5),
+        ),
+    ),
 ).ToQuery()
 // (SELECT * FROM user_0 WHERE age IN (?, ?) LIMIT ?) UNION (SELECT * FROM user_1 WHERE age IN (?, ?) LIMIT ?)
 // [10, 20, 5, 30, 40, 5]
@@ -364,22 +364,22 @@ builder.Wrap(Table("user")).ToTruncate()
 
 ```go
 type User struct {
-ID     int    `db:"-"`
-Name   string `db:"name"`
-Age    int    `db:"age"`
-Phone  string `db:"phone,omitempty"`
+    ID     int    `db:"-"`
+    Name   string `db:"name"`
+    Age    int    `db:"age"`
+    Phone  string `db:"phone,omitempty"`
 }
 
 builder.Wrap(Table("user")).ToInsert(&User{
-Name: "yiigo",
-Age:  29,
+    Name: "yiigo",
+    Age:  29,
 })
 // INSERT INTO user (name, age) VALUES (?, ?)
 // [yiigo 29]
 
 builder.Wrap(yiigo.Table("user")).ToInsert(yiigo.X{
-"name": "yiigo",
-"age":  29,
+    "name": "yiigo",
+    "age":  29,
 })
 // INSERT INTO user (name, age) VALUES (?, ?)
 // [yiigo 29]
@@ -389,34 +389,34 @@ builder.Wrap(yiigo.Table("user")).ToInsert(yiigo.X{
 
 ```go
 type User struct {
-ID     int    `db:"-"`
-Name   string `db:"name"`
-Age    int    `db:"age"`
-Phone  string `db:"phone,omitempty"`
+    ID     int    `db:"-"`
+    Name   string `db:"name"`
+    Age    int    `db:"age"`
+    Phone  string `db:"phone,omitempty"`
 }
 
 builder.Wrap(Table("user")).ToBatchInsert([]*User{
-{
-Name: "shenghui0779",
-Age:  20,
-},
-{
-Name: "yiigo",
-Age:  29,
-},
+    {
+        Name: "shenghui0779",
+        Age:  20,
+    },
+    {
+        Name: "yiigo",
+        Age:  29,
+    },
 })
 // INSERT INTO user (name, age) VALUES (?, ?), (?, ?)
 // [shenghui0779 20 yiigo 29]
 
 builder.Wrap(yiigo.Table("user")).ToBatchInsert([]yiigo.X{
-{
-"name": "shenghui0779",
-"age":  20,
-},
-{
-"name": "yiigo",
-"age":  29,
-},
+    {
+        "name": "shenghui0779",
+        "age":  20,
+    },
+    {
+        "name": "yiigo",
+        "age":  29,
+    },
 })
 // INSERT INTO user (name, age) VALUES (?, ?), (?, ?)
 // [shenghui0779 20 yiigo 29]
@@ -426,36 +426,36 @@ builder.Wrap(yiigo.Table("user")).ToBatchInsert([]yiigo.X{
 
 ```go
 type User struct {
-Name   string `db:"name"`
-Age    int    `db:"age"`
-Phone  string `db:"phone,omitempty"`
+    Name   string `db:"name"`
+    Age    int    `db:"age"`
+    Phone  string `db:"phone,omitempty"`
 }
 
 builder.Wrap(
-Table("user"),
-Where("id = ?", 1),
+    Table("user"),
+    Where("id = ?", 1),
 ).ToUpdate(&User{
-Name: "yiigo",
-Age:  29,
+    Name: "yiigo",
+    Age:  29,
 })
 // UPDATE user SET name = ?, age = ? WHERE id = ?
 // [yiigo 29 1]
 
 builder.Wrap(
-yiigo.Table("user"),
-yiigo.Where("id = ?", 1),
+    yiigo.Table("user"),
+    yiigo.Where("id = ?", 1),
 ).ToUpdate(yiigo.X{
-"name": "yiigo",
-"age":  29,
+    "name": "yiigo",
+    "age":  29,
 })
 // UPDATE user SET name = ?, age = ? WHERE id = ?
 // [yiigo 29 1]
 
 builder.Wrap(
-yiigo.Table("product"),
-yiigo.Where("id = ?", 1),
+    yiigo.Table("product"),
+    yiigo.Where("id = ?", 1),
 ).ToUpdate(yiigo.X{
-"price": yiigo.Clause("price * ? + ?", 2, 100),
+    "price": yiigo.Clause("price * ? + ?", 2, 100),
 })
 // UPDATE product SET price = price * ? + ? WHERE id = ?
 // [2 100 1]
@@ -465,8 +465,8 @@ yiigo.Where("id = ?", 1),
 
 ```go
 builder.Wrap(
-yiigo.Table("user"),
-yiigo.Where("id = ?", 1),
+    yiigo.Table("user"),
+    yiigo.Where("id = ?", 1),
 ).ToDelete()
 // DELETE FROM user WHERE id = ?
 // [1]
