@@ -173,9 +173,6 @@ func (c *config) Watcher(onchange func(event fsnotify.Event)) {
 						logger.Error("yiigo: env reload error", zap.Error(err))
 					}
 
-					// reassign the 'Debug' variable
-					Debug = c.Get("app.debug").Bool()
-
 					if onchange != nil {
 						onchange(event)
 					}
@@ -416,45 +413,78 @@ func (c *cfgValue) Unmarshal(dest interface{}) error {
 	return v.Unmarshal(dest)
 }
 
+type EnvEventFunc func(event fsnotify.Event)
+
+type envSettings struct {
+	watcher  bool
+	onchange EnvEventFunc
+}
+
+// EnvOption configures how we set up the env file.
+type EnvOption func(s *envSettings)
+
+// WithEnvWatcher specifies the `watcher` for env file.
+func WithEnvWatcher(onchanges ...EnvEventFunc) EnvOption {
+	return func(s *envSettings) {
+		s.watcher = true
+
+		if len(onchanges) != 0 {
+			s.onchange = func(event fsnotify.Event) {
+				defer func() {
+					if r := recover(); r != nil {
+						logger.Error("yiigo: env onchange callback panic", zap.Any("error", r), zap.ByteString("stack", debug.Stack()))
+					}
+				}()
+
+				for _, f := range onchanges {
+					f(event)
+				}
+			}
+		}
+	}
+}
+
 var env Environment = new(config)
 
-func initEnv(settings *initSettings) {
-	path, err := filepath.Abs(filepath.Join(settings.envDir, "yiigo.toml"))
+func initEnv(path string, options ...EnvOption) {
+	abspath, err := filepath.Abs(path)
 
 	if err != nil {
-		logger.Panic("yiigo: load config file error", zap.Error(err))
+		logger.Panic("yiigo: load env file error", zap.Error(err))
 	}
 
-	if _, err := os.Stat(path); err != nil {
+	if _, err := os.Stat(abspath); err != nil {
 		if os.IsNotExist(err) {
-			if len(settings.envDir) != 0 {
-				if err := os.MkdirAll(settings.envDir, 0755); err != nil {
-					logger.Panic("yiigo: load config file error", zap.Error(err))
+			if dir, _ := filepath.Split(abspath); len(dir) != 0 {
+				if err := os.MkdirAll(dir, 0755); err != nil {
+					logger.Panic("yiigo: load env file error", zap.Error(err))
 				}
 			}
 
-			f, err := os.Create(path)
+			f, err := os.Create(abspath)
 
 			if err != nil {
-				logger.Panic("yiigo: load config file error", zap.Error(err))
+				logger.Panic("yiigo: load env file error", zap.Error(err))
 			}
 
-			f.WriteString(defaultEnvContent)
 			f.Close()
 		} else if os.IsPermission(err) {
-			os.Chmod(path, 0755)
+			os.Chmod(abspath, 0755)
 		}
 	}
 
-	if err := env.LoadEnvFromFile(path); err != nil {
-		logger.Panic("yiigo: load config file error", zap.Error(err))
+	if err := env.LoadEnvFromFile(abspath); err != nil {
+		logger.Panic("yiigo: load env file error", zap.Error(err))
 	}
 
-	// assign the 'Debug' variable
-	Debug = Env("app.debug").Bool()
+	settings := new(envSettings)
 
-	if settings.envWatcher {
-		go env.Watcher(settings.envOnChange)
+	for _, f := range options {
+		f(settings)
+	}
+
+	if settings.watcher {
+		go env.Watcher(settings.onchange)
 	}
 }
 
@@ -462,58 +492,3 @@ func initEnv(settings *initSettings) {
 func Env(key string) EnvValue {
 	return env.Get(key)
 }
-
-var defaultEnvContent = `[app]
-env = "dev"
-debug = true
-
-[db]
-
-    # [db.default]
-    # driver = "mysql"
-    # dsn = "username:password@tcp(localhost:3306)/dbname?timeout=10s&charset=utf8mb4&collation=utf8mb4_general_ci&parseTime=True&loc=Local"
-    # max_open_conns = 20
-	# max_idle_conns = 10
-	# conn_max_idle_time = 60
-    # conn_max_lifetime = 600
-
-[mongo]
-
-	# [mongo.default]
-	# dsn = "mongodb://localhost:27017/?connectTimeoutMS=10000&minPoolSize=10&maxPoolSize=20&maxIdleTimeMS=60000&readPreference=primary"
-
-[redis]
-
-	# [redis.default]
-	# address = "127.0.0.1:6379"
-	# password = ""
-	# database = 0
-	# connect_timeout = 10
-	# read_timeout = 10
-	# write_timeout = 10
-	# pool_size = 10
-	# pool_limit = 20
-	# idle_timeout = 60
-	# pool_prefill = 0
-
-# [nsq]
-# lookupd = ["127.0.0.1:4161"]
-# nsqd = "127.0.0.1:4150"
-
-[email]
-
-	# [email.default]
-	# host = "smtp.exmail.qq.com"
-	# port = 25
-	# username = ""
-	# password = ""
-
-[log]
-
-    [log.default]
-    path = "logs/app.log"
-    max_size = 500
-    max_age = 0
-    max_backups = 0
-    compress = true
-`

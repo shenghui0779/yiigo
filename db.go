@@ -16,6 +16,7 @@ import (
 	"go.uber.org/zap"
 )
 
+// DBDriver db driver
 type DBDriver string
 
 const (
@@ -32,78 +33,92 @@ var (
 	entmap           sync.Map
 )
 
-type dbConfig struct {
-	Driver          string `toml:"driver"`
-	DSN             string `toml:"dsn"`
-	MaxOpenConns    int    `toml:"max_open_conns"`
-	MaxIdleConns    int    `toml:"max_idle_conns"`
-	ConnMaxIdleTime int    `toml:"conn_max_idle_time"`
-	ConnMaxLifetime int    `toml:"conn_max_lifetime"`
+type dbSettings struct {
+	maxOpenConns    int
+	maxIdleConns    int
+	connMaxIdleTime time.Duration
+	connMaxLifetime time.Duration
 }
 
-func dbDial(cfg *dbConfig) (*sql.DB, error) {
-	if !InStrings(cfg.Driver, []string{string(MySQL), string(Postgres), string(SQLite)}) {
-		return nil, fmt.Errorf("yiigo: unknown db driver %s, expects mysql, postgres, sqlite3", cfg.Driver)
-	}
+// DBOption configures how we set up the db.
+type DBOption func(s *dbSettings)
 
-	db, err := sql.Open(cfg.Driver, cfg.DSN)
+// WithDBMaxOpenConns specifies the `MaxOpenConns` for db.
+func WithDBMaxOpenConns(n int) DBOption {
+	return func(s *dbSettings) {
+		s.maxOpenConns = n
+	}
+}
+
+// WithDBMaxIdleConns specifies the `MaxIdleConns` for db.
+func WithDBMaxIdleConns(n int) DBOption {
+	return func(s *dbSettings) {
+		s.maxIdleConns = n
+	}
+}
+
+// WithDBConnMaxIdleTime specifies the `ConnMaxIdleTime` for db.
+func WithDBConnMaxIdleTime(t time.Duration) DBOption {
+	return func(s *dbSettings) {
+		s.connMaxIdleTime = t
+	}
+}
+
+// WithDBConnMaxLifetime specifies the `ConnMaxLifetime` for db.
+func WithDBConnMaxLifetime(t time.Duration) DBOption {
+	return func(s *dbSettings) {
+		s.connMaxLifetime = t
+	}
+}
+
+func initDB(name string, driver DBDriver, dsn string, options ...DBOption) {
+	db, err := sql.Open(string(driver), dsn)
 
 	if err != nil {
-		return nil, err
+		logger.Panic("yiigo: db init error", zap.String("name", name), zap.Error(err))
 	}
 
 	if err = db.Ping(); err != nil {
 		db.Close()
 
-		return nil, err
+		logger.Panic("yiigo: db init error", zap.String("name", name), zap.Error(err))
 	}
 
-	db.SetMaxOpenConns(cfg.MaxOpenConns)
-	db.SetMaxIdleConns(cfg.MaxIdleConns)
-	db.SetConnMaxIdleTime(time.Duration(cfg.ConnMaxIdleTime) * time.Second)
-	db.SetConnMaxLifetime(time.Duration(cfg.ConnMaxLifetime) * time.Second)
-
-	return db, nil
-}
-
-func initDB() {
-	configs := make(map[string]*dbConfig)
-
-	if err := env.Get("db").Unmarshal(&configs); err != nil {
-		logger.Panic("yiigo: db init error", zap.Error(err))
+	settings := &dbSettings{
+		maxOpenConns:    20,
+		maxIdleConns:    10,
+		connMaxIdleTime: 60,
+		connMaxLifetime: 600,
 	}
 
-	if len(configs) == 0 {
-		return
+	for _, f := range options {
+		f(settings)
 	}
 
-	for name, cfg := range configs {
-		db, err := dbDial(cfg)
+	db.SetMaxOpenConns(settings.maxOpenConns)
+	db.SetMaxIdleConns(settings.maxIdleConns)
+	db.SetConnMaxIdleTime(settings.connMaxIdleTime)
+	db.SetConnMaxLifetime(settings.connMaxLifetime)
 
-		if err != nil {
-			logger.Panic("yiigo: db init error", zap.String("name", name), zap.Error(err))
-		}
+	sqlxDB := sqlx.NewDb(db, string(driver))
+	entDriver := entsql.OpenDB(string(driver), db)
 
-		sqlxDB := sqlx.NewDb(db, cfg.Driver)
-		entDriver := entsql.OpenDB(cfg.Driver, db)
-
-		if name == defaultConn {
-			defaultDB = sqlxDB
-			defaultEntDriver = entDriver
-		}
-
-		dbmap.Store(name, sqlxDB)
-		entmap.Store(name, entDriver)
-
-		logger.Info(fmt.Sprintf("yiigo: db.%s is OK.", name))
+	if name == Default {
+		defaultDB = sqlxDB
+		defaultEntDriver = entDriver
 	}
+
+	dbmap.Store(name, sqlxDB)
+	entmap.Store(name, entDriver)
+
+	logger.Info(fmt.Sprintf("yiigo: db.%s is OK.", name))
 }
 
 // DB returns a db.
 func DB(name ...string) *sqlx.DB {
-	if len(name) == 0 {
+	if len(name) == 0 || name[0] == Default {
 		if defaultDB == nil {
-			logger.Panic(fmt.Sprintf("yiigo: unknown db.%s (forgotten configure?)", defaultConn))
+			logger.Panic(fmt.Sprintf("yiigo: unknown db.%s (forgotten configure?)", Default))
 		}
 
 		return defaultDB
@@ -120,9 +135,9 @@ func DB(name ...string) *sqlx.DB {
 
 // EntDriver returns an ent dialect.Driver.
 func EntDriver(name ...string) *entsql.Driver {
-	if len(name) == 0 || name[0] == defaultConn {
+	if len(name) == 0 || name[0] == Default {
 		if defaultEntDriver == nil {
-			logger.Panic(fmt.Sprintf("yiigo: unknown db.%s (forgotten configure?)", defaultConn))
+			logger.Panic(fmt.Sprintf("yiigo: unknown db.%s (forgotten configure?)", Default))
 		}
 
 		return defaultEntDriver

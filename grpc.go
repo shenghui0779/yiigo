@@ -23,44 +23,44 @@ func (gc *GRPCConn) Close() {
 	}
 }
 
-// PoolSettings pool settings
-type PoolSettings struct {
-	poolSize    int
-	poolLimit   int
+// poolSettings pool settings
+type poolSettings struct {
+	size        int
+	limit       int
 	idleTimeout time.Duration
-	poolPrefill int
+	prefill     int
 }
 
 // PoolOption configures how we set up the pool.
-type PoolOption func(s *PoolSettings)
+type PoolOption func(s *poolSettings)
 
 // WithPoolSize specifies the number of possible resources in the pool.
 func WithPoolSize(size int) PoolOption {
-	return func(s *PoolSettings) {
-		s.poolSize = size
+	return func(s *poolSettings) {
+		s.size = size
 	}
 }
 
 // WithPoolLimit specifies the extent to which the pool can be resized in the future.
 // You cannot resize the pool beyond poolLimit.
 func WithPoolLimit(limit int) PoolOption {
-	return func(s *PoolSettings) {
-		s.poolLimit = limit
+	return func(s *poolSettings) {
+		s.limit = limit
 	}
 }
 
 // WithIdleTimeout specifies the maximum amount of time a connection may be idle.
 // An idleTimeout of 0 means that there is no timeout.
 func WithIdleTimeout(duration time.Duration) PoolOption {
-	return func(s *PoolSettings) {
+	return func(s *poolSettings) {
 		s.idleTimeout = duration
 	}
 }
 
 // WithPoolPrefill specifies how many resources can be opened in parallel.
 func WithPoolPrefill(prefill int) PoolOption {
-	return func(s *PoolSettings) {
-		s.poolPrefill = prefill
+	return func(s *poolSettings) {
+		s.prefill = prefill
 	}
 }
 
@@ -76,7 +76,7 @@ type GRPCPool interface {
 
 type gRPCPoolResource struct {
 	dialFunc func() (*grpc.ClientConn, error)
-	settings *PoolSettings
+	config   *poolSettings
 	pool     *vitess_pool.ResourcePool
 	mutex    sync.Mutex
 }
@@ -99,7 +99,7 @@ func (r *gRPCPoolResource) init() {
 		return &GRPCConn{conn}, nil
 	}
 
-	r.pool = vitess_pool.NewResourcePool(df, r.settings.poolSize, r.settings.poolLimit, r.settings.idleTimeout, r.settings.poolPrefill)
+	r.pool = vitess_pool.NewResourcePool(df, r.config.size, r.config.limit, r.config.idleTimeout, r.config.prefill)
 }
 
 func (r *gRPCPoolResource) Get(ctx context.Context) (*GRPCConn, error) {
@@ -141,15 +141,15 @@ func (r *gRPCPoolResource) Put(conn *GRPCConn) {
 func NewGRPCPool(dial func() (*grpc.ClientConn, error), options ...PoolOption) GRPCPool {
 	pool := &gRPCPoolResource{
 		dialFunc: dial,
-		settings: &PoolSettings{
-			poolSize:    10,
-			poolLimit:   20,
+		config: &poolSettings{
+			size:        10,
+			limit:       20,
 			idleTimeout: 60,
 		},
 	}
 
 	for _, f := range options {
-		f(pool.settings)
+		f(pool.config)
 	}
 
 	pool.init()

@@ -105,25 +105,14 @@ func setConsumers(lookupd []string, consumers ...NSQConsumer) error {
 	return nil
 }
 
-type nsqConfig struct {
-	Lookupd []string `toml:"lookupd"`
-	Nsqd    string   `toml:"nsqd"`
-}
-
-func initNSQ(consumers ...NSQConsumer) {
-	cfg := new(nsqConfig)
-
-	if err := Env("nsq").Unmarshal(cfg); err != nil {
-		logger.Panic("yiigo: init nsq error", zap.Error(err))
-	}
-
+func initNSQ(nsqd string, lookupd []string, consumers ...NSQConsumer) {
 	// init producer
-	if err := initProducer(cfg.Nsqd); err != nil {
+	if err := initProducer(nsqd); err != nil {
 		logger.Panic("yiigo: init nsq error", zap.Error(err))
 	}
 
 	// set consumers
-	if err := setConsumers(cfg.Lookupd, consumers...); err != nil {
+	if err := setConsumers(lookupd, consumers...); err != nil {
 		logger.Panic("yiigo: init nsq error", zap.Error(err))
 	}
 

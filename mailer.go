@@ -7,13 +7,6 @@ import (
 	"gopkg.in/gomail.v2"
 )
 
-type emailConfig struct {
-	Host     string `toml:"host"`
-	Port     int    `toml:"port"`
-	Username string `toml:"username"`
-	Password string `toml:"password"`
-}
-
 // EMail email
 type EMail struct {
 	Title       string
@@ -68,33 +61,21 @@ var (
 	mailerMap     sync.Map
 )
 
-func initMailer() {
-	configs := make(map[string]*emailConfig)
+func initMailer(name, host string, port int, account, password string) {
+	dialer := &EMailDialer{dialer: gomail.NewDialer(host, port, account, password)}
 
-	if err := env.Get("email").Unmarshal(&configs); err != nil {
-		logger.Panic("yiigo: email dialer init error", zap.Error(err))
+	if name == Default {
+		defaultMailer = dialer
 	}
 
-	if len(configs) == 0 {
-		return
-	}
-
-	for name, cfg := range configs {
-		dialer := &EMailDialer{dialer: gomail.NewDialer(cfg.Host, cfg.Port, cfg.Username, cfg.Password)}
-
-		if name == defaultConn {
-			defaultMailer = dialer
-		}
-
-		mailerMap.Store(name, dialer)
-	}
+	mailerMap.Store(name, dialer)
 }
 
 // Mailer returns an email dialer.
 func Mailer(name ...string) *EMailDialer {
 	if len(name) == 0 {
 		if defaultMailer == nil {
-			logger.Panic("yiigo: invalid email dialer", zap.String("name", defaultConn))
+			logger.Panic("yiigo: invalid email dialer", zap.String("name", Default))
 		}
 
 		return defaultMailer

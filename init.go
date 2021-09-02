@@ -2,59 +2,132 @@ package yiigo
 
 import (
 	"path/filepath"
-	"runtime/debug"
-
-	"github.com/fsnotify/fsnotify"
-	"go.uber.org/zap"
+	"sync"
 )
 
-// Debug specifies the debug mode
-var Debug bool
+var debugMode bool
+
+type cfgenv struct {
+	path    string
+	options []EnvOption
+}
+
+type cfglogger struct {
+	name    string
+	path    string
+	options []LoggerOption
+}
+
+type cfgdb struct {
+	name    string
+	driver  DBDriver
+	dsn     string
+	options []DBOption
+}
+
+type cfgmongo struct {
+	name string
+	dsn  string
+}
+
+type cfgredis struct {
+	name    string
+	address string
+	options []RedisOption
+}
+
+type cfgnsq struct {
+	nsqd      string
+	lookupd   []string
+	consumers []NSQConsumer
+}
+
+type cfgmailer struct {
+	name     string
+	host     string
+	port     int
+	account  string
+	password string
+}
 
 type initSettings struct {
-	envDir       string
-	envWatcher   bool
-	envOnChange  func(event fsnotify.Event)
-	nsqInit      bool
-	nsqConsumers []NSQConsumer
+	debug  bool
+	env    *cfgenv
+	logger []*cfglogger
+	db     []*cfgdb
+	mongo  []*cfgmongo
+	redis  []*cfgredis
+	nsq    *cfgnsq
+	mailer []*cfgmailer
 }
 
 // InitOption configures how we set up the yiigo initialization.
 type InitOption func(s *initSettings)
 
-// WithEnvDir specifies the dir to load env.
-func WithEnvDir(dir string) InitOption {
+func WithDebug() InitOption {
 	return func(s *initSettings) {
-		s.envDir = filepath.Clean(dir)
+		s.debug = true
 	}
 }
 
-// WithEnvWatcher specifies watching env change.
-func WithEnvWatcher(onchanges ...func(event fsnotify.Event)) InitOption {
+// WithEnvFile specifies the file to load env, only support toml.
+func WithEnvFile(path string, options ...EnvOption) InitOption {
 	return func(s *initSettings) {
-		s.envWatcher = true
-
-		if len(onchanges) != 0 {
-			s.envOnChange = func(event fsnotify.Event) {
-				defer func() {
-					if r := recover(); r != nil {
-						logger.Error("yiigo: env onchange callback panic", zap.Any("error", r), zap.ByteString("stack", debug.Stack()))
-					}
-				}()
-
-				for _, f := range onchanges {
-					f(event)
-				}
-			}
+		s.env = &cfgenv{
+			path:    filepath.Clean(path),
+			options: options,
 		}
 	}
 }
 
-// WithNSQ specifies initialize the nsq
-func WithNSQ(consumers ...NSQConsumer) InitOption {
+func WithLogger(name, path string, options ...LoggerOption) InitOption {
 	return func(s *initSettings) {
-		s.nsqInit = true
-		s.nsqConsumers = consumers
+		s.logger = append(s.logger, &cfglogger{
+			name:    name,
+			path:    path,
+			options: options,
+		})
+	}
+}
+
+func WithDB(name string, driver DBDriver, dsn string, options ...DBOption) InitOption {
+	return func(s *initSettings) {
+		s.db = append(s.db, &cfgdb{
+			name:    name,
+			driver:  driver,
+			dsn:     dsn,
+			options: options,
+		})
+	}
+}
+
+func WithMongo(name string, dsn string) InitOption {
+	return func(s *initSettings) {
+		s.mongo = append(s.mongo, &cfgmongo{
+			name: name,
+			dsn:  dsn,
+		})
+	}
+}
+
+func WithRedis(name, address string, options ...RedisOption) InitOption {
+	return func(s *initSettings) {
+		s.redis = append(s.redis, &cfgredis{
+			name:    name,
+			address: address,
+			options: options,
+		})
+	}
+}
+
+// WithNSQ specifies initialize the nsq
+func WithNSQ(nsqd string, lookupd []string, consumers ...NSQConsumer) InitOption {
+	return func(s *initSettings) {
+		s.nsq = &cfgnsq{
+			nsqd:      nsqd,
+			lookupd:   lookupd,
+			consumers: consumers,
+		}
 	}
 }
 
@@ -66,14 +139,89 @@ func Init(options ...InitOption) {
 		f(settings)
 	}
 
-	initEnv(settings)
-	initLogger()
-	initDB()
-	initMongoDB()
-	initRedis()
-	initMailer()
+	debugMode = settings.debug
 
-	if settings.nsqInit {
-		initNSQ(settings.nsqConsumers...)
+	var wg sync.WaitGroup
+
+	if settings.env != nil {
+		wg.Add(1)
+
+		go func() {
+			defer wg.Done()
+
+			initEnv(settings.env.path, settings.env.options...)
+		}()
 	}
+
+	if len(settings.logger) != 0 {
+		wg.Add(1)
+
+		go func() {
+			defer wg.Done()
+
+			for _, v := range settings.logger {
+				initLogger(v.name, v.path, v.options...)
+			}
+		}()
+	}
+
+	if len(settings.db) != 0 {
+		wg.Add(1)
+
+		go func() {
+			defer wg.Done()
+
+			for _, v := range settings.db {
+				initDB(v.name, v.driver, v.dsn, v.options...)
+			}
+		}()
+	}
+
+	if len(settings.mongo) != 0 {
+		wg.Add(1)
+
+		go func() {
+			defer wg.Done()
+
+			for _, v := range settings.mongo {
+				initMongoDB(v.name, v.dsn)
+			}
+		}()
+	}
+
+	if len(settings.redis) != 0 {
+		wg.Add(1)
+
+		go func() {
+			defer wg.Done()
+
+			for _, v := range settings.redis {
+				initRedis(v.name, v.address, v.options...)
+			}
+		}()
+	}
+
+	if settings.nsq != nil {
+		wg.Add(1)
+
+		go func() {
+			defer wg.Done()
+
+			initNSQ(settings.nsq.nsqd, settings.nsq.lookupd, settings.nsq.consumers...)
+		}()
+	}
+
+	if len(settings.mailer) != 0 {
+		wg.Add(1)
+
+		go func() {
+			defer wg.Done()
+
+			for _, v := range settings.mailer {
+				initMailer(v.name, v.host, v.port, v.account, v.account)
+			}
+		}()
+	}
+
+	wg.Wait()
 }

@@ -16,7 +16,7 @@ import (
 	"go.uber.org/zap"
 )
 
-const defaultConn = "default"
+const Default = "default"
 
 // X is a convenient alias for a map[string]interface{}.
 type X map[string]interface{}

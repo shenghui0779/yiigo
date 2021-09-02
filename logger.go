@@ -14,26 +14,57 @@ var (
 	logMap sync.Map
 )
 
-type logConfig struct {
-	Path       string `toml:"path"`
-	MaxSize    int    `toml:"max_size"`
-	MaxBackups int    `toml:"max_backups"`
-	MaxAge     int    `toml:"max_age"`
-	Compress   bool   `toml:"compress"`
+type loggerSettings struct {
+	maxSize    int
+	maxBackups int
+	maxAge     int
+	compress   bool
+}
+
+// LoggerOption configures how we set up the logger.
+type LoggerOption func(s *loggerSettings)
+
+// WithLogMaxSize specifies the `MaxSize(Mi)` for logger.
+func WithLogMaxSize(n int) LoggerOption {
+	return func(s *loggerSettings) {
+		s.maxSize = n
+	}
+}
+
+// WithLogMaxBackups specifies the `MaxBackups` for logger.
+func WithLogMaxBackups(n int) LoggerOption {
+	return func(s *loggerSettings) {
+		s.maxBackups = n
+	}
+}
+
+// WithLogMaxAge specifies the `MaxAge(days)` for logger.
+func WithLogMaxAge(n int) LoggerOption {
+	return func(s *loggerSettings) {
+		s.maxAge = n
+	}
+}
+
+// WithLogCompress specifies the `Compress` for logger.
+func WithLogCompress() LoggerOption {
+	return func(s *loggerSettings) {
+		s.compress = true
+	}
 }
 
 // newLogger returns a new logger.
-func newLogger(cfg *logConfig) *zap.Logger {
-	if Debug {
+func newLogger(path string, settings *loggerSettings) *zap.Logger {
+	if debugMode {
 		return debugLogger()
 	}
 
 	w := zapcore.AddSync(&lumberjack.Logger{
-		Filename:   cfg.Path,
-		MaxSize:    cfg.MaxSize,
-		MaxBackups: cfg.MaxBackups,
-		MaxAge:     cfg.MaxAge,
-		Compress:   cfg.Compress,
+		Filename:   path,
+		MaxSize:    settings.maxSize,
+		MaxBackups: settings.maxBackups,
+		MaxAge:     settings.maxAge,
+		Compress:   settings.compress,
+		LocalTime:  true,
 	})
 
 	c := zap.NewProductionEncoderConfig()
@@ -58,26 +89,22 @@ func debugLogger() *zap.Logger {
 	return l
 }
 
-func initLogger() {
-	configs := make(map[string]*logConfig)
-
-	if err := env.Get("log").Unmarshal(&configs); err != nil {
-		logger.Panic("yiigo: logger init error", zap.Error(err))
+func initLogger(name, path string, options ...LoggerOption) {
+	settings := &loggerSettings{
+		maxSize: 100,
 	}
 
-	if len(configs) == 0 {
-		return
+	for _, f := range options {
+		f(settings)
 	}
 
-	for name, cfg := range configs {
-		l := newLogger(cfg)
+	l := newLogger(path, settings)
 
-		if name == defaultConn {
-			logger = l
-		}
-
-		logMap.Store(name, l)
+	if name == Default {
+		logger = l
 	}
+
+	logMap.Store(name, l)
 }
 
 // Logger returns a logger
