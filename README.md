@@ -88,7 +88,6 @@ yiigo.Env("foo.birthday").Time("2006-01-02 15:04:05")
 - register
 
 ```go
-// register
 yiigo.Init(
     yiigo.WithDB(yiigo.Default, yiigo.MySQL, "dsn", options...),
     yiigo.WithDB("other", yiigo.MySQL, "dsn", options...),
