@@ -54,7 +54,7 @@ yiigo.Init(
 )
 ```
 
-- `yiigo.toml`
+- `toml`
 
 ```toml
 [app]
