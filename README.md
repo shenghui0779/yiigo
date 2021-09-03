@@ -48,7 +48,7 @@ yiigo.Init(
     yiigo.WithEnvFile("filepath")
 )
 
-// 更新监听并热加载
+// 热加载
 yiigo.Init(
     yiigo.WithEnvFile("filepath", WithEnvWatcher(onchanges...))
 )
