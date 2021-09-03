@@ -139,29 +139,17 @@ func Init(options ...InitOption) {
 		f(setting)
 	}
 
-	var wg sync.WaitGroup
-
 	if setting.env != nil {
-		wg.Add(1)
-
-		go func() {
-			defer wg.Done()
-
-			initEnv(setting.env.path, setting.env.options...)
-		}()
+		initEnv(setting.env.path, setting.env.options...)
 	}
 
 	if len(setting.logger) != 0 {
-		wg.Add(1)
-
-		go func() {
-			defer wg.Done()
-
-			for _, v := range setting.logger {
-				initLogger(v.name, v.path, v.options...)
-			}
-		}()
+		for _, v := range setting.logger {
+			initLogger(v.name, v.path, v.options...)
+		}
 	}
+
+	var wg sync.WaitGroup
 
 	if len(setting.db) != 0 {
 		wg.Add(1)
