@@ -197,7 +197,7 @@ pool := yiigo.NewGRPCPool(
     },
     yiigo.WithPoolSize(10),
     yiigo.WithPoolLimit(20),
-    yiigo.WithIdleTimeout(600*time.Second),
+    yiigo.WithPoolIdleTimeout(600*time.Second),
 )
 
 // use pool
