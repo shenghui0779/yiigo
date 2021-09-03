@@ -36,76 +36,30 @@ go get -u github.com/shenghui0779/yiigo
 #### Initialization
 
 ```go
-yiigo.Init(
-    yiigo.WithEnvDir("/data/config"),  // 自定义配置文件路径（/data/config/yiigo.toml）
-    yiigo.WithEnvWatcher(onchange...), // 监听配置文件变化并热更新
-    yiigo.WithNSQ(consumers...),       // 初始化NSQ（需配置NSQ）
-)
+yiigo.Init(options...)
 ```
 
 #### Config
+
+- register
+
+```go
+yiigo.Init(
+    yiigo.WithEnvFile("filepath")
+)
+
+// 更新监听并热加载
+yiigo.Init(
+    yiigo.WithEnvFile("filepath", WithEnvWatcher(onchanges...))
+)
+```
 
 - `yiigo.toml`
 
 ```toml
 [app]
-env = "dev" # dev | beta | prod
+env = "dev"
 debug = true
-
-[db]
-
-    [db.default]
-    driver = "mysql" # mysql | postgres | sqlite3
-    dsn = "username:password@tcp(localhost:3306)/dbname?timeout=10s&charset=utf8mb4&collation=utf8mb4_general_ci&parseTime=True&loc=Local" # mysql
-    # dsn = "host=localhost port=5432 user=root password=secret dbname=test connect_timeout=10 sslmode=disable" # postgres
-    # dsn = "file::memory:?cache=shared" # sqlite3
-    max_open_conns = 20
-    max_idle_conns = 10
-    conn_max_idle_time = 60 # 秒
-    conn_max_lifetime = 60 # 秒
-
-[mongo]
-
-    [mongo.default]
-    # 参考：https://docs.mongodb.com/manual/reference/connection-string
-    dsn = "mongodb://localhost:27017/?connectTimeoutMS=10000&minPoolSize=10&maxPoolSize=20&maxIdleTimeMS=60000&readPreference=primary"
-
-[redis]
-
-    [redis.default]
-    address = "127.0.0.1:6379"
-    password = ""
-    database = 0
-    connect_timeout = 10 # 秒
-    read_timeout = 10 # 秒
-    write_timeout = 10 # 秒
-    pool_size = 10
-    pool_limit = 20
-    idle_timeout = 60 # 秒
-    prefill_parallelism = 0 # 预填充连接数
-
-[nsq]
-lookupd = ["127.0.0.1:4161"]
-nsqd = "127.0.0.1:4150"
-
-[email]
-
-    [email.default]
-    host = "smtp.exmail.qq.com"
-    port = 25
-    username = ""
-    password = ""
-
-[log]
-
-    [log.default]
-    path = "logs/app.log"
-    max_size = 500
-    max_age = 0
-    max_backups = 0
-    compress = true
-
-# 自定义配置
 
 [foo]
 amount = 100
@@ -129,9 +83,17 @@ yiigo.Env("foo.hosts").Strings()
 yiigo.Env("foo.birthday").Time("2006-01-02 15:04:05")
 ```
 
-#### MySQL
+#### DB
+
+- sqlx
 
 ```go
+// register
+yiigo.Init(
+    yiigo.WithDB(yiigo.Default, yiigo.MySQL, "dsn", options...),
+    yiigo.WithDB("other", yiigo.MySQL, "dsn", options...),
+)
+
 // default db
 yiigo.DB().Get(&User{}, "SELECT * FROM user WHERE id = ?", 1)
 
@@ -139,7 +101,7 @@ yiigo.DB().Get(&User{}, "SELECT * FROM user WHERE id = ?", 1)
 yiigo.DB("other").Get(&User{}, "SELECT * FROM user WHERE id = ?", 1)
 ```
 
-#### ORM (ent)
+- ent
 
 ```go
 import "<your_project>/ent"
@@ -154,6 +116,12 @@ client := ent.NewClient(ent.Driver(yiigo.EntDriver("other")))
 #### MongoDB
 
 ```go
+// register
+yiigo.Init(
+    yiigo.WithMongo(yiigo.Default, "dsn"),
+    yiigo.WithMongo("other", "dsn"),
+)
+
 // default mongodb
 yiigo.Mongo().Database("test").Collection("numbers").InsertOne(context.Background(), bson.M{"name": "pi", "value": 3.14159})
 
@@ -164,6 +132,12 @@ yiigo.Mongo("other").Database("test").Collection("numbers").InsertOne(context.Ba
 #### Redis
 
 ```go
+// register
+yiigo.Init(
+    yiigo.WithRedis(yiigo.Default, "address", options...),
+    yiigo.WithRedis("other", "address", options...),
+)
+
 // default redis
 conn, err := yiigo.Redis().Get(context.Background())
 
@@ -190,6 +164,12 @@ conn.Do("SET", "test_key", "hello world")
 #### Logger
 
 ```go
+// register
+yiigo.Init(
+    yiigo.WithLogger(yiigo.Default, "filepath", options...),
+    yiigo.WithLogger("other", "filepath", options...),
+)
+
 // default logger
 yiigo.Logger().Info("hello world")
 
