@@ -120,7 +120,7 @@ func WithRedis(name, address string, options ...RedisOption) InitOption {
 	}
 }
 
-// WithNSQ specifies initialize the nsq.
+// WithNSQ initialize the nsq.
 func WithNSQ(nsqd string, lookupd []string, options ...NSQOption) InitOption {
 	return func(s *initSetting) {
 		s.nsq = &cfgnsq{
