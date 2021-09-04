@@ -31,22 +31,55 @@ func TestLong2IP(t *testing.T) {
 }
 
 func TestVersionCompare(t *testing.T) {
-	assert.True(t, VersionCompare("1.0.0", "1.0.0"))
-	assert.False(t, VersionCompare("1.0.0", "1.0.1"))
+	ok, err := VersionCompare("1.0.0", "1.0.0")
+	assert.Nil(t, err)
+	assert.True(t, ok)
 
-	assert.True(t, VersionCompare("=1.0.0", "1.0.0"))
-	assert.False(t, VersionCompare("=1.0.0", "1.0.1"))
+	ok, err = VersionCompare("1.0.0", "1.0.1")
+	assert.Nil(t, err)
+	assert.False(t, ok)
 
-	assert.True(t, VersionCompare("!=4.0.4", "4.0.0"))
-	assert.False(t, VersionCompare("!=4.0.4", "4.0.4"))
+	ok, err = VersionCompare("=1.0.0", "1.0.0")
+	assert.Nil(t, err)
+	assert.True(t, ok)
 
-	assert.True(t, VersionCompare(">2.0.0", "2.0.1"))
-	assert.False(t, VersionCompare(">2.0.0", "1.0.1"))
+	ok, err = VersionCompare("=1.0.0", "1.0.1")
+	assert.Nil(t, err)
+	assert.False(t, ok)
 
-	assert.True(t, VersionCompare(">=1.0.0&<2.0.0", "1.0.2"))
-	assert.False(t, VersionCompare(">=1.0.0&<2.0.0", "2.0.1"))
+	ok, err = VersionCompare("!=4.0.4", "4.0.0")
+	assert.Nil(t, err)
+	assert.True(t, ok)
 
-	assert.True(t, VersionCompare("<2.0.0|>3.0.0", "1.0.2"))
-	assert.True(t, VersionCompare("<2.0.0|>3.0.0", "3.0.1"))
-	assert.False(t, VersionCompare("<2.0.0|>3.0.0", "2.0.1"))
+	ok, err = VersionCompare("!=4.0.4", "4.0.4")
+	assert.Nil(t, err)
+	assert.False(t, ok)
+
+	ok, err = VersionCompare(">2.0.0", "2.0.1")
+	assert.Nil(t, err)
+	assert.True(t, ok)
+
+	ok, err = VersionCompare(">2.0.0", "1.0.1")
+	assert.Nil(t, err)
+	assert.False(t, ok)
+
+	ok, err = VersionCompare(">=1.0.0&<2.0.0", "1.0.2")
+	assert.Nil(t, err)
+	assert.True(t, ok)
+
+	ok, err = VersionCompare(">=1.0.0&<2.0.0", "2.0.1")
+	assert.Nil(t, err)
+	assert.False(t, ok)
+
+	ok, err = VersionCompare("<2.0.0|>3.0.0", "1.0.2")
+	assert.Nil(t, err)
+	assert.True(t, ok)
+
+	ok, err = VersionCompare("<2.0.0|>3.0.0", "3.0.1")
+	assert.Nil(t, err)
+	assert.True(t, ok)
+
+	ok, err = VersionCompare("<2.0.0|>3.0.0", "2.0.1")
+	assert.Nil(t, err)
+	assert.False(t, ok)
 }

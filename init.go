@@ -131,6 +131,19 @@ func WithNSQ(nsqd string, lookupd []string, options ...NSQOption) InitOption {
 	}
 }
 
+// WithMailer register mailer.
+func WithMailer(name, host string, port int, account, password string) InitOption {
+	return func(s *initSetting) {
+		s.mailer = append(s.mailer, &cfgmailer{
+			name:     name,
+			host:     host,
+			port:     port,
+			account:  account,
+			password: password,
+		})
+	}
+}
+
 // Init yiigo initialization.
 func Init(options ...InitOption) {
 	setting := new(initSetting)
@@ -204,7 +217,7 @@ func Init(options ...InitOption) {
 			defer wg.Done()
 
 			for _, v := range setting.mailer {
-				initMailer(v.name, v.host, v.port, v.account, v.account)
+				initMailer(v.name, v.host, v.port, v.account, v.password)
 			}
 		}()
 	}

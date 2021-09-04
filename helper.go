@@ -16,6 +16,7 @@ import (
 	"go.uber.org/zap"
 )
 
+// Default defines for `default` name
 const Default = "default"
 
 // X is a convenient alias for a map[string]interface{}.
@@ -170,19 +171,13 @@ func NewValidator() *Validator {
 }
 
 // VersionCompare compares semantic versions range, support: >, >=, =, !=, <, <=, | (or), & (and).
-// eg: 1.0.0, =1.0.0, >2.0.0, >=1.0.0&<2.0.0, <2.0.0|>3.0.0, !=4.0.4
-func VersionCompare(rangeVer, curVer string) bool {
-	if rangeVer == "" || curVer == "" {
-		return true
-	}
-
+// Param `rangeVer` eg: 1.0.0, =1.0.0, >2.0.0, >=1.0.0&<2.0.0, <2.0.0|>3.0.0, !=4.0.4
+func VersionCompare(rangeVer, curVer string) (bool, error) {
 	semVer, err := version.NewVersion(curVer)
 
 	// invalid semantic version
 	if err != nil {
-		logger.Warn("yiigo: invalid semantic version", zap.Error(err), zap.String("range_version", rangeVer), zap.String("cur_version", curVer))
-
-		return true
+		return false, err
 	}
 
 	orVers := strings.Split(rangeVer, "|")
@@ -193,15 +188,13 @@ func VersionCompare(rangeVer, curVer string) bool {
 		constraints, err := version.NewConstraint(strings.Join(andVers, ","))
 
 		if err != nil {
-			logger.Error("yiigo: version compared error", zap.Error(err), zap.String("range_version", rangeVer), zap.String("cur_version", curVer))
-
-			return true
+			return false, err
 		}
 
 		if constraints.Check(semVer) {
-			return true
+			return true, nil
 		}
 	}
 
-	return false
+	return false, nil
 }
