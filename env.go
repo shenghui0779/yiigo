@@ -441,7 +441,7 @@ func Env(key string) EnvValue {
 	return env.get(key)
 }
 
-// LoadEnvFromFile loads env from file.
+// LoadEnvFromFile loads env from file, only for toml.
 func LoadEnvFromFile(path string, options ...EnvOption) {
 	abspath, err := filepath.Abs(filepath.Clean(path))
 
@@ -484,7 +484,7 @@ func LoadEnvFromFile(path string, options ...EnvOption) {
 	}
 }
 
-// LoadEnvFromBytes loads env from bytes.
+// LoadEnvFromBytes loads env from bytes, only for toml.
 func LoadEnvFromBytes(b []byte) {
 	if err := env.loadFromBytes(b); err != nil {
 		logger.Panic("yiigo: load env bytes error", zap.Error(err))
