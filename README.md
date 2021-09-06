@@ -44,14 +44,11 @@ yiigo.Init(options...)
 - register
 
 ```go
-yiigo.Init(
-    yiigo.WithEnvFile("filepath")
-)
+yiigo.LoadEnvFromFile("yiigo.toml")
+yiigo.LoadEnvFromBytes([]byte)
 
 // 热加载
-yiigo.Init(
-    yiigo.WithEnvFile("filepath", WithEnvWatcher(onchanges...))
-)
+yiigo.LoadEnvFromFile("yiigo.toml", yiigo.WithEnvWatcher(onchanges...))
 ```
 
 - `toml`
