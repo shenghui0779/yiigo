@@ -96,6 +96,7 @@ hosts = ["127.0.0.1", "192.168.1.1", "192.168.1.80"]
 ports = [80, 81, 82]
 weight = 50.6
 prices = [23.5, 46.7, 45.9]`))
+	// LoadEnvFromFile("yiigo.toml")
 
 	builder = NewSQLBuilder(MySQL)
 

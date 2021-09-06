@@ -449,10 +449,10 @@ func LoadEnvFromFile(path string, options ...EnvOption) {
 		logger.Panic("yiigo: load env file error", zap.Error(err))
 	}
 
-	if _, err := os.Stat(abspath); err != nil {
+	if _, err = os.Stat(abspath); err != nil {
 		if os.IsNotExist(err) {
 			if dir, _ := filepath.Split(abspath); len(dir) != 0 {
-				if err := os.MkdirAll(dir, 0755); err != nil {
+				if err = os.MkdirAll(dir, 0755); err != nil {
 					logger.Panic("yiigo: load env file error", zap.Error(err))
 				}
 			}
@@ -469,7 +469,7 @@ func LoadEnvFromFile(path string, options ...EnvOption) {
 		}
 	}
 
-	if err := env.loadFromFile(abspath); err != nil {
+	if err = env.loadFromFile(abspath); err != nil {
 		logger.Panic("yiigo: load env file error", zap.Error(err))
 	}
 
