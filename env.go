@@ -15,20 +15,10 @@ import (
 
 // Environment is the interface for config.
 type Environment interface {
-	// Get returns an env value.
-	Get(key string) EnvValue
-
-	// LoadEnvFromFile loads env from file.
-	LoadEnvFromFile(path string) error
-
-	// LoadEnvFromBytes loads env from bytes.
-	LoadEnvFromBytes(b []byte) error
-
-	// Reload reloads env config.
-	Reload() error
-
-	// Watcher watching env change and reload.
-	Watcher(onchange func(event fsnotify.Event))
+	get(key string) EnvValue
+	loadFromFile(path string) error
+	loadFromBytes(b []byte) error
+	watcher(onchange func(event fsnotify.Event))
 }
 
 // EnvValue is the interface for config value.
@@ -71,7 +61,7 @@ type config struct {
 	path  string
 }
 
-func (c *config) Get(key string) EnvValue {
+func (c *config) get(key string) EnvValue {
 	c.mutex.RLock()
 	defer c.mutex.RUnlock()
 
@@ -82,7 +72,7 @@ func (c *config) Get(key string) EnvValue {
 	return &cfgValue{value: c.tree.Get(key)}
 }
 
-func (c *config) LoadEnvFromFile(path string) error {
+func (c *config) loadFromFile(path string) error {
 	t, err := toml.LoadFile(path)
 
 	if err != nil {
@@ -95,7 +85,7 @@ func (c *config) LoadEnvFromFile(path string) error {
 	return nil
 }
 
-func (c *config) LoadEnvFromBytes(b []byte) error {
+func (c *config) loadFromBytes(b []byte) error {
 	t, err := toml.LoadBytes(b)
 
 	if err != nil {
@@ -107,7 +97,7 @@ func (c *config) LoadEnvFromBytes(b []byte) error {
 	return nil
 }
 
-func (c *config) Reload() error {
+func (c *config) reload() error {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
@@ -126,7 +116,7 @@ func (c *config) Reload() error {
 	return nil
 }
 
-func (c *config) Watcher(onchange func(event fsnotify.Event)) {
+func (c *config) watcher(onchange func(event fsnotify.Event)) {
 	watcher, err := fsnotify.NewWatcher()
 
 	if err != nil {
@@ -169,7 +159,7 @@ func (c *config) Watcher(onchange func(event fsnotify.Event)) {
 				if (eventFile == c.path && event.Op&writeOrCreateMask != 0) || (currentEnvFile != "" && currentEnvFile != realEnvFile) {
 					realEnvFile = currentEnvFile
 
-					if err := c.Reload(); err != nil {
+					if err := c.reload(); err != nil {
 						logger.Error("yiigo: env reload error", zap.Error(err))
 					}
 
@@ -446,8 +436,14 @@ func WithEnvWatcher(onchanges ...EnvEventFunc) EnvOption {
 
 var env Environment = new(config)
 
-func initEnv(path string, options ...EnvOption) {
-	abspath, err := filepath.Abs(path)
+// Env returns an env value.
+func Env(key string) EnvValue {
+	return env.get(key)
+}
+
+// LoadEnvFromFile loads env from file.
+func LoadEnvFromFile(path string, options ...EnvOption) {
+	abspath, err := filepath.Abs(filepath.Clean(path))
 
 	if err != nil {
 		logger.Panic("yiigo: load env file error", zap.Error(err))
@@ -473,7 +469,7 @@ func initEnv(path string, options ...EnvOption) {
 		}
 	}
 
-	if err := env.LoadEnvFromFile(abspath); err != nil {
+	if err := env.loadFromFile(abspath); err != nil {
 		logger.Panic("yiigo: load env file error", zap.Error(err))
 	}
 
@@ -484,11 +480,13 @@ func initEnv(path string, options ...EnvOption) {
 	}
 
 	if setting.watcher {
-		go env.Watcher(setting.onchange)
+		go env.watcher(setting.onchange)
 	}
 }
 
-// Env returns an env value.
-func Env(key string) EnvValue {
-	return env.Get(key)
+// LoadEnvFromBytes loads env from bytes.
+func LoadEnvFromBytes(b []byte) {
+	if err := env.loadFromBytes(b); err != nil {
+		logger.Panic("yiigo: load env bytes error", zap.Error(err))
+	}
 }

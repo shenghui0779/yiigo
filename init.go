@@ -1,20 +1,6 @@
 package yiigo
 
-import (
-	"path/filepath"
-	"sync"
-)
-
-type cfgenv struct {
-	path    string
-	options []EnvOption
-}
-
-type cfglogger struct {
-	name    string
-	path    string
-	options []LoggerOption
-}
+import "sync"
 
 type cfgdb struct {
 	name    string
@@ -40,6 +26,12 @@ type cfgnsq struct {
 	options []NSQOption
 }
 
+type cfglogger struct {
+	name    string
+	path    string
+	options []LoggerOption
+}
+
 type cfgmailer struct {
 	name     string
 	host     string
@@ -49,7 +41,6 @@ type cfgmailer struct {
 }
 
 type initSetting struct {
-	env    *cfgenv
 	logger []*cfglogger
 	db     []*cfgdb
 	mongo  []*cfgmongo
@@ -60,27 +51,6 @@ type initSetting struct {
 
 // InitOption configures how we set up the yiigo initialization.
 type InitOption func(s *initSetting)
-
-// WithEnvFile register env file, only support toml.
-func WithEnvFile(path string, options ...EnvOption) InitOption {
-	return func(s *initSetting) {
-		s.env = &cfgenv{
-			path:    filepath.Clean(path),
-			options: options,
-		}
-	}
-}
-
-// WithLogger register logger.
-func WithLogger(name, path string, options ...LoggerOption) InitOption {
-	return func(s *initSetting) {
-		s.logger = append(s.logger, &cfglogger{
-			name:    name,
-			path:    path,
-			options: options,
-		})
-	}
-}
 
 // WithDB register db.
 // [MySQL] username:password@tcp(localhost:3306)/dbname?timeout=10s&charset=utf8mb4&collation=utf8mb4_general_ci&parseTime=True&loc=Local
@@ -131,6 +101,17 @@ func WithNSQ(nsqd string, lookupd []string, options ...NSQOption) InitOption {
 	}
 }
 
+// WithLogger register logger.
+func WithLogger(name, path string, options ...LoggerOption) InitOption {
+	return func(s *initSetting) {
+		s.logger = append(s.logger, &cfglogger{
+			name:    name,
+			path:    path,
+			options: options,
+		})
+	}
+}
+
 // WithMailer register mailer.
 func WithMailer(name, host string, port int, account, password string) InitOption {
 	return func(s *initSetting) {
@@ -150,10 +131,6 @@ func Init(options ...InitOption) {
 
 	for _, f := range options {
 		f(setting)
-	}
-
-	if setting.env != nil {
-		initEnv(setting.env.path, setting.env.options...)
 	}
 
 	if len(setting.logger) != 0 {
