@@ -1,6 +1,7 @@
 package yiigo
 
 import (
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -20,6 +21,7 @@ type loggerSetting struct {
 	maxBackups int
 	maxAge     int
 	compress   bool
+	stderr     bool
 }
 
 // LoggerOption configures how we set up the logger.
@@ -53,20 +55,18 @@ func WithLogCompress() LoggerOption {
 	}
 }
 
+// WithLogStdErr specifies stderr output for logger.
+func WithLogStdErr() LoggerOption {
+	return func(s *loggerSetting) {
+		s.stderr = true
+	}
+}
+
 // newLogger returns a new logger.
 func newLogger(path string, setting *loggerSetting) *zap.Logger {
 	if len(strings.TrimSpace(path)) == 0 {
 		return debugLogger()
 	}
-
-	w := zapcore.AddSync(&lumberjack.Logger{
-		Filename:   path,
-		MaxSize:    setting.maxSize,
-		MaxBackups: setting.maxBackups,
-		MaxAge:     setting.maxAge,
-		Compress:   setting.compress,
-		LocalTime:  true,
-	})
 
 	c := zap.NewProductionEncoderConfig()
 
@@ -74,7 +74,22 @@ func newLogger(path string, setting *loggerSetting) *zap.Logger {
 	c.EncodeTime = MyTimeEncoder
 	c.EncodeCaller = zapcore.FullCallerEncoder
 
-	core := zapcore.NewCore(zapcore.NewJSONEncoder(c), w, zap.DebugLevel)
+	ws := make([]zapcore.WriteSyncer, 0, 2)
+
+	ws = append(ws, zapcore.AddSync(&lumberjack.Logger{
+		Filename:   path,
+		MaxSize:    setting.maxSize,
+		MaxBackups: setting.maxBackups,
+		MaxAge:     setting.maxAge,
+		Compress:   setting.compress,
+		LocalTime:  true,
+	}))
+
+	if setting.stderr {
+		ws = append(ws, zapcore.Lock(os.Stderr))
+	}
+
+	core := zapcore.NewCore(zapcore.NewJSONEncoder(c), zapcore.NewMultiWriteSyncer(ws...), zap.DebugLevel)
 
 	return zap.New(core, zap.AddCaller())
 }

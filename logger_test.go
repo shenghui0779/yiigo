@@ -14,6 +14,7 @@ func TestLoggerOption(t *testing.T) {
 		WithLogMaxBackups(10),
 		WithLogMaxAge(30),
 		WithLogCompress(),
+		WithLogStdErr(),
 	}
 
 	for _, f := range options {
@@ -25,5 +26,6 @@ func TestLoggerOption(t *testing.T) {
 		maxBackups: 10,
 		maxAge:     30,
 		compress:   true,
+		stderr:     true,
 	}, setting)
 }
