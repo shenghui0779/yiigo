@@ -17,7 +17,7 @@
 - SQL使用 [sqlx](https://github.com/jmoiron/sqlx)
 - ORM推荐 [ent](https://github.com/ent/ent)
 - 日志使用 [zap](https://github.com/uber-go/zap)
-- gRPC 连接池
+- gRPC Client 连接池
 - 轻量的 SQL Builder
 - 实用的辅助方法，包含：http、cypto、date、IP、version compare 等
 
