@@ -12,7 +12,6 @@
 - 支持 [MongoDB](https://github.com/mongodb/mongo-go-driver)
 - 支持 [Redis](https://github.com/gomodule/redigo)
 - 支持 [NSQ](https://github.com/nsqio/go-nsq)
-- 邮件使用 [gomail](https://github.com/go-gomail/gomail)
 - 配置使用 [toml](https://github.com/pelletier/go-toml)
 - SQL使用 [sqlx](https://github.com/jmoiron/sqlx)
 - ORM推荐 [ent](https://github.com/ent/ent)

@@ -32,21 +32,12 @@ type cfglogger struct {
 	options []LoggerOption
 }
 
-type cfgmailer struct {
-	name     string
-	host     string
-	port     int
-	account  string
-	password string
-}
-
 type initSetting struct {
 	logger []*cfglogger
 	db     []*cfgdb
 	mongo  []*cfgmongo
 	redis  []*cfgredis
 	nsq    *cfgnsq
-	mailer []*cfgmailer
 }
 
 // InitOption configures how we set up the yiigo initialization.
@@ -54,7 +45,7 @@ type InitOption func(s *initSetting)
 
 // WithDB register db.
 // [MySQL] username:password@tcp(localhost:3306)/dbname?timeout=10s&charset=utf8mb4&collation=utf8mb4_general_ci&parseTime=True&loc=Local
-// [PgSQL] host=localhost port=5432 user=root password=secret dbname=test connect_timeout=10 sslmode=disable
+// [Postgres] host=localhost port=5432 user=root password=secret dbname=test connect_timeout=10 sslmode=disable
 // [SQLite] file::memory:?cache=shared
 func WithDB(name string, driver DBDriver, dsn string, options ...DBOption) InitOption {
 	return func(s *initSetting) {
@@ -108,19 +99,6 @@ func WithLogger(name, path string, options ...LoggerOption) InitOption {
 			name:    name,
 			path:    path,
 			options: options,
-		})
-	}
-}
-
-// WithMailer register mailer.
-func WithMailer(name, host string, port int, account, password string) InitOption {
-	return func(s *initSetting) {
-		s.mailer = append(s.mailer, &cfgmailer{
-			name:     name,
-			host:     host,
-			port:     port,
-			account:  account,
-			password: password,
 		})
 	}
 }
@@ -184,18 +162,6 @@ func Init(options ...InitOption) {
 			defer wg.Done()
 
 			initNSQ(setting.nsq.nsqd, setting.nsq.lookupd, setting.nsq.options...)
-		}()
-	}
-
-	if len(setting.mailer) != 0 {
-		wg.Add(1)
-
-		go func() {
-			defer wg.Done()
-
-			for _, v := range setting.mailer {
-				initMailer(v.name, v.host, v.port, v.account, v.password)
-			}
 		}()
 	}
 
