@@ -12,12 +12,12 @@
 - 支持 [MongoDB](https://github.com/mongodb/mongo-go-driver)
 - 支持 [Redis](https://github.com/gomodule/redigo)
 - 支持 [NSQ](https://github.com/nsqio/go-nsq)
-- 配置使用 [toml](https://github.com/pelletier/go-toml)
 - SQL使用 [sqlx](https://github.com/jmoiron/sqlx)
 - ORM推荐 [ent](https://github.com/ent/ent)
 - 日志使用 [zap](https://github.com/uber-go/zap)
 - gRPC Client 连接池
 - 轻量的 SQL Builder
+- 环境配置使用 [toml](https://github.com/pelletier/go-toml)，支持热加载
 - 实用的辅助方法，包含：http、cypto、date、IP、version compare 等
 
 ## Requirements
