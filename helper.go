@@ -111,7 +111,7 @@ func Long2IP(ip uint32) string {
 	return net.IPv4(byte(ip>>24), byte(ip>>16), byte(ip>>8), byte(ip)).String()
 }
 
-// Validator validator can be used for Gin
+// Validator the validator which can be used for Gin.
 type Validator struct {
 	validator  *validator.Validate
 	translator ut.Translator
