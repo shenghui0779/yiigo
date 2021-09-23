@@ -202,7 +202,7 @@ func TestToInsert(t *testing.T) {
 	assert.Equal(t, []interface{}{"yiigo", "M", 29, "13605109425"}, binds)
 
 	// map 字段顺序不一定
-	// query, binds = builder.Wrap(Table("user")).ToInsert(X{
+	// query, binds = builder.Wrap(Table("user")).ToInsert(ctx, X{
 	// 	"age":    29,
 	// 	"gender": "M",
 	// 	"name":   "yiigo",
@@ -258,7 +258,7 @@ func TestToBatchInsert(t *testing.T) {
 	assert.Equal(t, []interface{}{"yiigo", "M", 29, "13605109425", "test", "W", 20, "13605105471"}, binds)
 
 	// map 字段顺序不一定
-	// query, binds = builder.Wrap(Table("user")).ToBatchInsert([]X{
+	// query, binds = builder.Wrap(Table("user")).ToBatchInsert(ctx, []X{
 	// 	{
 	// 		"age":    29,
 	// 		"gender": "M",
@@ -314,7 +314,7 @@ func TestToUpdate(t *testing.T) {
 	// query, binds = builder.Wrap(
 	// 	Table("user"),
 	// 	Where("id = ?", 1),
-	// ).ToUpdate(X{
+	// ).ToUpdate(ctx, X{
 	// 	"age":    29,
 	// 	"gender": "M",
 	// 	"name":   "yiigo",
