@@ -16,6 +16,7 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.8
 	github.com/nsqio/go-nsq v1.0.8
 	github.com/pelletier/go-toml v1.9.4
+	github.com/pkg/errors v0.9.1
 	github.com/shenghui0779/vitess_pool v1.0.1
 	github.com/stretchr/testify v1.7.0
 	go.mongodb.org/mongo-driver v1.7.2
