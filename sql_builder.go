@@ -10,6 +10,13 @@ import (
 	"go.uber.org/zap"
 )
 
+var (
+	// ErrInvalidUpsertData invalid insert or update data.
+	ErrInvalidUpsertData = errors.New("invaild data, expects: struct, *struct, yiigo.X")
+	// ErrInvalidBatchInsertData invalid batch insert data.
+	ErrInvalidBatchInsertData = errors.New("invaild data, expects: []struct, []*struct, []yiigo.X")
+)
+
 // SQLBuilder is the interface for wrapping query options.
 type SQLBuilder interface {
 	// Wrap wrapping query options
@@ -277,7 +284,7 @@ func (w *queryWrapper) ToInsert(ctx context.Context, data interface{}) (string, 
 		x, ok := data.(X)
 
 		if !ok {
-			w.builder.logger.Error(ctx, errors.New("unsupported data, expects: struct, *struct, yiigo.X"))
+			w.builder.logger.Error(ctx, ErrInvalidUpsertData)
 
 			return "", nil
 		}
@@ -286,7 +293,7 @@ func (w *queryWrapper) ToInsert(ctx context.Context, data interface{}) (string, 
 	case reflect.Struct:
 		columns, binds = w.insertWithStruct(v)
 	default:
-		w.builder.logger.Error(ctx, errors.New("unsupported data, expects: struct, *struct, yiigo.X"))
+		w.builder.logger.Error(ctx, ErrInvalidUpsertData)
 
 		return "", nil
 	}
@@ -382,7 +389,7 @@ func (w *queryWrapper) ToBatchInsert(ctx context.Context, data interface{}) (str
 	v := reflect.Indirect(reflect.ValueOf(data))
 
 	if v.Kind() != reflect.Slice {
-		w.builder.logger.Error(ctx, errors.New("unsupported data, expects: []struct, []*struct, []yiigo.X"))
+		w.builder.logger.Error(ctx, ErrInvalidBatchInsertData)
 
 		return "", nil
 	}
@@ -405,7 +412,7 @@ func (w *queryWrapper) ToBatchInsert(ctx context.Context, data interface{}) (str
 		x, ok := data.([]X)
 
 		if !ok {
-			w.builder.logger.Error(ctx, errors.New("unsupported data, expects: []struct, []*struct, []yiigo.X"))
+			w.builder.logger.Error(ctx, ErrInvalidBatchInsertData)
 
 			return "", nil
 		}
@@ -415,14 +422,14 @@ func (w *queryWrapper) ToBatchInsert(ctx context.Context, data interface{}) (str
 		columns, binds = w.batchInsertWithStruct(v)
 	case reflect.Ptr:
 		if e.Elem().Kind() != reflect.Struct {
-			w.builder.logger.Error(ctx, errors.New("unsupported data, expects: []struct, []*struct, []yiigo.X"))
+			w.builder.logger.Error(ctx, ErrInvalidBatchInsertData)
 
 			return "", nil
 		}
 
 		columns, binds = w.batchInsertWithStruct(v)
 	default:
-		w.builder.logger.Error(ctx, errors.New("unsupported data, expects: []struct, []*struct, []yiigo.X"))
+		w.builder.logger.Error(ctx, ErrInvalidBatchInsertData)
 
 		return "", nil
 	}
@@ -553,7 +560,7 @@ func (w *queryWrapper) ToUpdate(ctx context.Context, data interface{}) (string, 
 		x, ok := data.(X)
 
 		if !ok {
-			w.builder.logger.Error(ctx, errors.New("unsupported data, expects: struct, *struct, yiigo.X"))
+			w.builder.logger.Error(ctx, ErrInvalidUpsertData)
 
 			return "", nil
 		}
@@ -562,7 +569,7 @@ func (w *queryWrapper) ToUpdate(ctx context.Context, data interface{}) (string, 
 	case reflect.Struct:
 		columns, binds = w.updateWithStruct(v)
 	default:
-		w.builder.logger.Error(ctx, errors.New("unsupported data, expects: struct, *struct, yiigo.X"))
+		w.builder.logger.Error(ctx, ErrInvalidUpsertData)
 
 		return "", nil
 	}
