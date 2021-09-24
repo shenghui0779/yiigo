@@ -277,7 +277,7 @@ func (w *queryWrapper) ToInsert(ctx context.Context, data interface{}) (string, 
 		x, ok := data.(X)
 
 		if !ok {
-			w.builder.logger.Error(ctx, errors.New("invalid data type for insert, expects: struct, *struct, yiigo.X"))
+			w.builder.logger.Error(ctx, errors.New("unsupported data, expects: struct, *struct, yiigo.X"))
 
 			return "", nil
 		}
@@ -286,7 +286,7 @@ func (w *queryWrapper) ToInsert(ctx context.Context, data interface{}) (string, 
 	case reflect.Struct:
 		columns, binds = w.insertWithStruct(v)
 	default:
-		w.builder.logger.Error(ctx, errors.New("invalid data type for insert, expects: struct, *struct, yiigo.X"))
+		w.builder.logger.Error(ctx, errors.New("unsupported data, expects: struct, *struct, yiigo.X"))
 
 		return "", nil
 	}
@@ -382,13 +382,13 @@ func (w *queryWrapper) ToBatchInsert(ctx context.Context, data interface{}) (str
 	v := reflect.Indirect(reflect.ValueOf(data))
 
 	if v.Kind() != reflect.Slice {
-		w.builder.logger.Error(ctx, errors.New("invalid data type for batch insert, expects: []struct, []*struct, []yiigo.X"))
+		w.builder.logger.Error(ctx, errors.New("unsupported data, expects: []struct, []*struct, []yiigo.X"))
 
 		return "", nil
 	}
 
 	if v.Len() == 0 {
-		w.builder.logger.Error(ctx, errors.New("empty data for batch insert"))
+		w.builder.logger.Error(ctx, errors.New("error empty data"))
 
 		return "", nil
 	}
@@ -405,7 +405,7 @@ func (w *queryWrapper) ToBatchInsert(ctx context.Context, data interface{}) (str
 		x, ok := data.([]X)
 
 		if !ok {
-			w.builder.logger.Error(ctx, errors.New("invalid data type for batch insert, expects: []struct, []*struct, []yiigo.X"))
+			w.builder.logger.Error(ctx, errors.New("unsupported data, expects: []struct, []*struct, []yiigo.X"))
 
 			return "", nil
 		}
@@ -415,14 +415,14 @@ func (w *queryWrapper) ToBatchInsert(ctx context.Context, data interface{}) (str
 		columns, binds = w.batchInsertWithStruct(v)
 	case reflect.Ptr:
 		if e.Elem().Kind() != reflect.Struct {
-			w.builder.logger.Error(ctx, errors.New("invalid data type for batch insert, expects: []struct, []*struct, []yiigo.X"))
+			w.builder.logger.Error(ctx, errors.New("unsupported data, expects: []struct, []*struct, []yiigo.X"))
 
 			return "", nil
 		}
 
 		columns, binds = w.batchInsertWithStruct(v)
 	default:
-		w.builder.logger.Error(ctx, errors.New("invalid data type for batch insert, expects: []struct, []*struct, []yiigo.X"))
+		w.builder.logger.Error(ctx, errors.New("unsupported data, expects: []struct, []*struct, []yiigo.X"))
 
 		return "", nil
 	}
@@ -553,7 +553,7 @@ func (w *queryWrapper) ToUpdate(ctx context.Context, data interface{}) (string, 
 		x, ok := data.(X)
 
 		if !ok {
-			w.builder.logger.Error(ctx, errors.New("invalid data type for update, expects: struct, *struct, yiigo.X"))
+			w.builder.logger.Error(ctx, errors.New("unsupported data, expects: struct, *struct, yiigo.X"))
 
 			return "", nil
 		}
@@ -562,7 +562,7 @@ func (w *queryWrapper) ToUpdate(ctx context.Context, data interface{}) (string, 
 	case reflect.Struct:
 		columns, binds = w.updateWithStruct(v)
 	default:
-		w.builder.logger.Error(ctx, errors.New("invalid data type for update, expects: struct, *struct, yiigo.X"))
+		w.builder.logger.Error(ctx, errors.New("unsupported data, expects: struct, *struct, yiigo.X"))
 
 		return "", nil
 	}
