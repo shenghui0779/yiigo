@@ -40,12 +40,28 @@ type SQLWrapper interface {
 	ToTruncate(ctx context.Context) string
 }
 
-// SQLLogFunc SQL builder log function
-type SQLLogFunc func(ctx context.Context, err error, query string, args ...interface{})
+// SQLLogger is the log interface for sql builder.
+type SQLLogger interface {
+	// Info logs a message for sql builder.
+	Info(ctx context.Context, query string, args ...interface{})
+
+	// Error logs an error for sql builder.
+	Error(ctx context.Context, err error)
+}
+
+type builderLog struct{}
+
+func (l *builderLog) Info(ctx context.Context, query string, args ...interface{}) {
+	logger.Info("SQL Builder Info", zap.String("sql", query), zap.Any("args", args))
+}
+
+func (l *builderLog) Error(ctx context.Context, err error) {
+	logger.Error("SQL Builder Error", zap.Error(err))
+}
 
 type queryBuilder struct {
 	driver DBDriver
-	log    SQLLogFunc
+	logger SQLLogger
 }
 
 func (b *queryBuilder) Wrap(options ...QueryOption) SQLWrapper {
@@ -65,15 +81,7 @@ func (b *queryBuilder) Wrap(options ...QueryOption) SQLWrapper {
 func NewSQLBuilder(driver DBDriver, options ...BuilderOption) SQLBuilder {
 	builder := &queryBuilder{
 		driver: driver,
-		log: func(ctx context.Context, err error, query string, args ...interface{}) {
-			if err != nil {
-				logger.Error("SQL Builder error", zap.Error(err))
-
-				return
-			}
-
-			logger.Info(query, zap.Any("args", args))
-		},
+		logger: new(builderLog),
 	}
 
 	for _, f := range options {
@@ -161,7 +169,7 @@ func (w *queryWrapper) ToQuery(ctx context.Context) (string, []interface{}) {
 		query, binds, err = sqlx.In(query, binds...)
 
 		if err != nil {
-			w.builder.log(ctx, errors.Wrap(err, "error build 'IN' query"), "")
+			w.builder.logger.Error(ctx, errors.Wrap(err, "error build 'IN' query"))
 
 			return "", nil
 		}
@@ -169,7 +177,7 @@ func (w *queryWrapper) ToQuery(ctx context.Context) (string, []interface{}) {
 
 	query = sqlx.Rebind(sqlx.BindType(string(w.builder.driver)), query)
 
-	w.builder.log(ctx, nil, query, binds...)
+	w.builder.logger.Info(ctx, query, binds...)
 
 	return query, binds
 }
@@ -269,7 +277,7 @@ func (w *queryWrapper) ToInsert(ctx context.Context, data interface{}) (string, 
 		x, ok := data.(X)
 
 		if !ok {
-			w.builder.log(ctx, errors.New("invalid data type for insert, expects: struct, *struct, yiigo.X"), "")
+			w.builder.logger.Error(ctx, errors.New("invalid data type for insert, expects: struct, *struct, yiigo.X"))
 
 			return "", nil
 		}
@@ -278,7 +286,7 @@ func (w *queryWrapper) ToInsert(ctx context.Context, data interface{}) (string, 
 	case reflect.Struct:
 		columns, binds = w.insertWithStruct(v)
 	default:
-		w.builder.log(ctx, errors.New("invalid data type for insert, expects: struct, *struct, yiigo.X"), "")
+		w.builder.logger.Error(ctx, errors.New("invalid data type for insert, expects: struct, *struct, yiigo.X"))
 
 		return "", nil
 	}
@@ -315,7 +323,7 @@ func (w *queryWrapper) ToInsert(ctx context.Context, data interface{}) (string, 
 
 	query := sqlx.Rebind(sqlx.BindType(string(w.builder.driver)), builder.String())
 
-	w.builder.log(ctx, nil, query, binds...)
+	w.builder.logger.Info(ctx, query, binds...)
 
 	return query, binds
 }
@@ -374,13 +382,13 @@ func (w *queryWrapper) ToBatchInsert(ctx context.Context, data interface{}) (str
 	v := reflect.Indirect(reflect.ValueOf(data))
 
 	if v.Kind() != reflect.Slice {
-		w.builder.log(ctx, errors.New("invalid data type for batch insert, expects: []struct, []*struct, []yiigo.X"), "")
+		w.builder.logger.Error(ctx, errors.New("invalid data type for batch insert, expects: []struct, []*struct, []yiigo.X"))
 
 		return "", nil
 	}
 
 	if v.Len() == 0 {
-		w.builder.log(ctx, errors.New("empty data for batch insert"), "")
+		w.builder.logger.Error(ctx, errors.New("empty data for batch insert"))
 
 		return "", nil
 	}
@@ -397,7 +405,7 @@ func (w *queryWrapper) ToBatchInsert(ctx context.Context, data interface{}) (str
 		x, ok := data.([]X)
 
 		if !ok {
-			w.builder.log(ctx, errors.New("invalid data type for batch insert, expects: []struct, []*struct, []yiigo.X"), "")
+			w.builder.logger.Error(ctx, errors.New("invalid data type for batch insert, expects: []struct, []*struct, []yiigo.X"))
 
 			return "", nil
 		}
@@ -407,14 +415,14 @@ func (w *queryWrapper) ToBatchInsert(ctx context.Context, data interface{}) (str
 		columns, binds = w.batchInsertWithStruct(v)
 	case reflect.Ptr:
 		if e.Elem().Kind() != reflect.Struct {
-			w.builder.log(ctx, errors.New("invalid data type for batch insert, expects: []struct, []*struct, []yiigo.X"), "")
+			w.builder.logger.Error(ctx, errors.New("invalid data type for batch insert, expects: []struct, []*struct, []yiigo.X"))
 
 			return "", nil
 		}
 
 		columns, binds = w.batchInsertWithStruct(v)
 	default:
-		w.builder.log(ctx, errors.New("invalid data type for batch insert, expects: []struct, []*struct, []yiigo.X"), "")
+		w.builder.logger.Error(ctx, errors.New("invalid data type for batch insert, expects: []struct, []*struct, []yiigo.X"))
 
 		return "", nil
 	}
@@ -461,7 +469,7 @@ func (w *queryWrapper) ToBatchInsert(ctx context.Context, data interface{}) (str
 
 	query := sqlx.Rebind(sqlx.BindType(string(w.builder.driver)), builder.String())
 
-	w.builder.log(ctx, nil, query, binds...)
+	w.builder.logger.Info(ctx, query, binds...)
 
 	return query, binds
 }
@@ -545,7 +553,7 @@ func (w *queryWrapper) ToUpdate(ctx context.Context, data interface{}) (string, 
 		x, ok := data.(X)
 
 		if !ok {
-			w.builder.log(ctx, errors.New("invalid data type for update, expects: struct, *struct, yiigo.X"), "")
+			w.builder.logger.Error(ctx, errors.New("invalid data type for update, expects: struct, *struct, yiigo.X"))
 
 			return "", nil
 		}
@@ -554,7 +562,7 @@ func (w *queryWrapper) ToUpdate(ctx context.Context, data interface{}) (string, 
 	case reflect.Struct:
 		columns, binds = w.updateWithStruct(v)
 	default:
-		w.builder.log(ctx, errors.New("invalid data type for update, expects: struct, *struct, yiigo.X"), "")
+		w.builder.logger.Error(ctx, errors.New("invalid data type for update, expects: struct, *struct, yiigo.X"))
 
 		return "", nil
 	}
@@ -604,7 +612,7 @@ func (w *queryWrapper) ToUpdate(ctx context.Context, data interface{}) (string, 
 		query, binds, err = sqlx.In(query, binds...)
 
 		if err != nil {
-			w.builder.log(ctx, errors.Wrap(err, "error build 'IN' query"), "")
+			w.builder.logger.Error(ctx, errors.Wrap(err, "error build 'IN' query"))
 
 			return "", nil
 		}
@@ -612,7 +620,7 @@ func (w *queryWrapper) ToUpdate(ctx context.Context, data interface{}) (string, 
 
 	query = sqlx.Rebind(sqlx.BindType(string(w.builder.driver)), query)
 
-	w.builder.log(ctx, nil, query, binds...)
+	w.builder.logger.Info(ctx, query, binds...)
 
 	return query, binds
 }
@@ -699,7 +707,7 @@ func (w *queryWrapper) ToDelete(ctx context.Context) (string, []interface{}) {
 		query, binds, err = sqlx.In(query, binds...)
 
 		if err != nil {
-			w.builder.log(ctx, errors.Wrap(err, "error build 'IN' query"), "")
+			w.builder.logger.Error(ctx, errors.Wrap(err, "error build 'IN' query"))
 
 			return "", nil
 		}
@@ -707,7 +715,7 @@ func (w *queryWrapper) ToDelete(ctx context.Context) (string, []interface{}) {
 
 	query = sqlx.Rebind(sqlx.BindType(string(w.builder.driver)), query)
 
-	w.builder.log(ctx, nil, query, binds...)
+	w.builder.logger.Info(ctx, query, binds...)
 
 	return query, binds
 }
@@ -720,7 +728,7 @@ func (w *queryWrapper) ToTruncate(ctx context.Context) string {
 
 	query := builder.String()
 
-	w.builder.log(ctx, nil, query)
+	w.builder.logger.Info(ctx, query)
 
 	return query
 }
@@ -729,9 +737,9 @@ func (w *queryWrapper) ToTruncate(ctx context.Context) string {
 type BuilderOption func(builder *queryBuilder)
 
 // WithBuilderLog sets the logging function for SQL builder.
-func WithBuilderLog(fn SQLLogFunc) BuilderOption {
+func WithBuilderLog(l SQLLogger) BuilderOption {
 	return func(builder *queryBuilder) {
-		builder.log = fn
+		builder.logger = l
 	}
 }
 
