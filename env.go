@@ -11,6 +11,7 @@ import (
 	"go.uber.org/zap"
 )
 
+// EnvOnchangeFunc env onchange function
 type EnvOnchangeFunc func(event fsnotify.Event)
 
 type environment struct {
@@ -125,6 +126,7 @@ func WithEnvWatcher(fn ...EnvOnchangeFunc) EnvOption {
 }
 
 // LoadEnv will read your env file(s) and load them into ENV for this process.
+// It will default to loading .env in the current path if not specifies the filename.
 func LoadEnv(options ...EnvOption) error {
 	env := &environment{path: ".env"}
 
