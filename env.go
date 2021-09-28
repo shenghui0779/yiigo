@@ -43,7 +43,7 @@ func (e *environment) initWatcher() {
 			wg.Done()
 
 			if r := recover(); r != nil {
-				logger.Error("yiigo: env watcher panic", zap.Any("error", r), zap.String("envfile", e.path), zap.ByteString("stack", debug.Stack()))
+				logger.Error("yiigo: env watcher panic", zap.Any("error", r), zap.String("env_file", e.path), zap.ByteString("stack", debug.Stack()))
 			}
 		}()
 
@@ -64,7 +64,7 @@ func (e *environment) initWatcher() {
 					realEnvFile = currentEnvFile
 
 					if err := godotenv.Overload(e.path); err != nil {
-						logger.Error("yiigo: env reload error", zap.Error(err), zap.String("envfile", e.path))
+						logger.Error("yiigo: env reload error", zap.Error(err), zap.String("env_file", e.path))
 					}
 
 					for _, f := range e.onchanges {
@@ -75,7 +75,7 @@ func (e *environment) initWatcher() {
 				}
 			case err, ok := <-watcher.Errors:
 				if ok { // 'Errors' channel is not closed
-					logger.Error("yiigo: env watcher error", zap.Error(err), zap.String("envfile", e.path))
+					logger.Error("yiigo: env watcher error", zap.Error(err), zap.String("env_file", e.path))
 				}
 
 				return

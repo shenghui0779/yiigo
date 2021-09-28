@@ -1,6 +1,9 @@
 package yiigo
 
-import "sync"
+import (
+	"path/filepath"
+	"sync"
+)
 
 type cfgdb struct {
 	name    string
@@ -93,11 +96,11 @@ func WithNSQ(nsqd string, lookupd []string, options ...NSQOption) InitOption {
 }
 
 // WithLogger register logger.
-func WithLogger(name, path string, options ...LoggerOption) InitOption {
+func WithLogger(name, logfile string, options ...LoggerOption) InitOption {
 	return func(s *initSetting) {
 		s.logger = append(s.logger, &cfglogger{
 			name:    name,
-			path:    path,
+			path:    filepath.Clean(logfile),
 			options: options,
 		})
 	}
