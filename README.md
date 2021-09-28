@@ -50,7 +50,7 @@ yiigo.LoadEnv()
 yiigo.LoadEnv(yiigo.WithEnvFile("mycfg.env"))
 
 // 热加载
-yiigo.LoadEnvFromFile(yiigo.WithEnvWatcher(onchanges...))
+yiigo.LoadEnv(yiigo.WithEnvWatcher(onchanges...))
 ```
 
 - `.env`
