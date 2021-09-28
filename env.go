@@ -11,22 +11,13 @@ import (
 	"go.uber.org/zap"
 )
 
-// EnvOnchangeFunc env onchange function
+// EnvOnchangeFunc handles the change of env file
 type EnvOnchangeFunc func(event fsnotify.Event)
 
 type environment struct {
 	path      string
-	overload  bool
 	watcher   bool
 	onchanges []EnvOnchangeFunc
-}
-
-func (e *environment) load() error {
-	if e.overload {
-		return godotenv.Overload(e.path)
-	}
-
-	return godotenv.Load(e.path)
 }
 
 func (e *environment) initWatcher() {
@@ -72,7 +63,7 @@ func (e *environment) initWatcher() {
 				if (eventFile == e.path && event.Op&writeOrCreateMask != 0) || (currentEnvFile != "" && currentEnvFile != realEnvFile) {
 					realEnvFile = currentEnvFile
 
-					if err := e.load(); err != nil {
+					if err := godotenv.Overload(e.path); err != nil {
 						logger.Error("yiigo: env reload error", zap.Error(err), zap.String("envfile", e.path))
 					}
 
@@ -100,6 +91,7 @@ func (e *environment) initWatcher() {
 // EnvOption configures how we set up the env file.
 type EnvOption func(e *environment)
 
+// WithEnvFile specifies the env file.
 func WithEnvFile(filename string) EnvOption {
 	return func(e *environment) {
 		if len(strings.TrimSpace(filename)) == 0 {
@@ -110,14 +102,7 @@ func WithEnvFile(filename string) EnvOption {
 	}
 }
 
-// WithEnvOverload this WILL OVERRIDE an env variable that already exists - consider the .env file to forcefilly set all vars.
-func WithEnvOverload() EnvOption {
-	return func(e *environment) {
-		e.overload = true
-	}
-}
-
-// WithEnvWatcher specifies the `watcher` for env file.
+// WithEnvWatcher watches the change of env file.
 func WithEnvWatcher(fn ...EnvOnchangeFunc) EnvOption {
 	return func(e *environment) {
 		e.watcher = true
@@ -134,7 +119,7 @@ func LoadEnv(options ...EnvOption) error {
 		f(env)
 	}
 
-	if err := env.load(); err != nil {
+	if err := godotenv.Overload(env.path); err != nil {
 		return err
 	}
 
