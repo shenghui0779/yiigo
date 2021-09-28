@@ -13,12 +13,15 @@ import (
 	"go.uber.org/zap"
 )
 
+// EnvOnchangeFunc env onchange function
+type EnvOnchangeFunc func(event fsnotify.Event)
+
 // Environment is the interface for config.
 type Environment interface {
 	get(key string) EnvValue
 	loadFromFile(path string) error
 	loadFromBytes(b []byte) error
-	watcher(onchange func(event fsnotify.Event))
+	watcher(onchanges ...EnvOnchangeFunc)
 }
 
 // EnvValue is the interface for config value.
@@ -116,7 +119,7 @@ func (c *config) reload() error {
 	return nil
 }
 
-func (c *config) watcher(onchange func(event fsnotify.Event)) {
+func (c *config) watcher(onchanges ...EnvOnchangeFunc) {
 	watcher, err := fsnotify.NewWatcher()
 
 	if err != nil {
@@ -163,8 +166,8 @@ func (c *config) watcher(onchange func(event fsnotify.Event)) {
 						logger.Error("yiigo: env reload error", zap.Error(err))
 					}
 
-					if onchange != nil {
-						onchange(event)
+					for _, f := range onchanges {
+						f(event)
 					}
 				} else if eventFile == c.path && event.Op&fsnotify.Remove&fsnotify.Remove != 0 {
 					logger.Warn("yiigo: env file removed")
@@ -403,34 +406,19 @@ func (c *cfgValue) Unmarshal(dest interface{}) error {
 	return v.Unmarshal(dest)
 }
 
-type EnvEventFunc func(event fsnotify.Event)
-
 type envSetting struct {
-	watcher  bool
-	onchange EnvEventFunc
+	watcher   bool
+	onchanges []EnvOnchangeFunc
 }
 
 // EnvOption configures how we set up the env file.
 type EnvOption func(s *envSetting)
 
 // WithEnvWatcher specifies the `watcher` for env file.
-func WithEnvWatcher(onchanges ...EnvEventFunc) EnvOption {
+func WithEnvWatcher(onchanges ...EnvOnchangeFunc) EnvOption {
 	return func(s *envSetting) {
 		s.watcher = true
-
-		if len(onchanges) != 0 {
-			s.onchange = func(event fsnotify.Event) {
-				defer func() {
-					if r := recover(); r != nil {
-						logger.Error("yiigo: env onchange callback panic", zap.Any("error", r), zap.ByteString("stack", debug.Stack()))
-					}
-				}()
-
-				for _, f := range onchanges {
-					f(event)
-				}
-			}
-		}
+		s.onchanges = onchanges
 	}
 }
 
@@ -480,7 +468,7 @@ func LoadEnvFromFile(path string, options ...EnvOption) {
 	}
 
 	if setting.watcher {
-		go env.watcher(setting.onchange)
+		go env.watcher(setting.onchanges...)
 	}
 }
 
