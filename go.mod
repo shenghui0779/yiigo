@@ -12,6 +12,7 @@ require (
 	github.com/gomodule/redigo v1.8.5
 	github.com/hashicorp/go-version v1.3.0
 	github.com/jmoiron/sqlx v1.3.4
+	github.com/joho/godotenv v1.4.0 // indirect
 	github.com/lib/pq v1.10.3
 	github.com/mattn/go-sqlite3 v1.14.8
 	github.com/nsqio/go-nsq v1.0.8
