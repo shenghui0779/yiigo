@@ -156,15 +156,15 @@ func setConsumers(lookupd []string, options ...NSQOption) error {
 func initNSQ(nsqd string, lookupd []string, options ...NSQOption) {
 	// init producer
 	if err := initProducer(nsqd); err != nil {
-		logger.Panic("yiigo: init nsq error", zap.Error(err))
+		logger.Panic("[yiigo] init nsq error", zap.Error(err))
 	}
 
 	// set consumers
 	if err := setConsumers(lookupd, options...); err != nil {
-		logger.Panic("yiigo: init nsq error", zap.Error(err))
+		logger.Panic("[yiigo] init nsq error", zap.Error(err))
 	}
 
-	logger.Info("yiigo: nsq is OK")
+	logger.Info("[yiigo] nsq is OK")
 }
 
 // NextAttemptDuration helper for attempt duration.

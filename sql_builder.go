@@ -2,6 +2,7 @@ package yiigo
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"strings"
 
@@ -12,9 +13,9 @@ import (
 
 var (
 	// ErrInvalidUpsertData invalid insert or update data.
-	ErrInvalidUpsertData = errors.New("invaild data, expects: struct, *struct, yiigo.X")
+	ErrInvalidUpsertData = errors.New("yiigo: invaild data, expects: struct, *struct, yiigo.X")
 	// ErrInvalidBatchInsertData invalid batch insert data.
-	ErrInvalidBatchInsertData = errors.New("invaild data, expects: []struct, []*struct, []yiigo.X")
+	ErrInvalidBatchInsertData = errors.New("yiigo: invaild data, expects: []struct, []*struct, []yiigo.X")
 )
 
 // SQLBuilder is the interface for wrapping query options.
@@ -59,11 +60,11 @@ type SQLLogger interface {
 type builderLog struct{}
 
 func (l *builderLog) Info(ctx context.Context, query string, args ...interface{}) {
-	logger.Info("SQL Builder Info", zap.String("sql", query), zap.Any("args", args))
+	logger.Info(fmt.Sprintf("[yiigo] [SQL] %s", query), zap.Any("args", args))
 }
 
 func (l *builderLog) Error(ctx context.Context, err error) {
-	logger.Error("SQL Builder Error", zap.Error(err))
+	logger.Error("[yiigo] SQL Builder Error", zap.Error(err))
 }
 
 type queryBuilder struct {

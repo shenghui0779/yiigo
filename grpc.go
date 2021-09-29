@@ -19,7 +19,7 @@ type GRPCConn struct {
 // Close closes the connection resource
 func (gc *GRPCConn) Close() {
 	if err := gc.ClientConn.Close(); err != nil {
-		logger.Error("yiigo: grpc client conn closed error", zap.Error(err))
+		logger.Error("[yiigo] grpc client conn closed error", zap.Error(err))
 	}
 }
 
