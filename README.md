@@ -32,12 +32,6 @@ go get -u github.com/shenghui0779/yiigo
 
 ## Usage
 
-#### Initialization
-
-```go
-yiigo.Init(options...)
-```
-
 #### ENV
 
 - load
