@@ -60,7 +60,7 @@ func (e *environment) initWatcher() {
 				currentEnvFile, _ := filepath.EvalSymlinks(e.path)
 
 				// the env file was modified or created || the real path to the env file changed (eg: k8s ConfigMap replacement)
-				if (eventFile == e.path && event.Op&writeOrCreateMask != 0) || (currentEnvFile != "" && currentEnvFile != realEnvFile) {
+				if (eventFile == e.path && event.Op&writeOrCreateMask != 0) || (len(currentEnvFile) != 0 && currentEnvFile != realEnvFile) {
 					realEnvFile = currentEnvFile
 
 					if err := godotenv.Overload(e.path); err != nil {
@@ -71,7 +71,7 @@ func (e *environment) initWatcher() {
 						f(event)
 					}
 				} else if eventFile == e.path && event.Op&fsnotify.Remove&fsnotify.Remove != 0 {
-					logger.Warn("[yiigo] env file removed", zap.String("envfile", e.path))
+					logger.Warn("[yiigo] env file removed", zap.String("env_file", e.path))
 				}
 			case err, ok := <-watcher.Errors:
 				if ok { // 'Errors' channel is not closed
@@ -83,7 +83,9 @@ func (e *environment) initWatcher() {
 		}
 	}()
 
-	watcher.Add(envDir)
+	if err = watcher.Add(envDir); err != nil {
+		logger.Error("[yiigo] env watcher error", zap.Error(err), zap.String("env_file", e.path))
+	}
 
 	wg.Wait()
 }

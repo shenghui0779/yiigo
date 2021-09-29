@@ -369,7 +369,7 @@ func (w *queryWrapper) insertWithStruct(v reflect.Value) (columns []string, bind
 		fieldV := v.Field(i)
 		column := fieldT.Name
 
-		if tag != "" {
+		if len(tag) != 0 {
 			name, opts := parseTag(tag)
 
 			if opts.Contains("omitempty") && isEmptyValue(fieldV) {
@@ -526,7 +526,7 @@ func (w *queryWrapper) batchInsertWithStruct(v reflect.Value) (columns []string,
 			fieldV := reflect.Indirect(v.Index(i)).Field(j)
 			column := fieldT.Name
 
-			if tag != "" {
+			if len(tag) != 0 {
 				name, opts := parseTag(tag)
 
 				if opts.Contains("omitempty") && isEmptyValue(fieldV) {
@@ -675,7 +675,7 @@ func (w *queryWrapper) updateWithStruct(v reflect.Value) (columns []string, bind
 		fieldV := v.Field(i)
 		column := fieldT.Name
 
-		if tag != "" {
+		if len(tag) != 0 {
 			name, opts := parseTag(tag)
 
 			if opts.Contains("omitempty") && isEmptyValue(fieldV) {
@@ -954,7 +954,7 @@ func (o tagOptions) Contains(optionName string) bool {
 
 	s := string(o)
 
-	for s != "" {
+	for len(s) != 0 {
 		var next string
 
 		i := strings.Index(s, ",")
