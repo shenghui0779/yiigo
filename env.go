@@ -1,6 +1,7 @@
 package yiigo
 
 import (
+	"os"
 	"path/filepath"
 	"runtime/debug"
 	"strings"
@@ -11,83 +12,13 @@ import (
 	"go.uber.org/zap"
 )
 
-// EnvOnchangeFunc handles the change of env file
-type EnvOnchangeFunc func(event fsnotify.Event)
+// EnvEventFunc handles the change of env file
+type EnvEventFunc func(event fsnotify.Event)
 
 type environment struct {
 	path      string
 	watcher   bool
-	onchanges []EnvOnchangeFunc
-}
-
-func (e *environment) initWatcher() {
-	watcher, err := fsnotify.NewWatcher()
-
-	if err != nil {
-		logger.Error("[yiigo] env watcher error", zap.Error(err))
-
-		return
-	}
-
-	defer watcher.Close()
-
-	envDir, _ := filepath.Split(e.path)
-	realEnvFile, _ := filepath.EvalSymlinks(e.path)
-
-	var wg sync.WaitGroup
-
-	wg.Add(1)
-
-	go func() {
-		defer func() {
-			wg.Done()
-
-			if r := recover(); r != nil {
-				logger.Error("[yiigo] env watcher panic", zap.Any("error", r), zap.String("env_file", e.path), zap.ByteString("stack", debug.Stack()))
-			}
-		}()
-
-		writeOrCreateMask := fsnotify.Write | fsnotify.Create
-
-		for {
-			select {
-			case event, ok := <-watcher.Events:
-				if !ok { // 'Events' channel is closed
-					return
-				}
-
-				eventFile := filepath.Clean(event.Name)
-				currentEnvFile, _ := filepath.EvalSymlinks(e.path)
-
-				// the env file was modified or created || the real path to the env file changed (eg: k8s ConfigMap replacement)
-				if (eventFile == e.path && event.Op&writeOrCreateMask != 0) || (len(currentEnvFile) != 0 && currentEnvFile != realEnvFile) {
-					realEnvFile = currentEnvFile
-
-					if err := godotenv.Overload(e.path); err != nil {
-						logger.Error("[yiigo] env reload error", zap.Error(err), zap.String("env_file", e.path))
-					}
-
-					for _, f := range e.onchanges {
-						f(event)
-					}
-				} else if eventFile == e.path && event.Op&fsnotify.Remove&fsnotify.Remove != 0 {
-					logger.Warn("[yiigo] env file removed", zap.String("env_file", e.path))
-				}
-			case err, ok := <-watcher.Errors:
-				if ok { // 'Errors' channel is not closed
-					logger.Error("[yiigo] env watcher error", zap.Error(err), zap.String("env_file", e.path))
-				}
-
-				return
-			}
-		}
-	}()
-
-	if err = watcher.Add(envDir); err != nil {
-		logger.Error("[yiigo] env watcher error", zap.Error(err), zap.String("env_file", e.path))
-	}
-
-	wg.Wait()
+	onchanges []EnvEventFunc
 }
 
 // EnvOption configures how we set up the env file.
@@ -105,7 +36,7 @@ func WithEnvFile(filename string) EnvOption {
 }
 
 // WithEnvWatcher watches the change of env file.
-func WithEnvWatcher(fn ...EnvOnchangeFunc) EnvOption {
+func WithEnvWatcher(fn ...EnvEventFunc) EnvOption {
 	return func(e *environment) {
 		e.watcher = true
 		e.onchanges = fn
@@ -121,13 +52,125 @@ func LoadEnv(options ...EnvOption) error {
 		f(env)
 	}
 
-	if err := godotenv.Overload(env.path); err != nil {
+	abspath, err := filepath.Abs(env.path)
+
+	if err != nil {
+		return err
+	}
+
+	statEnvFile(abspath)
+
+	if err := godotenv.Overload(abspath); err != nil {
 		return err
 	}
 
 	if env.watcher {
-		go env.initWatcher()
+		go initEnvWatcher(abspath, env.onchanges...)
 	}
 
 	return nil
+}
+
+func statEnvFile(path string) {
+	_, err := os.Stat(path)
+
+	if err == nil {
+		return
+	}
+
+	if os.IsNotExist(err) {
+		if dir, _ := filepath.Split(path); len(dir) != 0 {
+			if err = os.MkdirAll(dir, 0755); err != nil {
+				return
+			}
+		}
+
+		f, err := os.Create(path)
+
+		if err == nil {
+			f.Close()
+		}
+
+		return
+	}
+
+	if os.IsPermission(err) {
+		os.Chmod(path, 0755)
+	}
+}
+
+func initEnvWatcher(path string, onchanges ...EnvEventFunc) {
+	defer func() {
+		if r := recover(); r != nil {
+			logger.Error("[yiigo] env watcher panic", zap.Any("error", r), zap.String("env_file", path), zap.ByteString("stack", debug.Stack()))
+		}
+	}()
+
+	watcher, err := fsnotify.NewWatcher()
+
+	if err != nil {
+		logger.Error("[yiigo] env watcher error", zap.Error(err))
+
+		return
+	}
+
+	defer watcher.Close()
+
+	envDir, _ := filepath.Split(path)
+	realEnvFile, _ := filepath.EvalSymlinks(path)
+
+	var wg sync.WaitGroup
+
+	wg.Add(1)
+
+	go func() {
+		defer func() {
+			wg.Done()
+
+			if r := recover(); r != nil {
+				logger.Error("[yiigo] env watcher panic", zap.Any("error", r), zap.String("env_file", path), zap.ByteString("stack", debug.Stack()))
+			}
+		}()
+
+		writeOrCreateMask := fsnotify.Write | fsnotify.Create
+
+		for {
+			select {
+			case event, ok := <-watcher.Events:
+				if !ok { // 'Events' channel is closed
+					return
+				}
+
+				eventFile := filepath.Clean(event.Name)
+				currentEnvFile, _ := filepath.EvalSymlinks(path)
+
+				// the env file was modified or created || the real path to the env file changed (eg: k8s ConfigMap replacement)
+				if (eventFile == path && event.Op&writeOrCreateMask != 0) || (len(currentEnvFile) != 0 && currentEnvFile != realEnvFile) {
+					realEnvFile = currentEnvFile
+
+					if err := godotenv.Overload(path); err != nil {
+						logger.Error("[yiigo] env reload error", zap.Error(err), zap.String("env_file", path))
+					}
+
+					for _, f := range onchanges {
+						f(event)
+					}
+				} else if eventFile == path && event.Op&fsnotify.Remove&fsnotify.Remove != 0 {
+					logger.Warn("[yiigo] env file removed", zap.String("env_file", path))
+				}
+			case err, ok := <-watcher.Errors:
+				if ok { // 'Errors' channel is not closed
+					logger.Error("[yiigo] env watcher error", zap.Error(err), zap.String("env_file", path))
+				}
+
+				return
+			}
+		}
+	}()
+
+	if err = watcher.Add(envDir); err != nil {
+		logger.Error("[yiigo] env watcher error", zap.Error(err), zap.String("env_file", path))
+	}
+
+	wg.Wait()
 }
