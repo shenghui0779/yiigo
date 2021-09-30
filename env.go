@@ -12,7 +12,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// EnvEventFunc handles the change of env file
+// EnvEventFunc the function that runs each time the env file changes occurs.
 type EnvEventFunc func(event fsnotify.Event)
 
 type environment struct {
@@ -21,7 +21,7 @@ type environment struct {
 	onchanges []EnvEventFunc
 }
 
-// EnvOption configures how we set up the env file.
+// EnvOption configures how we set up env file.
 type EnvOption func(e *environment)
 
 // WithEnvFile specifies the env file.
@@ -35,11 +35,11 @@ func WithEnvFile(filename string) EnvOption {
 	}
 }
 
-// WithEnvWatcher watches the change of env file.
+// WithEnvWatcher watching and re-reading env file.
 func WithEnvWatcher(fn ...EnvEventFunc) EnvOption {
 	return func(e *environment) {
 		e.watcher = true
-		e.onchanges = fn
+		e.onchanges = append(e.onchanges, fn...)
 	}
 }
 
@@ -65,7 +65,7 @@ func LoadEnv(options ...EnvOption) error {
 	}
 
 	if env.watcher {
-		go initEnvWatcher(abspath, env.onchanges...)
+		go watchEnvFile(abspath, env.onchanges...)
 	}
 
 	return nil
@@ -99,7 +99,7 @@ func statEnvFile(path string) {
 	}
 }
 
-func initEnvWatcher(path string, onchanges ...EnvEventFunc) {
+func watchEnvFile(path string, onchanges ...EnvEventFunc) {
 	defer func() {
 		if r := recover(); r != nil {
 			logger.Error("[yiigo] env watcher panic", zap.Any("error", r), zap.String("env_file", path), zap.ByteString("stack", debug.Stack()))
