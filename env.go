@@ -12,7 +12,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// EnvEventFunc the function that runs each time the env file changes occurs.
+// EnvEventFunc the function that runs each time env change occurs.
 type EnvEventFunc func(event fsnotify.Event)
 
 type environment struct {
