@@ -13,9 +13,9 @@ import (
 
 var (
 	// ErrInvalidUpsertData invalid insert or update data.
-	ErrInvalidUpsertData = errors.New("yiigo: invaild data, expects: struct, *struct, yiigo.X")
+	ErrInvalidUpsertData = errors.New("invaild data, expects struct, *struct, yiigo.X")
 	// ErrInvalidBatchInsertData invalid batch insert data.
-	ErrInvalidBatchInsertData = errors.New("yiigo: invaild data, expects: []struct, []*struct, []yiigo.X")
+	ErrInvalidBatchInsertData = errors.New("invaild data, expects []struct, []*struct, []yiigo.X")
 )
 
 // SQLBuilder is the interface for wrapping query options.

@@ -26,7 +26,7 @@ const (
 	PKCS7 PaddingMode = "PKCS#7"
 )
 
-// PemBlockType pem block type which taken from the preamble
+// PemBlockType pem block type which taken from the preamble.
 type PemBlockType string
 
 const (
@@ -36,12 +36,12 @@ const (
 	RSAPKCS8 PemBlockType = "PRIVATE KEY"
 )
 
-// AESCrypto is the interface for aes crypto
+// AESCrypto is the interface for aes crypto.
 type AESCrypto interface {
-	// Encrypt encrypts the plain text
+	// Encrypt encrypts the plain text.
 	Encrypt(plainText []byte) ([]byte, error)
 
-	// Decrypt decrypts the cipher text
+	// Decrypt decrypts the cipher text.
 	Decrypt(cipherText []byte) ([]byte, error)
 }
 
@@ -59,7 +59,7 @@ func (c *cbccrypto) Encrypt(plainText []byte) ([]byte, error) {
 	}
 
 	if len(c.iv) != block.BlockSize() {
-		return nil, errors.New("yiigo: IV length must equal block size")
+		return nil, errors.New("IV length must equal block size")
 	}
 
 	switch c.mode {
@@ -87,7 +87,7 @@ func (c *cbccrypto) Decrypt(cipherText []byte) ([]byte, error) {
 	}
 
 	if len(c.iv) != block.BlockSize() {
-		return nil, errors.New("yiigo: IV length must equal block size")
+		return nil, errors.New("IV length must equal block size")
 	}
 
 	plainText := make([]byte, len(cipherText))
@@ -107,7 +107,7 @@ func (c *cbccrypto) Decrypt(cipherText []byte) ([]byte, error) {
 	return plainText, nil
 }
 
-// NewCBCCrypto returns a new aes-cbc crypto
+// NewCBCCrypto returns a new aes-cbc crypto.
 func NewCBCCrypto(key, iv []byte, mode PaddingMode) AESCrypto {
 	return &cbccrypto{
 		key:  key,
@@ -169,7 +169,7 @@ func (c *ecbcrypto) Decrypt(cipherText []byte) ([]byte, error) {
 	return plainText, nil
 }
 
-// NewECBCrypto returns a new aes-ecb crypto
+// NewECBCrypto returns a new aes-ecb crypto.
 func NewECBCrypto(key []byte, mode PaddingMode) AESCrypto {
 	return &ecbcrypto{
 		key:  key,
@@ -190,7 +190,7 @@ func (c *cfbcrypto) Encrypt(plainText []byte) ([]byte, error) {
 	}
 
 	if len(c.iv) != block.BlockSize() {
-		return nil, errors.New("yiigo: IV length must equal block size")
+		return nil, errors.New("IV length must equal block size")
 	}
 
 	cipherText := make([]byte, len(plainText))
@@ -209,7 +209,7 @@ func (c *cfbcrypto) Decrypt(cipherText []byte) ([]byte, error) {
 	}
 
 	if len(c.iv) != block.BlockSize() {
-		return nil, errors.New("yiigo: IV length must equal block size")
+		return nil, errors.New("IV length must equal block size")
 	}
 
 	plainText := make([]byte, len(cipherText))
@@ -241,7 +241,7 @@ func (c *ofbcrypto) Encrypt(plainText []byte) ([]byte, error) {
 	}
 
 	if len(c.iv) != block.BlockSize() {
-		return nil, errors.New("yiigo: IV length must equal block size")
+		return nil, errors.New("IV length must equal block size")
 	}
 
 	cipherText := make([]byte, len(plainText))
@@ -260,7 +260,7 @@ func (c *ofbcrypto) Decrypt(cipherText []byte) ([]byte, error) {
 	}
 
 	if len(c.iv) != block.BlockSize() {
-		return nil, errors.New("yiigo: IV length must equal block size")
+		return nil, errors.New("IV length must equal block size")
 	}
 
 	plainText := make([]byte, len(cipherText))
@@ -292,7 +292,7 @@ func (c *ctrcrypto) Encrypt(plainText []byte) ([]byte, error) {
 	}
 
 	if len(c.iv) != block.BlockSize() {
-		return nil, errors.New("yiigo: IV length must equal block size")
+		return nil, errors.New("IV length must equal block size")
 	}
 
 	cipherText := make([]byte, len(plainText))
@@ -311,7 +311,7 @@ func (c *ctrcrypto) Decrypt(cipherText []byte) ([]byte, error) {
 	}
 
 	if len(c.iv) != block.BlockSize() {
-		return nil, errors.New("yiigo: IV length must equal block size")
+		return nil, errors.New("IV length must equal block size")
 	}
 
 	plainText := make([]byte, len(cipherText))
@@ -349,7 +349,7 @@ func (c *gcmcrypto) Encrypt(plainText []byte) ([]byte, error) {
 	}
 
 	if len(c.nonce) != aesgcm.NonceSize() {
-		return nil, errors.New("yiigo: Nonce length must equal gcm standard nonce size")
+		return nil, errors.New("nonce length must equal gcm standard nonce size")
 	}
 
 	return aesgcm.Seal(nil, c.nonce, plainText, nil), nil
@@ -369,7 +369,7 @@ func (c *gcmcrypto) Decrypt(cipherText []byte) ([]byte, error) {
 	}
 
 	if len(c.nonce) != aesgcm.NonceSize() {
-		return nil, errors.New("yiigo: Nonce length must equal gcm standard nonce size")
+		return nil, errors.New("nonce length must equal gcm standard nonce size")
 	}
 
 	return aesgcm.Open(nil, c.nonce, cipherText, nil)
@@ -383,7 +383,7 @@ func NewGCMCrypto(key, nonce []byte) AESCrypto {
 	}
 }
 
-// GenerateRSAKey returns rsa private and public key
+// GenerateRSAKey returns rsa private and public key.
 func GenerateRSAKey(bitSize int, blockType PemBlockType) (privateKey, publicKey []byte, err error) {
 	prvKey, err := rsa.GenerateKey(rand.Reader, bitSize)
 
@@ -425,7 +425,7 @@ func RSAEncrypt(plainText, publicKey []byte) ([]byte, error) {
 	block, _ := pem.Decode(publicKey)
 
 	if block == nil {
-		return nil, errors.New("yiigo: invalid rsa public key")
+		return nil, errors.New("invalid rsa public key for pem.Decode")
 	}
 
 	pubKey, err := x509.ParsePKIXPublicKey(block.Bytes)
@@ -437,7 +437,7 @@ func RSAEncrypt(plainText, publicKey []byte) ([]byte, error) {
 	key, ok := pubKey.(*rsa.PublicKey)
 
 	if !ok {
-		return nil, errors.New("yiigo: invalid rsa public key")
+		return nil, errors.New("invalid rsa public key, expects rsa.PublicKey")
 	}
 
 	return rsa.EncryptPKCS1v15(rand.Reader, key, plainText)
@@ -448,7 +448,7 @@ func RSADecrypt(cipherText, privateKey []byte) ([]byte, error) {
 	block, _ := pem.Decode(privateKey)
 
 	if block == nil {
-		return nil, errors.New("yiigo: invalid rsa private key")
+		return nil, errors.New("invalid rsa private key for pem.Decode")
 	}
 
 	var (
@@ -470,18 +470,18 @@ func RSADecrypt(cipherText, privateKey []byte) ([]byte, error) {
 	rsaKey, ok := key.(*rsa.PrivateKey)
 
 	if !ok {
-		return nil, errors.New("yiigo: invalid rsa private key")
+		return nil, errors.New("invalid rsa private key, expects rsa.PrivateKey")
 	}
 
 	return rsa.DecryptPKCS1v15(rand.Reader, rsaKey, cipherText)
 }
 
-// RSAEncryptOEAP rsa encrypt with PKCS #1 OEAP
+// RSAEncryptOEAP rsa encrypt with PKCS #1 OEAP.
 func RSAEncryptOEAP(plainText, publicKey []byte) ([]byte, error) {
 	block, _ := pem.Decode(publicKey)
 
 	if block == nil {
-		return nil, errors.New("yiigo: invalid rsa public key")
+		return nil, errors.New("invalid rsa public key for pem.Decode")
 	}
 
 	pubKey, err := x509.ParsePKIXPublicKey(block.Bytes)
@@ -493,18 +493,18 @@ func RSAEncryptOEAP(plainText, publicKey []byte) ([]byte, error) {
 	key, ok := pubKey.(*rsa.PublicKey)
 
 	if !ok {
-		return nil, errors.New("yiigo: invalid rsa public key")
+		return nil, errors.New("invalid rsa public key, expects rsa.PublicKey")
 	}
 
 	return rsa.EncryptOAEP(sha1.New(), rand.Reader, key, plainText, nil)
 }
 
-// RSADecryptOEAP rsa decrypt with PKCS #1 OEAP
+// RSADecryptOEAP rsa decrypt with PKCS #1 OEAP.
 func RSADecryptOEAP(cipherText, privateKey []byte) ([]byte, error) {
 	block, _ := pem.Decode(privateKey)
 
 	if block == nil {
-		return nil, errors.New("yiigo: invalid rsa private key")
+		return nil, errors.New("invalid rsa private key for pem.Decode")
 	}
 
 	var (
@@ -526,18 +526,18 @@ func RSADecryptOEAP(cipherText, privateKey []byte) ([]byte, error) {
 	rsaKey, ok := key.(*rsa.PrivateKey)
 
 	if !ok {
-		return nil, errors.New("yiigo: invalid rsa private key")
+		return nil, errors.New("invalid rsa private key, expects rsa.PrivateKey")
 	}
 
 	return rsa.DecryptOAEP(sha1.New(), rand.Reader, rsaKey, cipherText, nil)
 }
 
-// RSASignWithSha256 returns rsa signature with sha256
+// RSASignWithSha256 returns rsa signature with sha256.
 func RSASignWithSha256(data, privateKey []byte) ([]byte, error) {
 	block, _ := pem.Decode(privateKey)
 
 	if block == nil {
-		return nil, errors.New("yiigo: invalid rsa private key")
+		return nil, errors.New("invalid rsa private key for pem.Decode")
 	}
 
 	var (
@@ -559,7 +559,7 @@ func RSASignWithSha256(data, privateKey []byte) ([]byte, error) {
 	rsaKey, ok := key.(*rsa.PrivateKey)
 
 	if !ok {
-		return nil, errors.New("yiigo: invalid rsa private key")
+		return nil, errors.New("invalid rsa private key, expects rsa.PrivateKey")
 	}
 
 	h := sha256.New()
@@ -574,12 +574,12 @@ func RSASignWithSha256(data, privateKey []byte) ([]byte, error) {
 	return signature, nil
 }
 
-// RSAVerifyWithSha256 verifies rsa signature with sha256
+// RSAVerifyWithSha256 verifies rsa signature with sha256.
 func RSAVerifyWithSha256(data, signature, publicKey []byte) error {
 	block, _ := pem.Decode(publicKey)
 
 	if block == nil {
-		return errors.New("yiigo: invalid rsa public key")
+		return errors.New("invalid rsa public key for pem.Decode")
 	}
 
 	pubKey, err := x509.ParsePKIXPublicKey(block.Bytes)
@@ -591,7 +591,7 @@ func RSAVerifyWithSha256(data, signature, publicKey []byte) error {
 	key, ok := pubKey.(*rsa.PublicKey)
 
 	if !ok {
-		return errors.New("yiigo: invalid rsa public key")
+		return errors.New("invalid rsa public key, expects rsa.PublicKey")
 	}
 
 	hashed := sha256.Sum256(data)
@@ -635,7 +635,7 @@ func PKCS5Unpadding(plainText []byte, blockSize int) []byte {
 	return plainText[:(l - unpadding)]
 }
 
-// --------- AES-256-ECB ---------
+// ------------- AES-256-ECB -------------
 
 type ecb struct {
 	b         cipher.Block
