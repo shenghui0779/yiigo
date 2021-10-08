@@ -210,7 +210,8 @@ client.Do(ctx, http.MethodGet, "URL", nil)
 > ⚠️ 作为辅助方法，目前支持的特性有限，复杂的SQL（如：子查询等）还需自己手写
 
 ```go
-builder := yiigo.NewSQLBuilder(yiigo.MySQL)
+builder := yiigo.NewMySQLBuilder()
+// builder := yiigo.NewSQLBuilder(yiigo.MySQL)
 ```
 
 - Query
