@@ -436,7 +436,6 @@ builder.Wrap(
 ## Documentation
 
 - [API Reference](https://pkg.go.dev/github.com/shenghui0779/yiigo)
-- [TOML](https://github.com/toml-lang/toml)
 - [Example](https://github.com/shenghui0779/yiigo-example)
 
 **Enjoy 😊**
