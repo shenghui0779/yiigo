@@ -744,7 +744,7 @@ func (w *queryWrapper) ToTruncate(ctx context.Context) string {
 // BuilderOption configures how we set up the SQL builder.
 type BuilderOption func(builder *queryBuilder)
 
-// WithBuilderLog sets the logging function for SQL builder.
+// WithBuilderLog sets logger for SQL builder.
 func WithBuilderLog(l SQLLogger) BuilderOption {
 	return func(builder *queryBuilder) {
 		builder.logger = l
