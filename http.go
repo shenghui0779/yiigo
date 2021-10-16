@@ -65,7 +65,7 @@ type uploadform struct {
 
 func (f *uploadform) Write(w *multipart.Writer) error {
 	if len(f.filefield) == 0 {
-		return errors.New("yiigo: empty file field")
+		return errors.New("empty file field")
 	}
 
 	for _, field := range f.filefield {

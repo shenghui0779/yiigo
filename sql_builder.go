@@ -2,6 +2,7 @@ package yiigo
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"strings"
 
@@ -12,9 +13,9 @@ import (
 
 var (
 	// ErrInvalidUpsertData invalid insert or update data.
-	ErrInvalidUpsertData = errors.New("invaild data, expects: struct, *struct, yiigo.X")
+	ErrInvalidUpsertData = errors.New("invaild data, expects struct, *struct, yiigo.X")
 	// ErrInvalidBatchInsertData invalid batch insert data.
-	ErrInvalidBatchInsertData = errors.New("invaild data, expects: []struct, []*struct, []yiigo.X")
+	ErrInvalidBatchInsertData = errors.New("invaild data, expects []struct, []*struct, []yiigo.X")
 )
 
 // SQLBuilder is the interface for wrapping query options.
@@ -59,11 +60,11 @@ type SQLLogger interface {
 type builderLog struct{}
 
 func (l *builderLog) Info(ctx context.Context, query string, args ...interface{}) {
-	logger.Info("SQL Builder Info", zap.String("sql", query), zap.Any("args", args))
+	logger.Info(fmt.Sprintf("[yiigo] [SQL] %s", query), zap.Any("args", args))
 }
 
 func (l *builderLog) Error(ctx context.Context, err error) {
-	logger.Error("SQL Builder Error", zap.Error(err))
+	logger.Error("[yiigo] SQL Builder Error", zap.Error(err))
 }
 
 type queryBuilder struct {
@@ -368,7 +369,7 @@ func (w *queryWrapper) insertWithStruct(v reflect.Value) (columns []string, bind
 		fieldV := v.Field(i)
 		column := fieldT.Name
 
-		if tag != "" {
+		if len(tag) != 0 {
 			name, opts := parseTag(tag)
 
 			if opts.Contains("omitempty") && isEmptyValue(fieldV) {
@@ -525,7 +526,7 @@ func (w *queryWrapper) batchInsertWithStruct(v reflect.Value) (columns []string,
 			fieldV := reflect.Indirect(v.Index(i)).Field(j)
 			column := fieldT.Name
 
-			if tag != "" {
+			if len(tag) != 0 {
 				name, opts := parseTag(tag)
 
 				if opts.Contains("omitempty") && isEmptyValue(fieldV) {
@@ -674,7 +675,7 @@ func (w *queryWrapper) updateWithStruct(v reflect.Value) (columns []string, bind
 		fieldV := v.Field(i)
 		column := fieldT.Name
 
-		if tag != "" {
+		if len(tag) != 0 {
 			name, opts := parseTag(tag)
 
 			if opts.Contains("omitempty") && isEmptyValue(fieldV) {
@@ -743,7 +744,7 @@ func (w *queryWrapper) ToTruncate(ctx context.Context) string {
 // BuilderOption configures how we set up the SQL builder.
 type BuilderOption func(builder *queryBuilder)
 
-// WithBuilderLog sets the logging function for SQL builder.
+// WithBuilderLog sets logger for SQL builder.
 func WithBuilderLog(l SQLLogger) BuilderOption {
 	return func(builder *queryBuilder) {
 		builder.logger = l
@@ -953,7 +954,7 @@ func (o tagOptions) Contains(optionName string) bool {
 
 	s := string(o)
 
-	for s != "" {
+	for len(s) != 0 {
 		var next string
 
 		i := strings.Index(s, ",")

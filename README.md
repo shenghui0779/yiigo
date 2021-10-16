@@ -17,7 +17,7 @@
 - 日志使用 [zap](https://github.com/uber-go/zap)
 - gRPC Client 连接池
 - 轻量的 SQL Builder
-- 环境配置使用 [toml](https://github.com/pelletier/go-toml)，支持热加载
+- 环境配置使用 [dotenv](https://github.com/joho/godotenv)，支持热加载
 - 实用的辅助方法，包含：http、cypto、date、IP、version compare 等
 
 ## Requirements
@@ -32,51 +32,32 @@ go get -u github.com/shenghui0779/yiigo
 
 ## Usage
 
-#### Initialization
+#### ENV
+
+- load
 
 ```go
-yiigo.Init(options...)
-```
+// 默认加载当前目录下的`.env`文件
+yiigo.LoadEnv()
 
-#### Config
-
-- register
-
-```go
-yiigo.LoadEnvFromFile("yiigo.toml")
-yiigo.LoadEnvFromBytes([]byte)
+// 加载指定文件
+yiigo.LoadEnv(yiigo.WithEnvFile("mycfg.env"))
 
 // 热加载
-yiigo.LoadEnvFromFile("yiigo.toml", yiigo.WithEnvWatcher(onchanges...))
+yiigo.LoadEnv(yiigo.WithEnvWatcher(onchanges...))
 ```
 
-- `toml`
+- `.env`
 
-```toml
-[app]
-env = "dev"
-debug = true
-
-[foo]
-amount = 100
-ports = [80, 81, 82]
-weight = 50.6
-prices = [23.5, 46.7, 45.9]
-hosts = ["127.0.0.1", "192.168.1.1", "192.168.1.80"]
-birthday = "2019-07-12 13:03:19"
+```dotenv
+ENV=dev
 ```
 
 - usage
 
 ```go
-yiigo.Env("app.env").String()
-yiigo.Env("app.debug").Bool()
-yiigo.Env("foo.amount").Int()
-yiigo.Env("foo.ports").Ints()
-yiigo.Env("foo.weight").Float()
-yiigo.Env("foo.price").Floats()
-yiigo.Env("foo.hosts").Strings()
-yiigo.Env("foo.birthday").Time("2006-01-02 15:04:05")
+fmt.Println(os.Getenv("ENV"))
+// output: dev
 ```
 
 #### DB
@@ -229,7 +210,8 @@ client.Do(ctx, http.MethodGet, "URL", nil)
 > ⚠️ 作为辅助方法，目前支持的特性有限，复杂的SQL（如：子查询等）还需自己手写
 
 ```go
-builder := yiigo.NewSQLBuilder(yiigo.MySQL)
+builder := yiigo.NewMySQLBuilder()
+// builder := yiigo.NewSQLBuilder(yiigo.MySQL)
 ```
 
 - Query
@@ -454,7 +436,6 @@ builder.Wrap(
 ## Documentation
 
 - [API Reference](https://pkg.go.dev/github.com/shenghui0779/yiigo)
-- [TOML](https://github.com/toml-lang/toml)
 - [Example](https://github.com/shenghui0779/yiigo-example)
 
 **Enjoy 😊**

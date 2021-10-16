@@ -60,7 +60,7 @@ func StrToTime(datetime string, layout ...string) int64 {
 
 	// mismatch layout
 	if err != nil {
-		logger.Error("yiigo: parse layout mismatch", zap.Error(err))
+		logger.Error("[yiigo] parse layout mismatch", zap.Error(err))
 
 		return 0
 	}

@@ -1,137 +1,123 @@
 package yiigo
 
 import (
-	"errors"
 	"os"
 	"path/filepath"
 	"runtime/debug"
+	"strings"
 	"sync"
-	"time"
 
 	"github.com/fsnotify/fsnotify"
-	"github.com/pelletier/go-toml"
+	"github.com/joho/godotenv"
 	"go.uber.org/zap"
 )
 
-// EnvOnchangeFunc env onchange function
-type EnvOnchangeFunc func(event fsnotify.Event)
+// EnvEventFunc the function that runs each time env change occurs.
+type EnvEventFunc func(event fsnotify.Event)
 
-// Environment is the interface for config.
-type Environment interface {
-	get(key string) EnvValue
-	loadFromFile(path string) error
-	loadFromBytes(b []byte) error
-	watcher(onchanges ...EnvOnchangeFunc)
+type environment struct {
+	path      string
+	watcher   bool
+	onchanges []EnvEventFunc
 }
 
-// EnvValue is the interface for config value.
-type EnvValue interface {
-	// Int returns a value of int64.
-	Int(defaultValue ...int64) int64
+// EnvOption configures how we set up env file.
+type EnvOption func(e *environment)
 
-	// Ints returns a value of []int64.
-	Ints(defaultValue ...int64) []int64
+// WithEnvFile specifies the env file.
+func WithEnvFile(filename string) EnvOption {
+	return func(e *environment) {
+		if len(strings.TrimSpace(filename)) == 0 {
+			return
+		}
 
-	// Float returns a value of float64.
-	Float(defaultValue ...float64) float64
-
-	// Floats returns a value of []float64.
-	Floats(defaultValue ...float64) []float64
-
-	// String returns a value of string.
-	String(defaultValue ...string) string
-
-	// Strings returns a value of []string.
-	Strings(defaultValue ...string) []string
-
-	// Bool returns a value of bool.
-	Bool(defaultValue ...bool) bool
-
-	// Time returns a value of time.Time.
-	// Layout is required when the env value is a string.
-	Time(layout string, defaultValue ...time.Time) time.Time
-
-	// Map returns a value of X.
-	Map() X
-
-	// Unmarshal attempts to unmarshal the value into a Go struct pointed by dest.
-	Unmarshal(dest interface{}) error
+		e.path = filepath.Clean(filename)
+	}
 }
 
-type config struct {
-	mutex sync.RWMutex
-	tree  *toml.Tree
-	path  string
+// WithEnvWatcher watching and re-reading env file.
+func WithEnvWatcher(fn ...EnvEventFunc) EnvOption {
+	return func(e *environment) {
+		e.watcher = true
+		e.onchanges = append(e.onchanges, fn...)
+	}
 }
 
-func (c *config) get(key string) EnvValue {
-	c.mutex.RLock()
-	defer c.mutex.RUnlock()
+// LoadEnv will read your env file(s) and load them into ENV for this process.
+// It will default to loading .env in the current path if not specifies the filename.
+func LoadEnv(options ...EnvOption) error {
+	env := &environment{path: ".env"}
 
-	if c.tree == nil {
-		return new(cfgValue)
+	for _, f := range options {
+		f(env)
 	}
 
-	return &cfgValue{value: c.tree.Get(key)}
-}
-
-func (c *config) loadFromFile(path string) error {
-	t, err := toml.LoadFile(path)
+	abspath, err := filepath.Abs(env.path)
 
 	if err != nil {
 		return err
 	}
 
-	c.tree = t
-	c.path = path
+	statEnvFile(abspath)
 
-	return nil
-}
-
-func (c *config) loadFromBytes(b []byte) error {
-	t, err := toml.LoadBytes(b)
-
-	if err != nil {
+	if err := godotenv.Overload(abspath); err != nil {
 		return err
 	}
 
-	c.tree = t
+	if env.watcher {
+		go watchEnvFile(abspath, env.onchanges...)
+	}
 
 	return nil
 }
 
-func (c *config) reload() error {
-	c.mutex.Lock()
-	defer c.mutex.Unlock()
+func statEnvFile(path string) {
+	_, err := os.Stat(path)
 
-	if len(c.path) == 0 {
-		return nil
+	if err == nil {
+		return
 	}
 
-	t, err := toml.LoadFile(c.path)
+	if os.IsNotExist(err) {
+		if dir, _ := filepath.Split(path); len(dir) != 0 {
+			if err = os.MkdirAll(dir, 0755); err != nil {
+				return
+			}
+		}
 
-	if err != nil {
-		return err
+		f, err := os.Create(path)
+
+		if err == nil {
+			f.Close()
+		}
+
+		return
 	}
 
-	c.tree = t
-
-	return nil
+	if os.IsPermission(err) {
+		os.Chmod(path, 0755)
+	}
 }
 
-func (c *config) watcher(onchanges ...EnvOnchangeFunc) {
+func watchEnvFile(path string, onchanges ...EnvEventFunc) {
+	defer func() {
+		if r := recover(); r != nil {
+			logger.Error("[yiigo] env watcher panic", zap.Any("error", r), zap.String("env_file", path), zap.ByteString("stack", debug.Stack()))
+		}
+	}()
+
 	watcher, err := fsnotify.NewWatcher()
 
 	if err != nil {
-		logger.Error("yiigo: env watcher error", zap.Error(err))
+		logger.Error("[yiigo] env watcher error", zap.Error(err))
 
 		return
 	}
 
 	defer watcher.Close()
 
-	envDir, _ := filepath.Split(c.path)
-	realEnvFile, _ := filepath.EvalSymlinks(c.path)
+	envDir, _ := filepath.Split(path)
+	realEnvFile, _ := filepath.EvalSymlinks(path)
 
 	var wg sync.WaitGroup
 
@@ -142,7 +128,7 @@ func (c *config) watcher(onchanges ...EnvOnchangeFunc) {
 			wg.Done()
 
 			if r := recover(); r != nil {
-				logger.Error("yiigo: env watcher panic", zap.Any("error", r), zap.ByteString("stack", debug.Stack()))
+				logger.Error("[yiigo] env watcher panic", zap.Any("error", r), zap.String("env_file", path), zap.ByteString("stack", debug.Stack()))
 			}
 		}()
 
@@ -156,25 +142,25 @@ func (c *config) watcher(onchanges ...EnvOnchangeFunc) {
 				}
 
 				eventFile := filepath.Clean(event.Name)
-				currentEnvFile, _ := filepath.EvalSymlinks(c.path)
+				currentEnvFile, _ := filepath.EvalSymlinks(path)
 
 				// the env file was modified or created || the real path to the env file changed (eg: k8s ConfigMap replacement)
-				if (eventFile == c.path && event.Op&writeOrCreateMask != 0) || (currentEnvFile != "" && currentEnvFile != realEnvFile) {
+				if (eventFile == path && event.Op&writeOrCreateMask != 0) || (len(currentEnvFile) != 0 && currentEnvFile != realEnvFile) {
 					realEnvFile = currentEnvFile
 
-					if err := c.reload(); err != nil {
-						logger.Error("yiigo: env reload error", zap.Error(err))
+					if err := godotenv.Overload(path); err != nil {
+						logger.Error("[yiigo] env reload error", zap.Error(err), zap.String("env_file", path))
 					}
 
 					for _, f := range onchanges {
 						f(event)
 					}
-				} else if eventFile == c.path && event.Op&fsnotify.Remove&fsnotify.Remove != 0 {
-					logger.Warn("yiigo: env file removed")
+				} else if eventFile == path && event.Op&fsnotify.Remove&fsnotify.Remove != 0 {
+					logger.Warn("[yiigo] env file removed", zap.String("env_file", path))
 				}
 			case err, ok := <-watcher.Errors:
 				if ok { // 'Errors' channel is not closed
-					logger.Error("yiigo: env watcher error", zap.Error(err))
+					logger.Error("[yiigo] env watcher error", zap.Error(err), zap.String("env_file", path))
 				}
 
 				return
@@ -182,299 +168,9 @@ func (c *config) watcher(onchanges ...EnvOnchangeFunc) {
 		}
 	}()
 
-	watcher.Add(envDir)
+	if err = watcher.Add(envDir); err != nil {
+		logger.Error("[yiigo] env watcher error", zap.Error(err), zap.String("env_file", path))
+	}
 
 	wg.Wait()
-}
-
-type cfgValue struct {
-	value interface{}
-}
-
-func (c *cfgValue) Int(defaultValue ...int64) int64 {
-	var dv int64
-
-	if len(defaultValue) != 0 {
-		dv = defaultValue[0]
-	}
-
-	if c.value == nil {
-		return dv
-	}
-
-	result, ok := c.value.(int64)
-
-	if !ok {
-		return 0
-	}
-
-	return result
-}
-
-func (c *cfgValue) Ints(defaultValue ...int64) []int64 {
-	if c.value == nil {
-		return defaultValue
-	}
-
-	arr, ok := c.value.([]interface{})
-
-	if !ok {
-		return []int64{}
-	}
-
-	l := len(arr)
-
-	result := make([]int64, 0, l)
-
-	for _, v := range arr {
-		if i, ok := v.(int64); ok {
-			result = append(result, i)
-		}
-	}
-
-	if len(result) < l {
-		return []int64{}
-	}
-
-	return result
-}
-
-func (c *cfgValue) Float(defaultValue ...float64) float64 {
-	var dv float64
-
-	if len(defaultValue) != 0 {
-		dv = defaultValue[0]
-	}
-
-	if c.value == nil {
-		return dv
-	}
-
-	result, ok := c.value.(float64)
-
-	if !ok {
-		return 0
-	}
-
-	return result
-}
-
-func (c *cfgValue) Floats(defaultValue ...float64) []float64 {
-	if c.value == nil {
-		return defaultValue
-	}
-
-	arr, ok := c.value.([]interface{})
-
-	if !ok {
-		return []float64{}
-	}
-
-	l := len(arr)
-
-	result := make([]float64, 0, l)
-
-	for _, v := range arr {
-		if f, ok := v.(float64); ok {
-			result = append(result, f)
-		}
-	}
-
-	if len(result) < l {
-		return []float64{}
-	}
-
-	return result
-}
-
-func (c *cfgValue) String(defaultValue ...string) string {
-	dv := ""
-
-	if len(defaultValue) != 0 {
-		dv = defaultValue[0]
-	}
-
-	if c.value == nil {
-		return dv
-	}
-
-	result, ok := c.value.(string)
-
-	if !ok {
-		return ""
-	}
-
-	return result
-}
-
-func (c *cfgValue) Strings(defaultValue ...string) []string {
-	if c.value == nil {
-		return defaultValue
-	}
-
-	arr, ok := c.value.([]interface{})
-
-	if !ok {
-		return []string{}
-	}
-
-	l := len(arr)
-
-	result := make([]string, 0, l)
-
-	for _, v := range arr {
-		if s, ok := v.(string); ok {
-			result = append(result, s)
-		}
-	}
-
-	if len(result) < l {
-		return []string{}
-	}
-
-	return result
-}
-
-func (c *cfgValue) Bool(defaultValue ...bool) bool {
-	var dv bool
-
-	if len(defaultValue) != 0 {
-		dv = defaultValue[0]
-	}
-
-	if c.value == nil {
-		return dv
-	}
-
-	result, ok := c.value.(bool)
-
-	if !ok {
-		return false
-	}
-
-	return result
-}
-
-func (c *cfgValue) Time(layout string, defaultValue ...time.Time) time.Time {
-	var dv time.Time
-
-	if len(defaultValue) != 0 {
-		dv = defaultValue[0]
-	}
-
-	if c.value == nil {
-		return dv
-	}
-
-	var result time.Time
-
-	switch t := c.value.(type) {
-	case time.Time:
-		result = t
-	case string:
-		result, _ = time.Parse(layout, t)
-	}
-
-	return result
-}
-
-func (c *cfgValue) Map() X {
-	if c.value == nil {
-		return X{}
-	}
-
-	v, ok := c.value.(*toml.Tree)
-
-	if !ok {
-		return X{}
-	}
-
-	return v.ToMap()
-}
-
-func (c *cfgValue) Unmarshal(dest interface{}) error {
-	if c.value == nil {
-		return nil
-	}
-
-	v, ok := c.value.(*toml.Tree)
-
-	if !ok {
-		return errors.New("yiigo: invalid env value, expects *toml.Tree")
-	}
-
-	return v.Unmarshal(dest)
-}
-
-type envSetting struct {
-	watcher   bool
-	onchanges []EnvOnchangeFunc
-}
-
-// EnvOption configures how we set up the env file.
-type EnvOption func(s *envSetting)
-
-// WithEnvWatcher specifies the `watcher` for env file.
-func WithEnvWatcher(onchanges ...EnvOnchangeFunc) EnvOption {
-	return func(s *envSetting) {
-		s.watcher = true
-		s.onchanges = onchanges
-	}
-}
-
-var env Environment = new(config)
-
-// Env returns an env value.
-func Env(key string) EnvValue {
-	return env.get(key)
-}
-
-// LoadEnvFromFile loads env from file, only for toml.
-func LoadEnvFromFile(path string, options ...EnvOption) {
-	abspath, err := filepath.Abs(filepath.Clean(path))
-
-	if err != nil {
-		logger.Panic("yiigo: load env file error", zap.Error(err))
-	}
-
-	if _, err = os.Stat(abspath); err != nil {
-		if os.IsNotExist(err) {
-			if dir, _ := filepath.Split(abspath); len(dir) != 0 {
-				if err = os.MkdirAll(dir, 0755); err != nil {
-					logger.Panic("yiigo: load env file error", zap.Error(err))
-				}
-			}
-
-			f, err := os.Create(abspath)
-
-			if err != nil {
-				logger.Panic("yiigo: load env file error", zap.Error(err))
-			}
-
-			f.Close()
-		} else if os.IsPermission(err) {
-			os.Chmod(abspath, 0755)
-		}
-	}
-
-	if err = env.loadFromFile(abspath); err != nil {
-		logger.Panic("yiigo: load env file error", zap.Error(err))
-	}
-
-	setting := new(envSetting)
-
-	for _, f := range options {
-		f(setting)
-	}
-
-	if setting.watcher {
-		go env.watcher(setting.onchanges...)
-	}
-}
-
-// LoadEnvFromBytes loads env from bytes, only for toml.
-func LoadEnvFromBytes(b []byte) {
-	if err := env.loadFromBytes(b); err != nil {
-		logger.Panic("yiigo: load env bytes error", zap.Error(err))
-	}
 }

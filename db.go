@@ -75,13 +75,13 @@ func initDB(name string, driver DBDriver, dsn string, options ...DBOption) {
 	db, err := sql.Open(string(driver), dsn)
 
 	if err != nil {
-		logger.Panic("yiigo: db init error", zap.String("name", name), zap.Error(err))
+		logger.Panic("[yiigo] db init error", zap.String("name", name), zap.Error(err))
 	}
 
 	if err = db.Ping(); err != nil {
 		db.Close()
 
-		logger.Panic("yiigo: db init error", zap.String("name", name), zap.Error(err))
+		logger.Panic("[yiigo] db init error", zap.String("name", name), zap.Error(err))
 	}
 
 	setting := &dbSetting{
@@ -111,14 +111,14 @@ func initDB(name string, driver DBDriver, dsn string, options ...DBOption) {
 	dbmap.Store(name, sqlxDB)
 	entmap.Store(name, entDriver)
 
-	logger.Info(fmt.Sprintf("yiigo: db.%s is OK", name))
+	logger.Info(fmt.Sprintf("[yiigo] db.%s is OK", name))
 }
 
 // DB returns a db.
 func DB(name ...string) *sqlx.DB {
 	if len(name) == 0 || name[0] == Default {
 		if defaultDB == nil {
-			logger.Panic(fmt.Sprintf("yiigo: unknown db.%s (forgotten configure?)", Default))
+			logger.Panic(fmt.Sprintf("[yiigo] unknown db.%s (forgotten configure?)", Default))
 		}
 
 		return defaultDB
@@ -127,7 +127,7 @@ func DB(name ...string) *sqlx.DB {
 	v, ok := dbmap.Load(name[0])
 
 	if !ok {
-		logger.Panic(fmt.Sprintf("yiigo: unknown db.%s (forgotten configure?)", name[0]))
+		logger.Panic(fmt.Sprintf("[yiigo] unknown db.%s (forgotten configure?)", name[0]))
 	}
 
 	return v.(*sqlx.DB)
@@ -137,7 +137,7 @@ func DB(name ...string) *sqlx.DB {
 func EntDriver(name ...string) *entsql.Driver {
 	if len(name) == 0 || name[0] == Default {
 		if defaultEntDriver == nil {
-			logger.Panic(fmt.Sprintf("yiigo: unknown db.%s (forgotten configure?)", Default))
+			logger.Panic(fmt.Sprintf("[yiigo] unknown db.%s (forgotten configure?)", Default))
 		}
 
 		return defaultEntDriver
@@ -146,7 +146,7 @@ func EntDriver(name ...string) *entsql.Driver {
 	v, ok := entmap.Load(name[0])
 
 	if !ok {
-		logger.Panic(fmt.Sprintf("yiigo: unknown db.%s (forgotten configure?)", name[0]))
+		logger.Panic(fmt.Sprintf("[yiigo] unknown db.%s (forgotten configure?)", name[0]))
 	}
 
 	return v.(*entsql.Driver)
@@ -166,7 +166,7 @@ func DBTransaction(ctx context.Context, db *sqlx.DB, process DBTxFunc) error {
 
 	defer func() {
 		if r := recover(); r != nil {
-			logger.Fatal("yiigo: db transaction process panic", zap.Any("error", r), zap.ByteString("stack", debug.Stack()))
+			logger.Error("[yiigo] db transaction process panic", zap.Any("error", r), zap.ByteString("stack", debug.Stack()))
 
 			txRollback(tx)
 		}
@@ -189,6 +189,6 @@ func DBTransaction(ctx context.Context, db *sqlx.DB, process DBTxFunc) error {
 
 func txRollback(tx *sqlx.Tx) {
 	if err := tx.Rollback(); err != nil && err != sql.ErrTxDone {
-		logger.Error("yiigo: db transaction rollback error", zap.Error(err))
+		logger.Error("[yiigo] db transaction rollback error", zap.Error(err))
 	}
 }
