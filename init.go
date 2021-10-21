@@ -2,6 +2,7 @@ package yiigo
 
 import (
 	"path/filepath"
+	"strings"
 	"sync"
 )
 
@@ -98,11 +99,16 @@ func WithNSQ(nsqd string, lookupd []string, options ...NSQOption) InitOption {
 // WithLogger register logger.
 func WithLogger(name, logfile string, options ...LoggerOption) InitOption {
 	return func(s *initSetting) {
-		s.logger = append(s.logger, &cfglogger{
+		cfg := &cfglogger{
 			name:    name,
-			path:    filepath.Clean(logfile),
 			options: options,
-		})
+		}
+
+		if len(strings.TrimSpace(logfile)) != 0 {
+			cfg.path = filepath.Clean(logfile)
+		}
+
+		s.logger = append(s.logger, cfg)
 	}
 }
 

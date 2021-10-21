@@ -2,7 +2,6 @@ package yiigo
 
 import (
 	"os"
-	"strings"
 	"sync"
 	"time"
 
@@ -71,7 +70,7 @@ func WithZapOptions(options ...zap.Option) LoggerOption {
 
 // newLogger returns a new logger.
 func newLogger(path string, setting *loggerSetting) *zap.Logger {
-	if len(strings.TrimSpace(path)) == 0 {
+	if len(path) == 0 {
 		return debugLogger(setting.options...)
 	}
 
