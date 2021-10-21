@@ -104,6 +104,7 @@ func newLogger(path string, setting *loggerSetting) *zap.Logger {
 func debugLogger(options ...zap.Option) *zap.Logger {
 	cfg := zap.NewDevelopmentConfig()
 
+	cfg.DisableCaller = true
 	cfg.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 	cfg.EncoderConfig.EncodeTime = MyTimeEncoder
 	cfg.EncoderConfig.EncodeCaller = zapcore.FullCallerEncoder
