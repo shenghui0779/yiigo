@@ -104,8 +104,8 @@ func WithLogger(name, logfile string, options ...LoggerOption) InitOption {
 			options: options,
 		}
 
-		if len(strings.TrimSpace(logfile)) != 0 {
-			cfg.path = filepath.Clean(logfile)
+		if v := strings.TrimSpace(logfile); len(v) != 0 {
+			cfg.path = filepath.Clean(v)
 		}
 
 		s.logger = append(s.logger, cfg)

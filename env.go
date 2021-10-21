@@ -27,11 +27,9 @@ type EnvOption func(e *environment)
 // WithEnvFile specifies the env file.
 func WithEnvFile(filename string) EnvOption {
 	return func(e *environment) {
-		if len(strings.TrimSpace(filename)) == 0 {
-			return
+		if v := strings.TrimSpace(filename); len(v) != 0 {
+			e.path = filepath.Clean(v)
 		}
-
-		e.path = filepath.Clean(filename)
 	}
 }
 
