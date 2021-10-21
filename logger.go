@@ -65,7 +65,7 @@ func WithLogStdErr() LoggerOption {
 
 func WithZapOptions(options ...zap.Option) LoggerOption {
 	return func(s *loggerSetting) {
-		s.options = options
+		s.options = append(s.options, options...)
 	}
 }
 
