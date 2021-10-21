@@ -22,6 +22,7 @@ type loggerSetting struct {
 	maxAge     int
 	compress   bool
 	stderr     bool
+	options    []zap.Option
 }
 
 // LoggerOption configures how we set up the logger.
@@ -62,6 +63,12 @@ func WithLogStdErr() LoggerOption {
 	}
 }
 
+func WithZapOptions(options ...zap.Option) LoggerOption {
+	return func(s *loggerSetting) {
+		s.options = options
+	}
+}
+
 // newLogger returns a new logger.
 func newLogger(path string, setting *loggerSetting) *zap.Logger {
 	if len(strings.TrimSpace(path)) == 0 {
@@ -91,7 +98,7 @@ func newLogger(path string, setting *loggerSetting) *zap.Logger {
 
 	core := zapcore.NewCore(zapcore.NewJSONEncoder(c), zapcore.NewMultiWriteSyncer(ws...), zap.DebugLevel)
 
-	return zap.New(core, zap.AddCaller())
+	return zap.New(core, setting.options...)
 }
 
 func debugLogger() *zap.Logger {
