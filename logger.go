@@ -72,7 +72,7 @@ func WithZapOptions(options ...zap.Option) LoggerOption {
 // newLogger returns a new logger.
 func newLogger(path string, setting *loggerSetting) *zap.Logger {
 	if len(strings.TrimSpace(path)) == 0 {
-		return debugLogger()
+		return debugLogger(setting.options...)
 	}
 
 	c := zap.NewProductionEncoderConfig()
@@ -101,14 +101,14 @@ func newLogger(path string, setting *loggerSetting) *zap.Logger {
 	return zap.New(core, setting.options...)
 }
 
-func debugLogger() *zap.Logger {
+func debugLogger(options ...zap.Option) *zap.Logger {
 	cfg := zap.NewDevelopmentConfig()
 
 	cfg.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 	cfg.EncoderConfig.EncodeTime = MyTimeEncoder
 	cfg.EncoderConfig.EncodeCaller = zapcore.FullCallerEncoder
 
-	l, _ := cfg.Build(zap.AddCaller())
+	l, _ := cfg.Build(options...)
 
 	return l
 }
