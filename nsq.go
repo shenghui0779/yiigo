@@ -104,10 +104,10 @@ func WithMaxInFlight(n int) NSQOption {
 	}
 }
 
-// WithNSQConsumer specifies the consumer for nsq.
-func WithNSQConsumer(consumer NSQConsumer) NSQOption {
+// WithNSQConsumers specifies the consumers for nsq.
+func WithNSQConsumers(consumers ...NSQConsumer) NSQOption {
 	return func(s *nsqSetting) {
-		s.consumers = append(s.consumers, consumer)
+		s.consumers = append(s.consumers, consumers...)
 	}
 }
 
