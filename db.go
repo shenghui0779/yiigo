@@ -152,12 +152,12 @@ func EntDriver(name ...string) *entsql.Driver {
 	return v.(*entsql.Driver)
 }
 
-// DBTxFunc db tx function
-type DBTxFunc func(ctx context.Context, tx *sqlx.Tx) error
+// DBTxHandler db tx callback func.
+type DBTxHandler func(ctx context.Context, tx *sqlx.Tx) error
 
 // DBTransaction Executes db transaction with callback function.
 // The provided context is used until the transaction is committed or rolledback.
-func DBTransaction(ctx context.Context, db *sqlx.DB, process DBTxFunc) error {
+func DBTransaction(ctx context.Context, db *sqlx.DB, callback DBTxHandler) error {
 	tx, err := db.BeginTxx(ctx, nil)
 
 	if err != nil {
@@ -166,20 +166,20 @@ func DBTransaction(ctx context.Context, db *sqlx.DB, process DBTxFunc) error {
 
 	defer func() {
 		if r := recover(); r != nil {
-			logger.Error("[yiigo] db transaction process panic", zap.Any("error", r), zap.ByteString("stack", debug.Stack()))
+			logger.Error("[yiigo] db transaction handler panic", zap.Any("error", r), zap.ByteString("stack", debug.Stack()))
 
-			txRollback(tx)
+			dbTxRollback(tx)
 		}
 	}()
 
-	if err = process(ctx, tx); err != nil {
-		txRollback(tx)
+	if err = callback(ctx, tx); err != nil {
+		dbTxRollback(tx)
 
 		return err
 	}
 
 	if err = tx.Commit(); err != nil {
-		txRollback(tx)
+		dbTxRollback(tx)
 
 		return err
 	}
@@ -187,7 +187,7 @@ func DBTransaction(ctx context.Context, db *sqlx.DB, process DBTxFunc) error {
 	return nil
 }
 
-func txRollback(tx *sqlx.Tx) {
+func dbTxRollback(tx *sqlx.Tx) {
 	if err := tx.Rollback(); err != nil && err != sql.ErrTxDone {
 		logger.Error("[yiigo] db transaction rollback error", zap.Error(err))
 	}
