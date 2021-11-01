@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gomodule/redigo/redis"
+	"github.com/pkg/errors"
 	"github.com/shenghui0779/vitess_pool"
 	"go.uber.org/zap"
 )
@@ -132,7 +133,7 @@ func (r *redisPoolResource) Get(ctx context.Context) (*RedisConn, error) {
 	resource, err := r.pool.Get(ctx)
 
 	if err != nil {
-		return &RedisConn{}, err
+		return nil, err
 	}
 
 	rc := resource.(*RedisConn)
@@ -144,7 +145,7 @@ func (r *redisPoolResource) Get(ctx context.Context) (*RedisConn, error) {
 		if err != nil {
 			r.pool.Put(rc)
 
-			return rc, err
+			return nil, errors.Wrap(err, fmt.Sprintf("rc is error: %s, reconnect", rc.Err().Error()))
 		}
 
 		rc.Close()

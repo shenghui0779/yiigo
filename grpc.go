@@ -2,9 +2,11 @@ package yiigo
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/shenghui0779/vitess_pool"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -113,7 +115,7 @@ func (r *gRPCPoolResource) Get(ctx context.Context) (*GRPCConn, error) {
 	resource, err := r.pool.Get(ctx)
 
 	if err != nil {
-		return &GRPCConn{}, err
+		return nil, err
 	}
 
 	gc := resource.(*GRPCConn)
@@ -125,7 +127,7 @@ func (r *gRPCPoolResource) Get(ctx context.Context) (*GRPCConn, error) {
 		if err != nil {
 			r.pool.Put(gc)
 
-			return gc, err
+			return nil, errors.Wrap(err, fmt.Sprintf("rc is in unexpected state: %d, reconnect", state))
 		}
 
 		gc.Close()
