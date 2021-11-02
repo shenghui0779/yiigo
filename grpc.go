@@ -6,7 +6,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/shenghui0779/vitess_pool"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -86,16 +85,16 @@ type gRPCPoolResource struct {
 	mutex    sync.Mutex
 }
 
-func (r *gRPCPoolResource) init() {
-	r.mutex.Lock()
-	defer r.mutex.Unlock()
+func (pr *gRPCPoolResource) init() {
+	pr.mutex.Lock()
+	defer pr.mutex.Unlock()
 
-	if r.pool != nil && !r.pool.IsClosed() {
+	if pr.pool != nil && !pr.pool.IsClosed() {
 		return
 	}
 
 	df := func() (vitess_pool.Resource, error) {
-		conn, err := r.dialFunc()
+		conn, err := pr.dialFunc()
 
 		if err != nil {
 			return nil, err
@@ -104,42 +103,44 @@ func (r *gRPCPoolResource) init() {
 		return &GRPCConn{conn}, nil
 	}
 
-	r.pool = vitess_pool.NewResourcePool(df, r.config.size, r.config.limit, r.config.idleTimeout, r.config.prefill)
+	pr.pool = vitess_pool.NewResourcePool(df, pr.config.size, pr.config.limit, pr.config.idleTimeout, pr.config.prefill)
 }
 
-func (r *gRPCPoolResource) Get(ctx context.Context) (*GRPCConn, error) {
-	if r.pool.IsClosed() {
-		r.init()
+func (pr *gRPCPoolResource) Get(ctx context.Context) (*GRPCConn, error) {
+	if pr.pool.IsClosed() {
+		pr.init()
 	}
 
-	resource, err := r.pool.Get(ctx)
+	resource, err := pr.pool.Get(ctx)
 
 	if err != nil {
 		return nil, err
 	}
 
-	gc := resource.(*GRPCConn)
+	rc := resource.(*GRPCConn)
 
 	// If rc is in unexpected state, close and reconnect
-	if state := gc.GetState(); state == connectivity.TransientFailure || state == connectivity.Shutdown {
-		conn, err := r.dialFunc()
+	if state := rc.GetState(); state == connectivity.TransientFailure || state == connectivity.Shutdown {
+		logger.Warn(fmt.Sprintf("[yiigo] grpc pool conn is %s, reconnect", state.String()))
+
+		conn, err := pr.dialFunc()
 
 		if err != nil {
-			r.pool.Put(gc)
+			pr.pool.Put(rc)
 
-			return nil, errors.Wrap(err, fmt.Sprintf("rc is in unexpected state: %d, reconnect", state))
+			return nil, err
 		}
 
-		gc.Close()
+		rc.Close()
 
 		return &GRPCConn{conn}, nil
 	}
 
-	return gc, nil
+	return rc, nil
 }
 
-func (r *gRPCPoolResource) Put(conn *GRPCConn) {
-	r.pool.Put(conn)
+func (pr *gRPCPoolResource) Put(conn *GRPCConn) {
+	pr.pool.Put(conn)
 }
 
 // NewGRPCPool returns a new grpc pool with dial func.

@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/gomodule/redigo/redis"
-	"github.com/pkg/errors"
 	"github.com/shenghui0779/vitess_pool"
 	"go.uber.org/zap"
 )
@@ -90,30 +89,30 @@ type redisPoolResource struct {
 	mutex  sync.Mutex
 }
 
-func (r *redisPoolResource) dial() (redis.Conn, error) {
+func (pr *redisPoolResource) dial() (redis.Conn, error) {
 	dialOptions := []redis.DialOption{
-		redis.DialPassword(r.config.password),
-		redis.DialDatabase(r.config.database),
-		redis.DialConnectTimeout(r.config.connTimeout),
-		redis.DialReadTimeout(r.config.readTimeout),
-		redis.DialWriteTimeout(r.config.writeTimeout),
+		redis.DialPassword(pr.config.password),
+		redis.DialDatabase(pr.config.database),
+		redis.DialConnectTimeout(pr.config.connTimeout),
+		redis.DialReadTimeout(pr.config.readTimeout),
+		redis.DialWriteTimeout(pr.config.writeTimeout),
 	}
 
-	conn, err := redis.Dial("tcp", r.config.address, dialOptions...)
+	conn, err := redis.Dial("tcp", pr.config.address, dialOptions...)
 
 	return conn, err
 }
 
-func (r *redisPoolResource) init() {
-	r.mutex.Lock()
-	defer r.mutex.Unlock()
+func (pr *redisPoolResource) init() {
+	pr.mutex.Lock()
+	defer pr.mutex.Unlock()
 
-	if r.pool != nil && !r.pool.IsClosed() {
+	if pr.pool != nil && !pr.pool.IsClosed() {
 		return
 	}
 
 	df := func() (vitess_pool.Resource, error) {
-		conn, err := r.dial()
+		conn, err := pr.dial()
 
 		if err != nil {
 			return nil, err
@@ -122,15 +121,15 @@ func (r *redisPoolResource) init() {
 		return &RedisConn{conn}, nil
 	}
 
-	r.pool = vitess_pool.NewResourcePool(df, r.config.pool.size, r.config.pool.limit, r.config.pool.idleTimeout, r.config.pool.prefill)
+	pr.pool = vitess_pool.NewResourcePool(df, pr.config.pool.size, pr.config.pool.limit, pr.config.pool.idleTimeout, pr.config.pool.prefill)
 }
 
-func (r *redisPoolResource) Get(ctx context.Context) (*RedisConn, error) {
-	if r.pool.IsClosed() {
-		r.init()
+func (pr *redisPoolResource) Get(ctx context.Context) (*RedisConn, error) {
+	if pr.pool.IsClosed() {
+		pr.init()
 	}
 
-	resource, err := r.pool.Get(ctx)
+	resource, err := pr.pool.Get(ctx)
 
 	if err != nil {
 		return nil, err
@@ -139,13 +138,15 @@ func (r *redisPoolResource) Get(ctx context.Context) (*RedisConn, error) {
 	rc := resource.(*RedisConn)
 
 	// If rc is error, close and reconnect
-	if rc.Err() != nil {
-		conn, err := r.dial()
+	if err = rc.Err(); err != nil {
+		logger.Warn("[yiigo] redis pool conn is error, reconnect", zap.Error(err))
 
-		if err != nil {
-			r.pool.Put(rc)
+		conn, dialErr := pr.dial()
 
-			return nil, errors.Wrap(err, fmt.Sprintf("rc is error: %s, reconnect", rc.Err().Error()))
+		if dialErr != nil {
+			pr.pool.Put(rc)
+
+			return nil, dialErr
 		}
 
 		rc.Close()
@@ -156,8 +157,8 @@ func (r *redisPoolResource) Get(ctx context.Context) (*RedisConn, error) {
 	return rc, nil
 }
 
-func (r *redisPoolResource) Put(conn *RedisConn) {
-	r.pool.Put(conn)
+func (pr *redisPoolResource) Put(conn *RedisConn) {
+	pr.pool.Put(conn)
 }
 
 var (
