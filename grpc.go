@@ -44,6 +44,7 @@ type PoolOptions struct {
 	PoolSize int
 
 	// PoolPrefill is the number of resources to be pre-filled in the pool.
+	// Default is no pre-filled.
 	PoolPrefill int
 
 	// IdleTimeout is the amount of time after which client closes idle connections.
