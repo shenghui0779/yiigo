@@ -46,7 +46,7 @@ type DBOptions struct {
 
 	// ConnMaxLifetime is the maximum amount of time a connection may be reused.
 	// Use value -1 for no timeout and 0 for default.
-	// Default is 60 seconds.
+	// Default is 10 minutes.
 	ConnMaxLifetime time.Duration
 
 	// ConnMaxIdleTime is the maximum amount of time a connection may be idle.
@@ -105,7 +105,7 @@ func initDB(name string, driver DBDriver, dsn string, opt *DBOptions) {
 	options := &DBOptions{
 		MaxOpenConns:    20,
 		MaxIdleConns:    10,
-		ConnMaxLifetime: 60 * time.Minute,
+		ConnMaxLifetime: 10 * time.Minute,
 		ConnMaxIdleTime: 5 * time.Minute,
 	}
 

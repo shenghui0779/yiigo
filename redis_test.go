@@ -28,7 +28,6 @@ func TestRedisOption(t *testing.T) {
 		Username:     "root",
 		Password:     "root@123456",
 		Database:     9,
-		ConnTimeout:  0,
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 10 * time.Second,
 		PoolSize:     10,

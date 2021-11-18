@@ -21,6 +21,5 @@ func TestPoolOption(t *testing.T) {
 	assert.Equal(t, &PoolOptions{
 		PoolSize:    10,
 		PoolPrefill: 1,
-		IdleTimeout: 0,
 	}, opt)
 }

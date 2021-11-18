@@ -11,20 +11,19 @@ func TestDBOptions(t *testing.T) {
 	opt := &DBOptions{
 		MaxOpenConns:    20,
 		MaxIdleConns:    10,
-		ConnMaxLifetime: 60 * time.Second,
+		ConnMaxLifetime: 10 * time.Minute,
 		ConnMaxIdleTime: 5 * time.Minute,
 	}
 
 	opt.rebuild(&DBOptions{
 		MaxIdleConns:    5,
-		ConnMaxLifetime: -1,
-		ConnMaxIdleTime: 60 * time.Second,
+		ConnMaxLifetime: time.Hour,
+		ConnMaxIdleTime: -1,
 	})
 
 	assert.Equal(t, &DBOptions{
 		MaxOpenConns:    20,
 		MaxIdleConns:    5,
-		ConnMaxLifetime: 0,
-		ConnMaxIdleTime: 60 * time.Second,
+		ConnMaxLifetime: time.Hour,
 	}, opt)
 }
