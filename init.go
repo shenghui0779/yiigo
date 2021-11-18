@@ -10,7 +10,7 @@ type cfgdb struct {
 	name    string
 	driver  DBDriver
 	dsn     string
-	options []DBOption
+	options *DBOptions
 }
 
 type cfgmongo struct {
@@ -21,19 +21,19 @@ type cfgmongo struct {
 type cfgredis struct {
 	name    string
 	address string
-	options []RedisOption
+	options *RedisOptions
 }
 
 type cfgnsq struct {
-	nsqd    string
-	lookupd []string
-	options []NSQOption
+	nsqd      string
+	lookupd   []string
+	consumers []NSQConsumer
 }
 
 type cfglogger struct {
 	name    string
 	path    string
-	options []LoggerOption
+	options *LoggerOptions
 }
 
 type initSetting struct {
@@ -51,7 +51,7 @@ type InitOption func(s *initSetting)
 // [MySQL] username:password@tcp(localhost:3306)/dbname?timeout=10s&charset=utf8mb4&collation=utf8mb4_general_ci&parseTime=True&loc=Local
 // [Postgres] host=localhost port=5432 user=root password=secret dbname=test connect_timeout=10 sslmode=disable
 // [SQLite] file::memory:?cache=shared
-func WithDB(name string, driver DBDriver, dsn string, options ...DBOption) InitOption {
+func WithDB(name string, driver DBDriver, dsn string, options *DBOptions) InitOption {
 	return func(s *initSetting) {
 		s.db = append(s.db, &cfgdb{
 			name:    name,
@@ -75,7 +75,7 @@ func WithMongo(name string, dsn string) InitOption {
 }
 
 // WithRedis register redis.
-func WithRedis(name, address string, options ...RedisOption) InitOption {
+func WithRedis(name, address string, options *RedisOptions) InitOption {
 	return func(s *initSetting) {
 		s.redis = append(s.redis, &cfgredis{
 			name:    name,
@@ -86,18 +86,18 @@ func WithRedis(name, address string, options ...RedisOption) InitOption {
 }
 
 // WithNSQ initialize the nsq.
-func WithNSQ(nsqd string, lookupd []string, options ...NSQOption) InitOption {
+func WithNSQ(nsqd string, lookupd []string, consumers ...NSQConsumer) InitOption {
 	return func(s *initSetting) {
 		s.nsq = &cfgnsq{
-			nsqd:    nsqd,
-			lookupd: lookupd,
-			options: options,
+			nsqd:      nsqd,
+			lookupd:   lookupd,
+			consumers: consumers,
 		}
 	}
 }
 
 // WithLogger register logger.
-func WithLogger(name, logfile string, options ...LoggerOption) InitOption {
+func WithLogger(name, logfile string, options *LoggerOptions) InitOption {
 	return func(s *initSetting) {
 		cfg := &cfglogger{
 			name:    name,
@@ -122,7 +122,7 @@ func Init(options ...InitOption) {
 
 	if len(setting.logger) != 0 {
 		for _, v := range setting.logger {
-			initLogger(v.name, v.path, v.options...)
+			initLogger(v.name, v.path, v.options)
 		}
 	}
 
@@ -135,7 +135,7 @@ func Init(options ...InitOption) {
 			defer wg.Done()
 
 			for _, v := range setting.db {
-				initDB(v.name, v.driver, v.dsn, v.options...)
+				initDB(v.name, v.driver, v.dsn, v.options)
 			}
 		}()
 	}
@@ -159,7 +159,7 @@ func Init(options ...InitOption) {
 			defer wg.Done()
 
 			for _, v := range setting.redis {
-				initRedis(v.name, v.address, v.options...)
+				initRedis(v.name, v.address, v.options)
 			}
 		}()
 	}
@@ -170,7 +170,7 @@ func Init(options ...InitOption) {
 		go func() {
 			defer wg.Done()
 
-			initNSQ(setting.nsq.nsqd, setting.nsq.lookupd, setting.nsq.options...)
+			initNSQ(setting.nsq.nsqd, setting.nsq.lookupd, setting.nsq.consumers...)
 		}()
 	}
 

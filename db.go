@@ -33,45 +33,63 @@ var (
 	entmap           sync.Map
 )
 
-type dbSetting struct {
-	maxOpenConns    int
-	maxIdleConns    int
-	connMaxIdleTime time.Duration
-	connMaxLifetime time.Duration
+type DBOptions struct {
+	// MaxOpenConns is the maximum number of open connections to the database.
+	// Use value -1 for no timeout and 0 for default.
+	// Default is 20.
+	MaxOpenConns int
+
+	// MaxIdleConns is the maximum number of connections in the idle connection pool.
+	// Use value -1 for no timeout and 0 for default.
+	// Default is 10.
+	MaxIdleConns int
+
+	// ConnMaxLifetime is the maximum amount of time a connection may be reused.
+	// Use value -1 for no timeout and 0 for default.
+	// Default is 60 seconds.
+	ConnMaxLifetime time.Duration
+
+	// ConnMaxIdleTime is the maximum amount of time a connection may be idle.
+	// Use value -1 for no timeout and 0 for default.
+	// Default is 5 minutes.
+	ConnMaxIdleTime time.Duration
 }
 
-// DBOption configures how we set up the db.
-type DBOption func(s *dbSetting)
+func (o *DBOptions) rebuild(opt *DBOptions) {
+	if opt.MaxOpenConns > 0 {
+		o.MaxOpenConns = opt.MaxOpenConns
+	} else {
+		if opt.MaxOpenConns == -1 {
+			o.MaxOpenConns = 0
+		}
+	}
 
-// WithDBMaxOpenConns specifies the `MaxOpenConns` for db.
-func WithDBMaxOpenConns(n int) DBOption {
-	return func(s *dbSetting) {
-		s.maxOpenConns = n
+	if opt.MaxIdleConns > 0 {
+		o.MaxIdleConns = opt.MaxIdleConns
+	} else {
+		if opt.MaxIdleConns == -1 {
+			o.MaxIdleConns = 0
+		}
+	}
+
+	if opt.ConnMaxLifetime > 0 {
+		o.ConnMaxLifetime = opt.ConnMaxLifetime
+	} else {
+		if opt.ConnMaxLifetime == -1 {
+			o.ConnMaxLifetime = 0
+		}
+	}
+
+	if opt.ConnMaxIdleTime > 0 {
+		o.ConnMaxIdleTime = opt.ConnMaxIdleTime
+	} else {
+		if opt.ConnMaxIdleTime == -1 {
+			o.ConnMaxIdleTime = 0
+		}
 	}
 }
 
-// WithDBMaxIdleConns specifies the `MaxIdleConns` for db.
-func WithDBMaxIdleConns(n int) DBOption {
-	return func(s *dbSetting) {
-		s.maxIdleConns = n
-	}
-}
-
-// WithDBConnMaxIdleTime specifies the `ConnMaxIdleTime` for db.
-func WithDBConnMaxIdleTime(t time.Duration) DBOption {
-	return func(s *dbSetting) {
-		s.connMaxIdleTime = t
-	}
-}
-
-// WithDBConnMaxLifetime specifies the `ConnMaxLifetime` for db.
-func WithDBConnMaxLifetime(t time.Duration) DBOption {
-	return func(s *dbSetting) {
-		s.connMaxLifetime = t
-	}
-}
-
-func initDB(name string, driver DBDriver, dsn string, options ...DBOption) {
+func initDB(name string, driver DBDriver, dsn string, opt *DBOptions) {
 	db, err := sql.Open(string(driver), dsn)
 
 	if err != nil {
@@ -84,21 +102,21 @@ func initDB(name string, driver DBDriver, dsn string, options ...DBOption) {
 		logger.Panic("[yiigo] db init error", zap.String("name", name), zap.Error(err))
 	}
 
-	setting := &dbSetting{
-		maxOpenConns:    20,
-		maxIdleConns:    10,
-		connMaxIdleTime: 60 * time.Second,
-		connMaxLifetime: 10 * time.Minute,
+	options := &DBOptions{
+		MaxOpenConns:    20,
+		MaxIdleConns:    10,
+		ConnMaxLifetime: 60 * time.Minute,
+		ConnMaxIdleTime: 5 * time.Minute,
 	}
 
-	for _, f := range options {
-		f(setting)
+	if opt != nil {
+		options.rebuild(opt)
 	}
 
-	db.SetMaxOpenConns(setting.maxOpenConns)
-	db.SetMaxIdleConns(setting.maxIdleConns)
-	db.SetConnMaxIdleTime(setting.connMaxIdleTime)
-	db.SetConnMaxLifetime(setting.connMaxLifetime)
+	db.SetMaxOpenConns(options.MaxOpenConns)
+	db.SetMaxIdleConns(options.MaxIdleConns)
+	db.SetConnMaxLifetime(options.ConnMaxLifetime)
+	db.SetConnMaxIdleTime(options.ConnMaxIdleTime)
 
 	sqlxDB := sqlx.NewDb(db, string(driver))
 	entDriver := entsql.OpenDB(string(driver), db)

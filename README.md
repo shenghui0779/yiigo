@@ -66,8 +66,8 @@ fmt.Println(os.Getenv("ENV"))
 
 ```go
 yiigo.Init(
-    yiigo.WithDB(yiigo.Default, yiigo.MySQL, "dsn", options...),
-    yiigo.WithDB("other", yiigo.MySQL, "dsn", options...),
+    yiigo.WithDB(yiigo.Default, yiigo.MySQL, "dsn", options),
+    yiigo.WithDB("other", yiigo.MySQL, "dsn", options),
 )
 ```
 
@@ -114,8 +114,8 @@ yiigo.Mongo("other").Database("test").Collection("numbers").InsertOne(context.Ba
 ```go
 // register
 yiigo.Init(
-    yiigo.WithRedis(yiigo.Default, "address", options...),
-    yiigo.WithRedis("other", "address", options...),
+    yiigo.WithRedis(yiigo.Default, "addr", options),
+    yiigo.WithRedis("other", "addr", options),
 )
 
 // default redis
@@ -146,8 +146,8 @@ conn.Do("SET", "test_key", "hello world")
 ```go
 // register
 yiigo.Init(
-    yiigo.WithLogger(yiigo.Default, "filepath", options...),
-    yiigo.WithLogger("other", "filepath", options...),
+    yiigo.WithLogger(yiigo.Default, "filepath", options),
+    yiigo.WithLogger("other", "filepath", options),
 )
 
 // default logger
@@ -172,9 +172,7 @@ pool := yiigo.NewGRPCPool(
             }),
         )
     },
-    yiigo.WithPoolSize(10),
-    yiigo.WithPoolLimit(20),
-    yiigo.WithPoolIdleTimeout(600*time.Second),
+    options,
 )
 
 // use pool

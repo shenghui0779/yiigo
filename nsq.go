@@ -71,63 +71,20 @@ type NSQConsumer interface {
 	Topic() string
 	Channel() string
 	AttemptCount() uint16
+	Config() *nsq.Config
 }
 
-type nsqSetting struct {
-	lookupdPollInterval     time.Duration
-	rdyRedistributeInterval time.Duration
-	maxInFlight             int
-	consumers               []NSQConsumer
-}
+func setConsumers(lookupd []string, consumers ...NSQConsumer) error {
+	for _, c := range consumers {
+		cfg := c.Config()
 
-// NSQOption configures how we set up the nsq config.
-type NSQOption func(s *nsqSetting)
+		if cfg == nil {
+			cfg = nsq.NewConfig()
 
-// WithLookupdPollInterval specifies the `LookupdPollInterval` for nsq config.
-func WithLookupdPollInterval(t time.Duration) NSQOption {
-	return func(s *nsqSetting) {
-		s.lookupdPollInterval = t
-	}
-}
-
-// WithRDYRedistributeInterval specifies the `RDYRedistributeInterval` for nsq config.
-func WithRDYRedistributeInterval(t time.Duration) NSQOption {
-	return func(s *nsqSetting) {
-		s.rdyRedistributeInterval = t
-	}
-}
-
-// WithMaxInFlight specifies the `MaxInFlight` for nsq config.
-func WithMaxInFlight(n int) NSQOption {
-	return func(s *nsqSetting) {
-		s.maxInFlight = n
-	}
-}
-
-// WithNSQConsumers specifies the consumers for nsq.
-func WithNSQConsumers(consumers ...NSQConsumer) NSQOption {
-	return func(s *nsqSetting) {
-		s.consumers = append(s.consumers, consumers...)
-	}
-}
-
-func setConsumers(lookupd []string, options ...NSQOption) error {
-	setting := &nsqSetting{
-		lookupdPollInterval:     time.Second,
-		rdyRedistributeInterval: time.Second,
-		maxInFlight:             1000,
-	}
-
-	for _, f := range options {
-		f(setting)
-	}
-
-	for _, c := range setting.consumers {
-		cfg := nsq.NewConfig()
-
-		cfg.LookupdPollInterval = setting.lookupdPollInterval
-		cfg.RDYRedistributeInterval = setting.rdyRedistributeInterval
-		cfg.MaxInFlight = setting.maxInFlight
+			cfg.LookupdPollInterval = time.Second
+			cfg.RDYRedistributeInterval = time.Second
+			cfg.MaxInFlight = 1000
+		}
 
 		// set attempt acount, default: 5
 		if c.AttemptCount() > 0 {
@@ -153,14 +110,14 @@ func setConsumers(lookupd []string, options ...NSQOption) error {
 	return nil
 }
 
-func initNSQ(nsqd string, lookupd []string, options ...NSQOption) {
+func initNSQ(nsqd string, lookupd []string, consumers ...NSQConsumer) {
 	// init producer
 	if err := initProducer(nsqd); err != nil {
 		logger.Panic("[yiigo] init nsq error", zap.Error(err))
 	}
 
 	// set consumers
-	if err := setConsumers(lookupd, options...); err != nil {
+	if err := setConsumers(lookupd, consumers...); err != nil {
 		logger.Panic("[yiigo] init nsq error", zap.Error(err))
 	}
 

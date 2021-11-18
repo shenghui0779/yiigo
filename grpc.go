@@ -12,6 +12,9 @@ import (
 	"google.golang.org/grpc/connectivity"
 )
 
+// GRPCDialFunc grpc dial function
+type GRPCDialFunc func() (*grpc.ClientConn, error)
+
 // GRPCConn grpc connection resource
 type GRPCConn struct {
 	*grpc.ClientConn
@@ -21,47 +24,6 @@ type GRPCConn struct {
 func (gc *GRPCConn) Close() {
 	if err := gc.ClientConn.Close(); err != nil {
 		logger.Error("[yiigo] grpc client conn closed error", zap.Error(err))
-	}
-}
-
-// poolSetting pool setting
-type poolSetting struct {
-	size        int
-	limit       int
-	idleTimeout time.Duration
-	prefill     int
-}
-
-// PoolOption configures how we set up the pool.
-type PoolOption func(s *poolSetting)
-
-// WithPoolSize specifies the number of possible resources in the pool.
-func WithPoolSize(size int) PoolOption {
-	return func(s *poolSetting) {
-		s.size = size
-	}
-}
-
-// WithPoolLimit specifies the extent to which the pool can be resized in the future.
-// You cannot resize the pool beyond poolLimit.
-func WithPoolLimit(limit int) PoolOption {
-	return func(s *poolSetting) {
-		s.limit = limit
-	}
-}
-
-// WithPoolIdleTimeout specifies the maximum amount of time a connection may be idle.
-// An idleTimeout of 0 means that there is no timeout.
-func WithPoolIdleTimeout(duration time.Duration) PoolOption {
-	return func(s *poolSetting) {
-		s.idleTimeout = duration
-	}
-}
-
-// WithPoolPrefill specifies how many resources can be opened in parallel.
-func WithPoolPrefill(prefill int) PoolOption {
-	return func(s *poolSetting) {
-		s.prefill = prefill
 	}
 }
 
@@ -75,26 +37,56 @@ type GRPCPool interface {
 	Put(gc *GRPCConn)
 }
 
-// GRPCDialFunc grpc dial function
-type GRPCDialFunc func() (*grpc.ClientConn, error)
+type PoolOptions struct {
+	// PoolSize is the maximum number of possible resources in the pool.
+	// Use value -1 for no timeout and 0 for default.
+	// Default is 10.
+	PoolSize int
 
-type gRPCPoolResource struct {
+	// PoolPrefill is the number of resources to be pre-filled in the pool.
+	PoolPrefill int
+
+	// IdleTimeout is the amount of time after which client closes idle connections.
+	// Use value -1 for no timeout and 0 for default.
+	// Default is 5 minutes.
+	IdleTimeout time.Duration
+}
+
+func (o *PoolOptions) rebuild(opt *PoolOptions) {
+	if opt.PoolSize > 0 {
+		o.PoolSize = opt.PoolSize
+	}
+
+	if opt.PoolPrefill > 0 {
+		o.PoolPrefill = opt.PoolPrefill
+	}
+
+	if opt.IdleTimeout > 0 {
+		o.IdleTimeout = opt.IdleTimeout
+	} else {
+		if opt.IdleTimeout == -1 {
+			o.IdleTimeout = 0
+		}
+	}
+}
+
+type gRPCResourcePool struct {
 	dialFunc GRPCDialFunc
-	config   *poolSetting
+	options  *PoolOptions
 	pool     *vitess_pool.ResourcePool
 	mutex    sync.Mutex
 }
 
-func (pr *gRPCPoolResource) init() {
-	pr.mutex.Lock()
-	defer pr.mutex.Unlock()
+func (rp *gRPCResourcePool) init() {
+	rp.mutex.Lock()
+	defer rp.mutex.Unlock()
 
-	if pr.pool != nil && !pr.pool.IsClosed() {
+	if rp.pool != nil && !rp.pool.IsClosed() {
 		return
 	}
 
 	df := func() (vitess_pool.Resource, error) {
-		conn, err := pr.dialFunc()
+		conn, err := rp.dialFunc()
 
 		if err != nil {
 			return nil, err
@@ -103,15 +95,15 @@ func (pr *gRPCPoolResource) init() {
 		return &GRPCConn{conn}, nil
 	}
 
-	pr.pool = vitess_pool.NewResourcePool(df, pr.config.size, pr.config.limit, pr.config.idleTimeout, pr.config.prefill)
+	rp.pool = vitess_pool.NewResourcePool(df, rp.options.PoolSize, rp.options.PoolSize, rp.options.IdleTimeout, rp.options.PoolPrefill)
 }
 
-func (pr *gRPCPoolResource) Get(ctx context.Context) (*GRPCConn, error) {
-	if pr.pool.IsClosed() {
-		pr.init()
+func (rp *gRPCResourcePool) Get(ctx context.Context) (*GRPCConn, error) {
+	if rp.pool.IsClosed() {
+		rp.init()
 	}
 
-	resource, err := pr.pool.Get(ctx)
+	resource, err := rp.pool.Get(ctx)
 
 	if err != nil {
 		return nil, err
@@ -123,10 +115,10 @@ func (pr *gRPCPoolResource) Get(ctx context.Context) (*GRPCConn, error) {
 	if state := rc.GetState(); state == connectivity.TransientFailure || state == connectivity.Shutdown {
 		logger.Warn(fmt.Sprintf("[yiigo] grpc pool conn is %s, reconnect", state.String()))
 
-		conn, err := pr.dialFunc()
+		conn, err := rp.dialFunc()
 
 		if err != nil {
-			pr.pool.Put(rc)
+			rp.pool.Put(rc)
 
 			return nil, err
 		}
@@ -139,29 +131,25 @@ func (pr *gRPCPoolResource) Get(ctx context.Context) (*GRPCConn, error) {
 	return rc, nil
 }
 
-func (pr *gRPCPoolResource) Put(conn *GRPCConn) {
-	pr.pool.Put(conn)
+func (rp *gRPCResourcePool) Put(conn *GRPCConn) {
+	rp.pool.Put(conn)
 }
 
 // NewGRPCPool returns a new grpc pool with dial func.
-func NewGRPCPool(dial GRPCDialFunc, options ...PoolOption) GRPCPool {
-	rp := &gRPCPoolResource{
+func NewGRPCPool(dial GRPCDialFunc, opt *PoolOptions) GRPCPool {
+	pool := &gRPCResourcePool{
 		dialFunc: dial,
-		config: &poolSetting{
-			size:        10,
-			idleTimeout: 60,
+		options: &PoolOptions{
+			PoolSize:    10,
+			IdleTimeout: 5 * time.Minute,
 		},
 	}
 
-	for _, f := range options {
-		f(rp.config)
+	if opt != nil {
+		pool.options.rebuild(opt)
 	}
 
-	if rp.config.limit < rp.config.size {
-		rp.config.limit = rp.config.size
-	}
+	pool.init()
 
-	rp.init()
-
-	return rp
+	return pool
 }

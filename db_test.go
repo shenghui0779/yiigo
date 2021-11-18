@@ -7,24 +7,24 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestDBOption(t *testing.T) {
-	setting := new(dbSetting)
-
-	options := []DBOption{
-		WithDBMaxOpenConns(20),
-		WithDBMaxIdleConns(10),
-		WithDBConnMaxIdleTime(60 * time.Second),
-		WithDBConnMaxLifetime(10 * time.Minute),
+func TestDBOptions(t *testing.T) {
+	opt := &DBOptions{
+		MaxOpenConns:    20,
+		MaxIdleConns:    10,
+		ConnMaxLifetime: 60 * time.Second,
+		ConnMaxIdleTime: 5 * time.Minute,
 	}
 
-	for _, f := range options {
-		f(setting)
-	}
+	opt.rebuild(&DBOptions{
+		MaxIdleConns:    5,
+		ConnMaxLifetime: -1,
+		ConnMaxIdleTime: 60 * time.Second,
+	})
 
-	assert.Equal(t, &dbSetting{
-		maxOpenConns:    20,
-		maxIdleConns:    10,
-		connMaxIdleTime: 60 * time.Second,
-		connMaxLifetime: 10 * time.Minute,
-	}, setting)
+	assert.Equal(t, &DBOptions{
+		MaxOpenConns:    20,
+		MaxIdleConns:    5,
+		ConnMaxLifetime: 0,
+		ConnMaxIdleTime: 60 * time.Second,
+	}, opt)
 }

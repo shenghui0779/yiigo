@@ -2,7 +2,9 @@ package yiigo
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
+	"net"
 	"sync"
 	"time"
 
@@ -23,56 +25,6 @@ func (rc *RedisConn) Close() {
 	}
 }
 
-type redisSetting struct {
-	address      string
-	password     string
-	database     int
-	connTimeout  time.Duration
-	readTimeout  time.Duration
-	writeTimeout time.Duration
-	pool         *poolSetting
-}
-
-// RedisOption configures how we set up the redis.
-type RedisOption func(s *redisSetting)
-
-// WithRedisDatabase specifies the database for redis.
-func WithRedisDatabase(db int) RedisOption {
-	return func(s *redisSetting) {
-		s.database = db
-	}
-}
-
-// WithRedisConnTimeout specifies the `ConnectTimeout` for redis.
-func WithRedisConnTimeout(t time.Duration) RedisOption {
-	return func(s *redisSetting) {
-		s.connTimeout = t
-	}
-}
-
-// WithRedisReadTimeout specifies the `ReadTimeout` for redis.
-func WithRedisReadTimeout(t time.Duration) RedisOption {
-	return func(s *redisSetting) {
-		s.readTimeout = t
-	}
-}
-
-// WithRedisWriteTimeout specifies the `WriteTimeout` for redis.
-func WithRedisWriteTimeout(t time.Duration) RedisOption {
-	return func(s *redisSetting) {
-		s.writeTimeout = t
-	}
-}
-
-// WithRedisPool specifies the pool for redis.
-func WithRedisPool(options ...PoolOption) RedisOption {
-	return func(s *redisSetting) {
-		for _, f := range options {
-			f(s.pool)
-		}
-	}
-}
-
 // RedisPool redis pool resource
 type RedisPool interface {
 	// Get returns a connection resource from the pool.
@@ -83,36 +35,155 @@ type RedisPool interface {
 	Put(rc *RedisConn)
 }
 
-type redisPoolResource struct {
-	config *redisSetting
-	pool   *vitess_pool.ResourcePool
-	mutex  sync.Mutex
+type RedisOptions struct {
+	// Dialer is a custom dial function for creating TCP connections,
+	// otherwise a net.Dialer customized via the other options is used.
+	Dialer func(ctx context.Context, network, addr string) (net.Conn, error)
+
+	// Username to be used when connecting to the Redis server when Redis ACLs are used.
+	Username string
+
+	// Password to be used when connecting to the Redis server.
+	Password string
+
+	// Database to be selected when dialing a connection.
+	Database int
+
+	// ConnTimeout is the timeout for connecting to the Redis server.
+	// Use value -1 for no timeout and 0 for default.
+	// Default is 10 seconds.
+	ConnTimeout time.Duration
+
+	// ReadTimeout is the timeout for reading a single command reply.
+	// Use value -1 for no timeout and 0 for default.
+	// Default is 10 seconds.
+	ReadTimeout time.Duration
+
+	// WriteTimeout is the timeout for writing a single command.
+	// Use value -1 for no timeout and 0 for default.
+	// Default is 10 seconds.
+	WriteTimeout time.Duration
+
+	// PoolSize is the maximum number of possible resources in the pool.
+	// Use value -1 for no timeout and 0 for default.
+	// Default is 10.
+	PoolSize int
+
+	// PoolPrefill is the number of resources to be pre-filled in the pool.
+	PoolPrefill int
+
+	// IdleTimeout is the amount of time after which client closes idle connections.
+	// Use value -1 for no timeout and 0 for default.
+	// Default is 5 minutes.
+	IdleTimeout time.Duration
+
+	// TLSConfig to be used when a TLS connection is dialed.
+	TLSConfig *tls.Config
 }
 
-func (pr *redisPoolResource) dial() (redis.Conn, error) {
-	dialOptions := []redis.DialOption{
-		redis.DialPassword(pr.config.password),
-		redis.DialDatabase(pr.config.database),
-		redis.DialConnectTimeout(pr.config.connTimeout),
-		redis.DialReadTimeout(pr.config.readTimeout),
-		redis.DialWriteTimeout(pr.config.writeTimeout),
+func (o *RedisOptions) rebuild(opt *RedisOptions) {
+	o.Dialer = opt.Dialer
+	o.TLSConfig = opt.TLSConfig
+
+	if len(opt.Username) != 0 {
+		o.Username = opt.Username
 	}
 
-	conn, err := redis.Dial("tcp", pr.config.address, dialOptions...)
+	if len(opt.Password) != 0 {
+		o.Password = opt.Password
+	}
+
+	if opt.Database > 0 {
+		o.Database = opt.Database
+	}
+
+	if opt.ConnTimeout > 0 {
+		o.ConnTimeout = opt.ConnTimeout
+	} else {
+		if opt.ConnTimeout == -1 {
+			o.ConnTimeout = 0
+		}
+	}
+
+	if opt.ReadTimeout > 0 {
+		o.ReadTimeout = opt.ReadTimeout
+	} else {
+		if opt.ReadTimeout == -1 {
+			o.ReadTimeout = 0
+		}
+	}
+
+	if opt.WriteTimeout > 0 {
+		o.WriteTimeout = opt.WriteTimeout
+	} else {
+		if opt.WriteTimeout == -1 {
+			o.WriteTimeout = 0
+		}
+	}
+
+	if opt.PoolSize > 0 {
+		o.PoolSize = opt.PoolSize
+	}
+
+	if opt.PoolPrefill > 0 {
+		o.PoolPrefill = opt.PoolPrefill
+	}
+
+	if opt.IdleTimeout > 0 {
+		o.IdleTimeout = opt.IdleTimeout
+	} else {
+		if opt.IdleTimeout == -1 {
+			o.IdleTimeout = 0
+		}
+	}
+}
+
+type redisResourcePool struct {
+	addr    string
+	options *RedisOptions
+	pool    *vitess_pool.ResourcePool
+	mutex   sync.Mutex
+}
+
+func (rp *redisResourcePool) dial() (redis.Conn, error) {
+	dialOptions := []redis.DialOption{
+		redis.DialDatabase(rp.options.Database),
+		redis.DialConnectTimeout(rp.options.ConnTimeout),
+		redis.DialReadTimeout(rp.options.ReadTimeout),
+		redis.DialWriteTimeout(rp.options.WriteTimeout),
+	}
+
+	if len(rp.options.Username) != 0 {
+		dialOptions = append(dialOptions, redis.DialUsername(rp.options.Username))
+	}
+
+	if len(rp.options.Password) != 0 {
+		dialOptions = append(dialOptions, redis.DialUsername(rp.options.Password))
+	}
+
+	if rp.options.Dialer != nil {
+		dialOptions = append(dialOptions, redis.DialContextFunc(rp.options.Dialer))
+	}
+
+	if rp.options.TLSConfig != nil {
+		dialOptions = append(dialOptions, redis.DialTLSConfig(rp.options.TLSConfig))
+	}
+
+	conn, err := redis.Dial("tcp", rp.addr, dialOptions...)
 
 	return conn, err
 }
 
-func (pr *redisPoolResource) init() {
-	pr.mutex.Lock()
-	defer pr.mutex.Unlock()
+func (rp *redisResourcePool) init() {
+	rp.mutex.Lock()
+	defer rp.mutex.Unlock()
 
-	if pr.pool != nil && !pr.pool.IsClosed() {
+	if rp.pool != nil && !rp.pool.IsClosed() {
 		return
 	}
 
 	df := func() (vitess_pool.Resource, error) {
-		conn, err := pr.dial()
+		conn, err := rp.dial()
 
 		if err != nil {
 			return nil, err
@@ -121,15 +192,15 @@ func (pr *redisPoolResource) init() {
 		return &RedisConn{conn}, nil
 	}
 
-	pr.pool = vitess_pool.NewResourcePool(df, pr.config.pool.size, pr.config.pool.limit, pr.config.pool.idleTimeout, pr.config.pool.prefill)
+	rp.pool = vitess_pool.NewResourcePool(df, rp.options.PoolSize, rp.options.PoolSize, rp.options.IdleTimeout, rp.options.PoolPrefill)
 }
 
-func (pr *redisPoolResource) Get(ctx context.Context) (*RedisConn, error) {
-	if pr.pool.IsClosed() {
-		pr.init()
+func (rp *redisResourcePool) Get(ctx context.Context) (*RedisConn, error) {
+	if rp.pool.IsClosed() {
+		rp.init()
 	}
 
-	resource, err := pr.pool.Get(ctx)
+	resource, err := rp.pool.Get(ctx)
 
 	if err != nil {
 		return nil, err
@@ -141,10 +212,10 @@ func (pr *redisPoolResource) Get(ctx context.Context) (*RedisConn, error) {
 	if err = rc.Err(); err != nil {
 		logger.Warn("[yiigo] redis pool conn is error, reconnect", zap.Error(err))
 
-		conn, dialErr := pr.dial()
+		conn, dialErr := rp.dial()
 
 		if dialErr != nil {
-			pr.pool.Put(rc)
+			rp.pool.Put(rc)
 
 			return nil, dialErr
 		}
@@ -157,8 +228,8 @@ func (pr *redisPoolResource) Get(ctx context.Context) (*RedisConn, error) {
 	return rc, nil
 }
 
-func (pr *redisPoolResource) Put(conn *RedisConn) {
-	pr.pool.Put(conn)
+func (rp *redisResourcePool) Put(conn *RedisConn) {
+	rp.pool.Put(conn)
 }
 
 var (
@@ -166,35 +237,29 @@ var (
 	redisMap     sync.Map
 )
 
-func newRedis(address string, options ...RedisOption) RedisPool {
-	rp := &redisPoolResource{
-		config: &redisSetting{
-			address:      address,
-			connTimeout:  10 * time.Second,
-			readTimeout:  10 * time.Second,
-			writeTimeout: 10 * time.Second,
-			pool: &poolSetting{
-				size:        10,
-				idleTimeout: 60 * time.Second,
-			},
+func newRedisPool(addr string, opt *RedisOptions) RedisPool {
+	pool := &redisResourcePool{
+		addr: addr,
+		options: &RedisOptions{
+			ConnTimeout:  10 * time.Second,
+			ReadTimeout:  10 * time.Second,
+			WriteTimeout: 10 * time.Second,
+			PoolSize:     10,
+			IdleTimeout:  5 * time.Minute,
 		},
 	}
 
-	for _, f := range options {
-		f(rp.config)
+	if opt != nil {
+		pool.options.rebuild(opt)
 	}
 
-	if rp.config.pool.limit < rp.config.pool.size {
-		rp.config.pool.limit = rp.config.pool.size
-	}
+	pool.init()
 
-	rp.init()
-
-	return rp
+	return pool
 }
 
-func initRedis(name, address string, options ...RedisOption) {
-	pool := newRedis(address, options...)
+func initRedis(name, address string, opt *RedisOptions) {
+	pool := newRedisPool(address, opt)
 
 	// verify connection
 	conn, err := pool.Get(context.TODO())
