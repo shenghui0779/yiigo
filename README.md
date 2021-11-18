@@ -49,7 +49,7 @@ yiigo.LoadEnv(yiigo.WithEnvWatcher(onchanges...))
 
 - `.env`
 
-```dotenv
+```sh
 ENV=dev
 ```
 
