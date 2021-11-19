@@ -20,7 +20,7 @@ type cfgmongo struct {
 
 type cfgredis struct {
 	name    string
-	address string
+	addr    string
 	options *RedisOptions
 }
 
@@ -75,11 +75,11 @@ func WithMongo(name string, dsn string) InitOption {
 }
 
 // WithRedis register redis.
-func WithRedis(name, address string, options *RedisOptions) InitOption {
+func WithRedis(name, addr string, options *RedisOptions) InitOption {
 	return func(s *initSetting) {
 		s.redis = append(s.redis, &cfgredis{
 			name:    name,
-			address: address,
+			addr:    addr,
 			options: options,
 		})
 	}
@@ -159,7 +159,7 @@ func Init(options ...InitOption) {
 			defer wg.Done()
 
 			for _, v := range setting.redis {
-				initRedis(v.name, v.address, v.options)
+				initRedis(v.name, v.addr, v.options)
 			}
 		}()
 	}
