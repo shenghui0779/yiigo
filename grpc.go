@@ -81,13 +81,13 @@ func (o *PoolOptions) rebuild(opt *PoolOptions) {
 	}
 }
 
-type gRPCResourcePool struct {
+type grpcResourcePool struct {
 	config *GrpcPoolConfig
 	pool   *vitess_pool.ResourcePool
 	mutex  sync.Mutex
 }
 
-func (rp *gRPCResourcePool) init() {
+func (rp *grpcResourcePool) init() {
 	rp.mutex.Lock()
 	defer rp.mutex.Unlock()
 
@@ -108,7 +108,7 @@ func (rp *gRPCResourcePool) init() {
 	rp.pool = vitess_pool.NewResourcePool(df, rp.config.Options.PoolSize, rp.config.Options.PoolSize, rp.config.Options.IdleTimeout, rp.config.Options.PoolPrefill)
 }
 
-func (rp *gRPCResourcePool) Get(ctx context.Context) (*GrpcConn, error) {
+func (rp *grpcResourcePool) Get(ctx context.Context) (*GrpcConn, error) {
 	if rp.pool.IsClosed() {
 		rp.init()
 	}
@@ -141,13 +141,13 @@ func (rp *gRPCResourcePool) Get(ctx context.Context) (*GrpcConn, error) {
 	return rc, nil
 }
 
-func (rp *gRPCResourcePool) Put(conn *GrpcConn) {
+func (rp *grpcResourcePool) Put(conn *GrpcConn) {
 	rp.pool.Put(conn)
 }
 
 // NewGrpcPool returns a new grpc client connection pool.
 func NewGrpcPool(cfg *GrpcPoolConfig) GrpcPool {
-	pool := &gRPCResourcePool{
+	pool := &grpcResourcePool{
 		config: &GrpcPoolConfig{
 			Dialer: cfg.Dialer,
 			Options: &PoolOptions{
