@@ -7,10 +7,9 @@ import (
 )
 
 type cfgdb struct {
-	name    string
-	driver  DBDriver
-	dsn     string
-	options *DBOptions
+	name   string
+	driver DBDriver
+	config *DBConfig
 }
 
 type cfgmongo struct {
@@ -19,9 +18,8 @@ type cfgmongo struct {
 }
 
 type cfgredis struct {
-	name    string
-	addr    string
-	options *RedisOptions
+	name   string
+	config *RedisConfig
 }
 
 type cfgnsq struct {
@@ -31,12 +29,11 @@ type cfgnsq struct {
 }
 
 type cfglogger struct {
-	name    string
-	path    string
-	options *LoggerOptions
+	name   string
+	config *LoggerConfig
 }
 
-type initSetting struct {
+type initConfig struct {
 	logger []*cfglogger
 	db     []*cfgdb
 	mongo  []*cfgmongo
@@ -45,29 +42,49 @@ type initSetting struct {
 }
 
 // InitOption configures how we set up the yiigo initialization.
-type InitOption func(s *initSetting)
+type InitOption func(c *initConfig)
 
-// WithDB register db.
-// [MySQL] username:password@tcp(localhost:3306)/dbname?timeout=10s&charset=utf8mb4&collation=utf8mb4_general_ci&parseTime=True&loc=Local
-// [Postgres] host=localhost port=5432 user=root password=secret dbname=test connect_timeout=10 sslmode=disable
-// [SQLite] file::memory:?cache=shared
-func WithDB(name string, driver DBDriver, dsn string, options *DBOptions) InitOption {
-	return func(s *initSetting) {
-		s.db = append(s.db, &cfgdb{
-			name:    name,
-			driver:  driver,
-			dsn:     dsn,
-			options: options,
+// WithMySQL register mysql db.
+func WithMySQL(name string, cfg *DBConfig) InitOption {
+	return func(c *initConfig) {
+		c.db = append(c.db, &cfgdb{
+			name:   name,
+			driver: MySQL,
+			config: cfg,
+		})
+	}
+}
+
+// WithPostgres register postgres db.
+func WithPostgres(name string, cfg *DBConfig) InitOption {
+	return func(c *initConfig) {
+		c.db = append(c.db, &cfgdb{
+			name:   name,
+			driver: Postgres,
+			config: cfg,
+		})
+	}
+}
+
+// WithSQLite register sqlite db.
+func WithSQLite(name string, cfg *DBConfig) InitOption {
+	return func(c *initConfig) {
+		c.db = append(c.db, &cfgdb{
+			name:   name,
+			driver: SQLite,
+			config: cfg,
 		})
 	}
 }
 
 // WithMongo register mongodb.
+//
 // [DSN] mongodb://localhost:27017/?connectTimeoutMS=10000&minPoolSize=10&maxPoolSize=20&maxIdleTimeMS=60000&readPreference=primary
+//
 // [reference] https://docs.mongodb.com/manual/reference/connection-string
 func WithMongo(name string, dsn string) InitOption {
-	return func(s *initSetting) {
-		s.mongo = append(s.mongo, &cfgmongo{
+	return func(c *initConfig) {
+		c.mongo = append(c.mongo, &cfgmongo{
 			name: name,
 			dsn:  dsn,
 		})
@@ -75,20 +92,19 @@ func WithMongo(name string, dsn string) InitOption {
 }
 
 // WithRedis register redis.
-func WithRedis(name, addr string, options *RedisOptions) InitOption {
-	return func(s *initSetting) {
-		s.redis = append(s.redis, &cfgredis{
-			name:    name,
-			addr:    addr,
-			options: options,
+func WithRedis(name string, cfg *RedisConfig) InitOption {
+	return func(c *initConfig) {
+		c.redis = append(c.redis, &cfgredis{
+			name:   name,
+			config: cfg,
 		})
 	}
 }
 
 // WithNSQ initialize the nsq.
 func WithNSQ(nsqd string, lookupd []string, consumers ...NSQConsumer) InitOption {
-	return func(s *initSetting) {
-		s.nsq = &cfgnsq{
+	return func(c *initConfig) {
+		c.nsq = &cfgnsq{
 			nsqd:      nsqd,
 			lookupd:   lookupd,
 			consumers: consumers,
@@ -97,80 +113,80 @@ func WithNSQ(nsqd string, lookupd []string, consumers ...NSQConsumer) InitOption
 }
 
 // WithLogger register logger.
-func WithLogger(name, logfile string, options *LoggerOptions) InitOption {
-	return func(s *initSetting) {
-		cfg := &cfglogger{
-			name:    name,
-			options: options,
+func WithLogger(name string, cfg *LoggerConfig) InitOption {
+	return func(c *initConfig) {
+		logger := &cfglogger{
+			name:   name,
+			config: cfg,
 		}
 
-		if v := strings.TrimSpace(logfile); len(v) != 0 {
-			cfg.path = filepath.Clean(v)
+		if v := strings.TrimSpace(logger.config.Filename); len(v) != 0 {
+			logger.config.Filename = filepath.Clean(v)
 		}
 
-		s.logger = append(s.logger, cfg)
+		c.logger = append(c.logger, logger)
 	}
 }
 
 // Init yiigo initialization.
 func Init(options ...InitOption) {
-	setting := new(initSetting)
+	cfg := new(initConfig)
 
 	for _, f := range options {
-		f(setting)
+		f(cfg)
 	}
 
-	if len(setting.logger) != 0 {
-		for _, v := range setting.logger {
-			initLogger(v.name, v.path, v.options)
+	if len(cfg.logger) != 0 {
+		for _, v := range cfg.logger {
+			initLogger(v.name, v.config)
 		}
 	}
 
 	var wg sync.WaitGroup
 
-	if len(setting.db) != 0 {
+	if len(cfg.db) != 0 {
 		wg.Add(1)
 
 		go func() {
 			defer wg.Done()
 
-			for _, v := range setting.db {
-				initDB(v.name, v.driver, v.dsn, v.options)
+			for _, v := range cfg.db {
+				initDB(v.name, v.driver, v.config)
 			}
 		}()
 	}
 
-	if len(setting.mongo) != 0 {
+	if len(cfg.mongo) != 0 {
 		wg.Add(1)
 
 		go func() {
 			defer wg.Done()
 
-			for _, v := range setting.mongo {
+			for _, v := range cfg.mongo {
 				initMongoDB(v.name, v.dsn)
 			}
 		}()
 	}
 
-	if len(setting.redis) != 0 {
+	if len(cfg.redis) != 0 {
 		wg.Add(1)
 
 		go func() {
 			defer wg.Done()
 
-			for _, v := range setting.redis {
-				initRedis(v.name, v.addr, v.options)
+			for _, v := range cfg.redis {
+				initRedis(v.name, v.config)
 			}
 		}()
 	}
 
-	if setting.nsq != nil {
+	if cfg.nsq != nil {
 		wg.Add(1)
 
 		go func() {
 			defer wg.Done()
 
-			initNSQ(setting.nsq.nsqd, setting.nsq.lookupd, setting.nsq.consumers...)
+			initNSQ(cfg.nsq.nsqd, cfg.nsq.lookupd, cfg.nsq.consumers...)
 		}()
 	}
 

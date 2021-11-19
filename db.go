@@ -33,26 +33,42 @@ var (
 	entmap           sync.Map
 )
 
+// DBConfig keeps the settings to setup db connection.
+type DBConfig struct {
+	// DSN data source name
+	//
+	// [MySQL] username:password@tcp(localhost:3306)/dbname?timeout=10s&charset=utf8mb4&collation=utf8mb4_general_ci&parseTime=True&loc=Local
+	//
+	// [Postgres] host=localhost port=5432 user=root password=secret dbname=test connect_timeout=10 sslmode=disable
+	//
+	// [SQLite] file::memory:?cache=shared
+	DSN string `json:"dsn"`
+
+	// Options optional settings to setup db connection.
+	Options *DBOptions `json:"options"`
+}
+
+// DBOptions optional settings to setup db connection.
 type DBOptions struct {
 	// MaxOpenConns is the maximum number of open connections to the database.
 	// Use value -1 for no timeout and 0 for default.
 	// Default is 20.
-	MaxOpenConns int
+	MaxOpenConns int `json:"max_open_conns"`
 
 	// MaxIdleConns is the maximum number of connections in the idle connection pool.
 	// Use value -1 for no timeout and 0 for default.
 	// Default is 10.
-	MaxIdleConns int
+	MaxIdleConns int `json:"max_idle_conns"`
 
 	// ConnMaxLifetime is the maximum amount of time a connection may be reused.
 	// Use value -1 for no timeout and 0 for default.
 	// Default is 10 minutes.
-	ConnMaxLifetime time.Duration
+	ConnMaxLifetime time.Duration `json:"conn_max_lifetime"`
 
 	// ConnMaxIdleTime is the maximum amount of time a connection may be idle.
 	// Use value -1 for no timeout and 0 for default.
 	// Default is 5 minutes.
-	ConnMaxIdleTime time.Duration
+	ConnMaxIdleTime time.Duration `json:"conn_max_idle_time"`
 }
 
 func (o *DBOptions) rebuild(opt *DBOptions) {
@@ -89,8 +105,8 @@ func (o *DBOptions) rebuild(opt *DBOptions) {
 	}
 }
 
-func initDB(name string, driver DBDriver, dsn string, opt *DBOptions) {
-	db, err := sql.Open(string(driver), dsn)
+func initDB(name string, driver DBDriver, cfg *DBConfig) {
+	db, err := sql.Open(string(driver), cfg.DSN)
 
 	if err != nil {
 		logger.Panic("[yiigo] db init error", zap.String("name", name), zap.Error(err))
@@ -102,21 +118,21 @@ func initDB(name string, driver DBDriver, dsn string, opt *DBOptions) {
 		logger.Panic("[yiigo] db init error", zap.String("name", name), zap.Error(err))
 	}
 
-	options := &DBOptions{
+	opt := &DBOptions{
 		MaxOpenConns:    20,
 		MaxIdleConns:    10,
 		ConnMaxLifetime: 10 * time.Minute,
 		ConnMaxIdleTime: 5 * time.Minute,
 	}
 
-	if opt != nil {
-		options.rebuild(opt)
+	if cfg.Options != nil {
+		opt.rebuild(cfg.Options)
 	}
 
-	db.SetMaxOpenConns(options.MaxOpenConns)
-	db.SetMaxIdleConns(options.MaxIdleConns)
-	db.SetConnMaxLifetime(options.ConnMaxLifetime)
-	db.SetConnMaxIdleTime(options.ConnMaxIdleTime)
+	db.SetMaxOpenConns(opt.MaxOpenConns)
+	db.SetMaxIdleConns(opt.MaxIdleConns)
+	db.SetConnMaxLifetime(opt.ConnMaxLifetime)
+	db.SetConnMaxIdleTime(opt.ConnMaxIdleTime)
 
 	sqlxDB := sqlx.NewDb(db, string(driver))
 	entDriver := entsql.OpenDB(string(driver), db)

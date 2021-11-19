@@ -15,39 +15,48 @@ var (
 	logMap sync.Map
 )
 
-// LoggerOptions options configure a Logger.
+// LoggerConfig keeps the settings to configure logger.
+type LoggerConfig struct {
+	// Filename is the file to write logs to.
+	Filename string `json:"filename"`
+
+	// Options optional settings to configure logger.
+	Options *LoggerOptions `json:"options"`
+}
+
+// LoggerOptions optional settings to configure logger.
 type LoggerOptions struct {
 	// MaxSize is the maximum size in megabytes of the log file before it gets
 	// rotated. It defaults to 100 megabytes.
-	MaxSize int
+	MaxSize int `json:"max_size"`
 
 	// MaxAge is the maximum number of days to retain old log files based on the
 	// timestamp encoded in their filename.  Note that a day is defined as 24
 	// hours and may not exactly correspond to calendar days due to daylight
 	// savings, leap seconds, etc. The default is not to remove old log files
 	// based on age.
-	MaxAge int
+	MaxAge int `json:"max_age"`
 
 	// MaxBackups is the maximum number of old log files to retain.  The default
 	// is to retain all old log files (though MaxAge may still cause them to get
 	// deleted.)
-	MaxBackups int
+	MaxBackups int `json:"max_backups"`
 
 	// Compress determines if the rotated log files should be compressed
 	// using gzip. The default is not to perform compression.
-	Compress bool
+	Compress bool `json:"compress"`
 
 	// Stderr specifies the stderr for logger
-	Stderr bool
+	Stderr bool `json:"stderr"`
 
 	// ZapOptions specifies the zap options stderr for logger
-	ZapOptions []zap.Option
+	ZapOptions []zap.Option `json:"zap_options"`
 }
 
 // newLogger returns a new logger.
-func newLogger(path string, opt *LoggerOptions) *zap.Logger {
-	if len(path) == 0 {
-		return debugLogger(opt.ZapOptions...)
+func newLogger(cfg *LoggerConfig) *zap.Logger {
+	if len(cfg.Filename) == 0 {
+		return debugLogger(cfg.Options.ZapOptions...)
 	}
 
 	c := zap.NewProductionEncoderConfig()
@@ -59,21 +68,21 @@ func newLogger(path string, opt *LoggerOptions) *zap.Logger {
 	ws := make([]zapcore.WriteSyncer, 0, 2)
 
 	ws = append(ws, zapcore.AddSync(&lumberjack.Logger{
-		Filename:   path,
-		MaxSize:    opt.MaxSize,
-		MaxBackups: opt.MaxBackups,
-		MaxAge:     opt.MaxAge,
-		Compress:   opt.Compress,
+		Filename:   cfg.Filename,
+		MaxSize:    cfg.Options.MaxSize,
+		MaxBackups: cfg.Options.MaxBackups,
+		MaxAge:     cfg.Options.MaxAge,
+		Compress:   cfg.Options.Compress,
 		LocalTime:  true,
 	}))
 
-	if opt.Stderr {
+	if cfg.Options.Stderr {
 		ws = append(ws, zapcore.Lock(os.Stderr))
 	}
 
 	core := zapcore.NewCore(zapcore.NewJSONEncoder(c), zapcore.NewMultiWriteSyncer(ws...), zap.DebugLevel)
 
-	return zap.New(core, opt.ZapOptions...)
+	return zap.New(core, cfg.Options.ZapOptions...)
 }
 
 func debugLogger(options ...zap.Option) *zap.Logger {
@@ -89,12 +98,12 @@ func debugLogger(options ...zap.Option) *zap.Logger {
 	return l
 }
 
-func initLogger(name, path string, opt *LoggerOptions) {
-	if opt == nil {
-		opt = new(LoggerOptions)
+func initLogger(name string, cfg *LoggerConfig) {
+	if cfg.Options == nil {
+		cfg.Options = new(LoggerOptions)
 	}
 
-	l := newLogger(path, opt)
+	l := newLogger(cfg)
 
 	if name == Default {
 		logger = l
