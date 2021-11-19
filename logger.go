@@ -70,8 +70,8 @@ func newLogger(cfg *LoggerConfig) *zap.Logger {
 	ws = append(ws, zapcore.AddSync(&lumberjack.Logger{
 		Filename:   cfg.Filename,
 		MaxSize:    cfg.Options.MaxSize,
-		MaxBackups: cfg.Options.MaxBackups,
 		MaxAge:     cfg.Options.MaxAge,
+		MaxBackups: cfg.Options.MaxBackups,
 		Compress:   cfg.Options.Compress,
 		LocalTime:  true,
 	}))
