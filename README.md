@@ -73,7 +73,7 @@ yiigo.Init(
             MaxIdleConns:    10,
             ConnMaxLifetime: 10 * time.Minute,
             ConnMaxIdleTime: 5 * time.Minute,
-        }
+        },
     }),
 
     yiigo.WithMySQL("other", &yiigo.DBConfig{
@@ -83,7 +83,7 @@ yiigo.Init(
             MaxIdleConns:    10,
             ConnMaxLifetime: 10 * time.Minute,
             ConnMaxIdleTime: 5 * time.Minute,
-        }
+        },
     }),
 )
 ```
@@ -186,7 +186,7 @@ yiigo.Init(
         Filename: "filename",
         Options: &yiigo.LoggerOptions{
             Stderr: true,
-        }
+        },
     }),
 
     yiigo.WithLogger("other", yiigo.LoggerConfig{
