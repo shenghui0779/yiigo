@@ -101,7 +101,7 @@ func WithRedis(name string, cfg *RedisConfig) InitOption {
 	}
 }
 
-// WithNSQ initialize the nsq.
+// WithNSQ initialize nsq.
 func WithNSQ(nsqd string, lookupd []string, consumers ...NSQConsumer) InitOption {
 	return func(c *initConfig) {
 		c.nsq = &cfgnsq{
