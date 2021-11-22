@@ -37,7 +37,7 @@ type LoggerOptions struct {
 	// based on age.
 	MaxAge int `json:"max_age"`
 
-	// MaxBackups is the maximum number of old log files to retain.  The default
+	// MaxBackups is the maximum number of old log files to retain. The default
 	// is to retain all old log files (though MaxAge may still cause them to get
 	// deleted.)
 	MaxBackups int `json:"max_backups"`
