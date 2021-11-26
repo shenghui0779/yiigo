@@ -10,7 +10,7 @@ var (
 )
 
 func TestMain(m *testing.M) {
-	builder = NewMySQLBuilder()
+	builder = NewMySQLBuilder(WithSQLDebug())
 
 	privateKey, publicKey, _ = GenerateRSAKey(2048, RSAPKCS1)
 	// privateKey, publicKey, _ = GenerateRSAKey(2048, RSAPKCS8)
