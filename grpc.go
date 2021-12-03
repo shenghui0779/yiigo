@@ -23,7 +23,7 @@ type GrpcConn struct {
 // Close closes the connection resource
 func (gc *GrpcConn) Close() {
 	if err := gc.ClientConn.Close(); err != nil {
-		logger.Error("[yiigo] grpc client conn closed error", zap.Error(err))
+		logger.Error("[yiigo] err client conn closed", zap.Error(err))
 	}
 }
 
@@ -123,7 +123,7 @@ func (rp *grpcResourcePool) Get(ctx context.Context) (*GrpcConn, error) {
 
 	// If rc is in unexpected state, close and reconnect
 	if state := rc.GetState(); state == connectivity.TransientFailure || state == connectivity.Shutdown {
-		logger.Warn(fmt.Sprintf("[yiigo] grpc pool conn is %s, reconnect", state.String()))
+		logger.Warn(fmt.Sprintf("[yiigo] err pool conn state: %s, reconnect", state.String()))
 
 		conn, err := rp.config.Dialer()
 

@@ -109,13 +109,13 @@ func initDB(name string, driver DBDriver, cfg *DBConfig) {
 	db, err := sql.Open(string(driver), cfg.DSN)
 
 	if err != nil {
-		logger.Panic("[yiigo] db init error", zap.String("name", name), zap.Error(err))
+		logger.Panic(fmt.Sprintf("[yiigo] err db.%s open", name), zap.String("dsn", cfg.DSN), zap.Error(err))
 	}
 
 	if err = db.Ping(); err != nil {
 		db.Close()
 
-		logger.Panic("[yiigo] db init error", zap.String("name", name), zap.Error(err))
+		logger.Panic(fmt.Sprintf("[yiigo] err db.%s ping", name), zap.String("dsn", cfg.DSN), zap.Error(err))
 	}
 
 	opt := &DBOptions{
@@ -200,20 +200,20 @@ func DBTransaction(ctx context.Context, db *sqlx.DB, callback DBTxHandler) error
 
 	defer func() {
 		if r := recover(); r != nil {
-			logger.Error("[yiigo] db transaction handler panic", zap.Any("error", r), zap.ByteString("stack", debug.Stack()))
+			logger.Error("[yiigo] tx handler panic", zap.Any("error", r), zap.ByteString("stack", debug.Stack()))
 
-			dbTxRollback(tx)
+			rollback(tx)
 		}
 	}()
 
 	if err = callback(ctx, tx); err != nil {
-		dbTxRollback(tx)
+		rollback(tx)
 
 		return err
 	}
 
 	if err = tx.Commit(); err != nil {
-		dbTxRollback(tx)
+		rollback(tx)
 
 		return err
 	}
@@ -221,8 +221,8 @@ func DBTransaction(ctx context.Context, db *sqlx.DB, callback DBTxHandler) error
 	return nil
 }
 
-func dbTxRollback(tx *sqlx.Tx) {
+func rollback(tx *sqlx.Tx) {
 	if err := tx.Rollback(); err != nil && err != sql.ErrTxDone {
-		logger.Error("[yiigo] db transaction rollback error", zap.Error(err))
+		logger.Error("[yiigo] err tx rollback", zap.Error(err))
 	}
 }

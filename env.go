@@ -107,7 +107,7 @@ func watchEnvFile(path string, onchanges ...EnvEventFunc) {
 	watcher, err := fsnotify.NewWatcher()
 
 	if err != nil {
-		logger.Error("[yiigo] env watcher error", zap.Error(err))
+		logger.Error("[yiigo] err env watcher", zap.Error(err))
 
 		return
 	}
@@ -147,7 +147,7 @@ func watchEnvFile(path string, onchanges ...EnvEventFunc) {
 					realEnvFile = currentEnvFile
 
 					if err := godotenv.Overload(path); err != nil {
-						logger.Error("[yiigo] env reload error", zap.Error(err), zap.String("env_file", path))
+						logger.Error("[yiigo] err env reload", zap.Error(err), zap.String("env_file", path))
 					}
 
 					for _, f := range onchanges {
@@ -158,7 +158,7 @@ func watchEnvFile(path string, onchanges ...EnvEventFunc) {
 				}
 			case err, ok := <-watcher.Errors:
 				if ok { // 'Errors' channel is not closed
-					logger.Error("[yiigo] env watcher error", zap.Error(err), zap.String("env_file", path))
+					logger.Error("[yiigo] err env watcher", zap.Error(err), zap.String("env_file", path))
 				}
 
 				return
@@ -167,7 +167,7 @@ func watchEnvFile(path string, onchanges ...EnvEventFunc) {
 	}()
 
 	if err = watcher.Add(envDir); err != nil {
-		logger.Error("[yiigo] env watcher error", zap.Error(err), zap.String("env_file", path))
+		logger.Error("[yiigo] err env watcher", zap.Error(err), zap.String("env_file", path))
 	}
 
 	wg.Wait()

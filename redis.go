@@ -21,7 +21,7 @@ type RedisConn struct {
 // Close closes the connection resource
 func (rc *RedisConn) Close() {
 	if err := rc.Conn.Close(); err != nil {
-		logger.Error("[yiigo] redis conn closed error", zap.Error(err))
+		logger.Error("[yiigo] err conn closed", zap.Error(err))
 	}
 }
 
@@ -220,7 +220,7 @@ func (rp *redisResourcePool) Get(ctx context.Context) (*RedisConn, error) {
 
 	// If rc is error, close and reconnect
 	if err = rc.Err(); err != nil {
-		logger.Warn("[yiigo] redis pool conn is error, reconnect", zap.Error(err))
+		logger.Warn("[yiigo] err pool conn, reconnect", zap.Error(err))
 
 		conn, dialErr := rp.dial()
 
@@ -277,13 +277,13 @@ func initRedis(name string, cfg *RedisConfig) {
 	conn, err := pool.Get(context.TODO())
 
 	if err != nil {
-		logger.Panic("[yiigo] redis init error", zap.String("name", name), zap.Error(err))
+		logger.Panic(fmt.Sprintf("[yiigo] err redis.%s pool", name), zap.String("addr", cfg.Addr), zap.Error(err))
 	}
 
 	if _, err = conn.Do("PING"); err != nil {
 		conn.Close()
 
-		logger.Panic("[yiigo] redis init error", zap.String("name", name), zap.Error(err))
+		logger.Panic(fmt.Sprintf("[yiigo] err redis.%s ping", name), zap.String("addr", cfg.Addr), zap.Error(err))
 	}
 
 	pool.Put(conn)

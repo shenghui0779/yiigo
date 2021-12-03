@@ -19,20 +19,16 @@ func (l *NSQLogger) Output(calldepth int, s string) error {
 	return nil
 }
 
-func initProducer(nsqd string) error {
-	p, err := nsq.NewProducer(nsqd, nsq.NewConfig())
+func initProducer(nsqd string) (err error) {
+	producer, err = nsq.NewProducer(nsqd, nsq.NewConfig())
 
 	if err != nil {
-		logger.Error("init producer error", zap.Error(err))
-
-		return err
+		return
 	}
 
-	p.SetLogger(&NSQLogger{}, nsq.LogLevelError)
+	producer.SetLogger(&NSQLogger{}, nsq.LogLevelError)
 
-	producer = p
-
-	return nil
+	return
 }
 
 // NSQMessage NSQ message
@@ -113,12 +109,12 @@ func setConsumers(lookupd []string, consumers ...NSQConsumer) error {
 func initNSQ(nsqd string, lookupd []string, consumers ...NSQConsumer) {
 	// init producer
 	if err := initProducer(nsqd); err != nil {
-		logger.Panic("[yiigo] init nsq error", zap.Error(err))
+		logger.Panic("[yiigo] err new producer", zap.Error(err))
 	}
 
 	// set consumers
 	if err := setConsumers(lookupd, consumers...); err != nil {
-		logger.Panic("[yiigo] init nsq error", zap.Error(err))
+		logger.Panic("[yiigo] err set consumer", zap.Error(err))
 	}
 
 	logger.Info("[yiigo] nsq is OK")
