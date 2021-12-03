@@ -178,7 +178,7 @@ func (w *queryWrapper) ToQuery(ctx context.Context) (string, []interface{}) {
 		query, binds, err = sqlx.In(query, binds...)
 
 		if err != nil {
-			w.builder.logger.Error(ctx, errors.Wrap(err, "error build 'IN' query"))
+			w.builder.logger.Error(ctx, errors.Wrap(err, "err build 'IN' query"))
 
 			return "", nil
 		}
@@ -401,7 +401,7 @@ func (w *queryWrapper) ToBatchInsert(ctx context.Context, data interface{}) (str
 	}
 
 	if v.Len() == 0 {
-		w.builder.logger.Error(ctx, errors.New("error empty data"))
+		w.builder.logger.Error(ctx, errors.New("err empty data"))
 
 		return "", nil
 	}
@@ -627,7 +627,7 @@ func (w *queryWrapper) ToUpdate(ctx context.Context, data interface{}) (string, 
 		query, binds, err = sqlx.In(query, binds...)
 
 		if err != nil {
-			w.builder.logger.Error(ctx, errors.Wrap(err, "error build 'IN' query"))
+			w.builder.logger.Error(ctx, errors.Wrap(err, "err build 'IN' query"))
 
 			return "", nil
 		}
@@ -724,7 +724,7 @@ func (w *queryWrapper) ToDelete(ctx context.Context) (string, []interface{}) {
 		query, binds, err = sqlx.In(query, binds...)
 
 		if err != nil {
-			w.builder.logger.Error(ctx, errors.Wrap(err, "error build 'IN' query"))
+			w.builder.logger.Error(ctx, errors.Wrap(err, "err build 'IN' query"))
 
 			return "", nil
 		}
