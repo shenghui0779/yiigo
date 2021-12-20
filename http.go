@@ -4,12 +4,10 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"io"
 	"mime/multipart"
 	"net"
 	"net/http"
 	"net/url"
-	"strings"
 	"time"
 )
 
@@ -128,7 +126,7 @@ func NewUploadForm(fields ...UploadField) UploadForm {
 type HTTPClient interface {
 	// Do sends an HTTP request and returns an HTTP response.
 	// Should use context to specify the timeout for request.
-	Do(ctx context.Context, method, reqURL string, body io.Reader, options ...HTTPOption) (*http.Response, error)
+	Do(ctx context.Context, method, reqURL string, body []byte, options ...HTTPOption) (*http.Response, error)
 
 	// Upload issues a UPLOAD to the specified URL.
 	// Should use context to specify the timeout for request.
@@ -139,8 +137,8 @@ type httpclient struct {
 	client *http.Client
 }
 
-func (c *httpclient) Do(ctx context.Context, method, reqURL string, body io.Reader, options ...HTTPOption) (*http.Response, error) {
-	req, err := http.NewRequest(method, reqURL, body)
+func (c *httpclient) Do(ctx context.Context, method, reqURL string, body []byte, options ...HTTPOption) (*http.Response, error) {
+	req, err := http.NewRequestWithContext(ctx, method, reqURL, bytes.NewBuffer(body))
 
 	if err != nil {
 		return nil, err
@@ -174,7 +172,7 @@ func (c *httpclient) Do(ctx context.Context, method, reqURL string, body io.Read
 		req.Close = true
 	}
 
-	resp, err := c.client.Do(req.WithContext(ctx))
+	resp, err := c.client.Do(req)
 
 	if err != nil {
 		// If the context has been canceled, the context's error is probably more useful.
@@ -206,7 +204,7 @@ func (c *httpclient) Upload(ctx context.Context, reqURL string, form UploadForm,
 		return nil, err
 	}
 
-	return c.Do(ctx, http.MethodPost, reqURL, buf, options...)
+	return c.Do(ctx, http.MethodPost, reqURL, buf.Bytes(), options...)
 }
 
 // NewHTTPClient returns a new http client
@@ -240,14 +238,14 @@ func HTTPGet(ctx context.Context, reqURL string, options ...HTTPOption) (*http.R
 
 // HTTPPost issues a POST to the specified URL.
 func HTTPPost(ctx context.Context, reqURL string, body []byte, options ...HTTPOption) (*http.Response, error) {
-	return defaultHTTPClient.Do(ctx, http.MethodPost, reqURL, bytes.NewReader(body), options...)
+	return defaultHTTPClient.Do(ctx, http.MethodPost, reqURL, body, options...)
 }
 
 // HTTPPostForm issues a POST to the specified URL, with data's keys and values URL-encoded as the request body.
 func HTTPPostForm(ctx context.Context, reqURL string, data url.Values, options ...HTTPOption) (*http.Response, error) {
 	options = append(options, WithHTTPHeader("Content-Type", "application/x-www-form-urlencoded"))
 
-	return defaultHTTPClient.Do(ctx, http.MethodPost, reqURL, strings.NewReader(data.Encode()), options...)
+	return defaultHTTPClient.Do(ctx, http.MethodPost, reqURL, []byte(data.Encode()), options...)
 }
 
 // HTTPUpload issues a UPLOAD to the specified URL.
@@ -256,6 +254,6 @@ func HTTPUpload(ctx context.Context, reqURL string, form UploadForm, options ...
 }
 
 // HTTPDo sends an HTTP request and returns an HTTP response
-func HTTPDo(ctx context.Context, method, reqURL string, body io.Reader, options ...HTTPOption) (*http.Response, error) {
+func HTTPDo(ctx context.Context, method, reqURL string, body []byte, options ...HTTPOption) (*http.Response, error) {
 	return defaultHTTPClient.Do(ctx, method, reqURL, body, options...)
 }

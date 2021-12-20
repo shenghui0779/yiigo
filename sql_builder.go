@@ -50,7 +50,7 @@ type SQLWrapper interface {
 
 // SQLLogger is the log interface for sql builder.
 type SQLLogger interface {
-	// Info logs a message for sql builder.
+	// Info logs sql statement in debug mode for sql builder.
 	Info(ctx context.Context, query string, args ...interface{})
 
 	// Error logs an error for sql builder.
@@ -70,6 +70,7 @@ func (l *builderLog) Error(ctx context.Context, err error) {
 type queryBuilder struct {
 	driver DBDriver
 	logger SQLLogger
+	debug  bool
 }
 
 func (b *queryBuilder) Wrap(options ...QueryOption) SQLWrapper {
@@ -177,7 +178,7 @@ func (w *queryWrapper) ToQuery(ctx context.Context) (string, []interface{}) {
 		query, binds, err = sqlx.In(query, binds...)
 
 		if err != nil {
-			w.builder.logger.Error(ctx, errors.Wrap(err, "error build 'IN' query"))
+			w.builder.logger.Error(ctx, errors.Wrap(err, "err build 'IN' query"))
 
 			return "", nil
 		}
@@ -185,7 +186,9 @@ func (w *queryWrapper) ToQuery(ctx context.Context) (string, []interface{}) {
 
 	query = sqlx.Rebind(sqlx.BindType(string(w.builder.driver)), query)
 
-	w.builder.logger.Info(ctx, query, binds...)
+	if w.builder.debug {
+		w.builder.logger.Info(ctx, query, binds...)
+	}
 
 	return query, binds
 }
@@ -331,7 +334,9 @@ func (w *queryWrapper) ToInsert(ctx context.Context, data interface{}) (string, 
 
 	query := sqlx.Rebind(sqlx.BindType(string(w.builder.driver)), builder.String())
 
-	w.builder.logger.Info(ctx, query, binds...)
+	if w.builder.debug {
+		w.builder.logger.Info(ctx, query, binds...)
+	}
 
 	return query, binds
 }
@@ -396,7 +401,7 @@ func (w *queryWrapper) ToBatchInsert(ctx context.Context, data interface{}) (str
 	}
 
 	if v.Len() == 0 {
-		w.builder.logger.Error(ctx, errors.New("error empty data"))
+		w.builder.logger.Error(ctx, errors.New("err empty data"))
 
 		return "", nil
 	}
@@ -477,7 +482,9 @@ func (w *queryWrapper) ToBatchInsert(ctx context.Context, data interface{}) (str
 
 	query := sqlx.Rebind(sqlx.BindType(string(w.builder.driver)), builder.String())
 
-	w.builder.logger.Info(ctx, query, binds...)
+	if w.builder.debug {
+		w.builder.logger.Info(ctx, query, binds...)
+	}
 
 	return query, binds
 }
@@ -620,7 +627,7 @@ func (w *queryWrapper) ToUpdate(ctx context.Context, data interface{}) (string, 
 		query, binds, err = sqlx.In(query, binds...)
 
 		if err != nil {
-			w.builder.logger.Error(ctx, errors.Wrap(err, "error build 'IN' query"))
+			w.builder.logger.Error(ctx, errors.Wrap(err, "err build 'IN' query"))
 
 			return "", nil
 		}
@@ -628,7 +635,9 @@ func (w *queryWrapper) ToUpdate(ctx context.Context, data interface{}) (string, 
 
 	query = sqlx.Rebind(sqlx.BindType(string(w.builder.driver)), query)
 
-	w.builder.logger.Info(ctx, query, binds...)
+	if w.builder.debug {
+		w.builder.logger.Info(ctx, query, binds...)
+	}
 
 	return query, binds
 }
@@ -715,7 +724,7 @@ func (w *queryWrapper) ToDelete(ctx context.Context) (string, []interface{}) {
 		query, binds, err = sqlx.In(query, binds...)
 
 		if err != nil {
-			w.builder.logger.Error(ctx, errors.Wrap(err, "error build 'IN' query"))
+			w.builder.logger.Error(ctx, errors.Wrap(err, "err build 'IN' query"))
 
 			return "", nil
 		}
@@ -723,7 +732,9 @@ func (w *queryWrapper) ToDelete(ctx context.Context) (string, []interface{}) {
 
 	query = sqlx.Rebind(sqlx.BindType(string(w.builder.driver)), query)
 
-	w.builder.logger.Info(ctx, query, binds...)
+	if w.builder.debug {
+		w.builder.logger.Info(ctx, query, binds...)
+	}
 
 	return query, binds
 }
@@ -736,7 +747,9 @@ func (w *queryWrapper) ToTruncate(ctx context.Context) string {
 
 	query := builder.String()
 
-	w.builder.logger.Info(ctx, query)
+	if w.builder.debug {
+		w.builder.logger.Info(ctx, query)
+	}
 
 	return query
 }
@@ -748,6 +761,13 @@ type BuilderOption func(builder *queryBuilder)
 func WithSQLLogger(l SQLLogger) BuilderOption {
 	return func(builder *queryBuilder) {
 		builder.logger = l
+	}
+}
+
+// WithSQLDebug sets debug mode for SQL builder.
+func WithSQLDebug() BuilderOption {
+	return func(builder *queryBuilder) {
+		builder.debug = true
 	}
 }
 

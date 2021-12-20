@@ -40,7 +40,7 @@ go get -u github.com/shenghui0779/yiigo
 // 默认加载当前目录下的`.env`文件
 yiigo.LoadEnv()
 
-// 加载指定文件
+// 加载指定配置文件
 yiigo.LoadEnv(yiigo.WithEnvFile("mycfg.env"))
 
 // 热加载
@@ -49,7 +49,7 @@ yiigo.LoadEnv(yiigo.WithEnvWatcher(onchanges...))
 
 - `.env`
 
-```dotenv
+```sh
 ENV=dev
 ```
 
@@ -66,8 +66,25 @@ fmt.Println(os.Getenv("ENV"))
 
 ```go
 yiigo.Init(
-    yiigo.WithDB(yiigo.Default, yiigo.MySQL, "dsn", options...),
-    yiigo.WithDB("other", yiigo.MySQL, "dsn", options...),
+    yiigo.WithMySQL(yiigo.Default, &yiigo.DBConfig{
+        DSN: "dsn",
+        Options: &yiigo.DBOptions{
+            MaxOpenConns:    20,
+            MaxIdleConns:    10,
+            ConnMaxLifetime: 10 * time.Minute,
+            ConnMaxIdleTime: 5 * time.Minute,
+        },
+    }),
+
+    yiigo.WithMySQL("other", &yiigo.DBConfig{
+        DSN: "dsn",
+        Options: &yiigo.DBOptions{
+            MaxOpenConns:    20,
+            MaxIdleConns:    10,
+            ConnMaxLifetime: 10 * time.Minute,
+            ConnMaxIdleTime: 5 * time.Minute,
+        },
+    }),
 )
 ```
 
@@ -114,8 +131,27 @@ yiigo.Mongo("other").Database("test").Collection("numbers").InsertOne(context.Ba
 ```go
 // register
 yiigo.Init(
-    yiigo.WithRedis(yiigo.Default, "address", options...),
-    yiigo.WithRedis("other", "address", options...),
+    yiigo.WithRedis(yiigo.Default, &yiigo.RedisConfig{
+        Addr: "addr",
+        Options: &yiigo.RedisOptions{
+            ConnTimeout:  10 * time.Second,
+            ReadTimeout:  10 * time.Second,
+            WriteTimeout: 10 * time.Second,
+            PoolSize:     10,
+            IdleTimeout:  5 * time.Minute,
+        },
+    }),
+
+    yiigo.WithRedis("other", &yiigo.RedisConfig{
+        Addr: "addr",
+        Options: &yiigo.RedisOptions{
+            ConnTimeout:  10 * time.Second,
+            ReadTimeout:  10 * time.Second,
+            WriteTimeout: 10 * time.Second,
+            PoolSize:     10,
+            IdleTimeout:  5 * time.Minute,
+        },
+    }),
 )
 
 // default redis
@@ -146,8 +182,19 @@ conn.Do("SET", "test_key", "hello world")
 ```go
 // register
 yiigo.Init(
-    yiigo.WithLogger(yiigo.Default, "filepath", options...),
-    yiigo.WithLogger("other", "filepath", options...),
+    yiigo.WithLogger(yiigo.Default, yiigo.LoggerConfig{
+        Filename: "filename",
+        Options: &yiigo.LoggerOptions{
+            Stderr: true,
+        },
+    }),
+
+    yiigo.WithLogger("other", yiigo.LoggerConfig{
+        Filename: "filename",
+        Options: &yiigo.LoggerOptions{
+            Stderr: true,
+        },
+    }),
 )
 
 // default logger
@@ -161,8 +208,8 @@ yiigo.Logger("other").Info("hello world")
 
 ```go
 // create pool
-pool := yiigo.NewGRPCPool(
-    func() (*grpc.ClientConn, error) {
+pool := yiigo.NewGrpcPool(&yiigo.GrpcPoolConfig{
+    Dialer: func() (*grpc.ClientConn, error) {
         return grpc.DialContext(context.Background(), "target",
             grpc.WithInsecure(),
             grpc.WithBlock(),
@@ -172,10 +219,11 @@ pool := yiigo.NewGRPCPool(
             }),
         )
     },
-    yiigo.WithPoolSize(10),
-    yiigo.WithPoolLimit(20),
-    yiigo.WithPoolIdleTimeout(600*time.Second),
-)
+    Options: &yiigo.PoolOptions{
+        PoolSize:    10,
+        IdleTimeout: 5 * time.Minute,
+    },
+})
 
 // use pool
 conn, err := pool.Get(context.Background())

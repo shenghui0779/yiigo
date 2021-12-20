@@ -22,7 +22,7 @@ func initMongoDB(name, dsn string) {
 	client, err := mongo.Connect(context.Background(), opts)
 
 	if err != nil {
-		logger.Panic("[yiigo] mongodb init error", zap.String("name", name), zap.Error(err))
+		logger.Panic(fmt.Sprintf("[yiigo] err mongodb.%s connect", name), zap.String("dsn", dsn), zap.Error(err))
 	}
 
 	timeout := 10 * time.Second
@@ -36,7 +36,7 @@ func initMongoDB(name, dsn string) {
 
 	// verify connection
 	if err = client.Ping(ctx, opts.ReadPreference); err != nil {
-		logger.Panic("[yiigo] mongodb init error", zap.String("name", name), zap.Error(err))
+		logger.Panic(fmt.Sprintf("[yiigo] err mongodb.%s ping", name), zap.String("dsn", dsn), zap.Error(err))
 	}
 
 	if name == Default {

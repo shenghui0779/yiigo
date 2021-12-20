@@ -33,72 +33,106 @@ var (
 	entmap           sync.Map
 )
 
-type dbSetting struct {
-	maxOpenConns    int
-	maxIdleConns    int
-	connMaxIdleTime time.Duration
-	connMaxLifetime time.Duration
+// DBConfig keeps the settings to setup db connection.
+type DBConfig struct {
+	// DSN data source name
+	//
+	// [MySQL] username:password@tcp(localhost:3306)/dbname?timeout=10s&charset=utf8mb4&collation=utf8mb4_general_ci&parseTime=True&loc=Local
+	//
+	// [Postgres] host=localhost port=5432 user=root password=secret dbname=test connect_timeout=10 sslmode=disable
+	//
+	// [SQLite] file::memory:?cache=shared
+	DSN string `json:"dsn"`
+
+	// Options optional settings to setup db connection.
+	Options *DBOptions `json:"options"`
 }
 
-// DBOption configures how we set up the db.
-type DBOption func(s *dbSetting)
+// DBOptions optional settings to setup db connection.
+type DBOptions struct {
+	// MaxOpenConns is the maximum number of open connections to the database.
+	// Use value -1 for no timeout and 0 for default.
+	// Default is 20.
+	MaxOpenConns int `json:"max_open_conns"`
 
-// WithDBMaxOpenConns specifies the `MaxOpenConns` for db.
-func WithDBMaxOpenConns(n int) DBOption {
-	return func(s *dbSetting) {
-		s.maxOpenConns = n
+	// MaxIdleConns is the maximum number of connections in the idle connection pool.
+	// Use value -1 for no timeout and 0 for default.
+	// Default is 10.
+	MaxIdleConns int `json:"max_idle_conns"`
+
+	// ConnMaxLifetime is the maximum amount of time a connection may be reused.
+	// Use value -1 for no timeout and 0 for default.
+	// Default is 10 minutes.
+	ConnMaxLifetime time.Duration `json:"conn_max_lifetime"`
+
+	// ConnMaxIdleTime is the maximum amount of time a connection may be idle.
+	// Use value -1 for no timeout and 0 for default.
+	// Default is 5 minutes.
+	ConnMaxIdleTime time.Duration `json:"conn_max_idle_time"`
+}
+
+func (o *DBOptions) rebuild(opt *DBOptions) {
+	if opt.MaxOpenConns > 0 {
+		o.MaxOpenConns = opt.MaxOpenConns
+	} else {
+		if opt.MaxOpenConns == -1 {
+			o.MaxOpenConns = 0
+		}
+	}
+
+	if opt.MaxIdleConns > 0 {
+		o.MaxIdleConns = opt.MaxIdleConns
+	} else {
+		if opt.MaxIdleConns == -1 {
+			o.MaxIdleConns = 0
+		}
+	}
+
+	if opt.ConnMaxLifetime > 0 {
+		o.ConnMaxLifetime = opt.ConnMaxLifetime
+	} else {
+		if opt.ConnMaxLifetime == -1 {
+			o.ConnMaxLifetime = 0
+		}
+	}
+
+	if opt.ConnMaxIdleTime > 0 {
+		o.ConnMaxIdleTime = opt.ConnMaxIdleTime
+	} else {
+		if opt.ConnMaxIdleTime == -1 {
+			o.ConnMaxIdleTime = 0
+		}
 	}
 }
 
-// WithDBMaxIdleConns specifies the `MaxIdleConns` for db.
-func WithDBMaxIdleConns(n int) DBOption {
-	return func(s *dbSetting) {
-		s.maxIdleConns = n
-	}
-}
-
-// WithDBConnMaxIdleTime specifies the `ConnMaxIdleTime` for db.
-func WithDBConnMaxIdleTime(t time.Duration) DBOption {
-	return func(s *dbSetting) {
-		s.connMaxIdleTime = t
-	}
-}
-
-// WithDBConnMaxLifetime specifies the `ConnMaxLifetime` for db.
-func WithDBConnMaxLifetime(t time.Duration) DBOption {
-	return func(s *dbSetting) {
-		s.connMaxLifetime = t
-	}
-}
-
-func initDB(name string, driver DBDriver, dsn string, options ...DBOption) {
-	db, err := sql.Open(string(driver), dsn)
+func initDB(name string, driver DBDriver, cfg *DBConfig) {
+	db, err := sql.Open(string(driver), cfg.DSN)
 
 	if err != nil {
-		logger.Panic("[yiigo] db init error", zap.String("name", name), zap.Error(err))
+		logger.Panic(fmt.Sprintf("[yiigo] err db.%s open", name), zap.String("dsn", cfg.DSN), zap.Error(err))
 	}
 
 	if err = db.Ping(); err != nil {
 		db.Close()
 
-		logger.Panic("[yiigo] db init error", zap.String("name", name), zap.Error(err))
+		logger.Panic(fmt.Sprintf("[yiigo] err db.%s ping", name), zap.String("dsn", cfg.DSN), zap.Error(err))
 	}
 
-	setting := &dbSetting{
-		maxOpenConns:    20,
-		maxIdleConns:    10,
-		connMaxIdleTime: 60 * time.Second,
-		connMaxLifetime: 10 * time.Minute,
+	opt := &DBOptions{
+		MaxOpenConns:    20,
+		MaxIdleConns:    10,
+		ConnMaxLifetime: 10 * time.Minute,
+		ConnMaxIdleTime: 5 * time.Minute,
 	}
 
-	for _, f := range options {
-		f(setting)
+	if cfg.Options != nil {
+		opt.rebuild(cfg.Options)
 	}
 
-	db.SetMaxOpenConns(setting.maxOpenConns)
-	db.SetMaxIdleConns(setting.maxIdleConns)
-	db.SetConnMaxIdleTime(setting.connMaxIdleTime)
-	db.SetConnMaxLifetime(setting.connMaxLifetime)
+	db.SetMaxOpenConns(opt.MaxOpenConns)
+	db.SetMaxIdleConns(opt.MaxIdleConns)
+	db.SetConnMaxLifetime(opt.ConnMaxLifetime)
+	db.SetConnMaxIdleTime(opt.ConnMaxIdleTime)
 
 	sqlxDB := sqlx.NewDb(db, string(driver))
 	entDriver := entsql.OpenDB(string(driver), db)
@@ -166,20 +200,20 @@ func DBTransaction(ctx context.Context, db *sqlx.DB, callback DBTxHandler) error
 
 	defer func() {
 		if r := recover(); r != nil {
-			logger.Error("[yiigo] db transaction handler panic", zap.Any("error", r), zap.ByteString("stack", debug.Stack()))
+			logger.Error("[yiigo] tx handler panic", zap.Any("error", r), zap.ByteString("stack", debug.Stack()))
 
-			dbTxRollback(tx)
+			rollback(tx)
 		}
 	}()
 
 	if err = callback(ctx, tx); err != nil {
-		dbTxRollback(tx)
+		rollback(tx)
 
 		return err
 	}
 
 	if err = tx.Commit(); err != nil {
-		dbTxRollback(tx)
+		rollback(tx)
 
 		return err
 	}
@@ -187,8 +221,8 @@ func DBTransaction(ctx context.Context, db *sqlx.DB, callback DBTxHandler) error
 	return nil
 }
 
-func dbTxRollback(tx *sqlx.Tx) {
+func rollback(tx *sqlx.Tx) {
 	if err := tx.Rollback(); err != nil && err != sql.ErrTxDone {
-		logger.Error("[yiigo] db transaction rollback error", zap.Error(err))
+		logger.Error("[yiigo] err tx rollback", zap.Error(err))
 	}
 }
