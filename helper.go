@@ -8,17 +8,11 @@ import (
 	"crypto/sha512"
 	"encoding/hex"
 	"encoding/xml"
-	"errors"
 	"hash"
 	"net"
-	"reflect"
 	"strings"
 	"time"
 
-	"github.com/go-playground/locales/zh"
-	ut "github.com/go-playground/universal-translator"
-	"github.com/go-playground/validator/v10"
-	zhcn "github.com/go-playground/validator/v10/translations/zh"
 	"github.com/hashicorp/go-version"
 	"go.uber.org/zap"
 )
@@ -284,63 +278,4 @@ func VersionCompare(rangeVer, curVer string) (bool, error) {
 	}
 
 	return false, nil
-}
-
-// Validator a validator which can be used for Gin.
-type Validator struct {
-	validator  *validator.Validate
-	translator ut.Translator
-}
-
-// ValidateStruct receives any kind of type, but only performed struct or pointer to struct type.
-func (v *Validator) ValidateStruct(obj interface{}) error {
-	if reflect.Indirect(reflect.ValueOf(obj)).Kind() != reflect.Struct {
-		return nil
-	}
-
-	if err := v.validator.Struct(obj); err != nil {
-		e, ok := err.(validator.ValidationErrors)
-
-		if !ok {
-			return err
-		}
-
-		errM := e.Translate(v.translator)
-		msgs := make([]string, 0, len(errM))
-
-		for _, v := range errM {
-			msgs = append(msgs, v)
-		}
-
-		return errors.New(strings.Join(msgs, ";"))
-	}
-
-	return nil
-}
-
-// Engine returns the underlying validator engine which powers the default
-// Validator instance. This is useful if you want to register custom validations
-// or struct level validations. See validator GoDoc for more info -
-// https://godoc.org/gopkg.in/go-playground/validator.v10
-func (v *Validator) Engine() interface{} {
-	return v.validator
-}
-
-// NewValidator returns a new validator.
-// Used for Gin: binding.Validator = yiigo.NewValidator()
-func NewValidator() *Validator {
-	locale := zh.New()
-	uniTrans := ut.New(locale)
-
-	validate := validator.New()
-	validate.SetTagName("valid")
-
-	translator, _ := uniTrans.GetTranslator("zh")
-
-	zhcn.RegisterDefaultTranslations(validate, translator)
-
-	return &Validator{
-		validator:  validate,
-		translator: translator,
-	}
 }
