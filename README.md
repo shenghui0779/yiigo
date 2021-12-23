@@ -18,7 +18,7 @@
 - gRPC Client 连接池
 - 轻量的 SQL Builder
 - 环境配置使用 [dotenv](https://github.com/joho/godotenv)，支持热加载
-- 实用的辅助方法，包含：http、cypto、date、IP、version compare 等
+- 实用的辅助方法，包含：http、cypto、date、IP、validator、version compare 等
 
 ## Installation
 
