@@ -2,9 +2,10 @@ package yiigo
 
 import (
 	"database/sql"
-	"database/sql/driver"
-	"reflect"
+	"strconv"
 	"testing"
+
+	"github.com/go-playground/validator/v10"
 )
 
 var (
@@ -18,7 +19,13 @@ var (
 func TestMain(m *testing.M) {
 	builder = NewMySQLBuilder(WithSQLDebug())
 
-	validate = NewValidator(WithCustomValidateType(ValidateValuer, sql.NullString{}))
+	validate = NewValidator(
+		WithValuerType(sql.NullString{}, sql.NullInt64{}),
+		WithValidation("nullint_gte", NullIntGTE),
+		WithTranslation("nullint_gte", "{0}必须大于或等于{1}", true),
+		WithValidation("nullstring_required", NullStringRequired),
+		WithTranslation("nullstring_required", "{0}为必填字段", true),
+	)
 
 	privateKey, publicKey, _ = GenerateRSAKey(2048, RSAPKCS1)
 	// privateKey, publicKey, _ = GenerateRSAKey(2048, RSAPKCS8)
@@ -26,12 +33,16 @@ func TestMain(m *testing.M) {
 	m.Run()
 }
 
-func ValidateValuer(field reflect.Value) interface{} {
-	if valuer, ok := field.Interface().(driver.Valuer); ok {
-		v, _ := valuer.Value()
+func NullStringRequired(fl validator.FieldLevel) bool {
+	return len(fl.Field().String()) != 0
+}
 
-		return v
+func NullIntGTE(fl validator.FieldLevel) bool {
+	i, err := strconv.ParseInt(fl.Param(), 0, 64)
+
+	if err != nil {
+		return false
 	}
 
-	return nil
+	return fl.Field().Int() >= i
 }

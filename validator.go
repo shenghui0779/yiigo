@@ -2,6 +2,7 @@ package yiigo
 
 import (
 	"context"
+	"database/sql/driver"
 	"errors"
 	"reflect"
 	"strings"
@@ -14,51 +15,65 @@ import (
 )
 
 // ValidatorOption configures how we set up the validator.
-type ValidatorOption func(validate *validator.Validate)
+type ValidatorOption func(validate *validator.Validate, trans ut.Translator)
 
-// SetValidateTag allows for changing of the default tag name of 'validate'.
+// SetValidateTag allows for changing of the default validate tag name: valid.
 func SetValidateTag(tagname string) ValidatorOption {
-	return func(validate *validator.Validate) {
+	return func(validate *validator.Validate, trans ut.Translator) {
 		validate.SetTagName(tagname)
 	}
 }
 
-// WithStructValidation registers a StructLevelFunc against a number of types.
-func WithStructValidation(fn validator.StructLevelFunc, types ...interface{}) ValidatorOption {
-	return func(validate *validator.Validate) {
-		validate.RegisterStructValidation(fn, types...)
+// WithValuerType registers a number of custom validate types which implement the driver.Valuer interface.
+func WithValuerType(types ...driver.Valuer) ValidatorOption {
+	customTypes := make([]interface{}, 0, len(types))
+
+	for _, t := range types {
+		customTypes = append(customTypes, t)
+	}
+
+	return func(validate *validator.Validate, trans ut.Translator) {
+		validate.RegisterCustomTypeFunc(func(field reflect.Value) interface{} {
+			if valuer, ok := field.Interface().(driver.Valuer); ok {
+				v, _ := valuer.Value()
+
+				return v
+			}
+
+			return nil
+		}, customTypes...)
 	}
 }
 
-// WithStructValidationCtx registers a StructLevelFuncCtx against a number of types and allows passing of contextual validation information via context.Context.
-func WithStructValidationCtx(fn validator.StructLevelFuncCtx, types ...interface{}) ValidatorOption {
-	return func(validate *validator.Validate) {
-		validate.RegisterStructValidationCtx(fn, types...)
-	}
-}
-
-// WithCustomValidateType registers a CustomTypeFunc against a number of types.
-func WithCustomValidateType(fn validator.CustomTypeFunc, types ...interface{}) ValidatorOption {
-	return func(validate *validator.Validate) {
-		validate.RegisterCustomTypeFunc(fn, types...)
-	}
-}
-
-// WithCustomValidation adds a validation with the given tag.
-func WithCustomValidation(tag string, fn validator.Func, callValidationEvenIfNull ...bool) ValidatorOption {
-	return func(validate *validator.Validate) {
+// WithValidation adds a custom validation with the given tag.
+func WithValidation(tag string, fn validator.Func, callValidationEvenIfNull ...bool) ValidatorOption {
+	return func(validate *validator.Validate, trans ut.Translator) {
 		if err := validate.RegisterValidation(tag, fn, callValidationEvenIfNull...); err != nil {
 			logger.Warn("err register validation", zap.Error(err))
 		}
 	}
 }
 
-// WithCustomValidationCtx does the same as WithCustomValidation on accepts a FuncCtx validation allowing context.Context validation support.
-func WithCustomValidationCtx(tag string, fn validator.FuncCtx, callValidationEvenIfNull ...bool) ValidatorOption {
-	return func(validate *validator.Validate) {
+// WithValidationCtx does the same as WithValidation on accepts a FuncCtx validation allowing context.Context validation support.
+func WithValidationCtx(tag string, fn validator.FuncCtx, callValidationEvenIfNull ...bool) ValidatorOption {
+	return func(validate *validator.Validate, trans ut.Translator) {
 		if err := validate.RegisterValidationCtx(tag, fn, callValidationEvenIfNull...); err != nil {
 			logger.Warn("err register validation with ctx", zap.Error(err))
 		}
+	}
+}
+
+// WithTranslation registers custom validate translation against the provided tag.
+// Param text, eg: {0}为必填字段 或 {0}必须大于{1}
+func WithTranslation(tag, text string, override bool) ValidatorOption {
+	return func(validate *validator.Validate, trans ut.Translator) {
+		validate.RegisterTranslation(tag, trans, func(ut ut.Translator) error {
+			return ut.Add(tag, text, override)
+		}, func(ut ut.Translator, fe validator.FieldError) string {
+			t, _ := ut.T(tag, fe.Field(), fe.Param())
+
+			return t
+		})
 	}
 }
 
@@ -128,27 +143,25 @@ func (v *Validator) Engine() interface{} {
 	return v.validator
 }
 
-// NewValidator returns a new validator with default tag: valid.
+// NewValidator returns a new validator with default tag name: valid.
 // Used for Gin: binding.Validator = yiigo.NewValidator()
 func NewValidator(options ...ValidatorOption) *Validator {
-	locale := zh.New()
-	uniTrans := ut.New(locale)
-
 	validate := validator.New()
 	validate.SetTagName("valid")
 
-	for _, f := range options {
-		f(validate)
+	zhTrans := zh.New()
+	trans, _ := ut.New(zhTrans, zhTrans).GetTranslator("zh")
+
+	if err := zhcn.RegisterDefaultTranslations(validate, trans); err != nil {
+		logger.Warn("err validation translator", zap.Error(err))
 	}
 
-	translator, _ := uniTrans.GetTranslator("zh")
-
-	if err := zhcn.RegisterDefaultTranslations(validate, translator); err != nil {
-		logger.Warn("err validation translator", zap.Error(err))
+	for _, f := range options {
+		f(validate, trans)
 	}
 
 	return &Validator{
 		validator:  validate,
-		translator: translator,
+		translator: trans,
 	}
 }
