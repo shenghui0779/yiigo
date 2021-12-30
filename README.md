@@ -17,7 +17,7 @@
 - 日志使用 [zap](https://github.com/uber-go/zap)
 - gRPC Client 连接池
 - 轻量的 SQL Builder
-- 环境配置使用 [dotenv](https://github.com/joho/godotenv)，支持热加载
+- 环境配置使用 [dotenv](https://github.com/joho/godotenv)，支持热加载，并且支持 k8s configmap 热加载
 - 实用的辅助方法，包含：http、cypto、date、IP、validator、version compare 等
 
 ## Installation
