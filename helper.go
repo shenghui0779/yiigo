@@ -61,7 +61,7 @@ func Date(timestamp int64, layout ...string) string {
 }
 
 // StrToTime Parse English textual datetime description into a Unix timestamp.
-// The default layout is: 2006-01-02 15:04:05.
+// The default layout is: 2006-01-02 15:04:05
 func StrToTime(datetime string, layout ...string) int64 {
 	l := "2006-01-02 15:04:05"
 
@@ -71,9 +71,8 @@ func StrToTime(datetime string, layout ...string) int64 {
 
 	t, err := time.ParseInLocation(l, datetime, time.Local)
 
-	// mismatch layout
 	if err != nil {
-		logger.Error("[yiigo] parse layout mismatch", zap.Error(err))
+		logger.Error("[yiigo] err parse time", zap.Error(err), zap.String("datetime", datetime), zap.String("layout", l))
 
 		return 0
 	}
@@ -82,7 +81,14 @@ func StrToTime(datetime string, layout ...string) int64 {
 }
 
 // WeekAround returns the date of monday and sunday for current week.
-func WeekAround(t time.Time) (monday, sunday string) {
+// The default layout is: 2006-01-02
+func WeekAround(t time.Time, layout ...string) (monday, sunday string) {
+	l := "2006-01-02"
+
+	if len(layout) != 0 {
+		l = layout[0]
+	}
+
 	weekday := t.Local().Weekday()
 
 	// monday
@@ -94,7 +100,7 @@ func WeekAround(t time.Time) (monday, sunday string) {
 
 	today := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, time.Local)
 
-	monday = today.AddDate(0, 0, offset).Format("20060102")
+	monday = today.AddDate(0, 0, offset).Format(l)
 
 	// sunday
 	offset = int(time.Sunday - weekday)
@@ -103,7 +109,7 @@ func WeekAround(t time.Time) (monday, sunday string) {
 		offset += 7
 	}
 
-	sunday = today.AddDate(0, 0, offset).Format("20060102")
+	sunday = today.AddDate(0, 0, offset).Format(l)
 
 	return
 }
