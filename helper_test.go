@@ -18,8 +18,8 @@ func TestStrToTime(t *testing.T) {
 func TestWeekAround(t *testing.T) {
 	monday, sunday := WeekAround(time.Date(2020, 12, 12, 0, 0, 0, 0, time.Local))
 
-	assert.Equal(t, "20201207", monday)
-	assert.Equal(t, "20201213", sunday)
+	assert.Equal(t, "2020-12-07", monday)
+	assert.Equal(t, "2020-12-13", sunday)
 }
 
 func TestIP2Long(t *testing.T) {
