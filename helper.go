@@ -17,6 +17,13 @@ import (
 	"go.uber.org/zap"
 )
 
+var timezone = time.FixedZone("CST", 8*3600)
+
+const (
+	layoutdate = "2006-01-02"
+	layouttime = "2006-01-02 15:04:05"
+)
+
 // Default defines for `default` name
 const Default = "default"
 
@@ -49,13 +56,13 @@ func (c CDATA) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 // returns a string formatted according to the given format string using the given timestamp of int64.
 // The default layout is: 2006-01-02 15:04:05.
 func Date(timestamp int64, layout ...string) string {
-	l := "2006-01-02 15:04:05"
+	l := layouttime
 
 	if len(layout) != 0 {
 		l = layout[0]
 	}
 
-	date := time.Unix(timestamp, 0).Local().Format(l)
+	date := time.Unix(timestamp, 0).In(timezone).Format(l)
 
 	return date
 }
@@ -63,13 +70,13 @@ func Date(timestamp int64, layout ...string) string {
 // StrToTime Parse English textual datetime description into a Unix timestamp.
 // The default layout is: 2006-01-02 15:04:05
 func StrToTime(datetime string, layout ...string) int64 {
-	l := "2006-01-02 15:04:05"
+	l := layouttime
 
 	if len(layout) != 0 {
 		l = layout[0]
 	}
 
-	t, err := time.ParseInLocation(l, datetime, time.Local)
+	t, err := time.ParseInLocation(l, datetime, timezone)
 
 	if err != nil {
 		logger.Error("[yiigo] err parse time", zap.Error(err), zap.String("datetime", datetime), zap.String("layout", l))
@@ -80,16 +87,12 @@ func StrToTime(datetime string, layout ...string) int64 {
 	return t.Unix()
 }
 
-// WeekAround returns the date of monday and sunday for current week.
+// WeekAround returns the monday and sunday of the week for the given time.
 // The default layout is: 2006-01-02
-func WeekAround(t time.Time, layout ...string) (monday, sunday string) {
-	l := "2006-01-02"
+func WeekAround(timestamp int64, layout ...string) (monday, sunday string) {
+	t := time.Unix(timestamp, 0).In(timezone)
 
-	if len(layout) != 0 {
-		l = layout[0]
-	}
-
-	weekday := t.Local().Weekday()
+	weekday := t.Weekday()
 
 	// monday
 	offset := int(time.Monday - weekday)
@@ -98,7 +101,13 @@ func WeekAround(t time.Time, layout ...string) (monday, sunday string) {
 		offset = -6
 	}
 
-	today := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, time.Local)
+	today := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, timezone)
+
+	l := layoutdate
+
+	if len(layout) != 0 {
+		l = layout[0]
+	}
 
 	monday = today.AddDate(0, 0, offset).Format(l)
 
