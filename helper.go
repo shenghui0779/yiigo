@@ -52,6 +52,11 @@ func (c CDATA) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	}{string(c)}, start)
 }
 
+// SetTimezone sets timezone for time display.
+func SetTimezone(loc *time.Location) {
+	timezone = loc
+}
+
 // Date format a local time/date and
 // returns a string formatted according to the given format string using the given timestamp of int64.
 // The default layout is: 2006-01-02 15:04:05.
