@@ -53,6 +53,7 @@ func (c CDATA) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 }
 
 // SetTimezone sets timezone for time display.
+// The default timezone is GMT+8.
 func SetTimezone(loc *time.Location) {
 	timezone = loc
 }
