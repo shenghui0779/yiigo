@@ -36,12 +36,9 @@ var (
 // DBConfig keeps the settings to setup db connection.
 type DBConfig struct {
 	// DSN data source name
-	//
-	// [MySQL] username:password@tcp(localhost:3306)/dbname?timeout=10s&charset=utf8mb4&collation=utf8mb4_general_ci&parseTime=True&loc=Local
-	//
+	// [-- MySQL] username:password@tcp(localhost:3306)/dbname?timeout=10s&charset=utf8mb4&collation=utf8mb4_general_ci&parseTime=True&loc=Local
 	// [Postgres] host=localhost port=5432 user=root password=secret dbname=test connect_timeout=10 sslmode=disable
-	//
-	// [SQLite] file::memory:?cache=shared
+	// [- SQLite] file::memory:?cache=shared
 	DSN string `json:"dsn"`
 
 	// Options optional settings to setup db connection.
