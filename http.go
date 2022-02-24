@@ -214,8 +214,8 @@ func NewHTTPClient(client *http.Client) HTTPClient {
 	}
 }
 
-// DefaultHTTPClient default http client
-var DefaultHTTPClient = NewHTTPClient(&http.Client{
+// defaultHTTPClient default http client
+var defaultHTTPClient = NewHTTPClient(&http.Client{
 	Transport: &http.Transport{
 		Proxy: http.ProxyFromEnvironment,
 		DialContext: (&net.Dialer{
@@ -233,27 +233,27 @@ var DefaultHTTPClient = NewHTTPClient(&http.Client{
 
 // HTTPGet issues a GET to the specified URL.
 func HTTPGet(ctx context.Context, reqURL string, options ...HTTPOption) (*http.Response, error) {
-	return DefaultHTTPClient.Do(ctx, http.MethodGet, reqURL, nil, options...)
+	return defaultHTTPClient.Do(ctx, http.MethodGet, reqURL, nil, options...)
 }
 
 // HTTPPost issues a POST to the specified URL.
 func HTTPPost(ctx context.Context, reqURL string, body []byte, options ...HTTPOption) (*http.Response, error) {
-	return DefaultHTTPClient.Do(ctx, http.MethodPost, reqURL, body, options...)
+	return defaultHTTPClient.Do(ctx, http.MethodPost, reqURL, body, options...)
 }
 
 // HTTPPostForm issues a POST to the specified URL, with data's keys and values URL-encoded as the request body.
 func HTTPPostForm(ctx context.Context, reqURL string, data url.Values, options ...HTTPOption) (*http.Response, error) {
 	options = append(options, WithHTTPHeader("Content-Type", "application/x-www-form-urlencoded"))
 
-	return DefaultHTTPClient.Do(ctx, http.MethodPost, reqURL, []byte(data.Encode()), options...)
+	return defaultHTTPClient.Do(ctx, http.MethodPost, reqURL, []byte(data.Encode()), options...)
 }
 
 // HTTPUpload issues a UPLOAD to the specified URL.
 func HTTPUpload(ctx context.Context, reqURL string, form UploadForm, options ...HTTPOption) (*http.Response, error) {
-	return DefaultHTTPClient.Upload(ctx, reqURL, form, options...)
+	return defaultHTTPClient.Upload(ctx, reqURL, form, options...)
 }
 
 // HTTPDo sends an HTTP request and returns an HTTP response
 func HTTPDo(ctx context.Context, method, reqURL string, body []byte, options ...HTTPOption) (*http.Response, error) {
-	return DefaultHTTPClient.Do(ctx, method, reqURL, body, options...)
+	return defaultHTTPClient.Do(ctx, method, reqURL, body, options...)
 }
