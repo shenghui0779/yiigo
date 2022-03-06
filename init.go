@@ -78,10 +78,8 @@ func WithSQLite(name string, cfg *DBConfig) InitOption {
 }
 
 // WithMongo register mongodb.
-//
 // [DSN] mongodb://localhost:27017/?connectTimeoutMS=10000&minPoolSize=10&maxPoolSize=20&maxIdleTimeMS=60000&readPreference=primary
-//
-// [reference] https://docs.mongodb.com/manual/reference/connection-string
+// [Reference] https://docs.mongodb.com/manual/reference/connection-string
 func WithMongo(name string, dsn string) InitOption {
 	return func(c *initConfig) {
 		c.mongo = append(c.mongo, &cfgmongo{

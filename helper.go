@@ -59,7 +59,8 @@ func SetTimezone(loc *time.Location) {
 }
 
 // Date format a local time/date and
-// returns a string formatted according to the given format string using the given timestamp of int64.
+// returns a string formatted according to the given layout using the given timestamp of int64.
+// If timestamp <= 0, use `time.now()` to format.
 // The default layout is: 2006-01-02 15:04:05.
 func Date(timestamp int64, layout ...string) string {
 	l := layouttime
@@ -68,9 +69,13 @@ func Date(timestamp int64, layout ...string) string {
 		l = layout[0]
 	}
 
-	date := time.Unix(timestamp, 0).In(timezone).Format(l)
+	t := time.Now()
 
-	return date
+	if timestamp > 0 {
+		t = time.Unix(timestamp, 0)
+	}
+
+	return t.In(timezone).Format(l)
 }
 
 // StrToTime Parse English textual datetime description into a Unix timestamp.
