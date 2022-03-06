@@ -60,7 +60,7 @@ func SetTimezone(loc *time.Location) {
 
 // Date format a local time/date and
 // returns a string formatted according to the given layout using the given timestamp of int64.
-// If timestamp <= 0, use `time.now()` to format.
+// If timestamp <= 0, use `time.Now()` to format.
 // The default layout is: 2006-01-02 15:04:05.
 func Date(timestamp int64, layout ...string) string {
 	l := layouttime
