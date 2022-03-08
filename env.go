@@ -133,7 +133,7 @@ func watchEnvFile(path string, onchanges ...EnvEventFunc) {
 			select {
 			case event, ok := <-watcher.Events:
 				if !ok {
-					done <- errors.New("'Events' channel is closed")
+					done <- errors.New("channel(watcher.Events) is closed")
 
 					return
 				}
@@ -157,7 +157,7 @@ func watchEnvFile(path string, onchanges ...EnvEventFunc) {
 				}
 			case err, ok := <-watcher.Errors:
 				if !ok {
-					err = errors.New("'Errors' channel is closed")
+					err = errors.New("channel(watcher.Errors) is closed")
 				}
 
 				done <- err
