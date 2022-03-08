@@ -1,11 +1,11 @@
 package yiigo
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"runtime/debug"
 	"strings"
-	"sync"
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/joho/godotenv"
@@ -117,14 +117,11 @@ func watchEnvFile(path string, onchanges ...EnvEventFunc) {
 	envDir, _ := filepath.Split(path)
 	realEnvFile, _ := filepath.EvalSymlinks(path)
 
-	var wg sync.WaitGroup
-
-	wg.Add(1)
+	done := make(chan error)
+	defer close(done)
 
 	go func() {
 		defer func() {
-			wg.Done()
-
 			if r := recover(); r != nil {
 				logger.Error("[yiigo] env watcher panic", zap.Any("error", r), zap.String("env_file", path), zap.ByteString("stack", debug.Stack()))
 			}
@@ -135,7 +132,9 @@ func watchEnvFile(path string, onchanges ...EnvEventFunc) {
 		for {
 			select {
 			case event, ok := <-watcher.Events:
-				if !ok { // 'Events' channel is closed
+				if !ok {
+					done <- errors.New("'Events' channel is closed")
+
 					return
 				}
 
@@ -157,9 +156,11 @@ func watchEnvFile(path string, onchanges ...EnvEventFunc) {
 					logger.Warn("[yiigo] env file removed", zap.String("env_file", path))
 				}
 			case err, ok := <-watcher.Errors:
-				if ok { // 'Errors' channel is not closed
-					logger.Error("[yiigo] err env watcher", zap.Error(err), zap.String("env_file", path))
+				if !ok {
+					err = errors.New("'Errors' channel is closed")
 				}
+
+				done <- err
 
 				return
 			}
@@ -167,8 +168,10 @@ func watchEnvFile(path string, onchanges ...EnvEventFunc) {
 	}()
 
 	if err = watcher.Add(envDir); err != nil {
-		logger.Error("[yiigo] err env watcher", zap.Error(err), zap.String("env_file", path))
+		done <- err
 	}
 
-	wg.Wait()
+	err = <-done
+
+	logger.Error("[yiigo] err env watcher", zap.Error(err), zap.String("env_file", path))
 }
