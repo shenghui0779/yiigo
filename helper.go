@@ -69,13 +69,11 @@ func Date(timestamp int64, layout ...string) string {
 		l = layout[0]
 	}
 
-	t := time.Now()
-
-	if timestamp >= 0 {
-		t = time.Unix(timestamp, 0)
+	if timestamp < 0 {
+		return time.Now().In(timezone).Format(l)
 	}
 
-	return t.In(timezone).Format(l)
+	return time.Unix(timestamp, 0).In(timezone).Format(l)
 }
 
 // StrToTime Parse English textual datetime description into a Unix timestamp.
