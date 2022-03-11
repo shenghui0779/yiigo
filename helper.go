@@ -194,7 +194,7 @@ func QuoteMeta(s string) string {
 // [readonly] os.O_RDONLY
 // [truncate] os.O_RDWR|os.O_TRUNC|os.O_CREATE
 // [--append] os.O_RDWR|os.O_APPEND|os.O_CREATE
-func OpenFile(filename string, flag int) (*os.File, error) {
+func OpenFile(filename string, flag int, perm os.FileMode) (*os.File, error) {
 	path, err := filepath.Abs(filename)
 
 	if err != nil {
@@ -202,12 +202,12 @@ func OpenFile(filename string, flag int) (*os.File, error) {
 	}
 
 	if dir, _ := filepath.Split(path); len(dir) != 0 {
-		if err = os.MkdirAll(dir, 0775); err != nil {
+		if err = os.MkdirAll(dir, perm); err != nil {
 			return nil, err
 		}
 	}
 
-	return os.OpenFile(path, flag, 0775)
+	return os.OpenFile(path, flag, perm)
 }
 
 // VersionCompare compares semantic versions range, support: >, >=, =, !=, <, <=, | (or), & (and).

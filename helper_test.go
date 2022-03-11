@@ -43,7 +43,7 @@ func TestQuoteMeta(t *testing.T) {
 }
 
 func TestOpenFile(t *testing.T) {
-	_, err := OpenFile("app.log", os.O_RDWR|os.O_TRUNC|os.O_CREATE)
+	_, err := OpenFile("app.log", os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0775)
 
 	assert.Nil(t, err)
 }
