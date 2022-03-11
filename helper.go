@@ -4,6 +4,7 @@ import (
 	"encoding/xml"
 	"net"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -194,17 +195,17 @@ func QuoteMeta(s string) string {
 // If the file already exists, it is truncated.
 // If the directory or file does not exist, it is created with mode 0775
 func CreateFile(filename string) (*os.File, error) {
-	path, err := filepath.Abs(filename)
+	abspath, err := filepath.Abs(filename)
 
 	if err != nil {
 		return nil, err
 	}
 
-	if err = os.MkdirAll(filename, 0775); err != nil {
+	if err = os.MkdirAll(path.Dir(abspath), 0775); err != nil {
 		return nil, err
 	}
 
-	return os.OpenFile(path, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0775)
+	return os.OpenFile(abspath, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0775)
 }
 
 // VersionCompare compares semantic versions range, support: >, >=, =, !=, <, <=, | (or), & (and).

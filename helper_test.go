@@ -1,7 +1,7 @@
 package yiigo
 
 import (
-	"os"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -42,10 +42,16 @@ func TestQuoteMeta(t *testing.T) {
 	assert.Equal(t, `Hello world\. \(can you hear me\?\)`, QuoteMeta("Hello world. (can you hear me?)"))
 }
 
-func TestOpenFile(t *testing.T) {
-	_, err := OpenFile("app.log", os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0775)
+func TestCreateFile(t *testing.T) {
+	f, err := CreateFile("app.log")
 
-	assert.Nil(t, err)
+	if err != nil {
+		assert.Fail(t, fmt.Sprintf("Expected nil, but got: %#v", err))
+
+		return
+	}
+
+	f.Close()
 }
 
 func TestVersionCompare(t *testing.T) {
