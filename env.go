@@ -3,6 +3,7 @@ package yiigo
 import (
 	"errors"
 	"os"
+	"path"
 	"path/filepath"
 	"runtime/debug"
 	"strings"
@@ -50,51 +51,43 @@ func LoadEnv(options ...EnvOption) error {
 		f(env)
 	}
 
-	abspath, err := filepath.Abs(env.path)
+	filename, err := filepath.Abs(env.path)
 
 	if err != nil {
 		return err
 	}
 
-	statEnvFile(abspath)
+	statEnvFile(filename)
 
-	if err := godotenv.Overload(abspath); err != nil {
+	if err := godotenv.Overload(filename); err != nil {
 		return err
 	}
 
 	if env.watcher {
-		go watchEnvFile(abspath, env.onchanges...)
+		go watchEnvFile(filename, env.onchanges...)
 	}
 
 	return nil
 }
 
-func statEnvFile(path string) {
-	_, err := os.Stat(path)
+func statEnvFile(filename string) {
+	_, err := os.Stat(filename)
 
 	if err == nil {
 		return
 	}
 
-	if os.IsNotExist(err) {
-		if dir, _ := filepath.Split(path); len(dir) != 0 {
-			if err = os.MkdirAll(dir, 0755); err != nil {
-				return
-			}
-		}
-
-		f, err := os.Create(path)
-
-		if err == nil {
-			f.Close()
-		}
-
+	if err = os.MkdirAll(path.Dir(filename), 0775); err != nil {
 		return
 	}
 
-	if os.IsPermission(err) {
-		os.Chmod(path, 0755)
+	f, err := os.OpenFile(filename, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0775)
+
+	if err != nil {
+		return
 	}
+
+	f.Close()
 }
 
 func watchEnvFile(path string, onchanges ...EnvEventFunc) {
