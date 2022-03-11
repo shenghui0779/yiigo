@@ -1,6 +1,7 @@
 package yiigo
 
 import (
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -39,6 +40,12 @@ func TestStripSlashes(t *testing.T) {
 
 func TestQuoteMeta(t *testing.T) {
 	assert.Equal(t, `Hello world\. \(can you hear me\?\)`, QuoteMeta("Hello world. (can you hear me?)"))
+}
+
+func TestOpenFile(t *testing.T) {
+	_, err := OpenFile("app.log", os.O_RDWR|os.O_TRUNC|os.O_CREATE)
+
+	assert.Nil(t, err)
 }
 
 func TestVersionCompare(t *testing.T) {
