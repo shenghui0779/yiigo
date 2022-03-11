@@ -190,24 +190,21 @@ func QuoteMeta(s string) string {
 	return builder.String()
 }
 
-// OpenFile opens or creates the named file (includes the directory named path) .
-// [readonly] os.O_RDONLY
-// [truncate] os.O_RDWR|os.O_TRUNC|os.O_CREATE
-// [--append] os.O_RDWR|os.O_APPEND|os.O_CREATE
-func OpenFile(filename string, flag int, perm os.FileMode) (*os.File, error) {
+// CreateFile creates or truncates the named file.
+// If the file already exists, it is truncated.
+// If the directory or file does not exist, it is created with mode 0775
+func CreateFile(filename string) (*os.File, error) {
 	path, err := filepath.Abs(filename)
 
 	if err != nil {
 		return nil, err
 	}
 
-	if dir, _ := filepath.Split(path); len(dir) != 0 {
-		if err = os.MkdirAll(dir, perm); err != nil {
-			return nil, err
-		}
+	if err = os.MkdirAll(filename, 0775); err != nil {
+		return nil, err
 	}
 
-	return os.OpenFile(path, flag, perm)
+	return os.OpenFile(path, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0775)
 }
 
 // VersionCompare compares semantic versions range, support: >, >=, =, !=, <, <=, | (or), & (and).
