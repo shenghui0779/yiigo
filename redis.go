@@ -168,7 +168,7 @@ func (rp *redisResourcePool) dial() (redis.Conn, error) {
 	}
 
 	if len(rp.config.Options.Password) != 0 {
-		dialOptions = append(dialOptions, redis.DialUsername(rp.config.Options.Password))
+		dialOptions = append(dialOptions, redis.DialPassword(rp.config.Options.Password))
 	}
 
 	if rp.config.Options.Dialer != nil {
