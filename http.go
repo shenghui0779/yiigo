@@ -46,27 +46,34 @@ func WithHTTPClose() HTTPOption {
 
 // UploadForm is the interface for http upload
 type UploadForm interface {
+	// FormFields returns form fields
+	FormFields() map[string]string
+
 	// Write writes fields to multipart writer
 	Write(w *multipart.Writer) error
 }
 
-type fileField struct {
+type filefield struct {
 	fieldname string
 	filename  string
 	body      []byte
 }
 
 type uploadform struct {
-	filefield []*fileField
-	formfield map[string]string
+	filefields []*filefield
+	formfields map[string]string
+}
+
+func (f *uploadform) FormFields() map[string]string {
+	return f.formfields
 }
 
 func (f *uploadform) Write(w *multipart.Writer) error {
-	if len(f.filefield) == 0 {
+	if len(f.filefields) == 0 {
 		return errors.New("empty file field")
 	}
 
-	for _, field := range f.filefield {
+	for _, field := range f.filefields {
 		part, err := w.CreateFormFile(field.fieldname, field.filename)
 
 		if err != nil {
@@ -78,7 +85,7 @@ func (f *uploadform) Write(w *multipart.Writer) error {
 		}
 	}
 
-	for name, value := range f.formfield {
+	for name, value := range f.formfields {
 		if err := w.WriteField(name, value); err != nil {
 			return err
 		}
@@ -93,7 +100,7 @@ type UploadField func(f *uploadform)
 // WithFileField specifies the file field to upload from.
 func WithFileField(fieldname, filename string, body []byte) UploadField {
 	return func(f *uploadform) {
-		f.filefield = append(f.filefield, &fileField{
+		f.filefields = append(f.filefields, &filefield{
 			fieldname: fieldname,
 			filename:  filename,
 			body:      body,
@@ -104,15 +111,15 @@ func WithFileField(fieldname, filename string, body []byte) UploadField {
 // WithFormField specifies the form field to upload from.
 func WithFormField(fieldname, fieldvalue string) UploadField {
 	return func(u *uploadform) {
-		u.formfield[fieldname] = fieldvalue
+		u.formfields[fieldname] = fieldvalue
 	}
 }
 
 // NewUploadForm returns an upload form
 func NewUploadForm(fields ...UploadField) UploadForm {
 	form := &uploadform{
-		filefield: make([]*fileField, 0),
-		formfield: make(map[string]string),
+		filefields: make([]*filefield, 0),
+		formfields: make(map[string]string),
 	}
 
 	for _, f := range fields {
