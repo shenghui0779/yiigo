@@ -46,9 +46,6 @@ func WithHTTPClose() HTTPOption {
 
 // UploadForm is the interface for http upload
 type UploadForm interface {
-	// FormFields returns form fields
-	FormFields() map[string]string
-
 	// Write writes fields to multipart writer
 	Write(w *multipart.Writer) error
 }
@@ -62,10 +59,6 @@ type filefield struct {
 type uploadform struct {
 	filefields []*filefield
 	formfields map[string]string
-}
-
-func (f *uploadform) FormFields() map[string]string {
-	return f.formfields
 }
 
 func (f *uploadform) Write(w *multipart.Writer) error {
