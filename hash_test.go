@@ -14,6 +14,10 @@ func TestSHA1(t *testing.T) {
 	assert.Equal(t, "7a4082bd79f2086af2c2b792c5e0ad06e729b9c4", SHA1("iiinsomnia"))
 }
 
+func TestSHA256(t *testing.T) {
+	assert.Equal(t, "efed14231acf19fdca03adfac049171c109c922008e64dbaaf51a0c2cf11306b", SHA256("iiinsomnia"))
+}
+
 func TestHash(t *testing.T) {
 	type args struct {
 		algo HashAlgo
@@ -60,7 +64,11 @@ func TestHash(t *testing.T) {
 	}
 }
 
-func TestHMAC(t *testing.T) {
+func TestHMacSHA256(t *testing.T) {
+	assert.Equal(t, "a458409cd884140c1ca36ef3013a5c7289c3e057049e3563401094d3f929b93b", HMacSHA256("ILoveYiigo", "iiinsomnia"))
+}
+
+func TestHMac(t *testing.T) {
 	type args struct {
 		algo HashAlgo
 		s    string
@@ -103,6 +111,6 @@ func TestHMAC(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		assert.Equal(t, tt.want, HMAC(tt.args.algo, tt.args.s, tt.args.key))
+		assert.Equal(t, tt.want, HMac(tt.args.algo, tt.args.s, tt.args.key))
 	}
 }

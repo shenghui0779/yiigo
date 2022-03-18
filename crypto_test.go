@@ -10,7 +10,7 @@ import (
 func TestCBCCrypto(t *testing.T) {
 	key := []byte("AES256Key-32Characters1234567890")
 	iv := key[:aes.BlockSize]
-	plainText := "Iloveyiigo"
+	plainText := "IloveYiigo"
 
 	// ZERO_PADDING
 	zero := NewCBCCrypto(key, iv, ZERO)
@@ -45,7 +45,7 @@ func TestCBCCrypto(t *testing.T) {
 
 func TestECBCrypto(t *testing.T) {
 	key := []byte("AES256Key-32Characters1234567890")
-	plainText := "Iloveyiigo"
+	plainText := "IloveYiigo"
 
 	// ZERO_PADDING
 	zero := NewECBCrypto(key, ZERO)
@@ -81,7 +81,7 @@ func TestECBCrypto(t *testing.T) {
 func TestCFBCrypto(t *testing.T) {
 	key := []byte("AES256Key-32Characters1234567890")
 	iv := key[:aes.BlockSize]
-	plainText := "Iloveyiigo"
+	plainText := "IloveYiigo"
 
 	cfb := NewCFBCrypto(key, iv)
 
@@ -96,7 +96,7 @@ func TestCFBCrypto(t *testing.T) {
 func TestOFBCrypto(t *testing.T) {
 	key := []byte("AES256Key-32Characters1234567890")
 	iv := key[:aes.BlockSize]
-	plainText := "Iloveyiigo"
+	plainText := "IloveYiigo"
 
 	ofb := NewOFBCrypto(key, iv)
 
@@ -111,7 +111,7 @@ func TestOFBCrypto(t *testing.T) {
 func TestCTRCrypto(t *testing.T) {
 	key := []byte("AES256Key-32Characters1234567890")
 	iv := key[:aes.BlockSize]
-	plainText := "Iloveyiigo"
+	plainText := "IloveYiigo"
 
 	ctr := NewCTRCrypto(key, iv)
 
@@ -126,7 +126,7 @@ func TestCTRCrypto(t *testing.T) {
 func TestGCMCrypto(t *testing.T) {
 	key := []byte("AES256Key-32Characters1234567890")
 	nonce := key[:12]
-	plainText := "Iloveyiigo"
+	plainText := "IloveYiigo"
 
 	gcm := NewGCMCrypto(key, nonce)
 
@@ -139,7 +139,7 @@ func TestGCMCrypto(t *testing.T) {
 }
 
 func TestRSASign(t *testing.T) {
-	plainText := "Iloveyiigo"
+	plainText := "IloveYiigo"
 
 	signature, err := RSASignWithSha256([]byte(plainText), privateKey)
 
@@ -148,7 +148,7 @@ func TestRSASign(t *testing.T) {
 }
 
 func TestRSACrypto(t *testing.T) {
-	plainText := "Iloveyiigo"
+	plainText := "IloveYiigo"
 
 	eb, err := RSAEncrypt([]byte(plainText), publicKey)
 

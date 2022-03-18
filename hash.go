@@ -38,6 +38,14 @@ func SHA1(s string) string {
 	return hex.EncodeToString(h.Sum(nil))
 }
 
+// SHA256 calculates the sha256 hash of a string.
+func SHA256(s string) string {
+	h := sha256.New()
+	h.Write([]byte(s))
+
+	return hex.EncodeToString(h.Sum(nil))
+}
+
 // Hash generates a hash value, expects: MD5, SHA1, SHA224, SHA256, SHA384, SHA512.
 func Hash(algo HashAlgo, s string) string {
 	var h hash.Hash
@@ -64,8 +72,17 @@ func Hash(algo HashAlgo, s string) string {
 	return hex.EncodeToString(h.Sum(nil))
 }
 
-// HMAC generates a keyed hash value, expects: MD5, SHA1, SHA224, SHA256, SHA384, SHA512.
-func HMAC(algo HashAlgo, s, key string) string {
+// HMacSHA256 generates a keyed sha256 hash value.
+func HMacSHA256(s, key string) string {
+	mac := hmac.New(sha256.New, []byte(key))
+
+	mac.Write([]byte(s))
+
+	return hex.EncodeToString(mac.Sum(nil))
+}
+
+// HMac generates a keyed hash value, expects: MD5, SHA1, SHA224, SHA256, SHA384, SHA512.
+func HMac(algo HashAlgo, s, key string) string {
 	var mac hash.Hash
 
 	switch algo {
