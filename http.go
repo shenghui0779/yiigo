@@ -3,6 +3,7 @@ package yiigo
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"errors"
 	"mime/multipart"
 	"net"
@@ -222,6 +223,9 @@ var defaultHTTPClient = NewHTTPClient(&http.Client{
 			Timeout:   30 * time.Second,
 			KeepAlive: 60 * time.Second,
 		}).DialContext,
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: true,
+		},
 		MaxIdleConns:          0,
 		MaxIdleConnsPerHost:   1000,
 		MaxConnsPerHost:       1000,
