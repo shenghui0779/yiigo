@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/tls"
 	"errors"
+	"io"
 	"mime/multipart"
 	"net"
 	"net/http"
@@ -45,36 +46,39 @@ func WithHTTPClose() HTTPOption {
 	}
 }
 
-// UploadForm is the interface for http upload
+// UploadForm is the interface for http upload.
 type UploadForm interface {
 	// Write writes fields to multipart writer
 	Write(w *multipart.Writer) error
 }
 
-type filefield struct {
+// FormFileFunc writes file content to multipart writer.
+type FormFileFunc func(w io.Writer) error
+
+type formfile struct {
 	fieldname string
 	filename  string
-	body      []byte
+	filefunc  FormFileFunc
 }
 
 type uploadform struct {
-	filefields []*filefield
+	formfiles  []*formfile
 	formfields map[string]string
 }
 
 func (f *uploadform) Write(w *multipart.Writer) error {
-	if len(f.filefields) == 0 {
+	if len(f.formfiles) == 0 {
 		return errors.New("empty file field")
 	}
 
-	for _, field := range f.filefields {
-		part, err := w.CreateFormFile(field.fieldname, field.filename)
+	for _, v := range f.formfiles {
+		part, err := w.CreateFormFile(v.fieldname, v.filename)
 
 		if err != nil {
 			return err
 		}
 
-		if _, err = part.Write(field.body); err != nil {
+		if err = v.filefunc(part); err != nil {
 			return err
 		}
 	}
@@ -91,13 +95,13 @@ func (f *uploadform) Write(w *multipart.Writer) error {
 // UploadField configures how we set up the upload from.
 type UploadField func(f *uploadform)
 
-// WithFileField specifies the file field to upload from.
-func WithFileField(fieldname, filename string, body []byte) UploadField {
+// WithFormFile specifies the file field to upload from.
+func WithFormFile(fieldname, filename string, fn FormFileFunc) UploadField {
 	return func(f *uploadform) {
-		f.filefields = append(f.filefields, &filefield{
+		f.formfiles = append(f.formfiles, &formfile{
 			fieldname: fieldname,
 			filename:  filename,
-			body:      body,
+			filefunc:  fn,
 		})
 	}
 }
@@ -112,7 +116,7 @@ func WithFormField(fieldname, fieldvalue string) UploadField {
 // NewUploadForm returns an upload form
 func NewUploadForm(fields ...UploadField) UploadForm {
 	form := &uploadform{
-		filefields: make([]*filefield, 0),
+		formfiles:  make([]*formfile, 0),
 		formfields: make(map[string]string),
 	}
 
@@ -190,7 +194,7 @@ func (c *httpclient) Do(ctx context.Context, method, reqURL string, body []byte,
 }
 
 func (c *httpclient) Upload(ctx context.Context, reqURL string, form UploadForm, options ...HTTPOption) (*http.Response, error) {
-	buf := bytes.NewBuffer(make([]byte, 0, 4<<10)) // 4kb
+	buf := bytes.NewBuffer(make([]byte, 0, 20<<10)) // 20kb
 	w := multipart.NewWriter(buf)
 
 	if err := form.Write(w); err != nil {
