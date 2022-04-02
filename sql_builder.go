@@ -50,21 +50,21 @@ type SQLWrapper interface {
 
 // SQLLogger is the log interface for sql builder.
 type SQLLogger interface {
-	// Info logs sql statement in debug mode for sql builder.
+	// Info logs sql statement for sql builder.
 	Info(ctx context.Context, query string, args ...interface{})
 
-	// Error logs an error for sql builder.
+	// Error logs error for sql builder.
 	Error(ctx context.Context, err error)
 }
 
-type builderLog struct{}
+type sqllogger struct{}
 
-func (l *builderLog) Info(ctx context.Context, query string, args ...interface{}) {
+func (l *sqllogger) Info(ctx context.Context, query string, args ...interface{}) {
 	logger.Info(fmt.Sprintf("[yiigo] [SQL] %s", query), zap.Any("args", args))
 }
 
-func (l *builderLog) Error(ctx context.Context, err error) {
-	logger.Error("[yiigo] SQL Builder Error", zap.Error(err))
+func (l *sqllogger) Error(ctx context.Context, err error) {
+	logger.Error("[yiigo] err SQL builder", zap.Error(err))
 }
 
 type queryBuilder struct {
@@ -90,7 +90,7 @@ func (b *queryBuilder) Wrap(options ...QueryOption) SQLWrapper {
 func NewSQLBuilder(driver DBDriver, options ...BuilderOption) SQLBuilder {
 	builder := &queryBuilder{
 		driver: driver,
-		logger: new(builderLog),
+		logger: new(sqllogger),
 	}
 
 	for _, f := range options {
@@ -178,7 +178,7 @@ func (w *queryWrapper) ToQuery(ctx context.Context) (string, []interface{}) {
 		query, binds, err = sqlx.In(query, binds...)
 
 		if err != nil {
-			w.builder.logger.Error(ctx, errors.Wrap(err, "err build 'IN' query"))
+			w.builder.logger.Error(ctx, errors.Wrap(err, "build 'IN' query"))
 
 			return "", nil
 		}
@@ -627,7 +627,7 @@ func (w *queryWrapper) ToUpdate(ctx context.Context, data interface{}) (string, 
 		query, binds, err = sqlx.In(query, binds...)
 
 		if err != nil {
-			w.builder.logger.Error(ctx, errors.Wrap(err, "err build 'IN' query"))
+			w.builder.logger.Error(ctx, errors.Wrap(err, "build 'IN' query"))
 
 			return "", nil
 		}
@@ -724,7 +724,7 @@ func (w *queryWrapper) ToDelete(ctx context.Context) (string, []interface{}) {
 		query, binds, err = sqlx.In(query, binds...)
 
 		if err != nil {
-			w.builder.logger.Error(ctx, errors.Wrap(err, "err build 'IN' query"))
+			w.builder.logger.Error(ctx, errors.Wrap(err, "build 'IN' query"))
 
 			return "", nil
 		}
