@@ -16,7 +16,6 @@ require (
 	github.com/lib/pq v1.10.4
 	github.com/mattn/go-sqlite3 v1.14.12
 	github.com/nsqio/go-nsq v1.1.0
-	github.com/pkg/errors v0.9.1
 	github.com/shenghui0779/vitess_pool v1.0.1
 	github.com/stretchr/testify v1.7.1
 	go.mongodb.org/mongo-driver v1.8.4
@@ -34,6 +33,7 @@ require (
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/klauspost/compress v1.15.1 // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
+	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/scram v1.1.1 // indirect

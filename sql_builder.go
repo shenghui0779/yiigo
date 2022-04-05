@@ -2,12 +2,12 @@ package yiigo
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
 	"strings"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )
 
@@ -60,11 +60,11 @@ type SQLLogger interface {
 type sqllogger struct{}
 
 func (l *sqllogger) Info(ctx context.Context, query string, args ...interface{}) {
-	logger.Info(fmt.Sprintf("[yiigo] [SQL] %s", query), zap.Any("args", args))
+	logger.Info(fmt.Sprintf("[SQL] %s", query), zap.Any("args", args))
 }
 
 func (l *sqllogger) Error(ctx context.Context, err error) {
-	logger.Error("[yiigo] err SQL builder", zap.Error(err))
+	logger.Error("[SQL] err builder", zap.Error(err))
 }
 
 type queryBuilder struct {
@@ -178,7 +178,7 @@ func (w *queryWrapper) ToQuery(ctx context.Context) (string, []interface{}) {
 		query, binds, err = sqlx.In(query, binds...)
 
 		if err != nil {
-			w.builder.logger.Error(ctx, errors.Wrap(err, "build 'IN' query"))
+			w.builder.logger.Error(ctx, err)
 
 			return "", nil
 		}
@@ -627,7 +627,7 @@ func (w *queryWrapper) ToUpdate(ctx context.Context, data interface{}) (string, 
 		query, binds, err = sqlx.In(query, binds...)
 
 		if err != nil {
-			w.builder.logger.Error(ctx, errors.Wrap(err, "build 'IN' query"))
+			w.builder.logger.Error(ctx, err)
 
 			return "", nil
 		}
@@ -724,7 +724,7 @@ func (w *queryWrapper) ToDelete(ctx context.Context) (string, []interface{}) {
 		query, binds, err = sqlx.In(query, binds...)
 
 		if err != nil {
-			w.builder.logger.Error(ctx, errors.Wrap(err, "build 'IN' query"))
+			w.builder.logger.Error(ctx, err)
 
 			return "", nil
 		}
