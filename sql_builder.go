@@ -57,13 +57,13 @@ type SQLLogger interface {
 	Error(ctx context.Context, err error)
 }
 
-type sqllogger struct{}
+type sqlLogger struct{}
 
-func (l *sqllogger) Info(ctx context.Context, query string, args ...interface{}) {
+func (l *sqlLogger) Info(ctx context.Context, query string, args ...interface{}) {
 	logger.Info(fmt.Sprintf("[SQL] %s", query), zap.Any("args", args))
 }
 
-func (l *sqllogger) Error(ctx context.Context, err error) {
+func (l *sqlLogger) Error(ctx context.Context, err error) {
 	logger.Error("[SQL] err builder", zap.Error(err))
 }
 
@@ -90,7 +90,7 @@ func (b *queryBuilder) Wrap(options ...QueryOption) SQLWrapper {
 func NewSQLBuilder(driver DBDriver, options ...BuilderOption) SQLBuilder {
 	builder := &queryBuilder{
 		driver: driver,
-		logger: new(sqllogger),
+		logger: new(sqlLogger),
 	}
 
 	for _, f := range options {
