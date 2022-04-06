@@ -20,6 +20,7 @@ type Mutex interface {
 }
 
 type distributed struct {
+	pool   RedisPool
 	key    string
 	expire int64
 }
@@ -35,13 +36,13 @@ func (d *distributed) Acquire(ctx context.Context, callback MutexHandler, interv
 		defer cancel()
 	}
 
-	conn, err := defaultRedis.Get(mutexCtx)
+	conn, err := d.pool.Get(mutexCtx)
 
 	if err != nil {
 		return errors.Wrap(err, "redis conn")
 	}
 
-	defer defaultRedis.Put(conn)
+	defer d.pool.Put(conn)
 
 	for {
 		select {
@@ -81,9 +82,10 @@ func (d *distributed) Acquire(ctx context.Context, callback MutexHandler, interv
 }
 
 // DistributedMutex returns a simple distributed mutual exclusion lock.
-func DistributedMutex(key string, expire time.Duration) Mutex {
+func DistributedMutex(redisName, mutexKey string, expire time.Duration) Mutex {
 	mutex := &distributed{
-		key:    key,
+		pool:   Redis(redisName),
+		key:    mutexKey,
 		expire: 10,
 	}
 
