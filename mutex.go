@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/gomodule/redigo/redis"
-	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )
 
@@ -39,7 +38,7 @@ func (d *distributed) Acquire(ctx context.Context, callback MutexHandler, interv
 	conn, err := d.pool.Get(mutexCtx)
 
 	if err != nil {
-		return errors.Wrap(err, "redis conn")
+		return err
 	}
 
 	defer d.pool.Put(conn)
@@ -48,7 +47,7 @@ func (d *distributed) Acquire(ctx context.Context, callback MutexHandler, interv
 		select {
 		case <-mutexCtx.Done():
 			// timeout or canceled
-			return errors.Wrap(mutexCtx.Err(), "mutex context")
+			return mutexCtx.Err()
 		default:
 		}
 
@@ -56,7 +55,7 @@ func (d *distributed) Acquire(ctx context.Context, callback MutexHandler, interv
 		reply, err := redis.String(conn.Do("SET", d.key, time.Now().Nanosecond(), "EX", d.expire, "NX"))
 
 		if err != nil && err != redis.ErrNil {
-			return errors.Wrap(err, "redis setnx")
+			return err
 		}
 
 		if reply == "OK" {
