@@ -10,6 +10,7 @@ require (
 	github.com/go-playground/validator/v10 v10.10.1
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/gomodule/redigo v1.8.8
+	github.com/gorilla/websocket v1.5.0
 	github.com/hashicorp/go-version v1.4.0
 	github.com/jmoiron/sqlx v1.3.4
 	github.com/joho/godotenv v1.4.0
@@ -18,6 +19,7 @@ require (
 	github.com/nsqio/go-nsq v1.1.0
 	github.com/shenghui0779/vitess_pool v1.0.1
 	github.com/stretchr/testify v1.7.1
+	github.com/tidwall/pretty v1.0.0
 	go.mongodb.org/mongo-driver v1.8.4
 	go.uber.org/zap v1.21.0
 	golang.org/x/crypto v0.0.0-20220315160706-3147a52a75dd

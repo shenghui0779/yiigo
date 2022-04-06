@@ -197,7 +197,7 @@ func DBTransaction(ctx context.Context, db *sqlx.DB, callback DBTxHandler) error
 
 	defer func() {
 		if r := recover(); r != nil {
-			logger.Error("[yiigo] db transaction panic", zap.Any("error", r), zap.ByteString("stack", debug.Stack()))
+			logger.Error("[yiigo] tx callback panic", zap.Any("error", r), zap.ByteString("stack", debug.Stack()))
 
 			rollback(tx)
 		}
