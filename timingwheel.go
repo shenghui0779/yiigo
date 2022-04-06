@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"math"
 	"runtime/debug"
 	"sync"
 	"time"
@@ -136,7 +135,7 @@ func (tw *TimingWheel) Stop() {
 func (tw *TimingWheel) calcSlot(task *TWTask, delay time.Duration) int {
 	tick := int(tw.tick.Seconds())
 	total := tick * tw.size
-	duration := int(math.Floor(delay.Seconds()))
+	duration := int(delay.Seconds())
 
 	if duration > total {
 		task.round = duration / total
