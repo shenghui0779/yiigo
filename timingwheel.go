@@ -25,8 +25,8 @@ type TWTask struct {
 // TWOption timing wheel option.
 type TWOption func(tw *TimingWheel)
 
-// WithTWTaskCtx clones ctx for execute tasks asynchronously.
-func WithTWTaskCtx(fn func(ctx context.Context) context.Context) TWOption {
+// WithTaskCtx clones context for executing tasks asynchronously, the default is `context.Background()`.
+func WithTaskCtx(fn func(ctx context.Context) context.Context) TWOption {
 	return func(tw *TimingWheel) {
 		tw.taskCtx = fn
 	}
