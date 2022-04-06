@@ -71,10 +71,7 @@ func (d *distributed) Acquire(ctx context.Context, callback MutexHandler, interv
 		defer conn.Do("DEL", d.key)
 
 		if err := recover(); err != nil {
-			logger.Error("mutex callback panic",
-				zap.Any("error", err),
-				zap.ByteString("stack", debug.Stack()),
-			)
+			logger.Error("mutex callback panic", zap.Any("error", err), zap.ByteString("stack", debug.Stack()))
 		}
 	}()
 
