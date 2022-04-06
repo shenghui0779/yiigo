@@ -55,7 +55,7 @@ type WSConn interface {
 }
 
 type wsconn struct {
-	key      string
+	name     string
 	auth     bool
 	conn     *websocket.Conn
 	authFunc WSHandler
@@ -72,13 +72,13 @@ func (c *wsconn) Read(ctx context.Context, callback WSHandler) error {
 
 			if err != nil {
 				if websocket.IsCloseError(err, websocket.CloseNormalClosure) {
-					c.logger.Info(ctx, "conn closed", zap.String("key", c.key), zap.String("msg", err.Error()))
+					c.logger.Info(ctx, "conn closed", zap.String("name", c.name), zap.String("msg", err.Error()))
 
 					return nil
 				}
 
 				if websocket.IsUnexpectedCloseError(err, websocket.CloseNormalClosure) {
-					c.logger.Warn(ctx, "conn closed unexpectedly", zap.String("key", c.key), zap.String("msg", err.Error()))
+					c.logger.Warn(ctx, "conn closed unexpectedly", zap.String("name", c.name), zap.String("msg", err.Error()))
 
 					return nil
 				}
@@ -86,7 +86,7 @@ func (c *wsconn) Read(ctx context.Context, callback WSHandler) error {
 				return err
 			}
 
-			c.logger.Info(ctx, "read msg", zap.String("key", c.key), zap.Int("msg.T", t), zap.ByteString("msg.V", pretty.Ugly(b)))
+			c.logger.Info(ctx, "read msg", zap.String("name", c.name), zap.Int("msg.T", t), zap.ByteString("msg.V", pretty.Ugly(b)))
 
 			var msg *WSMsg
 
@@ -110,7 +110,7 @@ func (c *wsconn) Read(ctx context.Context, callback WSHandler) error {
 			}
 
 			if msg != nil {
-				c.logger.Info(ctx, "write msg", zap.String("key", c.key), zap.Int("msg.T", msg.T), zap.ByteString("msg.V", pretty.Ugly(msg.V)))
+				c.logger.Info(ctx, "write msg", zap.String("name", c.name), zap.Int("msg.T", msg.T), zap.ByteString("msg.V", pretty.Ugly(msg.V)))
 
 				if err = c.conn.WriteMessage(msg.T, msg.V); err != nil {
 					c.logger.Err(ctx, "err write msg", zap.Error(err))
@@ -129,12 +129,12 @@ func (c *wsconn) Write(ctx context.Context, msg *WSMsg) error {
 
 	// if `authFunc` is not nil and unauthorized, disable to write message.
 	if c.authFunc != nil && !c.auth {
-		c.logger.Warn(ctx, "write permission denied", zap.String("key", c.key), zap.Int("msg.T", msg.T), zap.ByteString("msg.V", pretty.Ugly(msg.V)))
+		c.logger.Warn(ctx, "write permission denied", zap.String("name", c.name), zap.Int("msg.T", msg.T), zap.ByteString("msg.V", pretty.Ugly(msg.V)))
 
 		return nil
 	}
 
-	c.logger.Info(ctx, "write msg", zap.String("key", c.key), zap.Int("msg.T", msg.T), zap.ByteString("msg.V", pretty.Ugly(msg.V)))
+	c.logger.Info(ctx, "write msg", zap.String("name", c.name), zap.Int("msg.T", msg.T), zap.ByteString("msg.V", pretty.Ugly(msg.V)))
 
 	if err := c.conn.WriteMessage(msg.T, msg.V); err != nil {
 		return err
@@ -145,10 +145,10 @@ func (c *wsconn) Write(ctx context.Context, msg *WSMsg) error {
 
 func (c *wsconn) Close(ctx context.Context) {
 	if err := c.conn.Close(); err != nil {
-		c.logger.Err(ctx, "err close conn", zap.String("key", c.key), zap.Error(err))
+		c.logger.Err(ctx, "err close conn", zap.String("name", c.name), zap.Error(err))
 	}
 
-	wsmap.Delete(c.key)
+	wsmap.Delete(c.name)
 }
 
 // WSOption ws connection option.
@@ -183,9 +183,9 @@ func (l *wsLogger) Err(ctx context.Context, msg string, fields ...zap.Field) {
 }
 
 // NewWSConn returns a new ws connection.
-func NewWSConn(key string, w http.ResponseWriter, r *http.Request, options ...WSOption) (WSConn, error) {
-	if _, ok := GetWSConn(key); ok {
-		return nil, fmt.Errorf("conn named %s already exists", key)
+func NewWSConn(name string, w http.ResponseWriter, r *http.Request, options ...WSOption) (WSConn, error) {
+	if _, ok := GetWSConn(name); ok {
+		return nil, fmt.Errorf("conn named %s already exists", name)
 	}
 
 	if wsupgrader == nil {
@@ -199,7 +199,7 @@ func NewWSConn(key string, w http.ResponseWriter, r *http.Request, options ...WS
 	}
 
 	conn := &wsconn{
-		key:    key,
+		name:   name,
 		conn:   c,
 		logger: new(wsLogger),
 	}
@@ -208,14 +208,14 @@ func NewWSConn(key string, w http.ResponseWriter, r *http.Request, options ...WS
 		f(conn)
 	}
 
-	wsmap.Store(key, conn)
+	wsmap.Store(name, conn)
 
 	return conn, nil
 }
 
 // GetWSConn returns a ws connection.
-func GetWSConn(key string) (WSConn, bool) {
-	v, ok := wsmap.Load(key)
+func GetWSConn(name string) (WSConn, bool) {
+	v, ok := wsmap.Load(name)
 
 	if !ok {
 		return nil, false
@@ -224,7 +224,7 @@ func GetWSConn(key string) (WSConn, bool) {
 	conn, ok := v.(WSConn)
 
 	if !ok {
-		logger.Error("[ws] err invalid conn", zap.String("key", key))
+		logger.Error("[ws] err invalid conn", zap.String("name", name))
 
 		return nil, false
 	}
