@@ -180,10 +180,7 @@ func (tw *TimingWheel) run(slot int) {
 		go func() {
 			defer func() {
 				if err := recover(); err != nil {
-					tw.logger.Err(task.ctx, "task run panic",
-						zap.Any("error", err),
-						zap.ByteString("stack", debug.Stack()),
-					)
+					tw.logger.Err(task.ctx, "task run panic", zap.Any("error", err), zap.ByteString("stack", debug.Stack()))
 				}
 			}()
 
