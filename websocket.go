@@ -14,29 +14,54 @@ import (
 var wsupgrader *websocket.Upgrader
 
 // WSMsg websocket message
-type WSMsg struct {
-	T int
-	V []byte
+type WSMsg interface {
+	// T returns ws msg type.
+	T() int
+
+	// V returns ws msg value.
+	V() []byte
+}
+
+// wsmsg websocket message
+type wsmsg struct {
+	t int
+	v []byte
+}
+
+func (m *wsmsg) T() int {
+	return m.t
+}
+
+func (m *wsmsg) V() []byte {
+	return m.v
+}
+
+// NewWSMsg returns a new ws message.
+func NewWSMsg(t int, v []byte) WSMsg {
+	return &wsmsg{
+		t: t,
+		v: v,
+	}
 }
 
 // NewWSTextMsg returns a new ws text message.
-func NewWSTextMsg(data []byte) *WSMsg {
-	return &WSMsg{
-		T: websocket.TextMessage,
-		V: data,
+func NewWSTextMsg(v []byte) WSMsg {
+	return &wsmsg{
+		t: websocket.TextMessage,
+		v: v,
 	}
 }
 
 // NewWSBinaryMsg returns a new ws binary message.
-func NewWSBinaryMsg(data []byte) *WSMsg {
-	return &WSMsg{
-		T: websocket.BinaryMessage,
-		V: data,
+func NewWSBinaryMsg(v []byte) WSMsg {
+	return &wsmsg{
+		t: websocket.BinaryMessage,
+		v: v,
 	}
 }
 
 // WSHandler the function to handle ws message.
-type WSHandler func(ctx context.Context, msg *WSMsg) (*WSMsg, error)
+type WSHandler func(ctx context.Context, msg WSMsg) (WSMsg, error)
 
 // WSConn websocket connection
 type WSConn interface {
@@ -44,7 +69,10 @@ type WSConn interface {
 	Read(ctx context.Context, callback WSHandler) error
 
 	// Write writes message to ws connection.
-	Write(ctx context.Context, msg *WSMsg) error
+	Write(ctx context.Context, msg WSMsg) error
+
+	// Auth returns the ws authorize result.
+	Auth(ctx context.Context) bool
 
 	// Close closes ws connection.
 	Close(ctx context.Context)
@@ -84,11 +112,11 @@ func (c *wsconn) Read(ctx context.Context, callback WSHandler) error {
 
 			c.logger.Info(ctx, fmt.Sprintf("conn(%s) read msg", c.name), zap.Int("msg.T", t), zap.ByteString("msg.V", pretty.Ugly(b)))
 
-			var msg *WSMsg
+			var msg WSMsg
 
 			// if `authFunc` is not nil and unauthorized, need to authorize first.
 			if c.authFunc != nil && !c.auth {
-				msg, err = c.authFunc(ctx, &WSMsg{T: t, V: b})
+				msg, err = c.authFunc(ctx, NewWSMsg(t, b))
 
 				if err != nil {
 					msg = NewWSTextMsg([]byte(err.Error()))
@@ -97,7 +125,7 @@ func (c *wsconn) Read(ctx context.Context, callback WSHandler) error {
 				}
 			} else {
 				if callback != nil {
-					msg, err = callback(ctx, &WSMsg{T: t, V: b})
+					msg, err = callback(ctx, NewWSMsg(t, b))
 
 					if err != nil {
 						msg = NewWSTextMsg([]byte(err.Error()))
@@ -106,17 +134,17 @@ func (c *wsconn) Read(ctx context.Context, callback WSHandler) error {
 			}
 
 			if msg != nil {
-				c.logger.Info(ctx, fmt.Sprintf("conn(%s) write msg", c.name), zap.Int("msg.T", msg.T), zap.ByteString("msg.V", pretty.Ugly(msg.V)))
+				c.logger.Info(ctx, fmt.Sprintf("conn(%s) write msg", c.name), zap.Int("msg.T", msg.T()), zap.ByteString("msg.V", pretty.Ugly(msg.V())))
 
-				if err = c.conn.WriteMessage(msg.T, msg.V); err != nil {
-					c.logger.Err(ctx, fmt.Sprintf("err conn(%s) write msg", c.name), zap.Error(err), zap.Int("msg.T", msg.T), zap.ByteString("msg.V", pretty.Ugly(msg.V)))
+				if err = c.conn.WriteMessage(msg.T(), msg.V()); err != nil {
+					c.logger.Err(ctx, fmt.Sprintf("err conn(%s) write msg", c.name), zap.Error(err), zap.Int("msg.T", msg.T()), zap.ByteString("msg.V", pretty.Ugly(msg.V())))
 				}
 			}
 		}
 	}
 }
 
-func (c *wsconn) Write(ctx context.Context, msg *WSMsg) error {
+func (c *wsconn) Write(ctx context.Context, msg WSMsg) error {
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
@@ -125,18 +153,26 @@ func (c *wsconn) Write(ctx context.Context, msg *WSMsg) error {
 
 	// if `authFunc` is not nil and unauthorized, disable to write message.
 	if c.authFunc != nil && !c.auth {
-		c.logger.Warn(ctx, fmt.Sprintf("conn(%s) write permission denied", c.name), zap.Int("msg.T", msg.T), zap.ByteString("msg.V", pretty.Ugly(msg.V)))
+		c.logger.Warn(ctx, fmt.Sprintf("conn(%s) write msg disabled due to unauthorized", c.name), zap.Int("msg.T", msg.T()), zap.ByteString("msg.V", pretty.Ugly(msg.V())))
 
 		return nil
 	}
 
-	c.logger.Info(ctx, fmt.Sprintf("conn(%s) write msg", c.name), zap.Int("msg.T", msg.T), zap.ByteString("msg.V", pretty.Ugly(msg.V)))
+	c.logger.Info(ctx, fmt.Sprintf("conn(%s) write msg", c.name), zap.Int("msg.T", msg.T()), zap.ByteString("msg.V", pretty.Ugly(msg.V())))
 
-	if err := c.conn.WriteMessage(msg.T, msg.V); err != nil {
+	if err := c.conn.WriteMessage(msg.T(), msg.V()); err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func (c *wsconn) Auth(ctx context.Context) bool {
+	if c.authFunc == nil {
+		c.logger.Warn(ctx, "authorization handler not specified")
+	}
+
+	return c.auth
 }
 
 func (c *wsconn) Close(ctx context.Context) {
