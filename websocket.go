@@ -72,13 +72,13 @@ func (c *wsconn) Read(ctx context.Context, callback WSHandler) error {
 
 			if err != nil {
 				if websocket.IsCloseError(err, websocket.CloseNormalClosure) {
-					c.logger.Info(ctx, "conn closed", zap.String("name", c.name), zap.String("msg", err.Error()))
+					c.logger.Info(ctx, fmt.Sprintf("conn(%s) closed", c.name), zap.String("msg", err.Error()))
 
 					return nil
 				}
 
 				if websocket.IsUnexpectedCloseError(err, websocket.CloseNormalClosure) {
-					c.logger.Warn(ctx, "conn closed unexpectedly", zap.String("name", c.name), zap.String("msg", err.Error()))
+					c.logger.Warn(ctx, fmt.Sprintf("conn(%s) closed unexpectedly", c.name), zap.String("msg", err.Error()))
 
 					return nil
 				}
@@ -86,7 +86,7 @@ func (c *wsconn) Read(ctx context.Context, callback WSHandler) error {
 				return err
 			}
 
-			c.logger.Info(ctx, "read msg", zap.String("name", c.name), zap.Int("msg.T", t), zap.ByteString("msg.V", pretty.Ugly(b)))
+			c.logger.Info(ctx, fmt.Sprintf("conn(%s) read msg", c.name), zap.Int("msg.T", t), zap.ByteString("msg.V", pretty.Ugly(b)))
 
 			var msg *WSMsg
 
@@ -110,10 +110,10 @@ func (c *wsconn) Read(ctx context.Context, callback WSHandler) error {
 			}
 
 			if msg != nil {
-				c.logger.Info(ctx, "write msg", zap.String("name", c.name), zap.Int("msg.T", msg.T), zap.ByteString("msg.V", pretty.Ugly(msg.V)))
+				c.logger.Info(ctx, fmt.Sprintf("conn(%s) write msg", c.name), zap.Int("msg.T", msg.T), zap.ByteString("msg.V", pretty.Ugly(msg.V)))
 
 				if err = c.conn.WriteMessage(msg.T, msg.V); err != nil {
-					c.logger.Err(ctx, "err write msg", zap.Error(err))
+					c.logger.Err(ctx, fmt.Sprintf("err conn(%s) write msg", c.name), zap.Error(err), zap.Int("msg.T", msg.T), zap.ByteString("msg.V", pretty.Ugly(msg.V)))
 				}
 			}
 		}
@@ -129,12 +129,12 @@ func (c *wsconn) Write(ctx context.Context, msg *WSMsg) error {
 
 	// if `authFunc` is not nil and unauthorized, disable to write message.
 	if c.authFunc != nil && !c.auth {
-		c.logger.Warn(ctx, "write permission denied", zap.String("name", c.name), zap.Int("msg.T", msg.T), zap.ByteString("msg.V", pretty.Ugly(msg.V)))
+		c.logger.Warn(ctx, fmt.Sprintf("conn(%s) write permission denied", c.name), zap.Int("msg.T", msg.T), zap.ByteString("msg.V", pretty.Ugly(msg.V)))
 
 		return nil
 	}
 
-	c.logger.Info(ctx, "write msg", zap.String("name", c.name), zap.Int("msg.T", msg.T), zap.ByteString("msg.V", pretty.Ugly(msg.V)))
+	c.logger.Info(ctx, fmt.Sprintf("conn(%s) write msg", c.name), zap.Int("msg.T", msg.T), zap.ByteString("msg.V", pretty.Ugly(msg.V)))
 
 	if err := c.conn.WriteMessage(msg.T, msg.V); err != nil {
 		return err
@@ -145,7 +145,7 @@ func (c *wsconn) Write(ctx context.Context, msg *WSMsg) error {
 
 func (c *wsconn) Close(ctx context.Context) {
 	if err := c.conn.Close(); err != nil {
-		c.logger.Err(ctx, "err close conn", zap.String("name", c.name), zap.Error(err))
+		c.logger.Err(ctx, fmt.Sprintf("err close conn(%s)", c.name), zap.Error(err))
 	}
 
 	wsmap.Delete(c.name)
