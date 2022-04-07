@@ -59,7 +59,7 @@ type TimingWheel struct {
 	slot    int
 	tick    time.Duration
 	size    int
-	buckets []sync.Map
+	bucket  []sync.Map
 	stop    chan struct{}
 	taskCtx func(ctx context.Context) context.Context
 	logger  CtxLogger
@@ -68,10 +68,10 @@ type TimingWheel struct {
 // NewTimingWheel returns a new timing wheel.
 func NewTimingWheel(tick time.Duration, size int, options ...TWOption) *TimingWheel {
 	tw := &TimingWheel{
-		tick:    tick,
-		size:    size,
-		buckets: make([]sync.Map, size),
-		stop:    make(chan struct{}),
+		tick:   tick,
+		size:   size,
+		bucket: make([]sync.Map, size),
+		stop:   make(chan struct{}),
 		taskCtx: func(ctx context.Context) context.Context {
 			return context.Background()
 		},
@@ -109,7 +109,7 @@ func (tw *TimingWheel) AddTask(ctx context.Context, taskID string, callback TWHa
 		return nil
 	}
 
-	tw.buckets[slot].Store(taskID, task)
+	tw.bucket[slot].Store(taskID, task)
 
 	return nil
 }
@@ -162,7 +162,7 @@ func (tw *TimingWheel) scheduler() {
 }
 
 func (tw *TimingWheel) process(slot int) {
-	tw.buckets[slot].Range(func(key, value interface{}) bool {
+	tw.bucket[slot].Range(func(key, value interface{}) bool {
 		taskID := key.(string)
 		task := value.(*TWTask)
 
@@ -174,7 +174,7 @@ func (tw *TimingWheel) process(slot int) {
 
 		go tw.run(taskID, task)
 
-		tw.buckets[slot].Delete(key)
+		tw.bucket[slot].Delete(key)
 
 		return true
 	})
@@ -191,11 +191,13 @@ func (tw *TimingWheel) run(taskID string, task *TWTask) {
 		time.Sleep(task.remainder)
 	}
 
+	delay := time.Since(task.addedAt).String()
+
 	if err := task.callback(task.ctx, taskID); err != nil {
-		tw.logger.Err(task.ctx, fmt.Sprintf("task(%s) run error", taskID), zap.Error(err), zap.String("delay", time.Since(task.addedAt).String()))
+		tw.logger.Err(task.ctx, fmt.Sprintf("task(%s) run error", taskID), zap.Error(err), zap.String("delay", delay))
 
 		return
 	}
 
-	tw.logger.Info(task.ctx, fmt.Sprintf("task(%s) run ok", taskID), zap.String("delay", time.Since(task.addedAt).String()))
+	tw.logger.Info(task.ctx, fmt.Sprintf("task(%s) run ok", taskID), zap.String("delay", delay))
 }
