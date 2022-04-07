@@ -71,17 +71,17 @@ type WSConn interface {
 	// Write writes message to ws connection.
 	Write(ctx context.Context, msg WSMsg) error
 
-	// Auth returns the ws authorize result.
-	Auth(ctx context.Context) bool
-
 	// Close closes ws connection.
 	Close(ctx context.Context)
+
+	// AuthOK returns true if authorized success (authorization handler has specified).
+	AuthOK(ctx context.Context) bool
 }
 
 type wsconn struct {
 	name     string
-	auth     bool
 	conn     *websocket.Conn
+	authOK   bool
 	authFunc WSHandler
 	logger   CtxLogger
 }
@@ -115,13 +115,13 @@ func (c *wsconn) Read(ctx context.Context, callback WSHandler) error {
 			var msg WSMsg
 
 			// if `authFunc` is not nil and unauthorized, need to authorize first.
-			if c.authFunc != nil && !c.auth {
+			if c.authFunc != nil && !c.authOK {
 				msg, err = c.authFunc(ctx, NewWSMsg(t, b))
 
 				if err != nil {
 					msg = NewWSTextMsg([]byte(err.Error()))
 				} else {
-					c.auth = true
+					c.authOK = true
 				}
 			} else {
 				if callback != nil {
@@ -152,7 +152,7 @@ func (c *wsconn) Write(ctx context.Context, msg WSMsg) error {
 	}
 
 	// if `authFunc` is not nil and unauthorized, disable to write message.
-	if c.authFunc != nil && !c.auth {
+	if c.authFunc != nil && !c.authOK {
 		c.logger.Warn(ctx, fmt.Sprintf("conn(%s) write msg disabled due to unauthorized", c.name), zap.Int("msg.T", msg.T()), zap.ByteString("msg.V", pretty.Ugly(msg.V())))
 
 		return nil
@@ -167,18 +167,18 @@ func (c *wsconn) Write(ctx context.Context, msg WSMsg) error {
 	return nil
 }
 
-func (c *wsconn) Auth(ctx context.Context) bool {
-	if c.authFunc == nil {
-		c.logger.Warn(ctx, "authorization handler not specified")
-	}
-
-	return c.auth
-}
-
 func (c *wsconn) Close(ctx context.Context) {
 	if err := c.conn.Close(); err != nil {
 		c.logger.Err(ctx, fmt.Sprintf("err close conn(%s)", c.name), zap.Error(err))
 	}
+}
+
+func (c *wsconn) AuthOK(ctx context.Context) bool {
+	if c.authFunc == nil {
+		c.logger.Warn(ctx, "authorization handler not specified")
+	}
+
+	return c.authOK
 }
 
 // WSOption ws connection option.
