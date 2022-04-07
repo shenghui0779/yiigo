@@ -73,9 +73,6 @@ type WSConn interface {
 
 	// Close closes ws connection.
 	Close(ctx context.Context)
-
-	// AuthOK returns true if authorized success (authorization handler has specified).
-	AuthOK(ctx context.Context) bool
 }
 
 type wsconn struct {
@@ -171,14 +168,6 @@ func (c *wsconn) Close(ctx context.Context) {
 	if err := c.conn.Close(); err != nil {
 		c.logger.Err(ctx, fmt.Sprintf("err close conn(%s)", c.name), zap.Error(err))
 	}
-}
-
-func (c *wsconn) AuthOK(ctx context.Context) bool {
-	if c.authFunc == nil {
-		c.logger.Warn(ctx, "authorization handler not specified")
-	}
-
-	return c.authOK
 }
 
 // WSOption ws connection option.
