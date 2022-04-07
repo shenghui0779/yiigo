@@ -81,6 +81,7 @@ type wsconn struct {
 	authOK   bool
 	authFunc WSHandler
 	logger   CtxLogger
+	debug    bool
 }
 
 func (c *wsconn) Read(ctx context.Context, callback WSHandler) error {
@@ -107,7 +108,9 @@ func (c *wsconn) Read(ctx context.Context, callback WSHandler) error {
 				return err
 			}
 
-			c.logger.Info(ctx, fmt.Sprintf("conn(%s) read msg", c.name), zap.Int("msg.T", t), zap.ByteString("msg.V", pretty.Ugly(b)))
+			if c.debug {
+				c.logger.Info(ctx, fmt.Sprintf("conn(%s) read msg", c.name), zap.Int("msg.T", t), zap.ByteString("msg.V", pretty.Ugly(b)))
+			}
 
 			var msg WSMsg
 
@@ -131,7 +134,9 @@ func (c *wsconn) Read(ctx context.Context, callback WSHandler) error {
 			}
 
 			if msg != nil {
-				c.logger.Info(ctx, fmt.Sprintf("conn(%s) write msg", c.name), zap.Int("msg.T", msg.T()), zap.ByteString("msg.V", pretty.Ugly(msg.V())))
+				if c.debug {
+					c.logger.Info(ctx, fmt.Sprintf("conn(%s) write msg", c.name), zap.Int("msg.T", msg.T()), zap.ByteString("msg.V", pretty.Ugly(msg.V())))
+				}
 
 				if err = c.conn.WriteMessage(msg.T(), msg.V()); err != nil {
 					c.logger.Err(ctx, fmt.Sprintf("err conn(%s) write msg", c.name), zap.Error(err), zap.Int("msg.T", msg.T()), zap.ByteString("msg.V", pretty.Ugly(msg.V())))
@@ -155,7 +160,9 @@ func (c *wsconn) Write(ctx context.Context, msg WSMsg) error {
 		return nil
 	}
 
-	c.logger.Info(ctx, fmt.Sprintf("conn(%s) write msg", c.name), zap.Int("msg.T", msg.T()), zap.ByteString("msg.V", pretty.Ugly(msg.V())))
+	if c.debug {
+		c.logger.Info(ctx, fmt.Sprintf("conn(%s) write msg", c.name), zap.Int("msg.T", msg.T()), zap.ByteString("msg.V", pretty.Ugly(msg.V())))
+	}
 
 	if err := c.conn.WriteMessage(msg.T(), msg.V()); err != nil {
 		return err
@@ -180,10 +187,17 @@ func WithWSAuth(fn WSHandler) WSOption {
 	}
 }
 
-// WithWSLogger specifies the logger for ws connection.
+// WithWSLogger specifies logger for ws connection.
 func WithWSLogger(l CtxLogger) WSOption {
 	return func(c *wsconn) {
 		c.logger = l
+	}
+}
+
+// WithWSDebug specifies debug mode for ws connection.
+func WithWSDebug() WSOption {
+	return func(c *wsconn) {
+		c.debug = true
 	}
 }
 

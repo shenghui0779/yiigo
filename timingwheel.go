@@ -33,10 +33,17 @@ func WithTaskCtx(fn func(ctx context.Context) context.Context) TWOption {
 	}
 }
 
-// WithTWLogger specifies the logger for timing wheel.
+// WithTWLogger specifies logger for timing wheel.
 func WithTWLogger(l CtxLogger) TWOption {
 	return func(tw *TimingWheel) {
 		tw.logger = l
+	}
+}
+
+// WithTWDebug specifies debug mode for timing wheel.
+func WithTWDebug() TWOption {
+	return func(tw *TimingWheel) {
+		tw.debug = true
 	}
 }
 
@@ -63,6 +70,7 @@ type TimingWheel struct {
 	stop    chan struct{}
 	taskCtx func(ctx context.Context) context.Context
 	logger  CtxLogger
+	debug   bool
 }
 
 // NewTimingWheel returns a new timing wheel.
@@ -101,7 +109,7 @@ func (tw *TimingWheel) AddTask(ctx context.Context, taskID string, callback TWHa
 		callback: callback,
 	}
 
-	slot := tw.calcSlot(task, delay)
+	slot := tw.place(task, delay)
 
 	if delay < tw.tick {
 		go tw.run(taskID, task)
@@ -125,7 +133,7 @@ func (tw *TimingWheel) Stop() {
 	}
 }
 
-func (tw *TimingWheel) calcSlot(task *TWTask, delay time.Duration) int {
+func (tw *TimingWheel) place(task *TWTask, delay time.Duration) int {
 	tick := tw.tick.Nanoseconds()
 	total := tick * int64(tw.size)
 	duration := delay.Nanoseconds()
@@ -199,5 +207,7 @@ func (tw *TimingWheel) run(taskID string, task *TWTask) {
 		return
 	}
 
-	tw.logger.Info(task.ctx, fmt.Sprintf("task(%s) run ok", taskID), zap.String("delay", delay))
+	if tw.debug {
+		tw.logger.Info(task.ctx, fmt.Sprintf("task(%s) run ok", taskID), zap.String("delay", delay))
+	}
 }

@@ -17,7 +17,7 @@ var (
 )
 
 func TestMain(m *testing.M) {
-	builder = NewMySQLBuilder()
+	builder = NewMySQLBuilder(WithSQLDebug())
 
 	validate = NewValidator(
 		WithValuerType(sql.NullString{}, sql.NullInt64{}),

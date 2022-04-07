@@ -63,6 +63,7 @@ func (l *sqlLogger) Err(ctx context.Context, msg string, fields ...zap.Field) {
 type queryBuilder struct {
 	driver DBDriver
 	logger CtxLogger
+	debug  bool
 }
 
 func (b *queryBuilder) Wrap(options ...QueryOption) SQLWrapper {
@@ -178,7 +179,9 @@ func (w *queryWrapper) ToQuery(ctx context.Context) (string, []interface{}) {
 
 	query = sqlx.Rebind(sqlx.BindType(string(w.builder.driver)), query)
 
-	w.builder.logger.Info(ctx, query, zap.Any("args", binds))
+	if w.builder.debug {
+		w.builder.logger.Info(ctx, query, zap.Any("args", binds))
+	}
 
 	return query, binds
 }
@@ -324,7 +327,9 @@ func (w *queryWrapper) ToInsert(ctx context.Context, data interface{}) (string, 
 
 	query := sqlx.Rebind(sqlx.BindType(string(w.builder.driver)), builder.String())
 
-	w.builder.logger.Info(ctx, query, zap.Any("args", binds))
+	if w.builder.debug {
+		w.builder.logger.Info(ctx, query, zap.Any("args", binds))
+	}
 
 	return query, binds
 }
@@ -470,7 +475,9 @@ func (w *queryWrapper) ToBatchInsert(ctx context.Context, data interface{}) (str
 
 	query := sqlx.Rebind(sqlx.BindType(string(w.builder.driver)), builder.String())
 
-	w.builder.logger.Info(ctx, query, zap.Any("args", binds))
+	if w.builder.debug {
+		w.builder.logger.Info(ctx, query, zap.Any("args", binds))
+	}
 
 	return query, binds
 }
@@ -621,7 +628,9 @@ func (w *queryWrapper) ToUpdate(ctx context.Context, data interface{}) (string, 
 
 	query = sqlx.Rebind(sqlx.BindType(string(w.builder.driver)), query)
 
-	w.builder.logger.Info(ctx, query, zap.Any("args", binds))
+	if w.builder.debug {
+		w.builder.logger.Info(ctx, query, zap.Any("args", binds))
+	}
 
 	return query, binds
 }
@@ -716,7 +725,9 @@ func (w *queryWrapper) ToDelete(ctx context.Context) (string, []interface{}) {
 
 	query = sqlx.Rebind(sqlx.BindType(string(w.builder.driver)), query)
 
-	w.builder.logger.Info(ctx, query, zap.Any("args", binds))
+	if w.builder.debug {
+		w.builder.logger.Info(ctx, query, zap.Any("args", binds))
+	}
 
 	return query, binds
 }
@@ -729,7 +740,9 @@ func (w *queryWrapper) ToTruncate(ctx context.Context) string {
 
 	query := builder.String()
 
-	w.builder.logger.Info(ctx, query)
+	if w.builder.debug {
+		w.builder.logger.Info(ctx, query)
+	}
 
 	return query
 }
@@ -737,10 +750,17 @@ func (w *queryWrapper) ToTruncate(ctx context.Context) string {
 // BuilderOption configures how we set up the SQL builder.
 type BuilderOption func(builder *queryBuilder)
 
-// WithSQLLogger sets logger for SQL builder.
+// WithSQLLogger specifies logger for SQL builder.
 func WithSQLLogger(l CtxLogger) BuilderOption {
 	return func(builder *queryBuilder) {
 		builder.logger = l
+	}
+}
+
+// WithSQLDebug specifies debug mode for SQL builder.
+func WithSQLDebug() BuilderOption {
+	return func(builder *queryBuilder) {
+		builder.debug = true
 	}
 }
 
