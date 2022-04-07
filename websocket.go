@@ -5,17 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"sync"
 
 	"github.com/gorilla/websocket"
 	"github.com/tidwall/pretty"
 	"go.uber.org/zap"
 )
 
-var (
-	wsupgrader *websocket.Upgrader
-	wsmap      sync.Map
-)
+var wsupgrader *websocket.Upgrader
 
 // WSMsg websocket message
 type WSMsg struct {
@@ -147,8 +143,6 @@ func (c *wsconn) Close(ctx context.Context) {
 	if err := c.conn.Close(); err != nil {
 		c.logger.Err(ctx, fmt.Sprintf("err close conn(%s)", c.name), zap.Error(err))
 	}
-
-	wsmap.Delete(c.name)
 }
 
 // WSOption ws connection option.
@@ -184,10 +178,6 @@ func (l *wsLogger) Err(ctx context.Context, msg string, fields ...zap.Field) {
 
 // NewWSConn returns a new ws connection.
 func NewWSConn(name string, w http.ResponseWriter, r *http.Request, options ...WSOption) (WSConn, error) {
-	if _, ok := GetWSConn(name); ok {
-		return nil, fmt.Errorf("conn named %s already exists", name)
-	}
-
 	if wsupgrader == nil {
 		return nil, errors.New("upgrader is nil (forgotten configure?)")
 	}
@@ -208,26 +198,5 @@ func NewWSConn(name string, w http.ResponseWriter, r *http.Request, options ...W
 		f(conn)
 	}
 
-	wsmap.Store(name, conn)
-
 	return conn, nil
-}
-
-// GetWSConn returns a ws connection.
-func GetWSConn(name string) (WSConn, bool) {
-	v, ok := wsmap.Load(name)
-
-	if !ok {
-		return nil, false
-	}
-
-	conn, ok := v.(WSConn)
-
-	if !ok {
-		logger.Error("[ws] err invalid conn", zap.String("name", name))
-
-		return nil, false
-	}
-
-	return conn, true
 }
