@@ -65,7 +65,7 @@ type TimingWheel struct {
 }
 
 // NewTimingWheel returns a new timing wheel.
-func NewTimingWheel(size int, options ...TWOption) (*TimingWheel, error) {
+func NewTimingWheel(size int, options ...TWOption) *TimingWheel {
 	tw := &TimingWheel{
 		tick:    time.Second,
 		size:    size,
@@ -83,7 +83,7 @@ func NewTimingWheel(size int, options ...TWOption) (*TimingWheel, error) {
 
 	go tw.scheduler()
 
-	return tw, nil
+	return tw
 }
 
 // AddTask adds task to timing wheel.
@@ -95,15 +95,15 @@ func (tw *TimingWheel) AddTask(ctx context.Context, taskID string, callback TWHa
 	}
 
 	if delay < tw.tick {
-		tw.logger.Warn(ctx, "task run immediately because of delay less than one second", zap.String("task_id", taskID), zap.String("delay", delay.String()))
+		tw.logger.Warn(ctx, fmt.Sprintf("task(%s) run immediately because of delay < 1s", taskID), zap.String("delay", delay.String()))
 
 		if err := callback(ctx, taskID); err != nil {
-			tw.logger.Err(ctx, "task run error", zap.String("task_id", taskID), zap.Error(err))
+			tw.logger.Err(ctx, fmt.Sprintf("task(%s) run error", taskID), zap.Error(err))
 
 			return nil
 		}
 
-		tw.logger.Info(ctx, "task run ok", zap.String("task_id", taskID), zap.String("delay", delay.String()))
+		tw.logger.Info(ctx, fmt.Sprintf("task(%s) run ok", taskID), zap.String("delay", delay.String()))
 
 		return nil
 	}
@@ -180,17 +180,17 @@ func (tw *TimingWheel) run(slot int) {
 		go func() {
 			defer func() {
 				if err := recover(); err != nil {
-					tw.logger.Err(task.ctx, "task run panic", zap.Any("error", err), zap.ByteString("stack", debug.Stack()))
+					tw.logger.Err(task.ctx, fmt.Sprintf("task(%s) run panic", taskID), zap.Any("error", err), zap.ByteString("stack", debug.Stack()))
 				}
 			}()
 
 			if err := task.callback(task.ctx, taskID); err != nil {
-				tw.logger.Err(task.ctx, "task run error", zap.String("task_id", taskID), zap.Error(err), zap.String("delay", time.Since(task.addedAt).String()))
+				tw.logger.Err(task.ctx, fmt.Sprintf("task(%s) run error", taskID), zap.Error(err), zap.String("delay", time.Since(task.addedAt).String()))
 
 				return
 			}
 
-			tw.logger.Info(task.ctx, "task run ok", zap.String("task_id", taskID), zap.String("delay", time.Since(task.addedAt).String()))
+			tw.logger.Info(task.ctx, fmt.Sprintf("task(%s) run ok", taskID), zap.String("delay", time.Since(task.addedAt).String()))
 		}()
 
 		tw.buckets[slot].Delete(key)
