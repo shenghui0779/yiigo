@@ -23,44 +23,6 @@ type TWTask struct {
 	callback  TWHandler
 }
 
-// TWOption timing wheel option.
-type TWOption func(tw *TimingWheel)
-
-// WithTaskCtx clones context for executing tasks asynchronously, the default is `context.Background()`.
-func WithTaskCtx(fn func(ctx context.Context) context.Context) TWOption {
-	return func(tw *TimingWheel) {
-		tw.taskCtx = fn
-	}
-}
-
-// WithTWLogger specifies logger for timing wheel.
-func WithTWLogger(l CtxLogger) TWOption {
-	return func(tw *TimingWheel) {
-		tw.logger = l
-	}
-}
-
-// WithTWDebug specifies debug mode for timing wheel.
-func WithTWDebug() TWOption {
-	return func(tw *TimingWheel) {
-		tw.debug = true
-	}
-}
-
-type twLogger struct{}
-
-func (l *twLogger) Info(ctx context.Context, msg string, fields ...zap.Field) {
-	logger.Info(fmt.Sprintf("[tw] %s", msg), fields...)
-}
-
-func (l *twLogger) Warn(ctx context.Context, msg string, fields ...zap.Field) {
-	logger.Warn(fmt.Sprintf("[tw] %s", msg), fields...)
-}
-
-func (l *twLogger) Err(ctx context.Context, msg string, fields ...zap.Field) {
-	logger.Error(fmt.Sprintf("[tw] %s", msg), fields...)
-}
-
 // TimingWheel a simple single timing wheel, and the accuracy is 1 second.
 type TimingWheel struct {
 	slot    int
@@ -71,28 +33,6 @@ type TimingWheel struct {
 	taskCtx func(ctx context.Context) context.Context
 	logger  CtxLogger
 	debug   bool
-}
-
-// NewTimingWheel returns a new timing wheel.
-func NewTimingWheel(tick time.Duration, size int, options ...TWOption) *TimingWheel {
-	tw := &TimingWheel{
-		tick:   tick,
-		size:   size,
-		bucket: make([]sync.Map, size),
-		stop:   make(chan struct{}),
-		taskCtx: func(ctx context.Context) context.Context {
-			return context.Background()
-		},
-		logger: new(twLogger),
-	}
-
-	for _, f := range options {
-		f(tw)
-	}
-
-	go tw.scheduler()
-
-	return tw
 }
 
 // AddTask adds task to timing wheel.
@@ -210,4 +150,64 @@ func (tw *TimingWheel) run(taskID string, task *TWTask) {
 	if tw.debug {
 		tw.logger.Info(task.ctx, fmt.Sprintf("task(%s) run ok", taskID), zap.String("delay", delay))
 	}
+}
+
+// TWOption timing wheel option.
+type TWOption func(tw *TimingWheel)
+
+// WithTaskCtx clones context for executing tasks asynchronously, the default is `context.Background()`.
+func WithTaskCtx(fn func(ctx context.Context) context.Context) TWOption {
+	return func(tw *TimingWheel) {
+		tw.taskCtx = fn
+	}
+}
+
+// WithTWLogger specifies logger for timing wheel.
+func WithTWLogger(l CtxLogger) TWOption {
+	return func(tw *TimingWheel) {
+		tw.logger = l
+	}
+}
+
+// WithTWDebug specifies debug mode for timing wheel.
+func WithTWDebug() TWOption {
+	return func(tw *TimingWheel) {
+		tw.debug = true
+	}
+}
+
+type twLogger struct{}
+
+func (l *twLogger) Info(ctx context.Context, msg string, fields ...zap.Field) {
+	logger.Info(fmt.Sprintf("[tw] %s", msg), fields...)
+}
+
+func (l *twLogger) Warn(ctx context.Context, msg string, fields ...zap.Field) {
+	logger.Warn(fmt.Sprintf("[tw] %s", msg), fields...)
+}
+
+func (l *twLogger) Err(ctx context.Context, msg string, fields ...zap.Field) {
+	logger.Error(fmt.Sprintf("[tw] %s", msg), fields...)
+}
+
+// NewTimingWheel returns a new timing wheel.
+func NewTimingWheel(tick time.Duration, size int, options ...TWOption) *TimingWheel {
+	tw := &TimingWheel{
+		tick:   tick,
+		size:   size,
+		bucket: make([]sync.Map, size),
+		stop:   make(chan struct{}),
+		taskCtx: func(ctx context.Context) context.Context {
+			return context.Background()
+		},
+		logger: new(twLogger),
+	}
+
+	for _, f := range options {
+		f(tw)
+	}
+
+	go tw.scheduler()
+
+	return tw
 }
