@@ -77,16 +77,35 @@ func (d *distributed) Acquire(ctx context.Context, callback MutexHandler, interv
 	return callback(ctx)
 }
 
+// MutexOption mutex option
+type MutexOption func(d *distributed)
+
+// WithMutexRedis specifies redis pool for mutex.
+func WithMutexRedis(name string) MutexOption {
+	return func(d *distributed) {
+		d.pool = Redis(name)
+	}
+}
+
+// WithMutexExpire specifies expire seconds for mutex.
+func WithMutexExpire(e time.Duration) MutexOption {
+	return func(d *distributed) {
+		if sec := int64(e.Seconds()); sec > 0 {
+			d.expire = sec
+		}
+	}
+}
+
 // DistributedMutex returns a simple distributed mutual exclusion lock.
-func DistributedMutex(redisName, mutexKey string, expire time.Duration) Mutex {
+func DistributedMutex(key string, options ...MutexOption) Mutex {
 	mutex := &distributed{
-		pool:   Redis(redisName),
-		key:    mutexKey,
+		pool:   defaultRedis,
+		key:    key,
 		expire: 10,
 	}
 
-	if seconds := expire.Seconds(); seconds > 0 {
-		mutex.expire = int64(seconds)
+	for _, f := range options {
+		f(mutex)
 	}
 
 	return mutex
