@@ -32,10 +32,10 @@ type TWTask struct {
 // TimingWheel a simple single timing wheel.
 type TimingWheel interface {
 	// AddOnceTask adds a task which will be executed only once when expired.
-	AddOnceTask(ctx context.Context, taskID string, callback TWHandler, delay time.Duration) error
+	AddOnceTask(ctx context.Context, taskID string, callback TWHandler, delay time.Duration)
 
 	// AddRetryTask adds a task which will be executed when expired, and if an error is returned, it will be retried multiple times.
-	AddRetryTask(ctx context.Context, taskID string, callback TWHandler, attempts uint16, delay TWDelay) error
+	AddRetryTask(ctx context.Context, taskID string, callback TWHandler, attempts uint16, delay TWDelay)
 
 	// Stop stops the timing wheel.
 	Stop()
@@ -52,7 +52,7 @@ type timewheel struct {
 	debug   bool
 }
 
-func (tw *timewheel) AddOnceTask(ctx context.Context, taskID string, callback TWHandler, delay time.Duration) error {
+func (tw *timewheel) AddOnceTask(ctx context.Context, taskID string, callback TWHandler, delay time.Duration) {
 	task := &TWTask{
 		ctx:         tw.taskCtx(ctx),
 		callback:    callback,
@@ -62,10 +62,10 @@ func (tw *timewheel) AddOnceTask(ctx context.Context, taskID string, callback TW
 		},
 	}
 
-	return tw.requeue(taskID, task)
+	tw.requeue(taskID, task)
 }
 
-func (tw *timewheel) AddRetryTask(ctx context.Context, taskID string, callback TWHandler, attempts uint16, delay TWDelay) error {
+func (tw *timewheel) AddRetryTask(ctx context.Context, taskID string, callback TWHandler, attempts uint16, delay TWDelay) {
 	task := &TWTask{
 		ctx:         tw.taskCtx(ctx),
 		callback:    callback,
@@ -73,7 +73,7 @@ func (tw *timewheel) AddRetryTask(ctx context.Context, taskID string, callback T
 		delayFunc:   delay,
 	}
 
-	return tw.requeue(taskID, task)
+	tw.requeue(taskID, task)
 }
 
 func (tw *timewheel) Stop() {
@@ -84,20 +84,22 @@ func (tw *timewheel) Stop() {
 		return
 	default:
 		close(tw.stop)
+		tw.logger.Warn(context.Background(), fmt.Sprintf("TimingWheel stoped at: %s", time.Now().String()))
 	}
 }
 
-func (tw *timewheel) requeue(taskID string, task *TWTask) error {
+func (tw *timewheel) requeue(taskID string, task *TWTask) {
 	select {
 	case <-tw.stop:
-		return errors.New("TimingWheel has stoped")
+		tw.logger.Err(task.ctx, fmt.Sprintf("err task(%s) requeue", taskID), zap.Uint16("attempts", task.attempts+1), zap.Error(errors.New("TimingWheel has stoped")))
+
+		return
 	default:
 	}
 
 	task.attempts++
 
 	duration := task.delayFunc(task.attempts)
-
 	slot := tw.place(task, duration)
 
 	task.addedAt = time.Now()
@@ -105,17 +107,13 @@ func (tw *timewheel) requeue(taskID string, task *TWTask) error {
 	if duration < tw.tick {
 		go tw.run(taskID, task)
 
-		return nil
+		return
 	}
 
 	tw.bucket[slot].Store(taskID, task)
-
-	return nil
 }
 
 func (tw *timewheel) place(task *TWTask, delay time.Duration) int {
-	task.attempts--
-
 	tick := tw.tick.Nanoseconds()
 	total := tick * int64(tw.size)
 	duration := delay.Nanoseconds()
@@ -141,8 +139,6 @@ func (tw *timewheel) scheduler() {
 	for {
 		select {
 		case <-tw.stop:
-			tw.logger.Info(context.Background(), fmt.Sprintf("TimingWheel stoped at: %s", time.Now().String()))
-
 			return
 		case <-ticker.C:
 			tw.slot = (tw.slot + 1) % tw.size
@@ -153,6 +149,12 @@ func (tw *timewheel) scheduler() {
 
 func (tw *timewheel) process(slot int) {
 	tw.bucket[slot].Range(func(key, value interface{}) bool {
+		select {
+		case <-tw.stop:
+			return false
+		default:
+		}
+
 		taskID := key.(string)
 		task := value.(*TWTask)
 
@@ -171,38 +173,34 @@ func (tw *timewheel) process(slot int) {
 }
 
 func (tw *timewheel) run(taskID string, task *TWTask) {
-	defer func() {
-		if err := recover(); err != nil {
-			tw.logger.Err(task.ctx, fmt.Sprintf("task(%s) run panic", taskID), zap.Any("error", err), zap.ByteString("stack", debug.Stack()))
-
-			if task.attempts < task.maxAttempts {
-				if err := tw.requeue(taskID, task); err != nil {
-					tw.logger.Err(task.ctx, fmt.Sprintf("err task(%s) requeue", taskID), zap.Error(err))
-				}
-			}
-		}
-	}()
-
 	if task.remainder > 0 {
 		time.Sleep(task.remainder)
 	}
 
 	delay := time.Since(task.addedAt).String()
 
+	defer func() {
+		if err := recover(); err != nil {
+			tw.logger.Err(task.ctx, fmt.Sprintf("task(%s) run panic", taskID), zap.Uint16("attempts", task.attempts), zap.String("delay", delay), zap.Any("error", err), zap.ByteString("stack", debug.Stack()))
+
+			if task.attempts < task.maxAttempts {
+				tw.requeue(taskID, task)
+			}
+		}
+	}()
+
 	if err := task.callback(task.ctx, taskID); err != nil {
-		tw.logger.Err(task.ctx, fmt.Sprintf("err task(%s) run", taskID), zap.Error(err), zap.String("delay", delay))
+		tw.logger.Err(task.ctx, fmt.Sprintf("err task(%s) run", taskID), zap.Uint16("attempts", task.attempts), zap.String("delay", delay), zap.Error(err))
 
 		if task.attempts < task.maxAttempts {
-			if err := tw.requeue(taskID, task); err != nil {
-				tw.logger.Err(task.ctx, fmt.Sprintf("err task(%s) requeue", taskID), zap.Error(err))
-			}
+			tw.requeue(taskID, task)
 		}
 
 		return
 	}
 
 	if tw.debug {
-		tw.logger.Info(task.ctx, fmt.Sprintf("task(%s) run ok", taskID), zap.String("delay", delay))
+		tw.logger.Info(task.ctx, fmt.Sprintf("task(%s) run ok", taskID), zap.Uint16("attempts", task.attempts), zap.String("delay", delay))
 	}
 }
 
