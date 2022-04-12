@@ -97,6 +97,12 @@ func (tw *timewheel) requeue(taskID string, task *TWTask) {
 	default:
 	}
 
+	if task.attempts >= task.maxAttempts {
+		tw.logger.Warn(task.ctx, fmt.Sprintf("task(%s) attempted %d times, giving up", taskID, task.attempts), zap.Uint16("max_attempts", task.maxAttempts))
+
+		return
+	}
+
 	task.attempts++
 
 	duration := task.delayFunc(task.attempts)
