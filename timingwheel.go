@@ -26,7 +26,7 @@ type TWTask struct {
 	callback    TWHandler
 	maxAttempts uint16
 	attempts    uint16
-	delay       TWDelay
+	delayFunc   TWDelay
 }
 
 // TimingWheel a simple single timing wheel.
@@ -57,7 +57,7 @@ func (tw *timewheel) AddOnceTask(ctx context.Context, taskID string, callback TW
 		ctx:         tw.taskCtx(ctx),
 		callback:    callback,
 		maxAttempts: 1,
-		delay: func(attempts uint16) time.Duration {
+		delayFunc: func(attempts uint16) time.Duration {
 			return delay
 		},
 	}
@@ -70,7 +70,7 @@ func (tw *timewheel) AddRetryTask(ctx context.Context, taskID string, callback T
 		ctx:         tw.taskCtx(ctx),
 		callback:    callback,
 		maxAttempts: attempts,
-		delay:       delay,
+		delayFunc:   delay,
 	}
 
 	return tw.requeue(taskID, task)
@@ -94,7 +94,7 @@ func (tw *timewheel) requeue(taskID string, task *TWTask) error {
 	default:
 	}
 
-	duration := task.delay(task.attempts)
+	duration := task.delayFunc(task.attempts)
 
 	slot := tw.place(task, duration)
 
