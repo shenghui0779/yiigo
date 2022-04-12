@@ -66,7 +66,7 @@ type NSQConsumer interface {
 	nsq.Handler
 	Topic() string
 	Channel() string
-	AttemptCount() uint16
+	Attempts() uint16
 	Config() *nsq.Config
 }
 
@@ -83,8 +83,8 @@ func setConsumers(lookupd []string, consumers ...NSQConsumer) error {
 		}
 
 		// set attempt acount, default: 5
-		if c.AttemptCount() > 0 {
-			if err := cfg.Set("max_attempts", c.AttemptCount()); err != nil {
+		if c.Attempts() > 0 {
+			if err := cfg.Set("max_attempts", c.Attempts()); err != nil {
 				return err
 			}
 		}
@@ -120,8 +120,8 @@ func initNSQ(nsqd string, lookupd []string, consumers ...NSQConsumer) {
 	logger.Info("[yiigo] nsq is OK")
 }
 
-// NextAttemptDuration helper for attempt duration.
-func NextAttemptDuration(attempts uint16) time.Duration {
+// NextAttemptDelay returns the delay time for next attempt.
+func NextAttemptDelay(attempts uint16) time.Duration {
 	var d time.Duration
 
 	switch attempts {
