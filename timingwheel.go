@@ -94,12 +94,13 @@ func (tw *timewheel) requeue(taskID string, task *TWTask) error {
 	default:
 	}
 
+	task.attempts++
+
 	duration := task.delayFunc(task.attempts)
 
 	slot := tw.place(task, duration)
 
 	task.addedAt = time.Now()
-	task.attempts++
 
 	if duration < tw.tick {
 		go tw.run(taskID, task)
