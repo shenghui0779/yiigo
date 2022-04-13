@@ -83,9 +83,11 @@ func (tw *timewheel) Stop() {
 
 		return
 	default:
-		close(tw.stop)
-		tw.logger.Warn(context.Background(), fmt.Sprintf("TimingWheel stoped at: %s", time.Now().String()))
 	}
+
+	close(tw.stop)
+
+	tw.logger.Warn(context.Background(), fmt.Sprintf("TimingWheel stoped at: %s", time.Now().String()))
 }
 
 func (tw *timewheel) requeue(taskID string, task *TWTask) {
