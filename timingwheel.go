@@ -14,7 +14,7 @@ import (
 // TWHandler the function to execute when task expired.
 type TWHandler func(ctx context.Context, taskID string) error
 
-// TWDelay the function returns task next delay time.
+// TWDelay the function returns the delay time for the next execution of task.
 type TWDelay func(attempts uint16) time.Duration
 
 // TWTask timing wheel task.
