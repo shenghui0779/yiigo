@@ -62,7 +62,7 @@ func (tw *timewheel) AddOnceTask(ctx context.Context, taskID string, callback TW
 		},
 	}
 
-	tw.requeue(taskID, task)
+	tw.requeue(ctx, taskID, task)
 }
 
 func (tw *timewheel) AddRetryTask(ctx context.Context, taskID string, callback TWHandler, attempts uint16, delay TWDelay) {
@@ -73,7 +73,7 @@ func (tw *timewheel) AddRetryTask(ctx context.Context, taskID string, callback T
 		delayFunc:   delay,
 	}
 
-	tw.requeue(taskID, task)
+	tw.requeue(ctx, taskID, task)
 }
 
 func (tw *timewheel) Stop() {
@@ -90,17 +90,17 @@ func (tw *timewheel) Stop() {
 	tw.logger.Warn(context.Background(), fmt.Sprintf("TimingWheel stoped at: %s", time.Now().String()))
 }
 
-func (tw *timewheel) requeue(taskID string, task *TWTask) {
+func (tw *timewheel) requeue(ctx context.Context, taskID string, task *TWTask) {
 	select {
 	case <-tw.stop:
-		tw.logger.Err(task.ctx, fmt.Sprintf("err task(%s) requeue", taskID), zap.Uint16("attempts", task.attempts+1), zap.Error(errors.New("TimingWheel has stoped")))
+		tw.logger.Err(ctx, fmt.Sprintf("err task(%s) requeue", taskID), zap.Uint16("attempts", task.attempts+1), zap.Error(errors.New("TimingWheel has stoped")))
 
 		return
 	default:
 	}
 
 	if task.attempts >= task.maxAttempts {
-		tw.logger.Warn(task.ctx, fmt.Sprintf("task(%s) attempted %d times, giving up", taskID, task.attempts), zap.Uint16("max_attempts", task.maxAttempts))
+		tw.logger.Warn(ctx, fmt.Sprintf("task(%s) attempted %d times, giving up", taskID, task.attempts), zap.Uint16("max_attempts", task.maxAttempts))
 
 		return
 	}
@@ -110,7 +110,6 @@ func (tw *timewheel) requeue(taskID string, task *TWTask) {
 	duration := task.delayFunc(task.attempts)
 	slot := tw.place(task, duration)
 
-	task.ctx = tw.ctxNew(task.ctx)
 	task.addedAt = time.Now()
 
 	if duration < tw.tick {
@@ -188,28 +187,30 @@ func (tw *timewheel) run(taskID string, task *TWTask) {
 
 	delay := time.Since(task.addedAt).String()
 
+	ctx := tw.ctxNew(task.ctx)
+
 	defer func() {
 		if err := recover(); err != nil {
-			tw.logger.Err(task.ctx, fmt.Sprintf("task(%s) run panic", taskID), zap.Uint16("attempts", task.attempts), zap.String("delay", delay), zap.Any("error", err), zap.ByteString("stack", debug.Stack()))
+			tw.logger.Err(ctx, fmt.Sprintf("task(%s) run panic", taskID), zap.Uint16("attempts", task.attempts), zap.String("delay", delay), zap.Any("error", err), zap.ByteString("stack", debug.Stack()))
 
 			if task.attempts < task.maxAttempts {
-				tw.requeue(taskID, task)
+				tw.requeue(ctx, taskID, task)
 			}
 		}
 	}()
 
-	if err := task.callback(task.ctx, taskID); err != nil {
-		tw.logger.Err(task.ctx, fmt.Sprintf("err task(%s) run", taskID), zap.Uint16("attempts", task.attempts), zap.String("delay", delay), zap.Error(err))
+	if err := task.callback(ctx, taskID); err != nil {
+		tw.logger.Err(ctx, fmt.Sprintf("err task(%s) run", taskID), zap.Uint16("attempts", task.attempts), zap.String("delay", delay), zap.Error(err))
 
 		if task.attempts < task.maxAttempts {
-			tw.requeue(taskID, task)
+			tw.requeue(ctx, taskID, task)
 		}
 
 		return
 	}
 
 	if tw.debug {
-		tw.logger.Info(task.ctx, fmt.Sprintf("task(%s) run ok", taskID), zap.Uint16("attempts", task.attempts), zap.String("delay", delay))
+		tw.logger.Info(ctx, fmt.Sprintf("task(%s) run ok", taskID), zap.Uint16("attempts", task.attempts), zap.String("delay", delay))
 	}
 }
 
