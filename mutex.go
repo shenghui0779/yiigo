@@ -31,7 +31,6 @@ func (d *distributed) Acquire(ctx context.Context, callback MutexHandler, interv
 		var cancel context.CancelFunc
 
 		mutexCtx, cancel = context.WithTimeout(mutexCtx, timeout)
-
 		defer cancel()
 	}
 
@@ -43,26 +42,34 @@ func (d *distributed) Acquire(ctx context.Context, callback MutexHandler, interv
 
 	defer d.pool.Put(conn)
 
-	for {
-		select {
-		case <-mutexCtx.Done():
-			// timeout or canceled
-			return mutexCtx.Err()
-		default:
+	ok, err := d.attempt(conn)
+
+	if err != nil {
+		return err
+	}
+
+	// if not ok, attempt regularly
+	if !ok {
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-mutexCtx.Done():
+				// timeout or canceled
+				return mutexCtx.Err()
+			case <-ticker.C:
+				ok, err = d.attempt(conn)
+
+				if err != nil {
+					return err
+				}
+			}
+
+			if ok {
+				break
+			}
 		}
-
-		// attempt to acquire lock with `setnx`
-		reply, err := redis.String(conn.Do("SET", d.key, time.Now().Nanosecond(), "EX", d.expire, "NX"))
-
-		if err != nil && err != redis.ErrNil {
-			return err
-		}
-
-		if reply == "OK" {
-			break
-		}
-
-		time.Sleep(interval)
 	}
 
 	// release lock
@@ -75,6 +82,21 @@ func (d *distributed) Acquire(ctx context.Context, callback MutexHandler, interv
 	}()
 
 	return callback(ctx)
+}
+
+func (d *distributed) attempt(conn *RedisConn) (bool, error) {
+	// attempt to acquire lock with `setnx`
+	reply, err := redis.String(conn.Do("SET", d.key, time.Now().Nanosecond(), "EX", d.expire, "NX"))
+
+	if err != nil && err != redis.ErrNil {
+		return false, err
+	}
+
+	if reply == OK {
+		return true, nil
+	}
+
+	return false, nil
 }
 
 // MutexOption mutex option
