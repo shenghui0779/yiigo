@@ -20,8 +20,8 @@
   - gRPC Client 连接池
   - 轻量的 SQL Builder
   - 基于 Redis 的简单分布式锁
-  - 简单的 Websocket 使用封装
-  - 简单的单时间轮（支持一次性和多次重试任务）
+  - Websocket 简单使用封装（支持授权校验）
+  - 简易的单时间轮（支持一次性和多次重试任务）
   - 实用的辅助方法，包含：http、cypto、date、IP、validator、version compare 等
 
 ## Installation
