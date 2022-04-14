@@ -15,10 +15,14 @@
 - SQL使用 [sqlx](https://github.com/jmoiron/sqlx)
 - ORM推荐 [ent](https://github.com/ent/ent)
 - 日志使用 [zap](https://github.com/uber-go/zap)
-- gRPC Client 连接池
-- 轻量的 SQL Builder
 - 环境配置使用 [dotenv](https://github.com/joho/godotenv)，支持（包括 k8s configmap）热加载
-- 实用的辅助方法，包含：http、cypto、date、IP、validator、version compare 等
+- 其他
+  - gRPC Client 连接池
+  - 轻量的 SQL Builder
+  - 基于 Redis 的简单分布式锁
+  - 简单的 Websocket 使用封装
+  - 简单的单时间轮（支持一次性和多次重试任务）
+  - 实用的辅助方法，包含：http、cypto、date、IP、validator、version compare 等
 
 ## Installation
 
