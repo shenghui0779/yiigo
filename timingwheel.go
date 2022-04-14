@@ -42,19 +42,19 @@ type TimingWheel interface {
 }
 
 type timewheel struct {
-	slot    int
-	tick    time.Duration
-	size    int
-	bucket  []sync.Map
-	stop    chan struct{}
-	taskCtx func(ctx context.Context) context.Context
-	logger  CtxLogger
-	debug   bool
+	slot   int
+	tick   time.Duration
+	size   int
+	bucket []sync.Map
+	stop   chan struct{}
+	ctxNew func(ctx context.Context) context.Context
+	logger CtxLogger
+	debug  bool
 }
 
 func (tw *timewheel) AddOnceTask(ctx context.Context, taskID string, callback TWHandler, delay time.Duration) {
 	task := &TWTask{
-		ctx:         tw.taskCtx(ctx),
+		ctx:         ctx,
 		callback:    callback,
 		maxAttempts: 1,
 		delayFunc: func(attempts uint16) time.Duration {
@@ -67,7 +67,7 @@ func (tw *timewheel) AddOnceTask(ctx context.Context, taskID string, callback TW
 
 func (tw *timewheel) AddRetryTask(ctx context.Context, taskID string, callback TWHandler, attempts uint16, delay TWDelay) {
 	task := &TWTask{
-		ctx:         tw.taskCtx(ctx),
+		ctx:         ctx,
 		callback:    callback,
 		maxAttempts: attempts,
 		delayFunc:   delay,
@@ -110,6 +110,7 @@ func (tw *timewheel) requeue(taskID string, task *TWTask) {
 	duration := task.delayFunc(task.attempts)
 	slot := tw.place(task, duration)
 
+	task.ctx = tw.ctxNew(task.ctx)
 	task.addedAt = time.Now()
 
 	if duration < tw.tick {
@@ -215,10 +216,10 @@ func (tw *timewheel) run(taskID string, task *TWTask) {
 // TWOption timing wheel option.
 type TWOption func(tw *timewheel)
 
-// WithTaskCtx clones context for executing tasks asynchronously, the default is `context.Background()`.
-func WithTaskCtx(fn func(ctx context.Context) context.Context) TWOption {
+// WithTWCtx clones context for executing tasks asynchronously, the default is `context.Background()`.
+func WithTWCtx(fn func(ctx context.Context) context.Context) TWOption {
 	return func(tw *timewheel) {
-		tw.taskCtx = fn
+		tw.ctxNew = fn
 	}
 }
 
@@ -257,7 +258,7 @@ func NewTimingWheel(tick time.Duration, size int, options ...TWOption) TimingWhe
 		size:   size,
 		bucket: make([]sync.Map, size),
 		stop:   make(chan struct{}),
-		taskCtx: func(ctx context.Context) context.Context {
+		ctxNew: func(ctx context.Context) context.Context {
 			return context.Background()
 		},
 		logger: new(twLogger),
