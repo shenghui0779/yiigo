@@ -15,7 +15,7 @@
 - SQL使用 [sqlx](https://github.com/jmoiron/sqlx)
 - ORM推荐 [ent](https://github.com/ent/ent)
 - 日志使用 [zap](https://github.com/uber-go/zap)
-- 环境配置使用 [dotenv](https://github.com/joho/godotenv)，支持（包括 k8s configmap）热加载
+- 配置使用 [dotenv](https://github.com/joho/godotenv)，支持（包括 k8s configmap）热加载
 - 其他
   - gRPC Client 连接池
   - 轻量的 SQL Builder
