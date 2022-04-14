@@ -243,14 +243,34 @@ defer pool.Put(conn)
 
 ```go
 // default client
-ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
-yiigo.HTTPGet(ctx, "URL")
+yiigo.HTTPGet(context.Background(), "URL")
 
 // new client
 client := yiigo.NewHTTPClient(*http.Client)
+client.Do(context.Background(), http.MethodGet, "URL", nil)
 
-ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
-client.Do(ctx, http.MethodGet, "URL", nil)
+// upload
+form := yiigo.NewUploadForm(
+    yiigo.WithFormField("title", "TITLE"),
+    yiigo.WithFormField("description", "DESCRIPTION"),
+    yiigo.WithFormFile("media", "demo.mp4", func(w io.Writer) error {
+        f, err := os.Open("demo.mp4")
+
+        if err != nil {
+            return err
+        }
+
+        defer f.Close()
+
+        if _, err = io.Copy(w, f); err != nil {
+            return nil
+        }
+
+        return nil
+    }),
+)
+
+yiigo.HTTPUpload(context.Background(), "URL", form)
 ```
 
 #### SQL Builder
