@@ -263,7 +263,7 @@ form := yiigo.NewUploadForm(
         defer f.Close()
 
         if _, err = io.Copy(w, f); err != nil {
-            return nil
+            return err
         }
 
         return nil
