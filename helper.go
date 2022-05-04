@@ -208,6 +208,23 @@ func CreateFile(filename string) (*os.File, error) {
 	return os.OpenFile(abspath, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0775)
 }
 
+// OpenFile opens the named file.
+// If the file already exists, appends data to it when writing.
+// If the directory or file does not exist, it is created with mode 0775
+func OpenFile(filename string) (*os.File, error) {
+	abspath, err := filepath.Abs(filename)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if err = os.MkdirAll(path.Dir(abspath), 0775); err != nil {
+		return nil, err
+	}
+
+	return os.OpenFile(abspath, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0775)
+}
+
 // VersionCompare compares semantic versions range, support: >, >=, =, !=, <, <=, | (or), & (and).
 // Param `rangeVer` eg: 1.0.0, =1.0.0, >2.0.0, >=1.0.0&<2.0.0, <2.0.0|>3.0.0, !=4.0.4
 func VersionCompare(rangeVer, curVer string) (bool, error) {
