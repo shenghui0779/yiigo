@@ -20,8 +20,13 @@ const (
 	layouttime = "2006-01-02 15:04:05"
 )
 
-// Default defines for `default` name
-const Default = "default"
+const (
+	// Default defines for `default` name
+	Default = "default"
+
+	// OK
+	OK = "OK"
+)
 
 // X is a convenient alias for a map[string]interface{}.
 type X map[string]interface{}

@@ -15,10 +15,14 @@
 - SQL使用 [sqlx](https://github.com/jmoiron/sqlx)
 - ORM推荐 [ent](https://github.com/ent/ent)
 - 日志使用 [zap](https://github.com/uber-go/zap)
-- gRPC Client 连接池
-- 轻量的 SQL Builder
-- 环境配置使用 [dotenv](https://github.com/joho/godotenv)，支持（包括 k8s configmap）热加载
-- 实用的辅助方法，包含：http、cypto、date、IP、validator、version compare 等
+- 配置使用 [dotenv](https://github.com/joho/godotenv)，支持（包括 k8s configmap）热加载
+- 其他
+  - gRPC Client 连接池
+  - 轻量的 SQL Builder
+  - 基于 Redis 的简单分布式锁
+  - Websocket 简单使用封装（支持授权校验）
+  - 简易的单时间轮（支持一次性和多次重试任务）
+  - 实用的辅助方法，包含：http、cypto、date、IP、validator、version compare 等
 
 ## Installation
 
@@ -239,14 +243,34 @@ defer pool.Put(conn)
 
 ```go
 // default client
-ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
-yiigo.HTTPGet(ctx, "URL")
+yiigo.HTTPGet(context.Background(), "URL")
 
 // new client
 client := yiigo.NewHTTPClient(*http.Client)
+client.Do(context.Background(), http.MethodGet, "URL", nil)
 
-ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
-client.Do(ctx, http.MethodGet, "URL", nil)
+// upload
+form := yiigo.NewUploadForm(
+    yiigo.WithFormField("title", "TITLE"),
+    yiigo.WithFormField("description", "DESCRIPTION"),
+    yiigo.WithFormFile("media", "demo.mp4", func(w io.Writer) error {
+        f, err := os.Open("demo.mp4")
+
+        if err != nil {
+            return err
+        }
+
+        defer f.Close()
+
+        if _, err = io.Copy(w, f); err != nil {
+            return err
+        }
+
+        return nil
+    }),
+)
+
+yiigo.HTTPUpload(context.Background(), "URL", form)
 ```
 
 #### SQL Builder
