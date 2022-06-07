@@ -210,7 +210,7 @@ func CreateFile(filename string) (*os.File, error) {
 		return nil, err
 	}
 
-	return os.OpenFile(abspath, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0775)
+	return os.OpenFile(abspath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0775)
 }
 
 // OpenFile opens the named file.
@@ -227,7 +227,7 @@ func OpenFile(filename string) (*os.File, error) {
 		return nil, err
 	}
 
-	return os.OpenFile(abspath, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0775)
+	return os.OpenFile(abspath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0775)
 }
 
 // VersionCompare compares semantic versions range, support: >, >=, =, !=, <, <=, | (or), & (and).
