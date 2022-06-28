@@ -44,7 +44,7 @@ func (l *Location) Distance(t *Location) float64 {
 	return math.Acos(dist) * float64(radius)
 }
 
-// Azimuth calculates heading angle with target location.
+// Azimuth calculates heading angle (-180, 180) with target location.
 func (l *Location) Azimuth(t *Location) float64 {
 	a := (90 - t.Latitude()) * math.Pi / 180
 	b := (90 - l.lat) * math.Pi / 180
