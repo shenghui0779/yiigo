@@ -28,7 +28,7 @@ func (l *Location) String() string {
 
 // Distance calculates distance in meters with target location.
 func (l *Location) Distance(t *Location) float64 {
-	radius := 6378137
+	R := 6378137.0 // radius of the earth
 	rad := math.Pi / 180.0
 
 	lng1 := l.lng * rad
@@ -41,15 +41,37 @@ func (l *Location) Distance(t *Location) float64 {
 
 	dist := math.Sin(lat1)*math.Sin(lat2) + math.Cos(lat1)*math.Cos(lat2)*math.Cos(theta)
 
-	return math.Acos(dist) * float64(radius)
+	return math.Acos(dist) * R
 }
 
-// Azimuth calculates heading angle (-180, 180) with target location.
+// Azimuth calculates azimuth angle with target location.
 func (l *Location) Azimuth(t *Location) float64 {
-	a := (90 - t.Latitude()) * math.Pi / 180
-	b := (90 - l.lat) * math.Pi / 180
+	if t.Longtitude() == l.lng && t.Latitude() == l.lat {
+		return 0
+	}
 
-	AOC_BOC := (t.Longtitude() - l.lng) * math.Pi / 180
+	if t.Longtitude() == l.lng {
+		if t.Latitude() > l.lat {
+			return 0
+		}
+
+		return 180
+	}
+
+	if t.Latitude() == l.lat {
+		if t.Longtitude() > l.lng {
+			return 90
+		}
+
+		return 270
+	}
+
+	rad := math.Pi / 180.0
+
+	a := (90 - t.Latitude()) * rad
+	b := (90 - l.lat) * rad
+
+	AOC_BOC := (t.Longtitude() - l.lng) * rad
 
 	cosc := math.Cos(a)*math.Cos(b) + math.Sin(a)*math.Sin(b)*math.Cos(AOC_BOC)
 	sinc := math.Sqrt(1 - cosc*cosc)
@@ -64,30 +86,14 @@ func (l *Location) Azimuth(t *Location) float64 {
 		sinA = -1
 	}
 
-	A := math.Asin(sinA) / math.Pi * 180
+	angle := math.Asin(sinA) / math.Pi * 180
 
-	angle := 0.0
-
-	if t.Longtitude() > l.lng && t.Latitude() > l.lat {
-		angle = A
-	} else if t.Longtitude() > l.lng && t.Latitude() < l.lat {
-		angle = 180 - A
-	} else if t.Longtitude() > l.lng && t.Latitude() == l.lat {
-		angle = 90
-	} else if t.Longtitude() < l.lng && t.Latitude() < l.lat {
-		angle = 180 - A
-	} else if t.Longtitude() < l.lng && t.Latitude() > l.lat {
-		angle = 360 + A
-	} else if t.Longtitude() < l.lng && t.Latitude() == l.lat {
-		angle = 270
-	} else if t.Longtitude() == l.lng && t.Latitude() > l.lat {
-		angle = 0
-	} else if t.Longtitude() == l.lng && t.Latitude() < l.lat {
-		angle = 180
+	if t.Latitude() < l.lat {
+		return 180 - angle
 	}
 
-	if angle > 180 {
-		angle -= 360
+	if t.Longtitude() < l.lng {
+		return 360 + angle
 	}
 
 	return angle
