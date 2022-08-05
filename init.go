@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/gorilla/websocket"
+	"github.com/nsqio/go-nsq"
 )
 
 // InitOption configures how we set up the yiigo initialization.
@@ -58,15 +59,6 @@ func WithRedis(name string, cfg *RedisConfig) InitOption {
 	}
 }
 
-// WithNSQ initialize nsq.
-func WithNSQ(nsqd string, lookupd []string, consumers ...NSQConsumer) InitOption {
-	return func(wg *sync.WaitGroup) {
-		defer wg.Done()
-
-		initNSQ(nsqd, lookupd, consumers...)
-	}
-}
-
 // WithLogger register logger.
 func WithLogger(name string, cfg *LoggerConfig) InitOption {
 	return func(wg *sync.WaitGroup) {
@@ -77,6 +69,24 @@ func WithLogger(name string, cfg *LoggerConfig) InitOption {
 		}
 
 		initLogger(name, cfg)
+	}
+}
+
+// WithNSQProducer specifies the nsq producer.
+func WithNSQProducer(nsqd string, cfg *nsq.Config) InitOption {
+	return func(wg *sync.WaitGroup) {
+		defer wg.Done()
+
+		initNSQProducer(nsqd, cfg)
+	}
+}
+
+// WithNSQConsumers set the nsq consumers.
+func WithNSQConsumers(lookupd []string, consumers ...NSQConsumer) InitOption {
+	return func(wg *sync.WaitGroup) {
+		defer wg.Done()
+
+		setNSQConsumers(lookupd, consumers...)
 	}
 }
 

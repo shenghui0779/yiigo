@@ -1,6 +1,7 @@
 package yiigo
 
 import (
+	"errors"
 	"time"
 
 	"github.com/nsqio/go-nsq"
@@ -19,8 +20,12 @@ func (l *NSQLogger) Output(calldepth int, s string) error {
 	return nil
 }
 
-func initProducer(nsqd string) (err error) {
-	producer, err = nsq.NewProducer(nsqd, nsq.NewConfig())
+func initNSQProducer(nsqd string, cfg *nsq.Config) (err error) {
+	if cfg == nil {
+		cfg = nsq.NewConfig()
+	}
+
+	producer, err = nsq.NewProducer(nsqd, cfg)
 
 	if err != nil {
 		return
@@ -31,34 +36,23 @@ func initProducer(nsqd string) (err error) {
 	return
 }
 
-// NSQMessage NSQ message
-type NSQMessage interface {
-	Bytes() ([]byte, error)
-	// Do message processing
-	Do() error
-}
-
 // NSQPublish synchronously publishes a message body to the specified topic.
-func NSQPublish(topic string, msg NSQMessage) error {
-	b, err := msg.Bytes()
-
-	if err != nil {
-		return err
+func NSQPublish(topic string, msg []byte) error {
+	if producer == nil {
+		return errors.New("producer is nil (forgotten configure?)")
 	}
 
-	return producer.Publish(topic, b)
+	return producer.Publish(topic, msg)
 }
 
 // NSQDeferredPublish synchronously publishes a message body to the specified topic
 // where the message will queue at the channel level until the timeout expires.
-func NSQDeferredPublish(topic string, msg NSQMessage, duration time.Duration) error {
-	b, err := msg.Bytes()
-
-	if err != nil {
-		return err
+func NSQDeferredPublish(topic string, msg []byte, duration time.Duration) error {
+	if producer == nil {
+		return errors.New("producer is nil (forgotten configure?)")
 	}
 
-	return producer.DeferredPublish(topic, duration, b)
+	return producer.DeferredPublish(topic, duration, msg)
 }
 
 // NSQConsumer NSQ consumer
@@ -70,7 +64,7 @@ type NSQConsumer interface {
 	Config() *nsq.Config
 }
 
-func setConsumers(lookupd []string, consumers ...NSQConsumer) error {
+func setNSQConsumers(lookupd []string, consumers ...NSQConsumer) error {
 	for _, c := range consumers {
 		cfg := c.Config()
 
@@ -104,20 +98,6 @@ func setConsumers(lookupd []string, consumers ...NSQConsumer) error {
 	}
 
 	return nil
-}
-
-func initNSQ(nsqd string, lookupd []string, consumers ...NSQConsumer) {
-	// init producer
-	if err := initProducer(nsqd); err != nil {
-		logger.Panic("[yiigo] err new producer", zap.Error(err))
-	}
-
-	// set consumers
-	if err := setConsumers(lookupd, consumers...); err != nil {
-		logger.Panic("[yiigo] err set consumer", zap.Error(err))
-	}
-
-	logger.Info("[yiigo] nsq is OK")
 }
 
 // NextAttemptDelay returns the delay time for next attempt.
