@@ -2,39 +2,32 @@ package yiigo
 
 import (
 	"context"
-	"runtime/debug"
 	"time"
 
 	"github.com/gomodule/redigo/redis"
-	"go.uber.org/zap"
 )
-
-// MutexHandler the function to execute after lock acquired.
-type MutexHandler func(ctx context.Context) error
 
 // Mutex is a reader/writer mutual exclusion lock.
 type Mutex interface {
-	// Acquire attempt to acquire lock at regular intervals.
-	Acquire(ctx context.Context, callback MutexHandler, interval, timeout time.Duration) error
+	// Lock attempts to acquire lock at regular intervals.
+	Lock(ctx context.Context, interval, timeout time.Duration) error
+
+	// UnLock releases the lock.
+	UnLock(ctx context.Context) error
 }
 
 type distributed struct {
 	pool   RedisPool
 	key    string
-	expire int64
+	uniqID string
+	expire time.Duration
 }
 
-func (d *distributed) Acquire(ctx context.Context, callback MutexHandler, interval, timeout time.Duration) error {
-	mutexCtx := ctx
+func (d *distributed) Lock(ctx context.Context, interval, timeout time.Duration) error {
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
 
-	if timeout > 0 {
-		var cancel context.CancelFunc
-
-		mutexCtx, cancel = context.WithTimeout(mutexCtx, timeout)
-		defer cancel()
-	}
-
-	conn, err := d.pool.Get(mutexCtx)
+	conn, err := d.pool.Get(ctx)
 
 	if err != nil {
 		return err
@@ -42,51 +35,54 @@ func (d *distributed) Acquire(ctx context.Context, callback MutexHandler, interv
 
 	defer d.pool.Put(conn)
 
-	ok, err := d.attempt(conn)
+	for {
+		select {
+		case <-ctx.Done(): // timeout or canceled
+			return ctx.Err()
+		default:
+		}
+
+		ok, err := d.attempt(conn)
+
+		if err != nil {
+			return err
+		}
+
+		if ok {
+			return nil
+		}
+
+		time.Sleep(interval)
+	}
+}
+
+func (d *distributed) UnLock(ctx context.Context) error {
+	conn, err := d.pool.Get(ctx)
 
 	if err != nil {
 		return err
 	}
 
-	// if not ok, attempt regularly
-	if !ok {
-		ticker := time.NewTicker(interval)
-		defer ticker.Stop()
+	defer d.pool.Put(conn)
 
-		for {
-			select {
-			case <-mutexCtx.Done():
-				// timeout or canceled
-				return mutexCtx.Err()
-			case <-ticker.C:
-				ok, err = d.attempt(conn)
+	v, err := redis.String(conn.Do("GET", d.key))
 
-				if err != nil {
-					return err
-				}
-			}
-
-			if ok {
-				break
-			}
-		}
+	if err != nil {
+		return err
 	}
 
-	// release lock
-	defer func() {
-		defer conn.Do("DEL", d.key)
+	if v != d.uniqID {
+		return nil
+	}
 
-		if err := recover(); err != nil {
-			logger.Error("mutex callback panic", zap.Any("error", err), zap.ByteString("stack", debug.Stack()))
-		}
-	}()
+	_, err = conn.Do("DEL", d.key)
 
-	return callback(ctx)
+	return err
 }
 
 func (d *distributed) attempt(conn *RedisConn) (bool, error) {
 	// attempt to acquire lock with `setnx`
-	reply, err := redis.String(conn.Do("SET", d.key, time.Now().Nanosecond(), "EX", d.expire, "NX"))
+	reply, err := redis.String(conn.Do("SET", d.key, d.uniqID, "PX", d.expire.Milliseconds(), "NX"))
 
 	if err != nil && err != redis.ErrNil {
 		return false, err
@@ -109,21 +105,21 @@ func WithMutexRedis(name string) MutexOption {
 	}
 }
 
-// WithMutexExpire specifies expire seconds for mutex.
+// WithMutexExpire specifies expire time (ms) for mutex.
 func WithMutexExpire(e time.Duration) MutexOption {
 	return func(d *distributed) {
-		if sec := int64(e.Seconds()); sec > 0 {
-			d.expire = sec
-		}
+		d.expire = e
 	}
 }
 
 // DistributedMutex returns a simple distributed mutual exclusion lock.
-func DistributedMutex(key string, options ...MutexOption) Mutex {
+// uniqueID: suggest to use the request id.
+func DistributedMutex(key, uniqueID string, options ...MutexOption) Mutex {
 	mutex := &distributed{
 		pool:   defaultRedis,
 		key:    key,
-		expire: 10,
+		uniqID: uniqueID,
+		expire: 10 * time.Second,
 	}
 
 	for _, f := range options {

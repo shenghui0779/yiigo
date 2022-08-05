@@ -516,6 +516,6 @@ builder.Wrap(Table("user")).ToTruncate(ctx)
 ## Documentation
 
 - [API Reference](https://pkg.go.dev/github.com/shenghui0779/yiigo)
-- [Example](https://github.com/shenghui0779/yiigo-example)
+- [Example](https://github.com/shenghui0779/tplgo)
 
 **Enjoy 😊**
