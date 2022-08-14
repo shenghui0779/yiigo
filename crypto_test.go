@@ -1,6 +1,7 @@
 package yiigo
 
 import (
+	"crypto"
 	"crypto/aes"
 	"testing"
 
@@ -138,33 +139,42 @@ func TestGCMCrypto(t *testing.T) {
 	assert.Equal(t, plainText, string(db))
 }
 
-func TestRSASign(t *testing.T) {
-	plainText := "IloveYiigo"
-
-	signature, err := RSASignWithSha256([]byte(plainText), privateKey)
-
-	assert.Nil(t, err)
-	assert.Nil(t, RSAVerifyWithSha256([]byte(plainText), signature, publicKey))
-}
-
 func TestRSACrypto(t *testing.T) {
 	plainText := "IloveYiigo"
 
-	eb, err := RSAEncrypt([]byte(plainText), publicKey)
+	pvtKey, err := NewPrivateKeyFromPemBlock(privateKey)
 
 	assert.Nil(t, err)
 
-	db, err := RSADecrypt(eb, privateKey)
+	pubKey, err := NewPublicKeyFromPemBlock(publicKey)
+
+	assert.Nil(t, err)
+
+	eb, err := pubKey.Encrypt([]byte(plainText))
+
+	assert.Nil(t, err)
+
+	db, err := pvtKey.Decrypt(eb)
 
 	assert.Nil(t, err)
 	assert.Equal(t, plainText, string(db))
 
-	eboeap, err := RSAEncryptOEAP([]byte(plainText), publicKey)
+	eboeap, err := pubKey.EncryptOEAP([]byte(plainText))
 
 	assert.Nil(t, err)
 
-	dboeap, err := RSADecryptOEAP(eboeap, privateKey)
+	dboeap, err := pvtKey.DecryptOEAP(eboeap)
 
 	assert.Nil(t, err)
 	assert.Equal(t, plainText, string(dboeap))
+
+	signSHA256, err := pvtKey.Sign(crypto.SHA256, []byte(plainText))
+
+	assert.Nil(t, err)
+	assert.Nil(t, pubKey.Verify(crypto.SHA256, []byte(plainText), signSHA256))
+
+	signSHA1, err := pvtKey.Sign(crypto.SHA1, []byte(plainText))
+
+	assert.Nil(t, err)
+	assert.Nil(t, pubKey.Verify(crypto.SHA1, []byte(plainText), signSHA1))
 }

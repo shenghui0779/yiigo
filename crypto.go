@@ -8,10 +8,15 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha1"
-	"crypto/sha256"
 	"crypto/x509"
 	"encoding/pem"
 	"errors"
+	"fmt"
+	"io/ioutil"
+	"os"
+	"path/filepath"
+
+	"golang.org/x/crypto/pkcs12"
 )
 
 // PaddingMode aes padding mode
@@ -420,152 +425,30 @@ func GenerateRSAKey(bitSize int, blockType PemBlockType) (privateKey, publicKey 
 	return
 }
 
-// RSAEncrypt rsa encrypt with PKCS #1 v1.5
-func RSAEncrypt(plainText, publicKey []byte) ([]byte, error) {
-	block, _ := pem.Decode(publicKey)
-
-	if block == nil {
-		return nil, errors.New("invalid rsa public key for pem.Decode")
-	}
-
-	pubKey, err := x509.ParsePKIXPublicKey(block.Bytes)
-
-	if err != nil {
-		return nil, err
-	}
-
-	key, ok := pubKey.(*rsa.PublicKey)
-
-	if !ok {
-		return nil, errors.New("invalid rsa public key, expects rsa.PublicKey")
-	}
-
-	return rsa.EncryptPKCS1v15(rand.Reader, key, plainText)
+type PrivateKey struct {
+	key *rsa.PrivateKey
 }
 
-// RSADecrypt rsa decrypt with PKCS #1 v1.5
-func RSADecrypt(cipherText, privateKey []byte) ([]byte, error) {
-	block, _ := pem.Decode(privateKey)
-
-	if block == nil {
-		return nil, errors.New("invalid rsa private key for pem.Decode")
-	}
-
-	var (
-		key interface{}
-		err error
-	)
-
-	switch PemBlockType(block.Type) {
-	case RSAPKCS1:
-		key, err = x509.ParsePKCS1PrivateKey(block.Bytes)
-	case RSAPKCS8:
-		key, err = x509.ParsePKCS8PrivateKey(block.Bytes)
-	}
-
-	if err != nil {
-		return nil, err
-	}
-
-	rsaKey, ok := key.(*rsa.PrivateKey)
-
-	if !ok {
-		return nil, errors.New("invalid rsa private key, expects rsa.PrivateKey")
-	}
-
-	return rsa.DecryptPKCS1v15(rand.Reader, rsaKey, cipherText)
+// Decrypt rsa decrypt with PKCS #1 v1.5
+func (pk *PrivateKey) Decrypt(cipherText []byte) ([]byte, error) {
+	return rsa.DecryptPKCS1v15(rand.Reader, pk.key, cipherText)
 }
 
-// RSAEncryptOEAP rsa encrypt with PKCS #1 OEAP.
-func RSAEncryptOEAP(plainText, publicKey []byte) ([]byte, error) {
-	block, _ := pem.Decode(publicKey)
-
-	if block == nil {
-		return nil, errors.New("invalid rsa public key for pem.Decode")
-	}
-
-	pubKey, err := x509.ParsePKIXPublicKey(block.Bytes)
-
-	if err != nil {
-		return nil, err
-	}
-
-	key, ok := pubKey.(*rsa.PublicKey)
-
-	if !ok {
-		return nil, errors.New("invalid rsa public key, expects rsa.PublicKey")
-	}
-
-	return rsa.EncryptOAEP(sha1.New(), rand.Reader, key, plainText, nil)
+// DecryptOEAP rsa decrypt with PKCS #1 OEAP.
+func (pk *PrivateKey) DecryptOEAP(cipherText []byte) ([]byte, error) {
+	return rsa.DecryptOAEP(sha1.New(), rand.Reader, pk.key, cipherText, nil)
 }
 
-// RSADecryptOEAP rsa decrypt with PKCS #1 OEAP.
-func RSADecryptOEAP(cipherText, privateKey []byte) ([]byte, error) {
-	block, _ := pem.Decode(privateKey)
-
-	if block == nil {
-		return nil, errors.New("invalid rsa private key for pem.Decode")
+// Sign returns sha-with-rsa signature.
+func (pk *PrivateKey) Sign(hash crypto.Hash, data []byte) ([]byte, error) {
+	if !hash.Available() {
+		return nil, fmt.Errorf("crypto: requested hash function (%s) is unavailable", hash.String())
 	}
 
-	var (
-		key interface{}
-		err error
-	)
-
-	switch PemBlockType(block.Type) {
-	case RSAPKCS1:
-		key, err = x509.ParsePKCS1PrivateKey(block.Bytes)
-	case RSAPKCS8:
-		key, err = x509.ParsePKCS8PrivateKey(block.Bytes)
-	}
-
-	if err != nil {
-		return nil, err
-	}
-
-	rsaKey, ok := key.(*rsa.PrivateKey)
-
-	if !ok {
-		return nil, errors.New("invalid rsa private key, expects rsa.PrivateKey")
-	}
-
-	return rsa.DecryptOAEP(sha1.New(), rand.Reader, rsaKey, cipherText, nil)
-}
-
-// RSASignWithSha256 returns rsa signature with sha256.
-func RSASignWithSha256(data, privateKey []byte) ([]byte, error) {
-	block, _ := pem.Decode(privateKey)
-
-	if block == nil {
-		return nil, errors.New("invalid rsa private key for pem.Decode")
-	}
-
-	var (
-		key interface{}
-		err error
-	)
-
-	switch PemBlockType(block.Type) {
-	case RSAPKCS1:
-		key, err = x509.ParsePKCS1PrivateKey(block.Bytes)
-	case RSAPKCS8:
-		key, err = x509.ParsePKCS8PrivateKey(block.Bytes)
-	}
-
-	if err != nil {
-		return nil, err
-	}
-
-	rsaKey, ok := key.(*rsa.PrivateKey)
-
-	if !ok {
-		return nil, errors.New("invalid rsa private key, expects rsa.PrivateKey")
-	}
-
-	h := sha256.New()
+	h := hash.New()
 	h.Write(data)
 
-	signature, err := rsa.SignPKCS1v15(rand.Reader, rsaKey, crypto.SHA256, h.Sum(nil))
+	signature, err := rsa.SignPKCS1v15(rand.Reader, pk.key, hash, h.Sum(nil))
 
 	if err != nil {
 		return nil, err
@@ -574,29 +457,165 @@ func RSASignWithSha256(data, privateKey []byte) ([]byte, error) {
 	return signature, nil
 }
 
-// RSAVerifyWithSha256 verifies rsa signature with sha256.
-func RSAVerifyWithSha256(data, signature, publicKey []byte) error {
-	block, _ := pem.Decode(publicKey)
+// NewPrivateKeyFromPemBlock returns new private key with pem block.
+func NewPrivateKeyFromPemBlock(b []byte) (*PrivateKey, error) {
+	block, _ := pem.Decode(b)
 
 	if block == nil {
-		return errors.New("invalid rsa public key for pem.Decode")
+		return nil, errors.New("invalid rsa private key for pem.Decode")
 	}
 
-	pubKey, err := x509.ParsePKIXPublicKey(block.Bytes)
+	var (
+		key interface{}
+		err error
+	)
+
+	switch PemBlockType(block.Type) {
+	case RSAPKCS1:
+		key, err = x509.ParsePKCS1PrivateKey(block.Bytes)
+	case RSAPKCS8:
+		key, err = x509.ParsePKCS8PrivateKey(block.Bytes)
+	}
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	key, ok := pubKey.(*rsa.PublicKey)
+	pk, ok := key.(*rsa.PrivateKey)
 
 	if !ok {
-		return errors.New("invalid rsa public key, expects rsa.PublicKey")
+		return nil, errors.New("invalid rsa private key, expects rsa.PrivateKey")
 	}
 
-	hashed := sha256.Sum256(data)
+	return &PrivateKey{key: pk}, nil
+}
 
-	return rsa.VerifyPKCS1v15(key, crypto.SHA256, hashed[:], signature)
+// NewPrivateKeyFromPemFile returns new private key with pem file.
+func NewPrivateKeyFromPemFile(pemFile string) (*PrivateKey, error) {
+	keyPath, err := filepath.Abs(pemFile)
+
+	if err != nil {
+		return nil, err
+	}
+
+	f, err := os.Open(keyPath)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer f.Close()
+
+	b, err := ioutil.ReadAll(f)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return NewPrivateKeyFromPemBlock(b)
+}
+
+// NewPrivateKeyFromPfxFile returns new private key with pfx(p12) file.
+func NewPrivateKeyFromPfxFile(pfxFile, password string) (*PrivateKey, error) {
+	keyPath, err := filepath.Abs(filepath.Clean(pfxFile))
+
+	if err != nil {
+		return nil, err
+	}
+
+	b, err := ioutil.ReadFile(keyPath)
+
+	if err != nil {
+		return nil, err
+	}
+
+	blocks, err := pkcs12.ToPEM(b, password)
+
+	if err != nil {
+		return nil, err
+	}
+
+	pk, err := x509.ParsePKCS1PrivateKey(blocks[0].Bytes)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &PrivateKey{key: pk}, nil
+}
+
+type PublicKey struct {
+	key *rsa.PublicKey
+}
+
+// Encrypt rsa encrypt with PKCS #1 v1.5
+func (pk *PublicKey) Encrypt(plainText []byte) ([]byte, error) {
+	return rsa.EncryptPKCS1v15(rand.Reader, pk.key, plainText)
+}
+
+// EncryptOEAP rsa encrypt with PKCS #1 OEAP.
+func (pk *PublicKey) EncryptOEAP(plainText []byte) ([]byte, error) {
+	return rsa.EncryptOAEP(sha1.New(), rand.Reader, pk.key, plainText, nil)
+}
+
+// Verify verifies the sha-with-rsa signature.
+func (pk *PublicKey) Verify(hash crypto.Hash, data, signature []byte) error {
+	if !hash.Available() {
+		return fmt.Errorf("crypto: requested hash function (%s) is unavailable", hash.String())
+	}
+
+	h := hash.New()
+	h.Write(data)
+
+	return rsa.VerifyPKCS1v15(pk.key, hash, h.Sum(nil), signature)
+}
+
+// NewPublicKeyFromPemBlock returns new public key with pem block.
+func NewPublicKeyFromPemBlock(b []byte) (*PublicKey, error) {
+	block, _ := pem.Decode(b)
+
+	if block == nil {
+		return nil, errors.New("invalid rsa public key for pem.Decode")
+	}
+
+	key, err := x509.ParsePKIXPublicKey(block.Bytes)
+
+	if err != nil {
+		return nil, err
+	}
+
+	pk, ok := key.(*rsa.PublicKey)
+
+	if !ok {
+		return nil, errors.New("invalid rsa public key, expects rsa.PublicKey")
+	}
+
+	return &PublicKey{key: pk}, nil
+}
+
+// NewPublicKeyFromPemFile returns new public key with pem file.
+func NewPublicKeyFromPemFile(pemFile string) (*PublicKey, error) {
+	keyPath, err := filepath.Abs(pemFile)
+
+	if err != nil {
+		return nil, err
+	}
+
+	f, err := os.Open(keyPath)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer f.Close()
+
+	b, err := ioutil.ReadAll(f)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return NewPublicKeyFromPemBlock(b)
 }
 
 func ZeroPadding(cipherText []byte, blockSize int) []byte {
