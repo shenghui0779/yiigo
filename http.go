@@ -212,32 +212,38 @@ func (c *httpclient) Upload(ctx context.Context, reqURL string, form UploadForm,
 	return c.Do(ctx, http.MethodPost, reqURL, buf.Bytes(), options...)
 }
 
-// NewHTTPClient returns a new http client
+// NewDefaultHTTPClient returns a new client with default http.Client
+func NewDefaultHTTPClient() HTTPClient {
+	return &httpclient{
+		client: &http.Client{
+			Transport: &http.Transport{
+				Proxy: http.ProxyFromEnvironment,
+				DialContext: (&net.Dialer{
+					Timeout:   30 * time.Second,
+					KeepAlive: 60 * time.Second,
+				}).DialContext,
+				TLSClientConfig: &tls.Config{
+					InsecureSkipVerify: true,
+				},
+				MaxIdleConns:          0,
+				MaxIdleConnsPerHost:   1000,
+				MaxConnsPerHost:       1000,
+				IdleConnTimeout:       60 * time.Second,
+				TLSHandshakeTimeout:   10 * time.Second,
+				ExpectContinueTimeout: 1 * time.Second,
+			},
+		},
+	}
+}
+
+// NewHTTPClient returns a new client with http.Client
 func NewHTTPClient(client *http.Client) HTTPClient {
 	return &httpclient{
 		client: client,
 	}
 }
 
-// defaultHTTPClient default http client
-var defaultHTTPClient = NewHTTPClient(&http.Client{
-	Transport: &http.Transport{
-		Proxy: http.ProxyFromEnvironment,
-		DialContext: (&net.Dialer{
-			Timeout:   30 * time.Second,
-			KeepAlive: 60 * time.Second,
-		}).DialContext,
-		TLSClientConfig: &tls.Config{
-			InsecureSkipVerify: true,
-		},
-		MaxIdleConns:          0,
-		MaxIdleConnsPerHost:   1000,
-		MaxConnsPerHost:       1000,
-		IdleConnTimeout:       60 * time.Second,
-		TLSHandshakeTimeout:   10 * time.Second,
-		ExpectContinueTimeout: 1 * time.Second,
-	},
-})
+var defaultHTTPClient = NewDefaultHTTPClient()
 
 // HTTPGet issues a GET to the specified URL.
 func HTTPGet(ctx context.Context, reqURL string, options ...HTTPOption) (*http.Response, error) {

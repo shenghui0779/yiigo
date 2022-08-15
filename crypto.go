@@ -8,6 +8,7 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha1"
+	"crypto/tls"
 	"crypto/x509"
 	"encoding/pem"
 	"errors"
@@ -425,6 +426,7 @@ func GenerateRSAKey(bitSize int, blockType PemBlockType) (privateKey, publicKey 
 	return
 }
 
+// PrivateKey RSA private key
 type PrivateKey struct {
 	key *rsa.PrivateKey
 }
@@ -466,28 +468,22 @@ func NewPrivateKeyFromPemBlock(b []byte) (*PrivateKey, error) {
 	}
 
 	var (
-		key interface{}
+		pk  interface{}
 		err error
 	)
 
 	switch PemBlockType(block.Type) {
 	case RSAPKCS1:
-		key, err = x509.ParsePKCS1PrivateKey(block.Bytes)
+		pk, err = x509.ParsePKCS1PrivateKey(block.Bytes)
 	case RSAPKCS8:
-		key, err = x509.ParsePKCS8PrivateKey(block.Bytes)
+		pk, err = x509.ParsePKCS8PrivateKey(block.Bytes)
 	}
 
 	if err != nil {
 		return nil, err
 	}
 
-	pk, ok := key.(*rsa.PrivateKey)
-
-	if !ok {
-		return nil, errors.New("invalid rsa private key, expects rsa.PrivateKey")
-	}
-
-	return &PrivateKey{key: pk}, nil
+	return &PrivateKey{key: pk.(*rsa.PrivateKey)}, nil
 }
 
 // NewPrivateKeyFromPemFile returns new private key with pem file.
@@ -515,35 +511,18 @@ func NewPrivateKeyFromPemFile(pemFile string) (*PrivateKey, error) {
 	return NewPrivateKeyFromPemBlock(b)
 }
 
-// NewPrivateKeyFromPfxFile returns new private key with pfx(p12) file.
-func NewPrivateKeyFromPfxFile(pfxFile, password string) (*PrivateKey, error) {
-	keyPath, err := filepath.Abs(filepath.Clean(pfxFile))
+// ParsePrivateKeyFromPfxFile parses private key from pfx(p12) file.
+func ParsePrivateKeyFromPfxFile(pfxFile, password string) (*PrivateKey, error) {
+	cert, err := LoadCertFromPfxFile(pfxFile, password)
 
 	if err != nil {
 		return nil, err
 	}
 
-	b, err := ioutil.ReadFile(keyPath)
-
-	if err != nil {
-		return nil, err
-	}
-
-	blocks, err := pkcs12.ToPEM(b, password)
-
-	if err != nil {
-		return nil, err
-	}
-
-	pk, err := x509.ParsePKCS1PrivateKey(blocks[0].Bytes)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return &PrivateKey{key: pk}, nil
+	return &PrivateKey{key: cert.PrivateKey.(*rsa.PrivateKey)}, nil
 }
 
+// PublicKey RSA public key
 type PublicKey struct {
 	key *rsa.PublicKey
 }
@@ -578,19 +557,13 @@ func NewPublicKeyFromPemBlock(b []byte) (*PublicKey, error) {
 		return nil, errors.New("invalid rsa public key for pem.Decode")
 	}
 
-	key, err := x509.ParsePKIXPublicKey(block.Bytes)
+	pk, err := x509.ParsePKIXPublicKey(block.Bytes)
 
 	if err != nil {
 		return nil, err
 	}
 
-	pk, ok := key.(*rsa.PublicKey)
-
-	if !ok {
-		return nil, errors.New("invalid rsa public key, expects rsa.PublicKey")
-	}
-
-	return &PublicKey{key: pk}, nil
+	return &PublicKey{key: pk.(*rsa.PublicKey)}, nil
 }
 
 // NewPublicKeyFromPemFile returns new public key with pem file.
@@ -616,6 +589,37 @@ func NewPublicKeyFromPemFile(pemFile string) (*PublicKey, error) {
 	}
 
 	return NewPublicKeyFromPemBlock(b)
+}
+
+// ParsePublicKeyFromDerFile parses public key from DER (.cer) file.
+func ParsePublicKeyFromDerFile(certFile string) (*PublicKey, error) {
+	keyPath, err := filepath.Abs(certFile)
+
+	if err != nil {
+		return nil, err
+	}
+
+	f, err := os.Open(keyPath)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer f.Close()
+
+	b, err := ioutil.ReadAll(f)
+
+	if err != nil {
+		return nil, err
+	}
+
+	cert, err := x509.ParseCertificate(b)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &PublicKey{key: cert.PublicKey.(*rsa.PublicKey)}, nil
 }
 
 func ZeroPadding(cipherText []byte, blockSize int) []byte {
@@ -717,4 +721,35 @@ func (x *ecbDecrypter) CryptBlocks(dst, src []byte) {
 		src = src[x.blockSize:]
 		dst = dst[x.blockSize:]
 	}
+}
+
+// LoadCertFromPfxFile returns tls certificate from pfx(p12) file.
+func LoadCertFromPfxFile(pfxFile, password string) (tls.Certificate, error) {
+	fail := func(err error) (tls.Certificate, error) { return tls.Certificate{}, err }
+
+	certPath, err := filepath.Abs(filepath.Clean(pfxFile))
+
+	if err != nil {
+		return fail(err)
+	}
+
+	b, err := ioutil.ReadFile(certPath)
+
+	if err != nil {
+		return fail(err)
+	}
+
+	blocks, err := pkcs12.ToPEM(b, password)
+
+	if err != nil {
+		return fail(err)
+	}
+
+	pemData := make([]byte, 0)
+
+	for _, b := range blocks {
+		pemData = append(pemData, pem.EncodeToMemory(b)...)
+	}
+
+	return tls.X509KeyPair(pemData, pemData)
 }
