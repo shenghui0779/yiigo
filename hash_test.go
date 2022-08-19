@@ -69,7 +69,7 @@ func TestHash(t *testing.T) {
 }
 
 func TestHMacSHA256(t *testing.T) {
-	assert.Equal(t, "a458409cd884140c1ca36ef3013a5c7289c3e057049e3563401094d3f929b93b", HMacSHA256("ILoveYiigo", "iiinsomnia"))
+	assert.Equal(t, "a458409cd884140c1ca36ef3013a5c7289c3e057049e3563401094d3f929b93b", HMacSHA256("iiinsomnia", "ILoveYiigo"))
 }
 
 func TestHMac(t *testing.T) {
