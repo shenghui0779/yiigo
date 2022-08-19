@@ -6,6 +6,9 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"errors"
+	"io/ioutil"
+	"os"
+	"path/filepath"
 
 	"golang.org/x/crypto/ssh"
 )
@@ -17,7 +20,7 @@ type SSHKey struct {
 }
 
 // GenerateSSHKey returns ssh id_rsa and id_rsa.pub.
-// Note: id_rsa.pub ends with `\n`
+// NOTE: id_rsa.pub ends with `\n`
 func GenerateSSHKey() (*SSHKey, error) {
 	prvKey, err := rsa.GenerateKey(rand.Reader, 2048)
 
@@ -44,10 +47,10 @@ func GenerateSSHKey() (*SSHKey, error) {
 	return key, nil
 }
 
-// RSAPemToSSH converts rsa public key from pem to ssh-rsa.
-// Note: value ends with `\n`
-func RSAPemToSSH(pemPubKey []byte) (sshRSA []byte, fingerprint string, err error) {
-	block, _ := pem.Decode(pemPubKey)
+// NewSSHIDPubFromPublicKeyBlock returns id_rsa.pub and fingerprint from rsa public key block.
+// NOTE: value ends with `\n`
+func NewSSHIDPubFromPublicKeyBlock(pemBlock []byte) (idRsaPub []byte, fingerprint string, err error) {
+	block, _ := pem.Decode(pemBlock)
 
 	if block == nil {
 		err = errors.New("invalid rsa public key")
@@ -55,28 +58,46 @@ func RSAPemToSSH(pemPubKey []byte) (sshRSA []byte, fingerprint string, err error
 		return
 	}
 
-	pubKey, err := x509.ParsePKIXPublicKey(block.Bytes)
+	pk, err := x509.ParsePKIXPublicKey(block.Bytes)
 
 	if err != nil {
 		return
 	}
 
-	rsaKey, ok := pubKey.(*rsa.PublicKey)
-
-	if !ok {
-		err = errors.New("invalid rsa public key")
-
-		return
-	}
-
-	sshKey, err := ssh.NewPublicKey(rsaKey)
+	sshKey, err := ssh.NewPublicKey(pk.(*rsa.PublicKey))
 
 	if err != nil {
 		return
 	}
 
-	sshRSA = ssh.MarshalAuthorizedKey(sshKey)
+	idRsaPub = ssh.MarshalAuthorizedKey(sshKey)
 	fingerprint = MD5(string(sshKey.Marshal()))
 
 	return
+}
+
+// NewSSHIDPubFromPublicKeyBlock returns id_rsa.pub and fingerprint from rsa public key file.
+// NOTE: value ends with `\n`
+func NewSSHIDPubFromPublicKeyFile(pemFile string) (idRsaPub []byte, fingerprint string, err error) {
+	keyPath, err := filepath.Abs(pemFile)
+
+	if err != nil {
+		return
+	}
+
+	f, err := os.Open(keyPath)
+
+	if err != nil {
+		return
+	}
+
+	defer f.Close()
+
+	b, err := ioutil.ReadAll(f)
+
+	if err != nil {
+		return
+	}
+
+	return NewSSHIDPubFromPublicKeyBlock(b)
 }

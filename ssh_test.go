@@ -29,11 +29,11 @@ u0X/QQGFgify3nPVfUw+eZhHPxmBGwWzMraa8qJ0s/mO1UXEfSjZIIvmpnSl2Xkv
 CQIDAQAB
 -----END PUBLIC KEY-----`
 
-	sshRSA, fingerprint, err := RSAPemToSSH([]byte(rsaPubKey))
+	idRsaPub, fingerprint, err := NewSSHIDPubFromPublicKeyBlock([]byte(rsaPubKey))
 
 	assert.Nil(t, err)
 
 	// 结果已通过阿里云密钥对验证
-	assert.Equal(t, "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCkCw3HsPFZyPJpGk0/ZXGcUaS+2ClnCfvsUG7ulspTnhiexFdaivb4HZEHCxyaVOOQIDjrLU5NYAQEQATWo/xXalkcLZntfTv49ThHhFvbxjM5dR2x1kzKQbGvhgFuFB2uqA7MEkt4ljR/uyJqOMfp4qf+tqIsZYsDHN1negxx2pKEmx6TUFMIVRPchzDIK8Y9UpMxMsxLOXoXyDG5VzhgYK/xIe6DtyNajUfWQTHeRem83LclwTZ38ER1Co9HOt8255cc2kr8M3A3Fy8xtn27Rf9BAYWCJ/Lec9V9TD55mEc/GYEbBbMytpryonSz+Y7VRcR9KNkgi+amdKXZeS8J\n", string(sshRSA))
+	assert.Equal(t, "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCkCw3HsPFZyPJpGk0/ZXGcUaS+2ClnCfvsUG7ulspTnhiexFdaivb4HZEHCxyaVOOQIDjrLU5NYAQEQATWo/xXalkcLZntfTv49ThHhFvbxjM5dR2x1kzKQbGvhgFuFB2uqA7MEkt4ljR/uyJqOMfp4qf+tqIsZYsDHN1negxx2pKEmx6TUFMIVRPchzDIK8Y9UpMxMsxLOXoXyDG5VzhgYK/xIe6DtyNajUfWQTHeRem83LclwTZ38ER1Co9HOt8255cc2kr8M3A3Fy8xtn27Rf9BAYWCJ/Lec9V9TD55mEc/GYEbBbMytpryonSz+Y7VRcR9KNkgi+amdKXZeS8J\n", string(idRsaPub))
 	assert.Equal(t, "2a1221695eecd9a88cf4b07f84ff40c0", fingerprint)
 }
