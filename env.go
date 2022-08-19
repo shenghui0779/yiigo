@@ -44,7 +44,7 @@ func WithEnvWatcher(fn EnvOnChangeFunc) EnvOption {
 
 // LoadEnv will read your env file(s) and load them into ENV for this process.
 // It will default to loading .env in the current path if not specifies the filename.
-func LoadEnv(options ...EnvOption) error {
+func LoadEnv(options ...EnvOption) {
 	env := &environment{path: ".env"}
 
 	for _, f := range options {
@@ -54,34 +54,30 @@ func LoadEnv(options ...EnvOption) error {
 	filename, err := filepath.Abs(env.path)
 
 	if err != nil {
-		return err
+		logger.Panic("[yiigo] err load env", zap.Error(err))
 	}
 
 	statEnvFile(filename)
 
 	if err := godotenv.Overload(filename); err != nil {
-		return err
+		logger.Panic("[yiigo] err load env", zap.Error(err))
 	}
 
 	if env.watcher {
 		go watchEnvFile(filename, env.eventFn)
 	}
-
-	return nil
 }
 
 func statEnvFile(filename string) {
-	_, err := os.Stat(filename)
-
-	if err == nil {
+	if _, err := os.Stat(filename); err == nil {
 		return
 	}
 
-	if err = os.MkdirAll(path.Dir(filename), 0775); err != nil {
+	if err := os.MkdirAll(path.Dir(filename), 0775); err != nil {
 		return
 	}
 
-	f, err := os.OpenFile(filename, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0775)
+	f, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0775)
 
 	if err != nil {
 		return
