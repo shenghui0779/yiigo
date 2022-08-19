@@ -20,20 +20,26 @@ func (l *NSQLogger) Output(calldepth int, s string) error {
 	return nil
 }
 
-func initNSQProducer(nsqd string, cfg *nsq.Config) (err error) {
+func initNSQProducer(nsqd string, cfg *nsq.Config) error {
 	if cfg == nil {
 		cfg = nsq.NewConfig()
 	}
 
+	var err error
+
 	producer, err = nsq.NewProducer(nsqd, cfg)
 
 	if err != nil {
-		return
+		return err
+	}
+
+	if err = producer.Ping(); err != nil {
+		logger.Panic("[yiigo] err nsq producer ping", zap.String("nsqd", nsqd), zap.Error(err))
 	}
 
 	producer.SetLogger(&NSQLogger{}, nsq.LogLevelError)
 
-	return
+	return nil
 }
 
 // NSQPublish synchronously publishes a message body to the specified topic.
