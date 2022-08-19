@@ -47,7 +47,7 @@ func GenerateSSHKey() (*SSHKey, error) {
 	return key, nil
 }
 
-// NewSSHIDPubFromPublicKeyBlock returns id_rsa.pub and fingerprint from rsa public key block.
+// NewSSHIDPubFromPublicKeyBlock returns id_rsa.pub and fingerprint from rsa public key (pem block).
 // NOTE: value ends with `\n`
 func NewSSHIDPubFromPublicKeyBlock(pemBlock []byte) (idRsaPub []byte, fingerprint string, err error) {
 	block, _ := pem.Decode(pemBlock)
@@ -76,7 +76,7 @@ func NewSSHIDPubFromPublicKeyBlock(pemBlock []byte) (idRsaPub []byte, fingerprin
 	return
 }
 
-// NewSSHIDPubFromPublicKeyBlock returns id_rsa.pub and fingerprint from rsa public key file.
+// NewSSHIDPubFromPublicKeyFile returns id_rsa.pub and fingerprint from rsa public key (pem file).
 // NOTE: value ends with `\n`
 func NewSSHIDPubFromPublicKeyFile(pemFile string) (idRsaPub []byte, fingerprint string, err error) {
 	keyPath, err := filepath.Abs(pemFile)
