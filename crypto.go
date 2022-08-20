@@ -459,8 +459,8 @@ func (pk *PrivateKey) Sign(hash crypto.Hash, data []byte) ([]byte, error) {
 }
 
 // NewPrivateKeyFromPemBlock returns new private key with pem block.
-func NewPrivateKeyFromPemBlock(b []byte) (*PrivateKey, error) {
-	block, _ := pem.Decode(b)
+func NewPrivateKeyFromPemBlock(pemBlock []byte) (*PrivateKey, error) {
+	block, _ := pem.Decode(pemBlock)
 
 	if block == nil {
 		return nil, errors.New("no PEM data is found")
@@ -541,8 +541,8 @@ func (pk *PublicKey) Verify(hash crypto.Hash, data, signature []byte) error {
 }
 
 // NewPublicKeyFromPemBlock returns new public key with pem block.
-func NewPublicKeyFromPemBlock(b []byte) (*PublicKey, error) {
-	block, _ := pem.Decode(b)
+func NewPublicKeyFromPemBlock(pemBlock []byte) (*PublicKey, error) {
+	block, _ := pem.Decode(pemBlock)
 
 	if block == nil {
 		return nil, errors.New("no PEM data is found")
