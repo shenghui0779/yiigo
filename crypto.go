@@ -14,7 +14,6 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"os"
 	"path/filepath"
 
 	"golang.org/x/crypto/pkcs12"
@@ -464,7 +463,7 @@ func NewPrivateKeyFromPemBlock(b []byte) (*PrivateKey, error) {
 	block, _ := pem.Decode(b)
 
 	if block == nil {
-		return nil, errors.New("invalid rsa private key for pem.Decode")
+		return nil, errors.New("no PEM data is found")
 	}
 
 	var (
@@ -494,15 +493,7 @@ func NewPrivateKeyFromPemFile(pemFile string) (*PrivateKey, error) {
 		return nil, err
 	}
 
-	f, err := os.Open(keyPath)
-
-	if err != nil {
-		return nil, err
-	}
-
-	defer f.Close()
-
-	b, err := ioutil.ReadAll(f)
+	b, err := ioutil.ReadFile(keyPath)
 
 	if err != nil {
 		return nil, err
@@ -511,8 +502,8 @@ func NewPrivateKeyFromPemFile(pemFile string) (*PrivateKey, error) {
 	return NewPrivateKeyFromPemBlock(b)
 }
 
-// ParsePrivateKeyFromPfxFile parses private key from pfx(p12) file.
-func ParsePrivateKeyFromPfxFile(pfxFile, password string) (*PrivateKey, error) {
+// NewPrivateKeyFromPfxFile returns private key with pfx(p12) file.
+func NewPrivateKeyFromPfxFile(pfxFile, password string) (*PrivateKey, error) {
 	cert, err := LoadCertFromPfxFile(pfxFile, password)
 
 	if err != nil {
@@ -554,7 +545,7 @@ func NewPublicKeyFromPemBlock(b []byte) (*PublicKey, error) {
 	block, _ := pem.Decode(b)
 
 	if block == nil {
-		return nil, errors.New("invalid rsa public key for pem.Decode")
+		return nil, errors.New("no PEM data is found")
 	}
 
 	pk, err := x509.ParsePKIXPublicKey(block.Bytes)
@@ -574,15 +565,7 @@ func NewPublicKeyFromPemFile(pemFile string) (*PublicKey, error) {
 		return nil, err
 	}
 
-	f, err := os.Open(keyPath)
-
-	if err != nil {
-		return nil, err
-	}
-
-	defer f.Close()
-
-	b, err := ioutil.ReadAll(f)
+	b, err := ioutil.ReadFile(keyPath)
 
 	if err != nil {
 		return nil, err
@@ -591,35 +574,42 @@ func NewPublicKeyFromPemFile(pemFile string) (*PublicKey, error) {
 	return NewPublicKeyFromPemBlock(b)
 }
 
-// ParsePublicKeyFromDerFile parses public key from DER (.cer) file.
-func ParsePublicKeyFromDerFile(certFile string) (*PublicKey, error) {
-	keyPath, err := filepath.Abs(certFile)
+// NewPublicKeyFromDerBlock returns public key with DER block.
+// NOTE: PEM format with -----BEGIN CERTIFICATE----- | -----END CERTIFICATE-----
+// openssl x509 -inform der -in cert.cer -out cert.pem
+func NewPublicKeyFromDerBlock(pemBlock []byte) (*PublicKey, error) {
+	block, _ := pem.Decode(pemBlock)
 
-	if err != nil {
-		return nil, err
+	if block == nil {
+		return nil, errors.New("no PEM data is found")
 	}
 
-	f, err := os.Open(keyPath)
-
-	if err != nil {
-		return nil, err
-	}
-
-	defer f.Close()
-
-	b, err := ioutil.ReadAll(f)
-
-	if err != nil {
-		return nil, err
-	}
-
-	cert, err := x509.ParseCertificate(b)
+	cert, err := x509.ParseCertificate(block.Bytes)
 
 	if err != nil {
 		return nil, err
 	}
 
 	return &PublicKey{key: cert.PublicKey.(*rsa.PublicKey)}, nil
+}
+
+// NewPublicKeyFromDerFile returns public key with DER file.
+// NOTE: PEM format with -----BEGIN CERTIFICATE----- | -----END CERTIFICATE-----
+// openssl x509 -inform der -in cert.cer -out cert.pem
+func NewPublicKeyFromDerFile(pemFile string) (*PublicKey, error) {
+	keyPath, err := filepath.Abs(pemFile)
+
+	if err != nil {
+		return nil, err
+	}
+
+	b, err := ioutil.ReadFile(keyPath)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return NewPublicKeyFromDerBlock(b)
 }
 
 func ZeroPadding(cipherText []byte, blockSize int) []byte {
@@ -648,14 +638,14 @@ func PKCS5Padding(cipherText []byte, blockSize int) []byte {
 }
 
 func PKCS5Unpadding(plainText []byte, blockSize int) []byte {
-	l := len(plainText)
-	unpadding := int(plainText[l-1])
+	length := len(plainText)
+	unpadding := int(plainText[length-1])
 
 	if unpadding < 1 || unpadding > blockSize {
 		unpadding = 0
 	}
 
-	return plainText[:(l - unpadding)]
+	return plainText[:(length - unpadding)]
 }
 
 // ------------- AES-256-ECB -------------
