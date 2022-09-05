@@ -29,7 +29,7 @@ u0X/QQGFgify3nPVfUw+eZhHPxmBGwWzMraa8qJ0s/mO1UXEfSjZIIvmpnSl2Xkv
 CQIDAQAB
 -----END PUBLIC KEY-----`
 
-	idRsaPub, fingerprint, err := NewSSHIDPubFromPublicKeyBlock([]byte(rsaPubKey))
+	idRsaPub, fingerprint, err := NewIDRsaPubFromPemBlock([]byte(rsaPubKey))
 
 	assert.Nil(t, err)
 

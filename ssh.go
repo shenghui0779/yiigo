@@ -14,8 +14,8 @@ import (
 )
 
 type SSHKey struct {
-	IDRSA       []byte
-	IDRSAPub    []byte
+	IDRsa       []byte
+	IDRsaPub    []byte
 	Fingerprint string
 }
 
@@ -30,7 +30,7 @@ func GenerateSSHKey() (*SSHKey, error) {
 
 	key := new(SSHKey)
 
-	key.IDRSA = pem.EncodeToMemory(&pem.Block{
+	key.IDRsa = pem.EncodeToMemory(&pem.Block{
 		Type:  "RSA PRIVATE KEY",
 		Bytes: x509.MarshalPKCS1PrivateKey(prvKey),
 	})
@@ -41,15 +41,15 @@ func GenerateSSHKey() (*SSHKey, error) {
 		return nil, err
 	}
 
-	key.IDRSAPub = ssh.MarshalAuthorizedKey(pubKey)
+	key.IDRsaPub = ssh.MarshalAuthorizedKey(pubKey)
 	key.Fingerprint = MD5(string(pubKey.Marshal()))
 
 	return key, nil
 }
 
-// NewSSHIDPubFromPublicKeyBlock returns id_rsa.pub and fingerprint from rsa public key (pem block).
+// NewIDRsaPubFromPemBlock returns ssh id_rsa.pub and fingerprint from rsa public key (pem block).
 // NOTE: value ends with `\n`
-func NewSSHIDPubFromPublicKeyBlock(pemBlock []byte) (idRsaPub []byte, fingerprint string, err error) {
+func NewIDRsaPubFromPemBlock(pemBlock []byte) (idRsaPub []byte, fingerprint string, err error) {
 	block, _ := pem.Decode(pemBlock)
 
 	if block == nil {
@@ -76,9 +76,9 @@ func NewSSHIDPubFromPublicKeyBlock(pemBlock []byte) (idRsaPub []byte, fingerprin
 	return
 }
 
-// NewSSHIDPubFromPublicKeyFile returns id_rsa.pub and fingerprint from rsa public key (pem file).
+// NewIDRsaPubFromPemFile returns ssh id_rsa.pub and fingerprint from rsa public key (pem file).
 // NOTE: value ends with `\n`
-func NewSSHIDPubFromPublicKeyFile(pemFile string) (idRsaPub []byte, fingerprint string, err error) {
+func NewIDRsaPubFromPemFile(pemFile string) (idRsaPub []byte, fingerprint string, err error) {
 	keyPath, err := filepath.Abs(pemFile)
 
 	if err != nil {
@@ -99,5 +99,5 @@ func NewSSHIDPubFromPublicKeyFile(pemFile string) (idRsaPub []byte, fingerprint 
 		return
 	}
 
-	return NewSSHIDPubFromPublicKeyBlock(b)
+	return NewIDRsaPubFromPemBlock(b)
 }
