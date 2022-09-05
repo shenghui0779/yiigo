@@ -53,21 +53,19 @@ func NewIDRsaPubFromPemBlock(pemBlock []byte) (idRsaPub []byte, fingerprint stri
 	block, _ := pem.Decode(pemBlock)
 
 	if block == nil {
-		err = errors.New("invalid rsa public key")
-
-		return
+		return nil, "", errors.New("no PEM data is found")
 	}
 
 	pk, err := x509.ParsePKIXPublicKey(block.Bytes)
 
 	if err != nil {
-		return
+		return nil, "", err
 	}
 
 	sshKey, err := ssh.NewPublicKey(pk.(*rsa.PublicKey))
 
 	if err != nil {
-		return
+		return nil, "", err
 	}
 
 	idRsaPub = ssh.MarshalAuthorizedKey(sshKey)
@@ -82,13 +80,13 @@ func NewIDRsaPubFromPemFile(pemFile string) (idRsaPub []byte, fingerprint string
 	keyPath, err := filepath.Abs(pemFile)
 
 	if err != nil {
-		return
+		return nil, "", err
 	}
 
 	f, err := os.Open(keyPath)
 
 	if err != nil {
-		return
+		return nil, "", err
 	}
 
 	defer f.Close()
@@ -96,7 +94,7 @@ func NewIDRsaPubFromPemFile(pemFile string) (idRsaPub []byte, fingerprint string
 	b, err := ioutil.ReadAll(f)
 
 	if err != nil {
-		return
+		return nil, "", err
 	}
 
 	return NewIDRsaPubFromPemBlock(b)

@@ -2,6 +2,7 @@ package yiigo
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/nsqio/go-nsq"
@@ -15,7 +16,7 @@ type NSQLogger struct{}
 
 // Output implements the NSQ logger interface
 func (l *NSQLogger) Output(calldepth int, s string) error {
-	logger.Error(s, zap.Int("call_depth", calldepth))
+	logger.Error(fmt.Sprintf("[NSQ] %s", s), zap.Int("call_depth", calldepth))
 
 	return nil
 }
@@ -34,7 +35,7 @@ func initNSQProducer(nsqd string, cfg *nsq.Config) error {
 	}
 
 	if err = producer.Ping(); err != nil {
-		logger.Panic("[yiigo] err nsq producer ping", zap.String("nsqd", nsqd), zap.Error(err))
+		logger.Panic("[yiigo] err nsq ping", zap.String("nsqd", nsqd), zap.Error(err))
 	}
 
 	producer.SetLogger(&NSQLogger{}, nsq.LogLevelError)
