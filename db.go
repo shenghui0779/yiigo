@@ -10,8 +10,8 @@ import (
 
 	entsql "entgo.io/ent/dialect/sql"
 	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/jmoiron/sqlx"
-	_ "github.com/lib/pq"
 	_ "github.com/mattn/go-sqlite3"
 	"go.uber.org/zap"
 )
@@ -21,7 +21,7 @@ type DBDriver string
 
 const (
 	MySQL    DBDriver = "mysql"
-	Postgres DBDriver = "postgres"
+	Postgres DBDriver = "pgx"
 	SQLite   DBDriver = "sqlite3"
 )
 
@@ -183,12 +183,9 @@ func EntDriver(name ...string) *entsql.Driver {
 	return v.(*entsql.Driver)
 }
 
-// DBTxHandler db tx callback func.
-type DBTxHandler func(ctx context.Context, tx *sqlx.Tx) error
-
 // DBTransaction Executes db transaction with callback function.
 // The provided context is used until the transaction is committed or rolledback.
-func DBTransaction(ctx context.Context, db *sqlx.DB, callback DBTxHandler) error {
+func DBTransaction(ctx context.Context, db *sqlx.DB, f func(ctx context.Context, tx *sqlx.Tx) error) error {
 	tx, err := db.BeginTxx(ctx, nil)
 
 	if err != nil {
@@ -203,7 +200,7 @@ func DBTransaction(ctx context.Context, db *sqlx.DB, callback DBTxHandler) error
 		}
 	}()
 
-	if err = callback(ctx, tx); err != nil {
+	if err = f(ctx, tx); err != nil {
 		rollback(tx)
 
 		return err

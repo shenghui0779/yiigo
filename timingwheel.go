@@ -32,10 +32,10 @@ type TWTask struct {
 // TimingWheel a simple single timing wheel.
 type TimingWheel interface {
 	// AddOnceTask adds a task which will be executed only once when expired.
-	AddOnceTask(ctx context.Context, taskID string, callback TWHandler, delay time.Duration)
+	AddOnceTask(ctx context.Context, taskID string, f TWHandler, delay time.Duration)
 
 	// AddRetryTask adds a task which will be executed when expired, and if an error is returned, it will be retried multiple times.
-	AddRetryTask(ctx context.Context, taskID string, callback TWHandler, attempts uint16, delay TWDelay)
+	AddRetryTask(ctx context.Context, taskID string, f TWHandler, attempts uint16, delay TWDelay)
 
 	// Stop stops the timing wheel.
 	Stop()
@@ -52,10 +52,10 @@ type timewheel struct {
 	debug  bool
 }
 
-func (tw *timewheel) AddOnceTask(ctx context.Context, taskID string, callback TWHandler, delay time.Duration) {
+func (tw *timewheel) AddOnceTask(ctx context.Context, taskID string, f TWHandler, delay time.Duration) {
 	task := &TWTask{
 		ctx:         ctx,
-		callback:    callback,
+		callback:    f,
 		maxAttempts: 1,
 		delayFunc: func(attempts uint16) time.Duration {
 			return delay
@@ -65,10 +65,10 @@ func (tw *timewheel) AddOnceTask(ctx context.Context, taskID string, callback TW
 	tw.requeue(ctx, taskID, task)
 }
 
-func (tw *timewheel) AddRetryTask(ctx context.Context, taskID string, callback TWHandler, attempts uint16, delay TWDelay) {
+func (tw *timewheel) AddRetryTask(ctx context.Context, taskID string, f TWHandler, attempts uint16, delay TWDelay) {
 	task := &TWTask{
 		ctx:         ctx,
-		callback:    callback,
+		callback:    f,
 		maxAttempts: attempts,
 		delayFunc:   delay,
 	}

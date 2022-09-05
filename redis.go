@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net"
+	"runtime/debug"
 	"sync"
 	"time"
 
@@ -33,6 +34,12 @@ type RedisPool interface {
 
 	// Put returns a connection resource to the pool.
 	Put(rc *RedisConn)
+
+	// Do sends a command to the server and returns the received reply.
+	Do(ctx context.Context, cmd string, args ...interface{}) (interface{}, error)
+
+	// DoFunc sends commands to the server with callback function.
+	DoFunc(ctx context.Context, f func(ctx context.Context, conn *RedisConn) error) error
 }
 
 // RedisConfig keeps the settings to setup redis connection.
@@ -240,6 +247,36 @@ func (rp *redisResourcePool) Get(ctx context.Context) (*RedisConn, error) {
 
 func (rp *redisResourcePool) Put(conn *RedisConn) {
 	rp.pool.Put(conn)
+}
+
+func (rp *redisResourcePool) Do(ctx context.Context, cmd string, args ...interface{}) (interface{}, error) {
+	conn, err := rp.Get(ctx)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer rp.Put(conn)
+
+	return conn.Do(cmd, args...)
+}
+
+func (rp *redisResourcePool) DoFunc(ctx context.Context, f func(ctx context.Context, conn *RedisConn) error) error {
+	conn, err := rp.Get(ctx)
+
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		rp.Put(conn)
+
+		if r := recover(); r != nil {
+			logger.Error("[yiigo] redis do func panic", zap.Any("error", r), zap.ByteString("stack", debug.Stack()))
+		}
+	}()
+
+	return f(ctx, conn)
 }
 
 var (
