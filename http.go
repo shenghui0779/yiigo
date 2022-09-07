@@ -230,7 +230,7 @@ func NewDefaultHTTPClient() HTTPClient {
 				MaxConnsPerHost:       1000,
 				IdleConnTimeout:       60 * time.Second,
 				TLSHandshakeTimeout:   10 * time.Second,
-				ExpectContinueTimeout: 1 * time.Second,
+				ExpectContinueTimeout: time.Second,
 			},
 		},
 	}
