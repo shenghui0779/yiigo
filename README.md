@@ -7,7 +7,7 @@
 ## Features
 
 - 支持 [MySQL](https://github.com/go-sql-driver/mysql)
-- 支持 [PostgreSQL](https://github.com/lib/pq)
+- 支持 [PostgreSQL](https://github.com/jackc/pgx)
 - 支持 [SQLite3](https://github.com/mattn/go-sqlite3)
 - 支持 [MongoDB](https://github.com/mongodb/mongo-go-driver)
 - 支持 [Redis](https://github.com/gomodule/redigo)

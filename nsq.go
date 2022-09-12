@@ -112,30 +112,28 @@ func NextAttemptDelay(attempts uint16) time.Duration {
 	var d time.Duration
 
 	switch attempts {
-	case 0:
+	case 0, 1:
 		d = 5 * time.Second
-	case 1:
-		d = 10 * time.Second
 	case 2:
-		d = 15 * time.Second
+		d = 10 * time.Second
 	case 3:
-		d = 30 * time.Second
+		d = 15 * time.Second
 	case 4:
-		d = 1 * time.Minute
+		d = 30 * time.Second
 	case 5:
-		d = 2 * time.Minute
+		d = time.Minute
 	case 6:
-		d = 5 * time.Minute
+		d = 2 * time.Minute
 	case 7:
-		d = 10 * time.Minute
+		d = 5 * time.Minute
 	case 8:
-		d = 15 * time.Minute
+		d = 10 * time.Minute
 	case 9:
-		d = 30 * time.Minute
+		d = 15 * time.Minute
 	case 10:
-		d = 1 * time.Hour
+		d = 30 * time.Minute
 	default:
-		d = 1 * time.Hour
+		d = time.Hour
 	}
 
 	return d
