@@ -190,7 +190,7 @@ func (c *httpclient) Do(ctx context.Context, method, reqURL string, body []byte,
 		return nil, err
 	}
 
-	return resp, err
+	return resp, nil
 }
 
 func (c *httpclient) Upload(ctx context.Context, reqURL string, form UploadForm, options ...HTTPOption) (*http.Response, error) {
