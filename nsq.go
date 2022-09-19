@@ -11,10 +11,10 @@ import (
 
 var producer *nsq.Producer
 
-// NSQLogger NSQ logger
+// NSQLogger nsq logger
 type NSQLogger struct{}
 
-// Output implements the NSQ logger interface
+// Output implements the nsq logger interface
 func (l *NSQLogger) Output(calldepth int, s string) error {
 	logger.Error(fmt.Sprintf("[NSQ] %s", s), zap.Int("call_depth", calldepth))
 
@@ -62,7 +62,7 @@ func NSQDeferredPublish(topic string, msg []byte, duration time.Duration) error 
 	return producer.DeferredPublish(topic, duration, msg)
 }
 
-// NSQConsumer NSQ consumer
+// NSQConsumer nsq consumer
 type NSQConsumer interface {
 	nsq.Handler
 	Topic() string
@@ -85,9 +85,7 @@ func setNSQConsumers(lookupd []string, consumers ...NSQConsumer) error {
 
 		// set attempt acount, default: 5
 		if c.Attempts() > 0 {
-			if err := cfg.Set("max_attempts", c.Attempts()); err != nil {
-				return err
-			}
+			cfg.MaxAttempts = c.Attempts()
 		}
 
 		nc, err := nsq.NewConsumer(c.Topic(), c.Channel(), cfg)
@@ -107,7 +105,7 @@ func setNSQConsumers(lookupd []string, consumers ...NSQConsumer) error {
 	return nil
 }
 
-// NextAttemptDelay returns the delay time for next attempt.
+// NextAttemptDelay returns the delay time for nsq next attempt.
 func NextAttemptDelay(attempts uint16) time.Duration {
 	var d time.Duration
 
