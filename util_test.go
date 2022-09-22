@@ -30,6 +30,15 @@ func TestLong2IP(t *testing.T) {
 	assert.Equal(t, "192.0.34.166", Long2IP(uint32(3221234342)))
 }
 
+func TestMarshalNoEscapeHTML(t *testing.T) {
+	data := map[string]string{"url": "https://github.com/shenghui0779/yiigo?id=996&name=yiigo"}
+
+	b, err := MarshalNoEscapeHTML(data)
+
+	assert.Nil(t, err)
+	assert.Equal(t, string(b), `{"url":"https://github.com/shenghui0779/yiigo?id=996&name=yiigo"}`)
+}
+
 func TestAddSlashes(t *testing.T) {
 	assert.Equal(t, `Is your name O\'Reilly?`, AddSlashes("Is your name O'Reilly?"))
 }

@@ -1,6 +1,8 @@
 package yiigo
 
 import (
+	"bytes"
+	"encoding/json"
 	"encoding/xml"
 	"net"
 	"os"
@@ -135,6 +137,28 @@ func IP2Long(ip string) uint32 {
 // Long2IP converts an uint32 integer address into a string in (IPv4) Internet standard dotted format.
 func Long2IP(ip uint32) string {
 	return net.IPv4(byte(ip>>24), byte(ip>>16), byte(ip>>8), byte(ip)).String()
+}
+
+// MarshalNoEscapeHTML marshal with no escape HTML
+func MarshalNoEscapeHTML(v interface{}) ([]byte, error) {
+	buf := bytes.NewBuffer(nil)
+
+	jsonEncoder := json.NewEncoder(buf)
+	jsonEncoder.SetEscapeHTML(false)
+
+	if err := jsonEncoder.Encode(v); err != nil {
+		return nil, err
+	}
+
+	b := buf.Bytes()
+
+	// 去掉 go std 给末尾加的 '\n'
+	// @see https://github.com/golang/go/issues/7767
+	if l := len(b); l != 0 && b[l-1] == '\n' {
+		b = b[:l-1]
+	}
+
+	return b, nil
 }
 
 // AddSlashes returns a string with backslashes added before characters that need to be escaped.
