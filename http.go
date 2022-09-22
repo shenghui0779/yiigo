@@ -143,7 +143,7 @@ type httpclient struct {
 }
 
 func (c *httpclient) Do(ctx context.Context, method, reqURL string, body []byte, options ...HTTPOption) (*http.Response, error) {
-	req, err := http.NewRequestWithContext(ctx, method, reqURL, bytes.NewBuffer(body))
+	req, err := http.NewRequestWithContext(ctx, method, reqURL, bytes.NewReader(body))
 
 	if err != nil {
 		return nil, err
