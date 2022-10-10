@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-version"
-	"go.uber.org/zap"
 )
 
 var timezone = time.FixedZone("CST", 8*3600)
@@ -52,35 +51,37 @@ func SetTimezone(loc *time.Location) {
 // Date format a local time/date and
 // returns a string formatted according to the given layout using the given timestamp of int64.
 // If timestamp < 0, use `time.Now()` to format.
-// The default layout is: 2006-01-02 15:04:05.
-func Date(timestamp int64, layout ...string) string {
-	l := layouttime
+// The default format is: 2006-01-02 15:04:05.
+func Date(timestamp int64, format ...string) string {
+	layout := layouttime
 
-	if len(layout) != 0 {
-		l = layout[0]
+	if len(format) != 0 {
+		layout = format[0]
 	}
 
 	if timestamp < 0 {
-		return time.Now().In(timezone).Format(l)
+		return time.Now().In(timezone).Format(layout)
 	}
 
-	return time.Unix(timestamp, 0).In(timezone).Format(l)
+	return time.Unix(timestamp, 0).In(timezone).Format(layout)
 }
 
 // StrToTime Parse English textual datetime description into a Unix timestamp.
-// The default layout is: 2006-01-02 15:04:05
-func StrToTime(datetime string, layout ...string) int64 {
-	l := layouttime
-
-	if len(layout) != 0 {
-		l = layout[0]
+// The default format is: 2006-01-02 15:04:05
+func StrToTime(datetime string, format ...string) int64 {
+	if len(datetime) == 0 {
+		return 0
 	}
 
-	t, err := time.ParseInLocation(l, datetime, timezone)
+	layout := layouttime
+
+	if len(format) != 0 {
+		layout = format[0]
+	}
+
+	t, err := time.ParseInLocation(layout, datetime, timezone)
 
 	if err != nil {
-		logger.Error("[yiigo] err parse time", zap.Error(err), zap.String("datetime", datetime), zap.String("layout", l))
-
 		return 0
 	}
 
@@ -88,8 +89,8 @@ func StrToTime(datetime string, layout ...string) int64 {
 }
 
 // WeekAround returns the monday and sunday of the week for the given time.
-// The default layout is: 2006-01-02
-func WeekAround(timestamp int64, layout ...string) (monday, sunday string) {
+// The default format is: 2006-01-02
+func WeekAround(timestamp int64, format ...string) (monday, sunday string) {
 	t := time.Unix(timestamp, 0).In(timezone)
 
 	weekday := t.Weekday()
@@ -103,13 +104,13 @@ func WeekAround(timestamp int64, layout ...string) (monday, sunday string) {
 
 	today := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, timezone)
 
-	l := layoutdate
+	layout := layoutdate
 
-	if len(layout) != 0 {
-		l = layout[0]
+	if len(format) != 0 {
+		layout = format[0]
 	}
 
-	monday = today.AddDate(0, 0, offset).Format(l)
+	monday = today.AddDate(0, 0, offset).Format(layout)
 
 	// sunday
 	offset = int(time.Sunday - weekday)
@@ -118,7 +119,7 @@ func WeekAround(timestamp int64, layout ...string) (monday, sunday string) {
 		offset += 7
 	}
 
-	sunday = today.AddDate(0, 0, offset).Format(l)
+	sunday = today.AddDate(0, 0, offset).Format(layout)
 
 	return
 }
