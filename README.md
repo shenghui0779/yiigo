@@ -17,7 +17,6 @@
 - 日志使用 [zap](https://github.com/uber-go/zap)
 - 配置使用 [dotenv](https://github.com/joho/godotenv)，支持（包括 k8s configmap）热加载
 - 其他
-  - gRPC Client 连接池
   - 轻量的 SQL Builder
   - 基于 Redis 的简单分布式锁
   - Websocket 简单使用封装（支持授权校验）
@@ -157,26 +156,34 @@ yiigo.Init(
 )
 
 // default redis
-conn, err := yiigo.Redis().Get(context.Background())
+yiigo.Redis().Do(context.Background(), "SET", "test_key", "hello world")
 
-if err != nil {
-    log.Fatal(err)
-}
+yiigo.Redis().DoFunc(context.Background(), func(ctx context.Context, conn *RedisConn) error {
+    if _, err := conn.Do("SET", "key1", "hello"); err != nil {
+        return err
+    }
 
-defer yiigo.Redis().Put(conn)
+    if _, err := conn.Do("SET", "key2", "world"); err != nil {
+        return err
+    }
 
-conn.Do("SET", "test_key", "hello world")
+    return nil
+})
 
 // other redis
-conn, err := yiigo.Redis("other").Get(context.Background())
+yiigo.Redis("other").Do(context.Background(), "SET", "test_key", "hello world")
 
-if err != nil {
-    log.Fatal(err)
-}
+yiigo.Redis("other").DoFunc(context.Background(), func(ctx context.Context, conn *RedisConn) error {
+    if _, err := conn.Do("SET", "key1", "hello"); err != nil {
+        return err
+    }
 
-defer yiigo.Redis("other").Put(conn)
+    if _, err := conn.Do("SET", "key2", "world"); err != nil {
+        return err
+    }
 
-conn.Do("SET", "test_key", "hello world")
+    return nil
+})
 ```
 
 #### Logger
@@ -204,39 +211,6 @@ yiigo.Logger().Info("hello world")
 
 // other logger
 yiigo.Logger("other").Info("hello world")
-```
-
-#### gRPC Pool
-
-```go
-// create pool
-pool := yiigo.NewGrpcPool(&yiigo.GrpcPoolConfig{
-    Dialer: func() (*grpc.ClientConn, error) {
-        return grpc.DialContext(context.Background(), "target",
-            grpc.WithInsecure(),
-            grpc.WithBlock(),
-            grpc.WithKeepaliveParams(keepalive.ClientParameters{
-                Time:    time.Second * 30,
-                Timeout: time.Second * 10,
-            }),
-        )
-    },
-    Options: &yiigo.PoolOptions{
-        PoolSize:    10,
-        IdleTimeout: 5 * time.Minute,
-    },
-})
-
-// use pool
-conn, err := pool.Get(context.Background())
-
-if err != nil {
-    return err
-}
-
-defer pool.Put(conn)
-
-// coding...
 ```
 
 #### HTTP
