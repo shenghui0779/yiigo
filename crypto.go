@@ -576,7 +576,7 @@ func NewPublicKeyFromPemFile(pemFile string) (*PublicKey, error) {
 
 // NewPublicKeyFromDerBlock returns public key with DER block.
 // NOTE: PEM format with -----BEGIN CERTIFICATE----- | -----END CERTIFICATE-----
-// openssl x509 -inform der -in cert.cer -out cert.pem
+// CMD: openssl x509 -inform der -in cert.cer -out cert.pem
 func NewPublicKeyFromDerBlock(pemBlock []byte) (*PublicKey, error) {
 	block, _ := pem.Decode(pemBlock)
 
@@ -595,7 +595,7 @@ func NewPublicKeyFromDerBlock(pemBlock []byte) (*PublicKey, error) {
 
 // NewPublicKeyFromDerFile returns public key with DER file.
 // NOTE: PEM format with -----BEGIN CERTIFICATE----- | -----END CERTIFICATE-----
-// openssl x509 -inform der -in cert.cer -out cert.pem
+// CMD: openssl x509 -inform der -in cert.cer -out cert.pem
 func NewPublicKeyFromDerFile(pemFile string) (*PublicKey, error) {
 	keyPath, err := filepath.Abs(pemFile)
 
@@ -648,7 +648,7 @@ func PKCS5Unpadding(plainText []byte, blockSize int) []byte {
 	return plainText[:(length - unpadding)]
 }
 
-// ------------- AES-256-ECB -------------
+// --------------------------- AES-256-ECB ---------------------------
 
 type ecb struct {
 	b         cipher.Block
