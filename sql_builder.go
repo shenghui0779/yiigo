@@ -3,12 +3,10 @@ package yiigo
 import (
 	"context"
 	"errors"
-	"fmt"
 	"reflect"
 	"strings"
 
 	"github.com/jmoiron/sqlx"
-	"go.uber.org/zap"
 )
 
 var (
@@ -27,43 +25,29 @@ type SQLBuilder interface {
 // SQLWrapper is the interface for building sql statement.
 type SQLWrapper interface {
 	// ToQuery returns query statement and binds.
-	ToQuery(ctx context.Context) (string, []interface{})
+	ToQuery(ctx context.Context) (sql string, args []interface{}, err error)
 
 	// ToInsert returns insert statement and binds.
 	// data expects `struct`, `*struct`, `yiigo.X`.
-	ToInsert(ctx context.Context, data interface{}) (string, []interface{})
+	ToInsert(ctx context.Context, data interface{}) (sql string, args []interface{}, err error)
 
 	// ToBatchInsert returns batch insert statement and binds.
 	// data expects `[]struct`, `[]*struct`, `[]yiigo.X`.
-	ToBatchInsert(ctx context.Context, data interface{}) (string, []interface{})
+	ToBatchInsert(ctx context.Context, data interface{}) (sql string, args []interface{}, err error)
 
 	// ToUpdate returns update statement and binds.
 	// data expects `struct`, `*struct`, `yiigo.X`.
-	ToUpdate(ctx context.Context, data interface{}) (string, []interface{})
+	ToUpdate(ctx context.Context, data interface{}) (sql string, args []interface{}, err error)
 
 	// ToDelete returns delete statement and binds.
-	ToDelete(ctx context.Context) (string, []interface{})
+	ToDelete(ctx context.Context) (sql string, args []interface{}, err error)
 
 	// ToTruncate returns truncate statement
 	ToTruncate(ctx context.Context) string
 }
 
-type sqlLogger struct{}
-
-func (l *sqlLogger) Info(ctx context.Context, msg string, fields ...zap.Field) {
-	logger.Info(fmt.Sprintf("[SQL] %s", msg), fields...)
-}
-
-func (l *sqlLogger) Warn(ctx context.Context, msg string, fields ...zap.Field) {}
-
-func (l *sqlLogger) Err(ctx context.Context, msg string, fields ...zap.Field) {
-	logger.Error(fmt.Sprintf("[SQL] %s", msg), fields...)
-}
-
 type queryBuilder struct {
 	driver DBDriver
-	logger CtxLogger
-	debug  bool
 }
 
 func (b *queryBuilder) Wrap(options ...QueryOption) SQLWrapper {
@@ -80,32 +64,25 @@ func (b *queryBuilder) Wrap(options ...QueryOption) SQLWrapper {
 }
 
 // NewSQLBuilder returns new SQLBuilder
-func NewSQLBuilder(driver DBDriver, options ...BuilderOption) SQLBuilder {
-	builder := &queryBuilder{
+func NewSQLBuilder(driver DBDriver) SQLBuilder {
+	return &queryBuilder{
 		driver: driver,
-		logger: new(sqlLogger),
 	}
-
-	for _, f := range options {
-		f(builder)
-	}
-
-	return builder
 }
 
 // NewMySQLBuilder returns new SQLBuilder for MySQL
-func NewMySQLBuilder(options ...BuilderOption) SQLBuilder {
-	return NewSQLBuilder(MySQL, options...)
+func NewMySQLBuilder() SQLBuilder {
+	return NewSQLBuilder(MySQL)
 }
 
 // NewPGSQLBuilder returns new SQLBuilder for Postgres
-func NewPGSQLBuilder(options ...BuilderOption) SQLBuilder {
-	return NewSQLBuilder(Postgres, options...)
+func NewPGSQLBuilder() SQLBuilder {
+	return NewSQLBuilder(Postgres)
 }
 
 // NewSQLiteBuilder returns new SQLBuilder for SQLite
-func NewSQLiteBuilder(options ...BuilderOption) SQLBuilder {
-	return NewSQLBuilder(SQLite, options...)
+func NewSQLiteBuilder() SQLBuilder {
+	return NewSQLBuilder(SQLite)
 }
 
 // SQLClause SQL clause
@@ -140,15 +117,15 @@ type queryWrapper struct {
 	whereIn  bool
 }
 
-func (w *queryWrapper) ToQuery(ctx context.Context) (string, []interface{}) {
-	query, binds := w.subquery()
+func (w *queryWrapper) ToQuery(ctx context.Context) (sql string, args []interface{}, err error) {
+	sql, args = w.subquery()
 
 	// unions
 	if l := len(w.unions); l != 0 {
 		var builder strings.Builder
 
 		builder.WriteString("(")
-		builder.WriteString(query)
+		builder.WriteString(sql)
 		builder.WriteString(")")
 
 		for _, v := range w.unions {
@@ -158,32 +135,24 @@ func (w *queryWrapper) ToQuery(ctx context.Context) (string, []interface{}) {
 			builder.WriteString(v.query)
 			builder.WriteString(")")
 
-			binds = append(binds, v.binds...)
+			args = append(args, v.binds...)
 		}
 
-		query = builder.String()
+		sql = builder.String()
 	}
 
 	// where in
 	if w.whereIn {
-		var err error
-
-		query, binds, err = sqlx.In(query, binds...)
+		sql, args, err = sqlx.In(sql, args...)
 
 		if err != nil {
-			w.builder.logger.Err(ctx, "err build query", zap.Error(err))
-
-			return "", nil
+			return
 		}
 	}
 
-	query = sqlx.Rebind(sqlx.BindType(string(w.builder.driver)), query)
+	sql = sqlx.Rebind(sqlx.BindType(string(w.builder.driver)), sql)
 
-	if w.builder.debug {
-		w.builder.logger.Info(ctx, query, zap.Any("args", binds))
-	}
-
-	return query, binds
+	return
 }
 
 func (w *queryWrapper) subquery() (string, []interface{}) {
@@ -268,11 +237,8 @@ func (w *queryWrapper) subquery() (string, []interface{}) {
 	return builder.String(), binds
 }
 
-func (w *queryWrapper) ToInsert(ctx context.Context, data interface{}) (string, []interface{}) {
-	var (
-		columns []string
-		binds   []interface{}
-	)
+func (w *queryWrapper) ToInsert(ctx context.Context, data interface{}) (sql string, args []interface{}, err error) {
+	var columns []string
 
 	v := reflect.Indirect(reflect.ValueOf(data))
 
@@ -281,57 +247,50 @@ func (w *queryWrapper) ToInsert(ctx context.Context, data interface{}) (string, 
 		x, ok := data.(X)
 
 		if !ok {
-			w.builder.logger.Err(ctx, "err build insert", zap.Error(ErrInvalidUpsertData))
+			err = ErrInvalidUpsertData
 
-			return "", nil
+			return
 		}
 
-		columns, binds = w.insertWithMap(x)
+		columns, args = w.insertWithMap(x)
 	case reflect.Struct:
-		columns, binds = w.insertWithStruct(v)
+		columns, args = w.insertWithStruct(v)
 	default:
-		w.builder.logger.Err(ctx, "err build insert", zap.Error(ErrInvalidUpsertData))
+		err = ErrInvalidUpsertData
 
-		return "", nil
-	}
-
-	columnLen := len(columns)
-
-	if columnLen == 0 {
-		return "", nil
+		return
 	}
 
 	var builder strings.Builder
 
 	builder.WriteString("INSERT INTO ")
 	builder.WriteString(w.table)
-	builder.WriteString(" (")
-	builder.WriteString(columns[0])
 
-	for _, column := range columns[1:] {
-		builder.WriteString(", ")
-		builder.WriteString(column)
+	if l := len(columns); l != 0 {
+		builder.WriteString(" (")
+		builder.WriteString(columns[0])
+
+		for _, column := range columns[1:] {
+			builder.WriteString(", ")
+			builder.WriteString(column)
+		}
+
+		builder.WriteString(") VALUES (?")
+
+		for i := 1; i < l; i++ {
+			builder.WriteString(", ?")
+		}
+
+		builder.WriteString(")")
 	}
-
-	builder.WriteString(") VALUES (?")
-
-	for i := 1; i < columnLen; i++ {
-		builder.WriteString(", ?")
-	}
-
-	builder.WriteString(")")
 
 	if w.builder.driver == Postgres {
 		builder.WriteString(" RETURNING id")
 	}
 
-	query := sqlx.Rebind(sqlx.BindType(string(w.builder.driver)), builder.String())
+	sql = sqlx.Rebind(sqlx.BindType(string(w.builder.driver)), builder.String())
 
-	if w.builder.debug {
-		w.builder.logger.Info(ctx, query, zap.Any("args", binds))
-	}
-
-	return query, binds
+	return
 }
 
 func (w *queryWrapper) insertWithMap(data X) (columns []string, binds []interface{}) {
@@ -384,25 +343,22 @@ func (w *queryWrapper) insertWithStruct(v reflect.Value) (columns []string, bind
 	return
 }
 
-func (w *queryWrapper) ToBatchInsert(ctx context.Context, data interface{}) (string, []interface{}) {
+func (w *queryWrapper) ToBatchInsert(ctx context.Context, data interface{}) (sql string, args []interface{}, err error) {
 	v := reflect.Indirect(reflect.ValueOf(data))
 
 	if v.Kind() != reflect.Slice {
-		w.builder.logger.Err(ctx, "err build batch insert", zap.Error(ErrInvalidBatchInsertData))
+		err = ErrInvalidBatchInsertData
 
-		return "", nil
+		return
 	}
 
 	if v.Len() == 0 {
-		w.builder.logger.Err(ctx, "err build batch insert", zap.Error(errors.New("err empty data")))
+		err = errors.New("err empty data")
 
-		return "", nil
+		return
 	}
 
-	var (
-		columns []string
-		binds   []interface{}
-	)
+	var columns []string
 
 	e := v.Type().Elem()
 
@@ -411,75 +367,68 @@ func (w *queryWrapper) ToBatchInsert(ctx context.Context, data interface{}) (str
 		x, ok := data.([]X)
 
 		if !ok {
-			w.builder.logger.Err(ctx, "err build batch insert", zap.Error(ErrInvalidBatchInsertData))
+			err = ErrInvalidBatchInsertData
 
-			return "", nil
+			return
 		}
 
-		columns, binds = w.batchInsertWithMap(x)
+		columns, args = w.batchInsertWithMap(x)
 	case reflect.Struct:
-		columns, binds = w.batchInsertWithStruct(v)
+		columns, args = w.batchInsertWithStruct(v)
 	case reflect.Ptr:
 		if e.Elem().Kind() != reflect.Struct {
-			w.builder.logger.Err(ctx, "err build batch insert", zap.Error(ErrInvalidBatchInsertData))
+			err = ErrInvalidBatchInsertData
 
-			return "", nil
+			return
 		}
 
-		columns, binds = w.batchInsertWithStruct(v)
+		columns, args = w.batchInsertWithStruct(v)
 	default:
-		w.builder.logger.Err(ctx, "err build batch insert", zap.Error(ErrInvalidBatchInsertData))
+		err = ErrInvalidBatchInsertData
 
-		return "", nil
-	}
-
-	columnLen := len(columns)
-
-	if columnLen == 0 {
-		return "", nil
+		return
 	}
 
 	var builder strings.Builder
 
 	builder.WriteString("INSERT INTO ")
 	builder.WriteString(w.table)
-	builder.WriteString(" (")
-	builder.WriteString(columns[0])
 
-	for _, column := range columns[1:] {
-		builder.WriteString(", ")
-		builder.WriteString(column)
-	}
+	if l := len(columns); l != 0 {
+		builder.WriteString(" (")
+		builder.WriteString(columns[0])
 
-	builder.WriteString(") VALUES (?")
+		for _, column := range columns[1:] {
+			builder.WriteString(", ")
+			builder.WriteString(column)
+		}
 
-	// 首行
-	for i := 1; i < columnLen; i++ {
-		builder.WriteString(", ?")
-	}
+		builder.WriteString(") VALUES (?")
 
-	builder.WriteString(")")
-
-	rows := len(binds) / columnLen
-
-	// 其余行
-	for i := 1; i < rows; i++ {
-		builder.WriteString(", (?")
-
-		for j := 1; j < columnLen; j++ {
+		// 首行
+		for i := 1; i < l; i++ {
 			builder.WriteString(", ?")
 		}
 
 		builder.WriteString(")")
+
+		rows := len(args) / l
+
+		// 其余行
+		for i := 1; i < rows; i++ {
+			builder.WriteString(", (?")
+
+			for j := 1; j < l; j++ {
+				builder.WriteString(", ?")
+			}
+
+			builder.WriteString(")")
+		}
 	}
 
-	query := sqlx.Rebind(sqlx.BindType(string(w.builder.driver)), builder.String())
+	sql = sqlx.Rebind(sqlx.BindType(string(w.builder.driver)), builder.String())
 
-	if w.builder.debug {
-		w.builder.logger.Info(ctx, query, zap.Any("args", binds))
-	}
-
-	return query, binds
+	return
 }
 
 func (w *queryWrapper) batchInsertWithMap(data []X) (columns []string, binds []interface{}) {
@@ -547,11 +496,10 @@ func (w *queryWrapper) batchInsertWithStruct(v reflect.Value) (columns []string,
 	return
 }
 
-func (w *queryWrapper) ToUpdate(ctx context.Context, data interface{}) (string, []interface{}) {
+func (w *queryWrapper) ToUpdate(ctx context.Context, data interface{}) (sql string, args []interface{}, err error) {
 	var (
 		columns []string
 		exprs   map[string]string
-		binds   []interface{}
 	)
 
 	v := reflect.Indirect(reflect.ValueOf(data))
@@ -561,47 +509,46 @@ func (w *queryWrapper) ToUpdate(ctx context.Context, data interface{}) (string, 
 		x, ok := data.(X)
 
 		if !ok {
-			w.builder.logger.Err(ctx, "err build update", zap.Error(ErrInvalidUpsertData))
+			err = ErrInvalidUpsertData
 
-			return "", nil
+			return
 		}
 
-		columns, exprs, binds = w.updateWithMap(x)
+		columns, exprs, args = w.updateWithMap(x)
 	case reflect.Struct:
-		columns, binds = w.updateWithStruct(v)
+		columns, args = w.updateWithStruct(v)
 	default:
-		w.builder.logger.Err(ctx, "err build update", zap.Error(ErrInvalidUpsertData))
+		err = ErrInvalidUpsertData
 
-		return "", nil
-	}
-
-	if len(columns) == 0 {
-		return "", nil
+		return
 	}
 
 	var builder strings.Builder
 
 	builder.WriteString("UPDATE ")
 	builder.WriteString(w.table)
-	builder.WriteString(" SET ")
-	builder.WriteString(columns[0])
 
-	if expr, ok := exprs[columns[0]]; ok {
-		builder.WriteString(" = ")
-		builder.WriteString(expr)
-	} else {
-		builder.WriteString(" = ?")
-	}
+	if len(columns) != 0 {
+		builder.WriteString(" SET ")
+		builder.WriteString(columns[0])
 
-	for _, column := range columns[1:] {
-		builder.WriteString(", ")
-		builder.WriteString(column)
-
-		if expr, ok := exprs[column]; ok {
+		if expr, ok := exprs[columns[0]]; ok {
 			builder.WriteString(" = ")
 			builder.WriteString(expr)
 		} else {
 			builder.WriteString(" = ?")
+		}
+
+		for _, column := range columns[1:] {
+			builder.WriteString(", ")
+			builder.WriteString(column)
+
+			if expr, ok := exprs[column]; ok {
+				builder.WriteString(" = ")
+				builder.WriteString(expr)
+			} else {
+				builder.WriteString(" = ?")
+			}
 		}
 	}
 
@@ -609,30 +556,22 @@ func (w *queryWrapper) ToUpdate(ctx context.Context, data interface{}) (string, 
 		builder.WriteString(" WHERE ")
 		builder.WriteString(w.where.query)
 
-		binds = append(binds, w.where.binds...)
+		args = append(args, w.where.binds...)
 	}
 
-	query := builder.String()
+	sql = builder.String()
 
 	if w.whereIn {
-		var err error
-
-		query, binds, err = sqlx.In(query, binds...)
+		sql, args, err = sqlx.In(sql, args...)
 
 		if err != nil {
-			w.builder.logger.Err(ctx, "err build update", zap.Error(err))
-
-			return "", nil
+			return
 		}
 	}
 
-	query = sqlx.Rebind(sqlx.BindType(string(w.builder.driver)), query)
+	sql = sqlx.Rebind(sqlx.BindType(string(w.builder.driver)), sql)
 
-	if w.builder.debug {
-		w.builder.logger.Info(ctx, query, zap.Any("args", binds))
-	}
-
-	return query, binds
+	return
 }
 
 func (w *queryWrapper) updateWithMap(data X) (columns []string, exprs map[string]string, binds []interface{}) {
@@ -694,9 +633,7 @@ func (w *queryWrapper) updateWithStruct(v reflect.Value) (columns []string, bind
 	return
 }
 
-func (w *queryWrapper) ToDelete(ctx context.Context) (string, []interface{}) {
-	binds := make([]interface{}, 0)
-
+func (w *queryWrapper) ToDelete(ctx context.Context) (sql string, args []interface{}, err error) {
 	var builder strings.Builder
 
 	builder.WriteString("DELETE FROM ")
@@ -706,30 +643,22 @@ func (w *queryWrapper) ToDelete(ctx context.Context) (string, []interface{}) {
 		builder.WriteString(" WHERE ")
 		builder.WriteString(w.where.query)
 
-		binds = append(binds, w.where.binds...)
+		args = append(args, w.where.binds...)
 	}
 
-	query := builder.String()
+	sql = builder.String()
 
 	if w.whereIn {
-		var err error
-
-		query, binds, err = sqlx.In(query, binds...)
+		sql, args, err = sqlx.In(sql, args...)
 
 		if err != nil {
-			w.builder.logger.Err(ctx, "err build delete", zap.Error(err))
-
-			return "", nil
+			return
 		}
 	}
 
-	query = sqlx.Rebind(sqlx.BindType(string(w.builder.driver)), query)
+	sql = sqlx.Rebind(sqlx.BindType(string(w.builder.driver)), sql)
 
-	if w.builder.debug {
-		w.builder.logger.Info(ctx, query, zap.Any("args", binds))
-	}
-
-	return query, binds
+	return
 }
 
 func (w *queryWrapper) ToTruncate(ctx context.Context) string {
@@ -738,30 +667,7 @@ func (w *queryWrapper) ToTruncate(ctx context.Context) string {
 	builder.WriteString("TRUNCATE ")
 	builder.WriteString(w.table)
 
-	query := builder.String()
-
-	if w.builder.debug {
-		w.builder.logger.Info(ctx, query)
-	}
-
-	return query
-}
-
-// BuilderOption configures how we set up the SQL builder.
-type BuilderOption func(builder *queryBuilder)
-
-// WithSQLLogger specifies logger for SQL builder.
-func WithSQLLogger(l CtxLogger) BuilderOption {
-	return func(builder *queryBuilder) {
-		builder.logger = l
-	}
-}
-
-// WithSQLDebug specifies debug mode for SQL builder.
-func WithSQLDebug() BuilderOption {
-	return func(builder *queryBuilder) {
-		builder.debug = true
-	}
+	return builder.String()
 }
 
 // QueryOption configures how we set up the SQL query statement.

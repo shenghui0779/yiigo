@@ -1,7 +1,6 @@
 package yiigo
 
 import (
-	"database/sql"
 	"strconv"
 	"testing"
 
@@ -9,24 +8,11 @@ import (
 )
 
 var (
-	builder  SQLBuilder
-	validate *Validator
-
 	privateKey []byte
 	publicKey  []byte
 )
 
 func TestMain(m *testing.M) {
-	builder = NewMySQLBuilder(WithSQLDebug())
-
-	validate = NewValidator(
-		WithValuerType(sql.NullString{}, sql.NullInt64{}),
-		WithValidation("nullint_gte", NullIntGTE),
-		WithTranslation("nullint_gte", "{0}必须大于或等于{1}", true),
-		WithValidation("nullstring_required", NullStringRequired),
-		WithTranslation("nullstring_required", "{0}为必填字段", true),
-	)
-
 	privateKey, publicKey, _ = GenerateRSAKey(2048, RSAPKCS1)
 	// privateKey, publicKey, _ = GenerateRSAKey(2048, RSAPKCS8)
 

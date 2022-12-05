@@ -2,40 +2,35 @@ package yiigo
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"runtime/debug"
 	"sync"
 	"time"
 
 	"go.uber.org/zap"
 )
 
-// TWHandler the function to execute when task expired.
-type TWHandler func(ctx context.Context, taskID string) error
+type ctxTWKey int
 
-// TWDelay the function returns the delay time for the next execution of task.
-type TWDelay func(attempts uint16) time.Duration
+// CtxKeyTaskAddedAt is the key that holds the time in a task context when the task added to timingwheel.
+const CtxKeyTaskAddedAt ctxTWKey = 0
 
 // TWTask timing wheel task.
 type TWTask struct {
 	ctx         context.Context
+	uniqID      string
 	round       int
-	addedAt     time.Time
-	remainder   time.Duration
-	callback    TWHandler
 	maxAttempts uint16
 	attempts    uint16
-	delayFunc   TWDelay
+	remainder   time.Duration
+	deferFn     func(attempts uint16) time.Duration
+	callback    func(ctx context.Context, taskID string) error
 }
 
 // TimingWheel a simple single timing wheel.
 type TimingWheel interface {
-	// AddOnceTask adds a task which will be executed only once when expired.
-	AddOnceTask(ctx context.Context, taskID string, f TWHandler, delay time.Duration)
-
-	// AddRetryTask adds a task which will be executed when expired, and if an error is returned, it will be retried multiple times.
-	AddRetryTask(ctx context.Context, taskID string, f TWHandler, attempts uint16, delay TWDelay)
+	// AddTask adds a task which will be executed when expired, it will be retried if attempts > 0 and an error is returned.
+	// NOTE: Context should be cloned without timeout for executing tasks asynchronously.
+	AddTask(ctx context.Context, taskID string, handler func(ctx context.Context, taskID string) error, options ...TaskOption)
 
 	// Stop stops the timing wheel.
 	Stop()
@@ -47,39 +42,27 @@ type timewheel struct {
 	size   int
 	bucket []sync.Map
 	stop   chan struct{}
-	ctxNew func(ctx context.Context) context.Context
-	logger CtxLogger
-	debug  bool
+	log    func(ctx context.Context, v ...interface{})
 }
 
-func (tw *timewheel) AddOnceTask(ctx context.Context, taskID string, f TWHandler, delay time.Duration) {
+func (tw *timewheel) AddTask(ctx context.Context, taskID string, handler func(ctx context.Context, taskID string) error, options ...TaskOption) {
 	task := &TWTask{
-		ctx:         ctx,
-		callback:    f,
+		ctx:         context.WithValue(ctx, CtxKeyTaskAddedAt, time.Now()),
+		uniqID:      taskID,
+		callback:    handler,
 		maxAttempts: 1,
-		delayFunc: func(attempts uint16) time.Duration {
-			return delay
+		deferFn: func(attempts uint16) time.Duration {
+			return 0
 		},
 	}
 
-	tw.requeue(ctx, taskID, task)
-}
-
-func (tw *timewheel) AddRetryTask(ctx context.Context, taskID string, f TWHandler, attempts uint16, delay TWDelay) {
-	task := &TWTask{
-		ctx:         ctx,
-		callback:    f,
-		maxAttempts: attempts,
-		delayFunc:   delay,
-	}
-
-	tw.requeue(ctx, taskID, task)
+	tw.requeue(task)
 }
 
 func (tw *timewheel) Stop() {
 	select {
 	case <-tw.stop:
-		tw.logger.Warn(context.Background(), "TimingWheel has stoped")
+		tw.log(context.Background(), "timingwheel stopped")
 
 		return
 	default:
@@ -87,38 +70,36 @@ func (tw *timewheel) Stop() {
 
 	close(tw.stop)
 
-	tw.logger.Warn(context.Background(), fmt.Sprintf("TimingWheel stoped at: %s", time.Now().String()))
+	tw.log(context.Background(), fmt.Sprintf("timingwheel stoped at: %s", time.Now().String()))
 }
 
-func (tw *timewheel) requeue(ctx context.Context, taskID string, task *TWTask) {
+func (tw *timewheel) requeue(task *TWTask) {
 	select {
 	case <-tw.stop:
-		tw.logger.Err(ctx, fmt.Sprintf("err task(%s) requeue", taskID), zap.Uint16("attempts", task.attempts+1), zap.Error(errors.New("TimingWheel has stoped")))
+		tw.log(task.ctx, fmt.Sprintf("task(%s) attempt(%d) failed, because the timingwheel has stopped", task.uniqID, task.attempts+1))
 
 		return
 	default:
 	}
 
 	if task.attempts >= task.maxAttempts {
-		tw.logger.Warn(ctx, fmt.Sprintf("task(%s) attempted %d times, giving up", taskID, task.attempts), zap.Uint16("max_attempts", task.maxAttempts))
+		tw.log(task.ctx, fmt.Sprintf("task(%s) attempted up to %d times, giving up", task.uniqID, task.attempts))
 
 		return
 	}
 
 	task.attempts++
 
-	duration := task.delayFunc(task.attempts)
+	duration := task.deferFn(task.attempts)
 	slot := tw.place(task, duration)
 
-	task.addedAt = time.Now()
-
 	if duration < tw.tick {
-		go tw.run(taskID, task)
+		go tw.run(task)
 
 		return
 	}
 
-	tw.bucket[slot].Store(taskID, task)
+	tw.bucket[slot].Store(task.uniqID, task)
 }
 
 func (tw *timewheel) place(task *TWTask, delay time.Duration) int {
@@ -163,7 +144,6 @@ func (tw *timewheel) process(slot int) {
 		default:
 		}
 
-		taskID := key.(string)
 		task := value.(*TWTask)
 
 		if task.round > 0 {
@@ -172,7 +152,7 @@ func (tw *timewheel) process(slot int) {
 			return true
 		}
 
-		go tw.run(taskID, task)
+		go tw.run(task)
 
 		tw.bucket[slot].Delete(key)
 
@@ -180,89 +160,69 @@ func (tw *timewheel) process(slot int) {
 	})
 }
 
-func (tw *timewheel) run(taskID string, task *TWTask) {
+func (tw *timewheel) run(task *TWTask) {
 	if task.remainder > 0 {
 		time.Sleep(task.remainder)
 	}
 
-	delay := time.Since(task.addedAt).String()
-
-	ctx := tw.ctxNew(task.ctx)
-
 	defer func() {
 		if err := recover(); err != nil {
-			tw.logger.Err(ctx, fmt.Sprintf("task(%s) run panic", taskID), zap.Uint16("attempts", task.attempts), zap.String("delay", delay), zap.Any("error", err), zap.ByteString("stack", debug.Stack()))
+			tw.log(task.ctx, fmt.Sprintf("task(%s) run panic: %v", task.uniqID, err))
 
 			if task.attempts < task.maxAttempts {
-				tw.requeue(ctx, taskID, task)
+				tw.requeue(task)
 			}
 		}
 	}()
 
-	if err := task.callback(ctx, taskID); err != nil {
-		tw.logger.Err(ctx, fmt.Sprintf("err task(%s) run", taskID), zap.Uint16("attempts", task.attempts), zap.String("delay", delay), zap.Error(err))
+	if err := task.callback(task.ctx, task.uniqID); err != nil {
+		tw.log(task.ctx, fmt.Sprintf("task(%s) run error: %v", task.uniqID, err))
 
 		if task.attempts < task.maxAttempts {
-			tw.requeue(ctx, taskID, task)
+			tw.requeue(task)
 		}
 
 		return
 	}
-
-	if tw.debug {
-		tw.logger.Info(ctx, fmt.Sprintf("task(%s) run ok", taskID), zap.Uint16("attempts", task.attempts), zap.String("delay", delay))
-	}
 }
 
-// TWOption timing wheel option.
+// TWOption timingwheel option.
 type TWOption func(tw *timewheel)
 
-// WithTWCtx clones context for executing tasks asynchronously, the default is `context.Background()`.
-func WithTWCtx(fn func(ctx context.Context) context.Context) TWOption {
+// WithTWLogger specifies logger for timingwheel.
+func WithTWLogger(fn func(ctx context.Context, v ...interface{})) TWOption {
 	return func(tw *timewheel) {
-		tw.ctxNew = fn
+		tw.log = fn
 	}
 }
 
-// WithTWLogger specifies logger for timing wheel.
-func WithTWLogger(l CtxLogger) TWOption {
-	return func(tw *timewheel) {
-		tw.logger = l
+// TaskOption timingwheel task option.
+type TaskOption func(t *TWTask)
+
+// WithTaskAttempts specifies attempt count for timingwheel task and 1 for default.
+func WithTaskAttempts(attempts uint16) TaskOption {
+	return func(t *TWTask) {
+		t.attempts = attempts
 	}
 }
 
-// WithTWDebug specifies debug mode for timing wheel.
-func WithTWDebug() TWOption {
-	return func(tw *timewheel) {
-		tw.debug = true
+// WithTaskDefer specifies the task to be executed until the timeout expires and 0 for default.
+func WithTaskDefer(fn func(attempts uint16) time.Duration) TaskOption {
+	return func(t *TWTask) {
+		t.deferFn = fn
 	}
 }
 
-type twLogger struct{}
-
-func (l *twLogger) Info(ctx context.Context, msg string, fields ...zap.Field) {
-	logger.Info(fmt.Sprintf("[tw] %s", msg), fields...)
-}
-
-func (l *twLogger) Warn(ctx context.Context, msg string, fields ...zap.Field) {
-	logger.Warn(fmt.Sprintf("[tw] %s", msg), fields...)
-}
-
-func (l *twLogger) Err(ctx context.Context, msg string, fields ...zap.Field) {
-	logger.Error(fmt.Sprintf("[tw] %s", msg), fields...)
-}
-
-// NewTimingWheel returns a new timing wheel.
+// NewTimingWheel returns a new timingwheel.
 func NewTimingWheel(tick time.Duration, size int, options ...TWOption) TimingWheel {
 	tw := &timewheel{
 		tick:   tick,
 		size:   size,
 		bucket: make([]sync.Map, size),
 		stop:   make(chan struct{}),
-		ctxNew: func(ctx context.Context) context.Context {
-			return context.Background()
+		log: func(ctx context.Context, v ...interface{}) {
+			logger.Error("err timingwheel", zap.String("err", fmt.Sprint(v...)))
 		},
-		logger: new(twLogger),
 	}
 
 	for _, f := range options {

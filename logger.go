@@ -1,7 +1,6 @@
 package yiigo
 
 import (
-	"context"
 	"os"
 	"sync"
 	"time"
@@ -10,18 +9,6 @@ import (
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
-
-// CtxLogger custom logger with context
-type CtxLogger interface {
-	// Info logs a info message.
-	Info(ctx context.Context, msg string, fields ...zap.Field)
-
-	// Warn logs a warning message.
-	Warn(ctx context.Context, msg string, fields ...zap.Field)
-
-	// Err logs a error message.
-	Err(ctx context.Context, msg string, fields ...zap.Field)
-}
 
 var (
 	logger = debugLogger()

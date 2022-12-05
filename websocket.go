@@ -7,7 +7,6 @@ import (
 	"net/http"
 
 	"github.com/gorilla/websocket"
-	"github.com/tidwall/pretty"
 	"go.uber.org/zap"
 )
 
@@ -76,12 +75,11 @@ type WSConn interface {
 }
 
 type wsconn struct {
-	name     string
-	conn     *websocket.Conn
-	authOK   bool
-	authFunc WSHandler
-	logger   CtxLogger
-	debug    bool
+	name   string
+	conn   *websocket.Conn
+	authOK bool
+	authFn WSHandler
+	log    func(ctx context.Context, v ...interface{})
 }
 
 func (c *wsconn) Read(ctx context.Context, callback WSHandler) error {
@@ -94,13 +92,13 @@ func (c *wsconn) Read(ctx context.Context, callback WSHandler) error {
 
 			if err != nil {
 				if websocket.IsCloseError(err, websocket.CloseNormalClosure) {
-					c.logger.Info(ctx, fmt.Sprintf("conn(%s) closed", c.name), zap.String("msg", err.Error()))
+					c.log(ctx, fmt.Sprintf("conn(%s) closed: %v", c.name, err))
 
 					return nil
 				}
 
 				if websocket.IsUnexpectedCloseError(err, websocket.CloseNormalClosure) {
-					c.logger.Warn(ctx, fmt.Sprintf("conn(%s) closed unexpectedly", c.name), zap.String("msg", err.Error()))
+					c.log(ctx, fmt.Sprintf("conn(%s) closed unexpectedly: %v", c.name, err))
 
 					return nil
 				}
@@ -108,15 +106,11 @@ func (c *wsconn) Read(ctx context.Context, callback WSHandler) error {
 				return err
 			}
 
-			if c.debug {
-				c.logger.Info(ctx, fmt.Sprintf("conn(%s) read msg", c.name), zap.Int("msg.T", t), zap.ByteString("msg.V", pretty.Ugly(b)))
-			}
-
 			var msg WSMsg
 
 			// if `authFunc` is not nil and unauthorized, need to authorize first.
-			if c.authFunc != nil && !c.authOK {
-				msg, err = c.authFunc(ctx, NewWSMsg(t, b))
+			if c.authFn != nil && !c.authOK {
+				msg, err = c.authFn(ctx, NewWSMsg(t, b))
 
 				if err != nil {
 					msg = NewWSTextMsg([]byte(err.Error()))
@@ -134,12 +128,8 @@ func (c *wsconn) Read(ctx context.Context, callback WSHandler) error {
 			}
 
 			if msg != nil {
-				if c.debug {
-					c.logger.Info(ctx, fmt.Sprintf("conn(%s) write msg", c.name), zap.Int("msg.T", msg.T()), zap.ByteString("msg.V", pretty.Ugly(msg.V())))
-				}
-
 				if err = c.conn.WriteMessage(msg.T(), msg.V()); err != nil {
-					c.logger.Err(ctx, fmt.Sprintf("err conn(%s) write msg", c.name), zap.Error(err), zap.Int("msg.T", msg.T()), zap.ByteString("msg.V", pretty.Ugly(msg.V())))
+					c.log(ctx, fmt.Sprintf("conn(%s) write msg failed, got err: %v", c.name, err))
 				}
 			}
 		}
@@ -153,15 +143,11 @@ func (c *wsconn) Write(ctx context.Context, msg WSMsg) error {
 	default:
 	}
 
-	// if `authFunc` is not nil and unauthorized, disable to write message.
-	if c.authFunc != nil && !c.authOK {
-		c.logger.Warn(ctx, fmt.Sprintf("conn(%s) write msg disabled due to unauthorized", c.name), zap.Int("msg.T", msg.T()), zap.ByteString("msg.V", pretty.Ugly(msg.V())))
+	// if `authFn` is not nil and unauthorized, disable to write message.
+	if c.authFn != nil && !c.authOK {
+		c.log(ctx, fmt.Sprintf("conn(%s) write msg disabled due to unauthorized", c.name))
 
 		return nil
-	}
-
-	if c.debug {
-		c.logger.Info(ctx, fmt.Sprintf("conn(%s) write msg", c.name), zap.Int("msg.T", msg.T()), zap.ByteString("msg.V", pretty.Ugly(msg.V())))
 	}
 
 	if err := c.conn.WriteMessage(msg.T(), msg.V()); err != nil {
@@ -173,7 +159,7 @@ func (c *wsconn) Write(ctx context.Context, msg WSMsg) error {
 
 func (c *wsconn) Close(ctx context.Context) {
 	if err := c.conn.Close(); err != nil {
-		c.logger.Err(ctx, fmt.Sprintf("err close conn(%s)", c.name), zap.Error(err))
+		c.log(ctx, fmt.Sprintf("close conn(%s) failed, got err: %v", c.name, err))
 	}
 }
 
@@ -183,36 +169,15 @@ type WSOption func(c *wsconn)
 // WithWSAuth specifies authorization for ws connection.
 func WithWSAuth(fn WSHandler) WSOption {
 	return func(c *wsconn) {
-		c.authFunc = fn
+		c.authFn = fn
 	}
 }
 
 // WithWSLogger specifies logger for ws connection.
-func WithWSLogger(l CtxLogger) WSOption {
+func WithWSLogger(fn func(ctx context.Context, v ...interface{})) WSOption {
 	return func(c *wsconn) {
-		c.logger = l
+		c.log = fn
 	}
-}
-
-// WithWSDebug specifies debug mode for ws connection.
-func WithWSDebug() WSOption {
-	return func(c *wsconn) {
-		c.debug = true
-	}
-}
-
-type wsLogger struct{}
-
-func (l *wsLogger) Info(ctx context.Context, msg string, fields ...zap.Field) {
-	logger.Info(fmt.Sprintf("[ws] %s", msg), fields...)
-}
-
-func (l *wsLogger) Warn(ctx context.Context, msg string, fields ...zap.Field) {
-	logger.Warn(fmt.Sprintf("[ws] %s", msg), fields...)
-}
-
-func (l *wsLogger) Err(ctx context.Context, msg string, fields ...zap.Field) {
-	logger.Error(fmt.Sprintf("[ws] %s", msg), fields...)
 }
 
 // NewWSConn returns a new ws connection.
@@ -228,9 +193,11 @@ func NewWSConn(name string, w http.ResponseWriter, r *http.Request, options ...W
 	}
 
 	conn := &wsconn{
-		name:   name,
-		conn:   c,
-		logger: new(wsLogger),
+		name: name,
+		conn: c,
+		log: func(ctx context.Context, v ...interface{}) {
+			logger.Error("err websocket", zap.String("err", fmt.Sprint(v...)))
+		},
 	}
 
 	for _, f := range options {

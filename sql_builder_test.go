@@ -10,112 +10,126 @@ import (
 func TestToQuery(t *testing.T) {
 	ctx := context.TODO()
 
-	query, binds := builder.Wrap(
+	builder := NewMySQLBuilder()
+
+	sql, args, err := builder.Wrap(
 		Table("user"),
 		Where("id = ?", 1),
 	).ToQuery(ctx)
 
-	assert.Equal(t, "SELECT * FROM user WHERE id = ?", query)
-	assert.Equal(t, []interface{}{1}, binds)
+	assert.Nil(t, err)
+	assert.Equal(t, "SELECT * FROM user WHERE id = ?", sql)
+	assert.Equal(t, []interface{}{1}, args)
 
-	query, binds = builder.Wrap(
+	sql, args, err = builder.Wrap(
 		Table("user"),
 		Where("name = ? AND age > ?", "yiigo", 20),
 	).ToQuery(ctx)
 
-	assert.Equal(t, "SELECT * FROM user WHERE name = ? AND age > ?", query)
-	assert.Equal(t, []interface{}{"yiigo", 20}, binds)
+	assert.Nil(t, err)
+	assert.Equal(t, "SELECT * FROM user WHERE name = ? AND age > ?", sql)
+	assert.Equal(t, []interface{}{"yiigo", 20}, args)
 
-	query, binds = builder.Wrap(
+	sql, args, err = builder.Wrap(
 		Table("user"),
 		WhereIn("age IN (?)", []int{20, 30}),
 	).ToQuery(ctx)
 
-	assert.Equal(t, "SELECT * FROM user WHERE age IN (?, ?)", query)
-	assert.Equal(t, []interface{}{20, 30}, binds)
+	assert.Nil(t, err)
+	assert.Equal(t, "SELECT * FROM user WHERE age IN (?, ?)", sql)
+	assert.Equal(t, []interface{}{20, 30}, args)
 
-	query, binds = builder.Wrap(
+	sql, args, err = builder.Wrap(
 		Table("user"),
 		Select("id", "name", "age"),
 		Where("id = ?", 1),
 	).ToQuery(ctx)
 
-	assert.Equal(t, "SELECT id, name, age FROM user WHERE id = ?", query)
-	assert.Equal(t, []interface{}{1}, binds)
+	assert.Nil(t, err)
+	assert.Equal(t, "SELECT id, name, age FROM user WHERE id = ?", sql)
+	assert.Equal(t, []interface{}{1}, args)
 
-	query, binds = builder.Wrap(
+	sql, args, err = builder.Wrap(
 		Table("user"),
 		Distinct("name"),
 		Where("id = ?", 1),
 	).ToQuery(ctx)
 
-	assert.Equal(t, "SELECT DISTINCT name FROM user WHERE id = ?", query)
-	assert.Equal(t, []interface{}{1}, binds)
+	assert.Nil(t, err)
+	assert.Equal(t, "SELECT DISTINCT name FROM user WHERE id = ?", sql)
+	assert.Equal(t, []interface{}{1}, args)
 
-	query, binds = builder.Wrap(
+	sql, args, err = builder.Wrap(
 		Table("user"),
 		Join("address", "user.id = address.user_id"),
 		Where("user.id = ?", 1),
 	).ToQuery(ctx)
 
-	assert.Equal(t, "SELECT * FROM user INNER JOIN address ON user.id = address.user_id WHERE user.id = ?", query)
-	assert.Equal(t, []interface{}{1}, binds)
+	assert.Nil(t, err)
+	assert.Equal(t, "SELECT * FROM user INNER JOIN address ON user.id = address.user_id WHERE user.id = ?", sql)
+	assert.Equal(t, []interface{}{1}, args)
 
-	query, binds = builder.Wrap(
+	sql, args, err = builder.Wrap(
 		Table("user"),
 		LeftJoin("address", "user.id = address.user_id"),
 		Where("user.id = ?", 1),
 	).ToQuery(ctx)
 
-	assert.Equal(t, "SELECT * FROM user LEFT JOIN address ON user.id = address.user_id WHERE user.id = ?", query)
-	assert.Equal(t, []interface{}{1}, binds)
+	assert.Nil(t, err)
+	assert.Equal(t, "SELECT * FROM user LEFT JOIN address ON user.id = address.user_id WHERE user.id = ?", sql)
+	assert.Equal(t, []interface{}{1}, args)
 
-	query, binds = builder.Wrap(
+	sql, args, err = builder.Wrap(
 		Table("user"),
 		RightJoin("address", "user.id = address.user_id"),
 		Where("user.id = ?", 1),
 	).ToQuery(ctx)
 
-	assert.Equal(t, "SELECT * FROM user RIGHT JOIN address ON user.id = address.user_id WHERE user.id = ?", query)
-	assert.Equal(t, []interface{}{1}, binds)
+	assert.Nil(t, err)
+	assert.Equal(t, "SELECT * FROM user RIGHT JOIN address ON user.id = address.user_id WHERE user.id = ?", sql)
+	assert.Equal(t, []interface{}{1}, args)
 
-	query, binds = builder.Wrap(
+	sql, args, err = builder.Wrap(
 		Table("user"),
 		FullJoin("address", "user.id = address.user_id"),
 		Where("user.id = ?", 1),
 	).ToQuery(ctx)
 
-	assert.Equal(t, "SELECT * FROM user FULL JOIN address ON user.id = address.user_id WHERE user.id = ?", query)
-	assert.Equal(t, []interface{}{1}, binds)
+	assert.Nil(t, err)
+	assert.Equal(t, "SELECT * FROM user FULL JOIN address ON user.id = address.user_id WHERE user.id = ?", sql)
+	assert.Equal(t, []interface{}{1}, args)
 
-	query, _ = builder.Wrap(
+	sql, _, err = builder.Wrap(
 		Table("sizes"),
 		CrossJoin("colors"),
 	).ToQuery(ctx)
 
-	assert.Equal(t, "SELECT * FROM sizes CROSS JOIN colors", query)
+	assert.Nil(t, err)
+	assert.Equal(t, "SELECT * FROM sizes CROSS JOIN colors", sql)
 
-	query, binds = builder.Wrap(
+	sql, args, err = builder.Wrap(
 		Table("user"),
 		LeftJoin("address", "user.id = address.user_id"),
 		RightJoin("company", "user.id = company.user_id"),
 		Where("user.id = ?", 1),
 	).ToQuery(ctx)
 
-	assert.Equal(t, "SELECT * FROM user LEFT JOIN address ON user.id = address.user_id RIGHT JOIN company ON user.id = company.user_id WHERE user.id = ?", query)
-	assert.Equal(t, []interface{}{1}, binds)
+	assert.Nil(t, err)
+	assert.Equal(t, "SELECT * FROM user LEFT JOIN address ON user.id = address.user_id RIGHT JOIN company ON user.id = company.user_id WHERE user.id = ?", sql)
+	assert.Equal(t, []interface{}{1}, args)
 
-	query, binds = builder.Wrap(
+	sql, args, err = builder.Wrap(
 		Table("address"),
 		Select("user_id", "COUNT(*) AS total"),
 		GroupBy("user_id"),
 		Having("user_id = ?", 1),
 	).ToQuery(ctx)
 
-	assert.Equal(t, "SELECT user_id, COUNT(*) AS total FROM address GROUP BY user_id HAVING user_id = ?", query)
-	assert.Equal(t, []interface{}{1}, binds)
+	assert.Nil(t, err)
+	assert.Equal(t, "SELECT user_id, COUNT(*) AS total FROM address GROUP BY user_id HAVING user_id = ?", sql)
+	assert.Equal(t, []interface{}{1}, args)
 
-	query, binds = builder.Wrap(
+	sql, args, err = builder.Wrap(
 		Table("user"),
 		Where("age > ?", 20),
 		OrderBy("age ASC", "id DESC"),
@@ -123,28 +137,31 @@ func TestToQuery(t *testing.T) {
 		Limit(10),
 	).ToQuery(ctx)
 
-	assert.Equal(t, "SELECT * FROM user WHERE age > ? ORDER BY age ASC, id DESC LIMIT ? OFFSET ?", query)
-	assert.Equal(t, []interface{}{20, 10, 5}, binds)
+	assert.Nil(t, err)
+	assert.Equal(t, "SELECT * FROM user WHERE age > ? ORDER BY age ASC, id DESC LIMIT ? OFFSET ?", sql)
+	assert.Equal(t, []interface{}{20, 10, 5}, args)
 
-	query, binds = builder.Wrap(
+	sql, args, err = builder.Wrap(
 		Table("user_0"),
 		Where("id = ?", 1),
 		Union(builder.Wrap(Table("user_1"), Where("id = ?", 2))),
 	).ToQuery(ctx)
 
-	assert.Equal(t, "(SELECT * FROM user_0 WHERE id = ?) UNION (SELECT * FROM user_1 WHERE id = ?)", query)
-	assert.Equal(t, []interface{}{1, 2}, binds)
+	assert.Nil(t, err)
+	assert.Equal(t, "(SELECT * FROM user_0 WHERE id = ?) UNION (SELECT * FROM user_1 WHERE id = ?)", sql)
+	assert.Equal(t, []interface{}{1, 2}, args)
 
-	query, binds = builder.Wrap(
+	sql, args, err = builder.Wrap(
 		Table("user_0"),
 		Where("id = ?", 1),
 		UnionAll(builder.Wrap(Table("user_1"), Where("id = ?", 2))),
 	).ToQuery(ctx)
 
-	assert.Equal(t, "(SELECT * FROM user_0 WHERE id = ?) UNION ALL (SELECT * FROM user_1 WHERE id = ?)", query)
-	assert.Equal(t, []interface{}{1, 2}, binds)
+	assert.Nil(t, err)
+	assert.Equal(t, "(SELECT * FROM user_0 WHERE id = ?) UNION ALL (SELECT * FROM user_1 WHERE id = ?)", sql)
+	assert.Equal(t, []interface{}{1, 2}, args)
 
-	query, binds = builder.Wrap(
+	sql, args, err = builder.Wrap(
 		Table("user_0"),
 		WhereIn("age IN (?)", []int{10, 20}),
 		Limit(5),
@@ -157,22 +174,26 @@ func TestToQuery(t *testing.T) {
 		),
 	).ToQuery(ctx)
 
-	assert.Equal(t, "(SELECT * FROM user_0 WHERE age IN (?, ?) LIMIT ?) UNION (SELECT * FROM user_1 WHERE age IN (?, ?) LIMIT ?)", query)
-	assert.Equal(t, []interface{}{10, 20, 5, 30, 40, 5}, binds)
+	assert.Nil(t, err)
+	assert.Equal(t, "(SELECT * FROM user_0 WHERE age IN (?, ?) LIMIT ?) UNION (SELECT * FROM user_1 WHERE age IN (?, ?) LIMIT ?)", sql)
+	assert.Equal(t, []interface{}{10, 20, 5, 30, 40, 5}, args)
 
-	query, binds = builder.Wrap(
+	sql, args, err = builder.Wrap(
 		Table("user_0"),
 		Where("id = ?", 1),
 		Union(builder.Wrap(Table("user_1"), Where("id = ?", 2))),
 		UnionAll(builder.Wrap(Table("user_2"), Where("id = ?", 3))),
 	).ToQuery(ctx)
 
-	assert.Equal(t, "(SELECT * FROM user_0 WHERE id = ?) UNION (SELECT * FROM user_1 WHERE id = ?) UNION ALL (SELECT * FROM user_2 WHERE id = ?)", query)
-	assert.Equal(t, []interface{}{1, 2, 3}, binds)
+	assert.Nil(t, err)
+	assert.Equal(t, "(SELECT * FROM user_0 WHERE id = ?) UNION (SELECT * FROM user_1 WHERE id = ?) UNION ALL (SELECT * FROM user_2 WHERE id = ?)", sql)
+	assert.Equal(t, []interface{}{1, 2, 3}, args)
 }
 
 func TestToInsert(t *testing.T) {
 	ctx := context.TODO()
+
+	builder := NewMySQLBuilder()
 
 	type User struct {
 		ID     int    `db:"-"`
@@ -182,38 +203,41 @@ func TestToInsert(t *testing.T) {
 		Phone  string `db:"phone,omitempty"`
 	}
 
-	query, binds := builder.Wrap(Table("user")).ToInsert(ctx, &User{
+	sql, args, err := builder.Wrap(Table("user")).ToInsert(ctx, &User{
 		Name:   "yiigo",
 		Gender: "M",
 		Age:    29,
 	})
 
-	assert.Equal(t, "INSERT INTO user (name, gender, age) VALUES (?, ?, ?)", query)
-	assert.Equal(t, []interface{}{"yiigo", "M", 29}, binds)
+	assert.Nil(t, err)
+	assert.Equal(t, "INSERT INTO user (name, gender, age) VALUES (?, ?, ?)", sql)
+	assert.Equal(t, []interface{}{"yiigo", "M", 29}, args)
 
-	query, binds = builder.Wrap(Table("user")).ToInsert(ctx, &User{
+	sql, args, err = builder.Wrap(Table("user")).ToInsert(ctx, &User{
 		Name:   "yiigo",
 		Gender: "M",
 		Age:    29,
 		Phone:  "13605109425",
 	})
 
-	assert.Equal(t, "INSERT INTO user (name, gender, age, phone) VALUES (?, ?, ?, ?)", query)
-	assert.Equal(t, []interface{}{"yiigo", "M", 29, "13605109425"}, binds)
+	assert.Equal(t, "INSERT INTO user (name, gender, age, phone) VALUES (?, ?, ?, ?)", sql)
+	assert.Equal(t, []interface{}{"yiigo", "M", 29, "13605109425"}, args)
 
 	// map 字段顺序不一定
-	// query, binds = builder.Wrap(Table("user")).ToInsert(ctx, X{
+	// sql, args, err = builder.Wrap(Table("user")).ToInsert(ctx, X{
 	// 	"age":    29,
 	// 	"gender": "M",
 	// 	"name":   "yiigo",
 	// })
 	//
-	// assert.Equal(t, "INSERT INTO user (age, gender, name) VALUES (?, ?, ?)", query)
-	// assert.Equal(t, []interface{}{29, "M", "yiigo"}, binds)
+	// assert.Equal(t, "INSERT INTO user (age, gender, name) VALUES (?, ?, ?)", sql)
+	// assert.Equal(t, []interface{}{29, "M", "yiigo"}, args)
 }
 
 func TestToBatchInsert(t *testing.T) {
 	ctx := context.TODO()
+
+	builder := NewMySQLBuilder()
 
 	type User struct {
 		ID     int    `db:"-"`
@@ -223,7 +247,7 @@ func TestToBatchInsert(t *testing.T) {
 		Phone  string `db:"phone,omitempty"`
 	}
 
-	query, binds := builder.Wrap(Table("user")).ToBatchInsert(ctx, []*User{
+	sql, args, err := builder.Wrap(Table("user")).ToBatchInsert(ctx, []*User{
 		{
 			Name:   "yiigo",
 			Gender: "M",
@@ -236,10 +260,11 @@ func TestToBatchInsert(t *testing.T) {
 		},
 	})
 
-	assert.Equal(t, "INSERT INTO user (name, gender, age) VALUES (?, ?, ?), (?, ?, ?)", query)
-	assert.Equal(t, []interface{}{"yiigo", "M", 29, "test", "W", 20}, binds)
+	assert.Nil(t, err)
+	assert.Equal(t, "INSERT INTO user (name, gender, age) VALUES (?, ?, ?), (?, ?, ?)", sql)
+	assert.Equal(t, []interface{}{"yiigo", "M", 29, "test", "W", 20}, args)
 
-	query, binds = builder.Wrap(Table("user")).ToBatchInsert(ctx, []*User{
+	sql, args, err = builder.Wrap(Table("user")).ToBatchInsert(ctx, []*User{
 		{
 			Name:   "yiigo",
 			Gender: "M",
@@ -254,11 +279,12 @@ func TestToBatchInsert(t *testing.T) {
 		},
 	})
 
-	assert.Equal(t, "INSERT INTO user (name, gender, age, phone) VALUES (?, ?, ?, ?), (?, ?, ?, ?)", query)
-	assert.Equal(t, []interface{}{"yiigo", "M", 29, "13605109425", "test", "W", 20, "13605105471"}, binds)
+	assert.Nil(t, err)
+	assert.Equal(t, "INSERT INTO user (name, gender, age, phone) VALUES (?, ?, ?, ?), (?, ?, ?, ?)", sql)
+	assert.Equal(t, []interface{}{"yiigo", "M", 29, "13605109425", "test", "W", 20, "13605105471"}, args)
 
 	// map 字段顺序不一定
-	// query, binds = builder.Wrap(Table("user")).ToBatchInsert(ctx, []X{
+	// sql, args, err = builder.Wrap(Table("user")).ToBatchInsert(ctx, []X{
 	// 	{
 	// 		"age":    29,
 	// 		"gender": "M",
@@ -271,12 +297,14 @@ func TestToBatchInsert(t *testing.T) {
 	// 	},
 	// })
 	//
-	// assert.Equal(t, "INSERT INTO user (age, gender, name) VALUES (?, ?, ?), (?, ?, ?)", query)
-	// assert.Equal(t, []interface{}{29, "M", "yiigo", 20, "W", "test"}, binds)
+	// assert.Equal(t, "INSERT INTO user (age, gender, name) VALUES (?, ?, ?), (?, ?, ?)", sql)
+	// assert.Equal(t, []interface{}{29, "M", "yiigo", 20, "W", "test"}, args)
 }
 
 func TestToUpdate(t *testing.T) {
 	ctx := context.TODO()
+
+	builder := NewMySQLBuilder()
 
 	type User struct {
 		Name   string `db:"name"`
@@ -285,7 +313,7 @@ func TestToUpdate(t *testing.T) {
 		Phone  string `db:"phone,omitempty"`
 	}
 
-	query, binds := builder.Wrap(
+	sql, args, err := builder.Wrap(
 		Table("user"),
 		Where("id = ?", 1),
 	).ToUpdate(ctx, &User{
@@ -294,10 +322,11 @@ func TestToUpdate(t *testing.T) {
 		Age:    29,
 	})
 
-	assert.Equal(t, "UPDATE user SET name = ?, gender = ?, age = ? WHERE id = ?", query)
-	assert.Equal(t, []interface{}{"yiigo", "M", 29, 1}, binds)
+	assert.Nil(t, err)
+	assert.Equal(t, "UPDATE user SET name = ?, gender = ?, age = ? WHERE id = ?", sql)
+	assert.Equal(t, []interface{}{"yiigo", "M", 29, 1}, args)
 
-	query, binds = builder.Wrap(
+	sql, args, err = builder.Wrap(
 		Table("user"),
 		Where("id = ?", 1),
 	).ToUpdate(ctx, &User{
@@ -307,11 +336,12 @@ func TestToUpdate(t *testing.T) {
 		Phone:  "13605109425",
 	})
 
-	assert.Equal(t, "UPDATE user SET name = ?, gender = ?, age = ?, phone = ? WHERE id = ?", query)
-	assert.Equal(t, []interface{}{"yiigo", "M", 29, "13605109425", 1}, binds)
+	assert.Nil(t, err)
+	assert.Equal(t, "UPDATE user SET name = ?, gender = ?, age = ?, phone = ? WHERE id = ?", sql)
+	assert.Equal(t, []interface{}{"yiigo", "M", 29, "13605109425", 1}, args)
 
 	// map 字段顺序不一定
-	// query, binds = builder.Wrap(
+	// sql, args, err = builder.Wrap(
 	// 	Table("user"),
 	// 	Where("id = ?", 1),
 	// ).ToUpdate(ctx, X{
@@ -320,10 +350,10 @@ func TestToUpdate(t *testing.T) {
 	// 	"name":   "yiigo",
 	// })
 	//
-	// assert.Equal(t, "UPDATE user SET age = ?, gender = ?, name = ? WHERE id = ?", query)
-	// assert.Equal(t, []interface{}{29, "M", "yiigo", 1}, binds)
+	// assert.Equal(t, "UPDATE user SET age = ?, gender = ?, name = ? WHERE id = ?", sql)
+	// assert.Equal(t, []interface{}{29, "M", "yiigo", 1}, args)
 
-	query, binds = builder.Wrap(
+	sql, args, err = builder.Wrap(
 		Table("user"),
 		WhereIn("id IN (?)", []int{1, 2}),
 	).ToUpdate(ctx, &User{
@@ -332,38 +362,45 @@ func TestToUpdate(t *testing.T) {
 		Age:    29,
 	})
 
-	assert.Equal(t, "UPDATE user SET name = ?, gender = ?, age = ? WHERE id IN (?, ?)", query)
-	assert.Equal(t, []interface{}{"yiigo", "M", 29, 1, 2}, binds)
+	assert.Nil(t, err)
+	assert.Equal(t, "UPDATE user SET name = ?, gender = ?, age = ? WHERE id IN (?, ?)", sql)
+	assert.Equal(t, []interface{}{"yiigo", "M", 29, 1, 2}, args)
 
-	query, binds = builder.Wrap(
+	sql, args, err = builder.Wrap(
 		Table("product"),
 		Where("id = ?", 1),
 	).ToUpdate(ctx, X{"price": Clause("price * ? + ?", 2, 100)})
 
-	assert.Equal(t, "UPDATE product SET price = price * ? + ? WHERE id = ?", query)
-	assert.Equal(t, []interface{}{2, 100, 1}, binds)
+	assert.Nil(t, err)
+	assert.Equal(t, "UPDATE product SET price = price * ? + ? WHERE id = ?", sql)
+	assert.Equal(t, []interface{}{2, 100, 1}, args)
 }
 
 func TestToDelete(t *testing.T) {
 	ctx := context.TODO()
 
-	query, binds := builder.Wrap(
+	builder := NewMySQLBuilder()
+
+	sql, args, err := builder.Wrap(
 		Table("user"),
 		Where("id = ?", 1),
 	).ToDelete(ctx)
 
-	assert.Equal(t, "DELETE FROM user WHERE id = ?", query)
-	assert.Equal(t, []interface{}{1}, binds)
+	assert.Nil(t, err)
+	assert.Equal(t, "DELETE FROM user WHERE id = ?", sql)
+	assert.Equal(t, []interface{}{1}, args)
 
-	query, binds = builder.Wrap(
+	sql, args, err = builder.Wrap(
 		Table("user"),
 		WhereIn("id IN (?)", []int{1, 2}),
 	).ToDelete(ctx)
 
-	assert.Equal(t, "DELETE FROM user WHERE id IN (?, ?)", query)
-	assert.Equal(t, []interface{}{1, 2}, binds)
+	assert.Equal(t, "DELETE FROM user WHERE id IN (?, ?)", sql)
+	assert.Equal(t, []interface{}{1, 2}, args)
 }
 
 func TestToTruncate(t *testing.T) {
+	builder := NewMySQLBuilder()
+
 	assert.Equal(t, "TRUNCATE user", builder.Wrap(Table("user")).ToTruncate(context.TODO()))
 }
