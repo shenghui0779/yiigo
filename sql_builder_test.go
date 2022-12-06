@@ -220,6 +220,7 @@ func TestToInsert(t *testing.T) {
 		Phone:  "13605109425",
 	})
 
+	assert.Nil(t, err)
 	assert.Equal(t, "INSERT INTO user (name, gender, age, phone) VALUES (?, ?, ?, ?)", sql)
 	assert.Equal(t, []interface{}{"yiigo", "M", 29, "13605109425"}, args)
 
@@ -395,6 +396,7 @@ func TestToDelete(t *testing.T) {
 		WhereIn("id IN (?)", []int{1, 2}),
 	).ToDelete(ctx)
 
+	assert.Nil(t, err)
 	assert.Equal(t, "DELETE FROM user WHERE id IN (?, ?)", sql)
 	assert.Equal(t, []interface{}{1, 2}, args)
 }
