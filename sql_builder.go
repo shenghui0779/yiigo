@@ -10,10 +10,11 @@ import (
 )
 
 var (
-	// ErrInvalidUpsertData invalid insert or update data.
-	ErrInvalidUpsertData = errors.New("invaild data, expects struct, *struct, yiigo.X")
-	// ErrInvalidBatchInsertData invalid batch insert data.
-	ErrInvalidBatchInsertData = errors.New("invaild data, expects []struct, []*struct, []yiigo.X")
+	// ErrUpsertData invalid insert or update data.
+	ErrUpsertData = errors.New("invaild data, expects struct, *struct, yiigo.X")
+
+	// ErrBatchInsertData invalid batch insert data.
+	ErrBatchInsertData = errors.New("invaild data, expects []struct, []*struct, []yiigo.X")
 )
 
 // SQLBuilder is the interface for wrapping query options.
@@ -247,7 +248,7 @@ func (w *queryWrapper) ToInsert(ctx context.Context, data interface{}) (sql stri
 		x, ok := data.(X)
 
 		if !ok {
-			err = ErrInvalidUpsertData
+			err = ErrUpsertData
 
 			return
 		}
@@ -256,7 +257,7 @@ func (w *queryWrapper) ToInsert(ctx context.Context, data interface{}) (sql stri
 	case reflect.Struct:
 		columns, args = w.insertWithStruct(v)
 	default:
-		err = ErrInvalidUpsertData
+		err = ErrUpsertData
 
 		return
 	}
@@ -347,7 +348,7 @@ func (w *queryWrapper) ToBatchInsert(ctx context.Context, data interface{}) (sql
 	v := reflect.Indirect(reflect.ValueOf(data))
 
 	if v.Kind() != reflect.Slice {
-		err = ErrInvalidBatchInsertData
+		err = ErrBatchInsertData
 
 		return
 	}
@@ -367,7 +368,7 @@ func (w *queryWrapper) ToBatchInsert(ctx context.Context, data interface{}) (sql
 		x, ok := data.([]X)
 
 		if !ok {
-			err = ErrInvalidBatchInsertData
+			err = ErrBatchInsertData
 
 			return
 		}
@@ -377,14 +378,14 @@ func (w *queryWrapper) ToBatchInsert(ctx context.Context, data interface{}) (sql
 		columns, args = w.batchInsertWithStruct(v)
 	case reflect.Ptr:
 		if e.Elem().Kind() != reflect.Struct {
-			err = ErrInvalidBatchInsertData
+			err = ErrBatchInsertData
 
 			return
 		}
 
 		columns, args = w.batchInsertWithStruct(v)
 	default:
-		err = ErrInvalidBatchInsertData
+		err = ErrBatchInsertData
 
 		return
 	}
@@ -509,7 +510,7 @@ func (w *queryWrapper) ToUpdate(ctx context.Context, data interface{}) (sql stri
 		x, ok := data.(X)
 
 		if !ok {
-			err = ErrInvalidUpsertData
+			err = ErrUpsertData
 
 			return
 		}
@@ -518,7 +519,7 @@ func (w *queryWrapper) ToUpdate(ctx context.Context, data interface{}) (sql stri
 	case reflect.Struct:
 		columns, args = w.updateWithStruct(v)
 	default:
-		err = ErrInvalidUpsertData
+		err = ErrUpsertData
 
 		return
 	}
