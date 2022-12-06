@@ -11,28 +11,29 @@ import (
 
 type ctxTWKey int
 
-// CtxKeyTaskAddedAt is the key that holds the time in a task context when the task added to timingwheel.
-const CtxKeyTaskAddedAt ctxTWKey = 0
+// CtxTaskAddedAt is the key that holds the time in a task context when the task added to timingwheel.
+const CtxTaskAddedAt ctxTWKey = 0
 
-// TWTask timing wheel task.
+// TWTask timingwheel task.
 type TWTask struct {
 	ctx         context.Context
 	uniqID      string
 	round       int
-	maxAttempts uint16
-	attempts    uint16
-	remainder   time.Duration
+	attempts    uint16        // 当前尝试的次数
+	maxAttempts uint16        // 最大尝试次数
+	remainder   time.Duration // 任务执行前的剩余延迟（小于时间轮精度）
+	cumulative  int64         // 多次重试的累计时长（单位：ns）
 	deferFn     func(attempts uint16) time.Duration
 	callback    func(ctx context.Context, taskID string) error
 }
 
-// TimingWheel a simple single timing wheel.
+// TimingWheel a simple single timingwheel.
 type TimingWheel interface {
 	// AddTask adds a task which will be executed when expired, it will be retried if attempts > 0 and an error is returned.
 	// NOTE: Context should be cloned without timeout for executing tasks asynchronously.
 	AddTask(ctx context.Context, taskID string, handler func(ctx context.Context, taskID string) error, options ...TaskOption)
 
-	// Stop stops the timing wheel.
+	// Stop stops the timingwheel.
 	Stop()
 }
 
@@ -47,13 +48,17 @@ type timewheel struct {
 
 func (tw *timewheel) AddTask(ctx context.Context, taskID string, handler func(ctx context.Context, taskID string) error, options ...TaskOption) {
 	task := &TWTask{
-		ctx:         context.WithValue(ctx, CtxKeyTaskAddedAt, time.Now()),
+		ctx:         context.WithValue(ctx, CtxTaskAddedAt, time.Now()),
 		uniqID:      taskID,
 		callback:    handler,
 		maxAttempts: 1,
 		deferFn: func(attempts uint16) time.Duration {
 			return 0
 		},
+	}
+
+	for _, f := range options {
+		f(task)
 	}
 
 	tw.requeue(task)
@@ -74,6 +79,10 @@ func (tw *timewheel) Stop() {
 }
 
 func (tw *timewheel) requeue(task *TWTask) {
+	if task.attempts >= task.maxAttempts {
+		return
+	}
+
 	select {
 	case <-tw.stop:
 		tw.log(task.ctx, fmt.Sprintf("task(%s) attempt(%d) failed, because the timingwheel has stopped", task.uniqID, task.attempts+1))
@@ -82,43 +91,33 @@ func (tw *timewheel) requeue(task *TWTask) {
 	default:
 	}
 
-	if task.attempts >= task.maxAttempts {
-		tw.log(task.ctx, fmt.Sprintf("task(%s) attempted up to %d times, giving up", task.uniqID, task.attempts))
-
-		return
-	}
+	task.ctx = context.WithValue(task.ctx, CtxTaskAddedAt, time.Now())
 
 	task.attempts++
 
-	duration := task.deferFn(task.attempts)
-	slot := tw.place(task, duration)
-
-	if duration < tw.tick {
-		go tw.run(task)
-
-		return
-	}
-
-	tw.bucket[slot].Store(task.uniqID, task)
-}
-
-func (tw *timewheel) place(task *TWTask, delay time.Duration) int {
 	tick := tw.tick.Nanoseconds()
-	total := tick * int64(tw.size)
+	delay := task.deferFn(task.attempts)
 	duration := delay.Nanoseconds()
 
-	if duration > total {
-		task.round = int(duration / total)
-		duration = duration % total
+	task.cumulative += duration
+	task.round = int(duration / (tick * int64(tw.size)))
 
-		if duration == 0 {
-			task.round--
+	slot := int(task.cumulative/tick) % tw.size
+
+	if slot == tw.slot {
+		if task.round == 0 {
+			task.remainder = delay
+			go tw.run(task)
+
+			return
 		}
+
+		task.round--
 	}
 
-	task.remainder = time.Duration(duration % tick)
+	task.remainder = time.Duration(task.cumulative % tick)
 
-	return (tw.slot + int(duration/tick)) % tw.size
+	tw.bucket[slot].Store(task.uniqID, task)
 }
 
 func (tw *timewheel) scheduler() {
@@ -168,19 +167,12 @@ func (tw *timewheel) run(task *TWTask) {
 	defer func() {
 		if err := recover(); err != nil {
 			tw.log(task.ctx, fmt.Sprintf("task(%s) run panic: %v", task.uniqID, err))
-
-			if task.attempts < task.maxAttempts {
-				tw.requeue(task)
-			}
 		}
 	}()
 
 	if err := task.callback(task.ctx, task.uniqID); err != nil {
 		tw.log(task.ctx, fmt.Sprintf("task(%s) run error: %v", task.uniqID, err))
-
-		if task.attempts < task.maxAttempts {
-			tw.requeue(task)
-		}
+		tw.requeue(task)
 
 		return
 	}
@@ -202,7 +194,7 @@ type TaskOption func(t *TWTask)
 // WithTaskAttempts specifies attempt count for timingwheel task and 1 for default.
 func WithTaskAttempts(attempts uint16) TaskOption {
 	return func(t *TWTask) {
-		t.attempts = attempts
+		t.maxAttempts = attempts
 	}
 }
 
