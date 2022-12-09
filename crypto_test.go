@@ -159,11 +159,11 @@ func TestRSACrypto(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, plainText, string(db))
 
-	eboeap, err := pubKey.EncryptOEAP([]byte(plainText))
+	eboeap, err := pubKey.EncryptOAEP([]byte(plainText))
 
 	assert.Nil(t, err)
 
-	dboeap, err := pvtKey.DecryptOEAP(eboeap)
+	dboeap, err := pvtKey.DecryptOAEP(eboeap)
 
 	assert.Nil(t, err)
 	assert.Equal(t, plainText, string(dboeap))

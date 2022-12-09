@@ -50,6 +50,8 @@ type AESCrypto interface {
 	Decrypt(cipherText []byte) ([]byte, error)
 }
 
+// --------------------------- AES-CBC ---------------------------
+
 type cbccrypto struct {
 	key  []byte
 	iv   []byte
@@ -121,6 +123,8 @@ func NewCBCCrypto(key, iv []byte, mode PaddingMode) AESCrypto {
 	}
 }
 
+// --------------------------- AES-ECB ---------------------------
+
 type ecbcrypto struct {
 	key  []byte
 	mode PaddingMode
@@ -182,6 +186,8 @@ func NewECBCrypto(key []byte, mode PaddingMode) AESCrypto {
 	}
 }
 
+// --------------------------- AES-CFB ---------------------------
+
 type cfbcrypto struct {
 	key []byte
 	iv  []byte
@@ -232,6 +238,8 @@ func NewCFBCrypto(key, iv []byte) AESCrypto {
 		iv:  iv,
 	}
 }
+
+// --------------------------- AES-OFB ---------------------------
 
 type ofbcrypto struct {
 	key []byte
@@ -284,6 +292,8 @@ func NewOFBCrypto(key, iv []byte) AESCrypto {
 	}
 }
 
+// --------------------------- AES-CTR ---------------------------
+
 type ctrcrypto struct {
 	key []byte
 	iv  []byte
@@ -334,6 +344,8 @@ func NewCTRCrypto(key, iv []byte) AESCrypto {
 		iv:  iv,
 	}
 }
+
+// --------------------------- AES-GCM ---------------------------
 
 type gcmcrypto struct {
 	key   []byte
@@ -388,6 +400,8 @@ func NewGCMCrypto(key, nonce []byte) AESCrypto {
 	}
 }
 
+// --------------------------- RSA ---------------------------
+
 // GenerateRSAKey returns rsa private and public key.
 func GenerateRSAKey(bitSize int, blockType PemBlockType) (privateKey, publicKey []byte, err error) {
 	prvKey, err := rsa.GenerateKey(rand.Reader, bitSize)
@@ -435,8 +449,8 @@ func (pk *PrivateKey) Decrypt(cipherText []byte) ([]byte, error) {
 	return rsa.DecryptPKCS1v15(rand.Reader, pk.key, cipherText)
 }
 
-// DecryptOEAP rsa decrypt with PKCS #1 OEAP.
-func (pk *PrivateKey) DecryptOEAP(cipherText []byte) ([]byte, error) {
+// DecryptOAEP rsa decrypt with PKCS #1 OAEP.
+func (pk *PrivateKey) DecryptOAEP(cipherText []byte) ([]byte, error) {
 	return rsa.DecryptOAEP(sha1.New(), rand.Reader, pk.key, cipherText, nil)
 }
 
@@ -523,8 +537,8 @@ func (pk *PublicKey) Encrypt(plainText []byte) ([]byte, error) {
 	return rsa.EncryptPKCS1v15(rand.Reader, pk.key, plainText)
 }
 
-// EncryptOEAP rsa encrypt with PKCS #1 OEAP.
-func (pk *PublicKey) EncryptOEAP(plainText []byte) ([]byte, error) {
+// EncryptOAEP rsa encrypt with PKCS #1 OAEP.
+func (pk *PublicKey) EncryptOAEP(plainText []byte) ([]byte, error) {
 	return rsa.EncryptOAEP(sha1.New(), rand.Reader, pk.key, plainText, nil)
 }
 
