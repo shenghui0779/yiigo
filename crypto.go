@@ -8,15 +8,12 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha1"
-	"crypto/tls"
 	"crypto/x509"
 	"encoding/pem"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
-
-	"golang.org/x/crypto/pkcs12"
 )
 
 // PaddingMode aes padding mode
@@ -725,35 +722,4 @@ func (x *ecbDecrypter) CryptBlocks(dst, src []byte) {
 		src = src[x.blockSize:]
 		dst = dst[x.blockSize:]
 	}
-}
-
-// LoadCertFromPfxFile returns tls certificate from pfx(p12) file.
-func LoadCertFromPfxFile(pfxFile, password string) (tls.Certificate, error) {
-	fail := func(err error) (tls.Certificate, error) { return tls.Certificate{}, err }
-
-	certPath, err := filepath.Abs(filepath.Clean(pfxFile))
-
-	if err != nil {
-		return fail(err)
-	}
-
-	b, err := ioutil.ReadFile(certPath)
-
-	if err != nil {
-		return fail(err)
-	}
-
-	blocks, err := pkcs12.ToPEM(b, password)
-
-	if err != nil {
-		return fail(err)
-	}
-
-	pemData := make([]byte, 0)
-
-	for _, b := range blocks {
-		pemData = append(pemData, pem.EncodeToMemory(b)...)
-	}
-
-	return tls.X509KeyPair(pemData, pemData)
 }

@@ -2,8 +2,11 @@ package yiigo
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/json"
+	"encoding/pem"
 	"encoding/xml"
+	"io/ioutil"
 	"net"
 	"os"
 	"path"
@@ -12,6 +15,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-version"
+	"golang.org/x/crypto/pkcs12"
 )
 
 var timezone = time.FixedZone("CST", 8*3600)
@@ -282,4 +286,35 @@ func VersionCompare(rangeVer, curVer string) (bool, error) {
 	}
 
 	return false, nil
+}
+
+// LoadCertFromPfxFile returns tls certificate from pfx(p12) file.
+func LoadCertFromPfxFile(pfxFile, password string) (tls.Certificate, error) {
+	fail := func(err error) (tls.Certificate, error) { return tls.Certificate{}, err }
+
+	certPath, err := filepath.Abs(filepath.Clean(pfxFile))
+
+	if err != nil {
+		return fail(err)
+	}
+
+	b, err := ioutil.ReadFile(certPath)
+
+	if err != nil {
+		return fail(err)
+	}
+
+	blocks, err := pkcs12.ToPEM(b, password)
+
+	if err != nil {
+		return fail(err)
+	}
+
+	pemData := make([]byte, 0)
+
+	for _, b := range blocks {
+		pemData = append(pemData, pem.EncodeToMemory(b)...)
+	}
+
+	return tls.X509KeyPair(pemData, pemData)
 }
