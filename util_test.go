@@ -101,9 +101,14 @@ func TestSliceRand(t *testing.T) {
 			Name: "o",
 		},
 	}
+
 	ret4 := SliceRand(a4, 2)
 	assert.Equal(t, 2, len(ret4))
 	assert.NotEqual(t, a4[:2], ret4)
+
+	ret5 := SliceRand(a4, -1)
+	assert.Equal(t, len(a4), len(ret5))
+	assert.NotEqual(t, a4, ret5)
 }
 
 func TestCreateFile(t *testing.T) {
