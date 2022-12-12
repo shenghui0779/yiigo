@@ -12,7 +12,7 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 )
 
@@ -504,7 +504,7 @@ func NewPrivateKeyFromPemFile(pemFile string) (*PrivateKey, error) {
 		return nil, err
 	}
 
-	b, err := ioutil.ReadFile(keyPath)
+	b, err := os.ReadFile(keyPath)
 
 	if err != nil {
 		return nil, err
@@ -576,7 +576,7 @@ func NewPublicKeyFromPemFile(pemFile string) (*PublicKey, error) {
 		return nil, err
 	}
 
-	b, err := ioutil.ReadFile(keyPath)
+	b, err := os.ReadFile(keyPath)
 
 	if err != nil {
 		return nil, err
@@ -614,7 +614,7 @@ func NewPublicKeyFromDerFile(pemFile string) (*PublicKey, error) {
 		return nil, err
 	}
 
-	b, err := ioutil.ReadFile(keyPath)
+	b, err := os.ReadFile(keyPath)
 
 	if err != nil {
 		return nil, err
