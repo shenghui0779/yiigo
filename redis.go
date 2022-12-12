@@ -36,7 +36,7 @@ type RedisPool interface {
 	Put(rc *RedisConn)
 
 	// Do sends a command to the server and returns the received reply.
-	Do(ctx context.Context, cmd string, args ...interface{}) (interface{}, error)
+	Do(ctx context.Context, cmd string, args ...any) (any, error)
 
 	// DoFunc sends commands to the server with callback function.
 	DoFunc(ctx context.Context, f func(ctx context.Context, conn *RedisConn) error) error
@@ -249,7 +249,7 @@ func (rp *redisResourcePool) Put(conn *RedisConn) {
 	rp.pool.Put(conn)
 }
 
-func (rp *redisResourcePool) Do(ctx context.Context, cmd string, args ...interface{}) (interface{}, error) {
+func (rp *redisResourcePool) Do(ctx context.Context, cmd string, args ...any) (any, error) {
 	conn, err := rp.Get(ctx)
 
 	if err != nil {

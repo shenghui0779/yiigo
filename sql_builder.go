@@ -26,22 +26,22 @@ type SQLBuilder interface {
 // SQLWrapper is the interface for building sql statement.
 type SQLWrapper interface {
 	// ToQuery returns query statement and binds.
-	ToQuery(ctx context.Context) (sql string, args []interface{}, err error)
+	ToQuery(ctx context.Context) (sql string, args []any, err error)
 
 	// ToInsert returns insert statement and binds.
 	// data expects `struct`, `*struct`, `yiigo.X`.
-	ToInsert(ctx context.Context, data interface{}) (sql string, args []interface{}, err error)
+	ToInsert(ctx context.Context, data any) (sql string, args []any, err error)
 
 	// ToBatchInsert returns batch insert statement and binds.
 	// data expects `[]struct`, `[]*struct`, `[]yiigo.X`.
-	ToBatchInsert(ctx context.Context, data interface{}) (sql string, args []interface{}, err error)
+	ToBatchInsert(ctx context.Context, data any) (sql string, args []any, err error)
 
 	// ToUpdate returns update statement and binds.
 	// data expects `struct`, `*struct`, `yiigo.X`.
-	ToUpdate(ctx context.Context, data interface{}) (sql string, args []interface{}, err error)
+	ToUpdate(ctx context.Context, data any) (sql string, args []any, err error)
 
 	// ToDelete returns delete statement and binds.
-	ToDelete(ctx context.Context) (sql string, args []interface{}, err error)
+	ToDelete(ctx context.Context) (sql string, args []any, err error)
 
 	// ToTruncate returns truncate statement
 	ToTruncate(ctx context.Context) string
@@ -91,11 +91,11 @@ type SQLClause struct {
 	table   string
 	keyword string
 	query   string
-	binds   []interface{}
+	binds   []any
 }
 
 // Clause returns sql clause, eg: yiigo.Clause("price * ? + ?", 2, 100).
-func Clause(query string, binds ...interface{}) *SQLClause {
+func Clause(query string, binds ...any) *SQLClause {
 	return &SQLClause{
 		query: query,
 		binds: binds,
@@ -118,7 +118,7 @@ type queryWrapper struct {
 	whereIn  bool
 }
 
-func (w *queryWrapper) ToQuery(ctx context.Context) (sql string, args []interface{}, err error) {
+func (w *queryWrapper) ToQuery(ctx context.Context) (sql string, args []any, err error) {
 	sql, args = w.subquery()
 
 	// unions
@@ -156,8 +156,8 @@ func (w *queryWrapper) ToQuery(ctx context.Context) (sql string, args []interfac
 	return
 }
 
-func (w *queryWrapper) subquery() (string, []interface{}) {
-	binds := make([]interface{}, 0)
+func (w *queryWrapper) subquery() (string, []any) {
+	binds := make([]any, 0)
 
 	var builder strings.Builder
 
@@ -238,7 +238,7 @@ func (w *queryWrapper) subquery() (string, []interface{}) {
 	return builder.String(), binds
 }
 
-func (w *queryWrapper) ToInsert(ctx context.Context, data interface{}) (sql string, args []interface{}, err error) {
+func (w *queryWrapper) ToInsert(ctx context.Context, data any) (sql string, args []any, err error) {
 	var columns []string
 
 	v := reflect.Indirect(reflect.ValueOf(data))
@@ -294,11 +294,11 @@ func (w *queryWrapper) ToInsert(ctx context.Context, data interface{}) (sql stri
 	return
 }
 
-func (w *queryWrapper) insertWithMap(data X) (columns []string, binds []interface{}) {
+func (w *queryWrapper) insertWithMap(data X) (columns []string, binds []any) {
 	fieldNum := len(data)
 
 	columns = make([]string, 0, fieldNum)
-	binds = make([]interface{}, 0, fieldNum)
+	binds = make([]any, 0, fieldNum)
 
 	for k, v := range data {
 		columns = append(columns, k)
@@ -308,11 +308,11 @@ func (w *queryWrapper) insertWithMap(data X) (columns []string, binds []interfac
 	return
 }
 
-func (w *queryWrapper) insertWithStruct(v reflect.Value) (columns []string, binds []interface{}) {
+func (w *queryWrapper) insertWithStruct(v reflect.Value) (columns []string, binds []any) {
 	fieldNum := v.NumField()
 
 	columns = make([]string, 0, fieldNum)
-	binds = make([]interface{}, 0, fieldNum)
+	binds = make([]any, 0, fieldNum)
 
 	t := v.Type()
 
@@ -344,7 +344,7 @@ func (w *queryWrapper) insertWithStruct(v reflect.Value) (columns []string, bind
 	return
 }
 
-func (w *queryWrapper) ToBatchInsert(ctx context.Context, data interface{}) (sql string, args []interface{}, err error) {
+func (w *queryWrapper) ToBatchInsert(ctx context.Context, data any) (sql string, args []any, err error) {
 	v := reflect.Indirect(reflect.ValueOf(data))
 
 	if v.Kind() != reflect.Slice {
@@ -432,12 +432,12 @@ func (w *queryWrapper) ToBatchInsert(ctx context.Context, data interface{}) (sql
 	return
 }
 
-func (w *queryWrapper) batchInsertWithMap(data []X) (columns []string, binds []interface{}) {
+func (w *queryWrapper) batchInsertWithMap(data []X) (columns []string, binds []any) {
 	dataLen := len(data)
 	fieldNum := len(data[0])
 
 	columns = make([]string, 0, fieldNum)
-	binds = make([]interface{}, 0, fieldNum*dataLen)
+	binds = make([]any, 0, fieldNum*dataLen)
 
 	for k := range data[0] {
 		columns = append(columns, k)
@@ -452,14 +452,14 @@ func (w *queryWrapper) batchInsertWithMap(data []X) (columns []string, binds []i
 	return
 }
 
-func (w *queryWrapper) batchInsertWithStruct(v reflect.Value) (columns []string, binds []interface{}) {
+func (w *queryWrapper) batchInsertWithStruct(v reflect.Value) (columns []string, binds []any) {
 	first := reflect.Indirect(v.Index(0))
 
 	dataLen := v.Len()
 	fieldNum := first.NumField()
 
 	columns = make([]string, 0, fieldNum)
-	binds = make([]interface{}, 0, fieldNum*dataLen)
+	binds = make([]any, 0, fieldNum*dataLen)
 
 	t := first.Type()
 
@@ -497,7 +497,7 @@ func (w *queryWrapper) batchInsertWithStruct(v reflect.Value) (columns []string,
 	return
 }
 
-func (w *queryWrapper) ToUpdate(ctx context.Context, data interface{}) (sql string, args []interface{}, err error) {
+func (w *queryWrapper) ToUpdate(ctx context.Context, data any) (sql string, args []any, err error) {
 	var (
 		columns []string
 		exprs   map[string]string
@@ -575,12 +575,12 @@ func (w *queryWrapper) ToUpdate(ctx context.Context, data interface{}) (sql stri
 	return
 }
 
-func (w *queryWrapper) updateWithMap(data X) (columns []string, exprs map[string]string, binds []interface{}) {
+func (w *queryWrapper) updateWithMap(data X) (columns []string, exprs map[string]string, binds []any) {
 	fieldNum := len(data)
 
 	columns = make([]string, 0, fieldNum)
 	exprs = make(map[string]string)
-	binds = make([]interface{}, 0, fieldNum)
+	binds = make([]any, 0, fieldNum)
 
 	for k, v := range data {
 		columns = append(columns, k)
@@ -598,11 +598,11 @@ func (w *queryWrapper) updateWithMap(data X) (columns []string, exprs map[string
 	return
 }
 
-func (w *queryWrapper) updateWithStruct(v reflect.Value) (columns []string, binds []interface{}) {
+func (w *queryWrapper) updateWithStruct(v reflect.Value) (columns []string, binds []any) {
 	fieldNum := v.NumField()
 
 	columns = make([]string, 0, fieldNum)
-	binds = make([]interface{}, 0, fieldNum)
+	binds = make([]any, 0, fieldNum)
 
 	t := v.Type()
 
@@ -634,7 +634,7 @@ func (w *queryWrapper) updateWithStruct(v reflect.Value) (columns []string, bind
 	return
 }
 
-func (w *queryWrapper) ToDelete(ctx context.Context) (sql string, args []interface{}, err error) {
+func (w *queryWrapper) ToDelete(ctx context.Context) (sql string, args []any, err error) {
 	var builder strings.Builder
 
 	builder.WriteString("DELETE FROM ")
@@ -751,7 +751,7 @@ func CrossJoin(table string) QueryOption {
 }
 
 // Where specifies the `where` clause.
-func Where(query string, binds ...interface{}) QueryOption {
+func Where(query string, binds ...any) QueryOption {
 	return func(w *queryWrapper) {
 		w.where = &SQLClause{
 			query: query,
@@ -761,7 +761,7 @@ func Where(query string, binds ...interface{}) QueryOption {
 }
 
 // WhereIn specifies the `where in` clause.
-func WhereIn(query string, binds ...interface{}) QueryOption {
+func WhereIn(query string, binds ...any) QueryOption {
 	return func(w *queryWrapper) {
 		w.where = &SQLClause{
 			query: query,
@@ -780,7 +780,7 @@ func GroupBy(columns ...string) QueryOption {
 }
 
 // Having specifies the `having` clause.
-func Having(query string, binds ...interface{}) QueryOption {
+func Having(query string, binds ...any) QueryOption {
 	return func(w *queryWrapper) {
 		w.having = &SQLClause{
 			query: query,

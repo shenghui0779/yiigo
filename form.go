@@ -28,27 +28,30 @@ func ContentType(r *http.Request) string {
 	return content
 }
 
-func MapQuery(ptr interface{}, m map[string][]string) error {
+func MapQuery(ptr any, m map[string][]string) error {
 	return MapFormByTag(ptr, m, "query")
 }
 
-func MapForm(ptr interface{}, form map[string][]string) error {
+func MapForm(ptr any, form map[string][]string) error {
 	return MapFormByTag(ptr, form, "form")
 }
 
-func MapFormByTag(ptr interface{}, form map[string][]string, tag string) error {
+func MapFormByTag(ptr any, form map[string][]string, tag string) error {
 	// Check if ptr is a map
 	ptrVal := reflect.ValueOf(ptr)
-	var pointed interface{}
+
+	var pointed any
+
 	if ptrVal.Kind() == reflect.Ptr {
 		ptrVal = ptrVal.Elem()
 		pointed = ptrVal.Interface()
 	}
-	if ptrVal.Kind() == reflect.Map &&
-		ptrVal.Type().Key().Kind() == reflect.String {
+
+	if ptrVal.Kind() == reflect.Map && ptrVal.Type().Key().Kind() == reflect.String {
 		if pointed != nil {
 			ptr = pointed
 		}
+
 		return setFormMap(ptr, form)
 	}
 
@@ -69,7 +72,7 @@ func (form formSource) TrySet(value reflect.Value, field reflect.StructField, ta
 	return setByForm(value, field, form, tagValue, opt)
 }
 
-func MappingByPtr(ptr interface{}, setter setter, tag string) error {
+func MappingByPtr(ptr any, setter setter, tag string) error {
 	_, err := mapping(reflect.ValueOf(ptr), emptyField, setter, tag)
 	return err
 }
@@ -83,26 +86,34 @@ func mapping(value reflect.Value, field reflect.StructField, setter setter, tag 
 
 	if vKind == reflect.Ptr {
 		var isNew bool
+
 		vPtr := value
+
 		if value.IsNil() {
 			isNew = true
 			vPtr = reflect.New(value.Type().Elem())
 		}
+
 		isSetted, err := mapping(vPtr.Elem(), field, setter, tag)
+
 		if err != nil {
 			return false, err
 		}
+
 		if isNew && isSetted {
 			value.Set(vPtr)
 		}
+
 		return isSetted, nil
 	}
 
 	if vKind != reflect.Struct || !field.Anonymous {
 		ok, err := tryToSetValue(value, field, setter, tag)
+
 		if err != nil {
 			return false, err
 		}
+
 		if ok {
 			return true, nil
 		}
@@ -112,19 +123,26 @@ func mapping(value reflect.Value, field reflect.StructField, setter setter, tag 
 		tValue := value.Type()
 
 		var isSetted bool
+
 		for i := 0; i < value.NumField(); i++ {
 			sf := tValue.Field(i)
+
 			if sf.PkgPath != "" && !sf.Anonymous { // unexported
 				continue
 			}
+
 			ok, err := mapping(value.Field(i), tValue.Field(i), setter, tag)
+
 			if err != nil {
 				return false, err
 			}
+
 			isSetted = isSetted || ok
 		}
+
 		return isSetted, nil
 	}
+
 	return false, nil
 }
 
@@ -148,6 +166,7 @@ func tryToSetValue(value reflect.Value, field reflect.StructField, setter setter
 	}
 
 	var opt string
+
 	for len(opts) > 0 {
 		opt, opts = head(opts, ",")
 
@@ -162,6 +181,7 @@ func tryToSetValue(value reflect.Value, field reflect.StructField, setter setter
 
 func setByForm(value reflect.Value, field reflect.StructField, form map[string][]string, tagValue string, opt setOptions) (isSetted bool, err error) {
 	vs, ok := form[tagValue]
+
 	if !ok && !opt.isDefaultExists {
 		return false, nil
 	}
@@ -171,17 +191,21 @@ func setByForm(value reflect.Value, field reflect.StructField, form map[string][
 		if !ok {
 			vs = []string{opt.defaultValue}
 		}
+
 		return true, setSlice(vs, value, field)
 	case reflect.Array:
 		if !ok {
 			vs = []string{opt.defaultValue}
 		}
+
 		if len(vs) != value.Len() {
 			return false, fmt.Errorf("%q is not valid value for %s", vs, value.Type().String())
 		}
+
 		return true, setArray(vs, value, field)
 	default:
 		var val string
+
 		if !ok {
 			val = opt.defaultValue
 		}
@@ -189,6 +213,7 @@ func setByForm(value reflect.Value, field reflect.StructField, form map[string][
 		if len(vs) > 0 {
 			val = vs[0]
 		}
+
 		return true, setWithProperType(val, value, field)
 	}
 }
@@ -245,10 +270,13 @@ func setIntField(val string, bitSize int, field reflect.Value) error {
 	if val == "" {
 		val = "0"
 	}
+
 	intVal, err := strconv.ParseInt(val, 10, bitSize)
+
 	if err == nil {
 		field.SetInt(intVal)
 	}
+
 	return err
 }
 
@@ -256,10 +284,13 @@ func setUintField(val string, bitSize int, field reflect.Value) error {
 	if val == "" {
 		val = "0"
 	}
+
 	uintVal, err := strconv.ParseUint(val, 10, bitSize)
+
 	if err == nil {
 		field.SetUint(uintVal)
 	}
+
 	return err
 }
 
@@ -267,10 +298,13 @@ func setBoolField(val string, field reflect.Value) error {
 	if val == "" {
 		val = "false"
 	}
+
 	boolVal, err := strconv.ParseBool(val)
+
 	if err == nil {
 		field.SetBool(boolVal)
 	}
+
 	return err
 }
 
@@ -278,15 +312,19 @@ func setFloatField(val string, bitSize int, field reflect.Value) error {
 	if val == "" {
 		val = "0.0"
 	}
+
 	floatVal, err := strconv.ParseFloat(val, bitSize)
+
 	if err == nil {
 		field.SetFloat(floatVal)
 	}
+
 	return err
 }
 
 func setTimeField(val string, structField reflect.StructField, value reflect.Value) error {
 	timeFormat := structField.Tag.Get("time_format")
+
 	if timeFormat == "" {
 		timeFormat = time.RFC3339
 	}
@@ -294,19 +332,20 @@ func setTimeField(val string, structField reflect.StructField, value reflect.Val
 	switch tf := strings.ToLower(timeFormat); tf {
 	case "unix", "unixnano":
 		tv, err := strconv.ParseInt(val, 10, 64)
+
 		if err != nil {
 			return err
 		}
 
 		d := time.Duration(1)
+
 		if tf == "unixnano" {
 			d = time.Second
 		}
 
-		t := time.Unix(tv/int64(d), tv%int64(d))
-		value.Set(reflect.ValueOf(t))
-		return nil
+		value.Set(reflect.ValueOf(time.Unix(tv/int64(d), tv%int64(d))))
 
+		return nil
 	}
 
 	if val == "" {
@@ -315,72 +354,89 @@ func setTimeField(val string, structField reflect.StructField, value reflect.Val
 	}
 
 	l := time.Local
+
 	if isUTC, _ := strconv.ParseBool(structField.Tag.Get("time_utc")); isUTC {
 		l = time.UTC
 	}
 
 	if locTag := structField.Tag.Get("time_location"); locTag != "" {
 		loc, err := time.LoadLocation(locTag)
+
 		if err != nil {
 			return err
 		}
+
 		l = loc
 	}
 
 	t, err := time.ParseInLocation(timeFormat, val, l)
+
 	if err != nil {
 		return err
 	}
 
 	value.Set(reflect.ValueOf(t))
+
 	return nil
 }
 
 func setArray(vals []string, value reflect.Value, field reflect.StructField) error {
 	for i, s := range vals {
 		err := setWithProperType(s, value.Index(i), field)
+
 		if err != nil {
 			return err
 		}
 	}
+
 	return nil
 }
 
 func setSlice(vals []string, value reflect.Value, field reflect.StructField) error {
 	slice := reflect.MakeSlice(value.Type(), len(vals), len(vals))
 	err := setArray(vals, slice, field)
+
 	if err != nil {
 		return err
 	}
+
 	value.Set(slice)
+
 	return nil
 }
 
 func setTimeDuration(val string, value reflect.Value, field reflect.StructField) error {
 	d, err := time.ParseDuration(val)
+
 	if err != nil {
 		return err
 	}
+
 	value.Set(reflect.ValueOf(d))
+
 	return nil
 }
 
 func head(str, sep string) (head string, tail string) {
 	idx := strings.Index(str, sep)
+
 	if idx < 0 {
 		return str, ""
 	}
+
 	return str[:idx], str[idx+len(sep):]
 }
 
-func setFormMap(ptr interface{}, form map[string][]string) error {
+func setFormMap(ptr any, form map[string][]string) error {
 	el := reflect.TypeOf(ptr).Elem()
 
 	if el.Kind() == reflect.Slice {
 		ptrMap, ok := ptr.(map[string][]string)
+
 		if !ok {
 			return errors.New("cannot convert to map slices of strings")
 		}
+
 		for k, v := range form {
 			ptrMap[k] = v
 		}
@@ -389,9 +445,11 @@ func setFormMap(ptr interface{}, form map[string][]string) error {
 	}
 
 	ptrMap, ok := ptr.(map[string]string)
+
 	if !ok {
 		return errors.New("cannot convert to map of strings")
 	}
+
 	for k, v := range form {
 		ptrMap[k] = v[len(v)-1] // pick last
 	}

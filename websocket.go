@@ -79,7 +79,7 @@ type wsconn struct {
 	conn   *websocket.Conn
 	authOK bool
 	authFn WSHandler
-	log    func(ctx context.Context, v ...interface{})
+	log    func(ctx context.Context, v ...any)
 }
 
 func (c *wsconn) Read(ctx context.Context, callback WSHandler) error {
@@ -174,7 +174,7 @@ func WithWSAuth(fn WSHandler) WSOption {
 }
 
 // WithWSLogger specifies logger for ws connection.
-func WithWSLogger(fn func(ctx context.Context, v ...interface{})) WSOption {
+func WithWSLogger(fn func(ctx context.Context, v ...any)) WSOption {
 	return func(c *wsconn) {
 		c.log = fn
 	}
@@ -195,7 +195,7 @@ func NewWSConn(name string, w http.ResponseWriter, r *http.Request, options ...W
 	conn := &wsconn{
 		name: name,
 		conn: c,
-		log: func(ctx context.Context, v ...interface{}) {
+		log: func(ctx context.Context, v ...any) {
 			logger.Error("err websocket", zap.String("err", fmt.Sprint(v...)))
 		},
 	}

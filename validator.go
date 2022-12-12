@@ -26,14 +26,14 @@ func SetValidateTag(tagname string) ValidatorOption {
 
 // WithValuerType registers a number of custom validate types which implement the driver.Valuer interface.
 func WithValuerType(types ...driver.Valuer) ValidatorOption {
-	customTypes := make([]interface{}, 0, len(types))
+	customTypes := make([]any, 0, len(types))
 
 	for _, t := range types {
 		customTypes = append(customTypes, t)
 	}
 
 	return func(validate *validator.Validate, trans ut.Translator) {
-		validate.RegisterCustomTypeFunc(func(field reflect.Value) interface{} {
+		validate.RegisterCustomTypeFunc(func(field reflect.Value) any {
 			if valuer, ok := field.Interface().(driver.Valuer); ok {
 				v, _ := valuer.Value()
 
@@ -84,7 +84,7 @@ type Validator struct {
 }
 
 // ValidateStruct receives any kind of type, but only performed struct or pointer to struct type.
-func (v *Validator) ValidateStruct(obj interface{}) error {
+func (v *Validator) ValidateStruct(obj any) error {
 	if reflect.Indirect(reflect.ValueOf(obj)).Kind() != reflect.Struct {
 		return nil
 	}
@@ -110,7 +110,7 @@ func (v *Validator) ValidateStruct(obj interface{}) error {
 }
 
 // ValidateStruct receives any kind of type, but only performed struct or pointer to struct type and allows passing of context.Context for contextual validation information.
-func (v *Validator) ValidateStructCtx(ctx context.Context, obj interface{}) error {
+func (v *Validator) ValidateStructCtx(ctx context.Context, obj any) error {
 	if reflect.Indirect(reflect.ValueOf(obj)).Kind() != reflect.Struct {
 		return nil
 	}
@@ -139,7 +139,7 @@ func (v *Validator) ValidateStructCtx(ctx context.Context, obj interface{}) erro
 // Validator instance. This is useful if you want to register custom validations
 // or struct level validations. See validator GoDoc for more info -
 // https://pkg.go.dev/github.com/go-playground/validator/v10
-func (v *Validator) Engine() interface{} {
+func (v *Validator) Engine() any {
 	return v.validator
 }
 

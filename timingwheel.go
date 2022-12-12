@@ -43,7 +43,7 @@ type timewheel struct {
 	size   int
 	bucket []sync.Map
 	stop   chan struct{}
-	log    func(ctx context.Context, v ...interface{})
+	log    func(ctx context.Context, v ...any)
 }
 
 func (tw *timewheel) AddTask(ctx context.Context, taskID string, handler func(ctx context.Context, taskID string) error, options ...TaskOption) {
@@ -136,7 +136,7 @@ func (tw *timewheel) scheduler() {
 }
 
 func (tw *timewheel) process(slot int) {
-	tw.bucket[slot].Range(func(key, value interface{}) bool {
+	tw.bucket[slot].Range(func(key, value any) bool {
 		select {
 		case <-tw.stop:
 			return false
@@ -182,7 +182,7 @@ func (tw *timewheel) run(task *TWTask) {
 type TWOption func(tw *timewheel)
 
 // WithTWLogger specifies logger for timingwheel.
-func WithTWLogger(fn func(ctx context.Context, v ...interface{})) TWOption {
+func WithTWLogger(fn func(ctx context.Context, v ...any)) TWOption {
 	return func(tw *timewheel) {
 		tw.log = fn
 	}
@@ -212,7 +212,7 @@ func NewTimingWheel(tick time.Duration, size int, options ...TWOption) TimingWhe
 		size:   size,
 		bucket: make([]sync.Map, size),
 		stop:   make(chan struct{}),
-		log: func(ctx context.Context, v ...interface{}) {
+		log: func(ctx context.Context, v ...any) {
 			logger.Error("err timingwheel", zap.String("err", fmt.Sprint(v...)))
 		},
 	}

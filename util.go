@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"encoding/xml"
-	"io/ioutil"
+	"math/rand"
 	"net"
 	"os"
 	"path"
@@ -33,8 +33,8 @@ const (
 	OK = "OK"
 )
 
-// X is a convenient alias for a map[string]interface{}.
-type X map[string]interface{}
+// X is a convenient alias for a map[string]any.
+type X map[string]any
 
 // CDATA XML CDATA section which is defined as blocks of text that are not parsed by the parser, but are otherwise recognized as markup.
 type CDATA string
@@ -145,7 +145,7 @@ func Long2IP(ip uint32) string {
 }
 
 // MarshalNoEscapeHTML marshal with no escape HTML
-func MarshalNoEscapeHTML(v interface{}) ([]byte, error) {
+func MarshalNoEscapeHTML(v any) ([]byte, error) {
 	buf := bytes.NewBuffer(nil)
 
 	jsonEncoder := json.NewEncoder(buf)
@@ -225,6 +225,50 @@ func QuoteMeta(s string) string {
 	return builder.String()
 }
 
+// SliceUniq removes duplicate values from a slice.
+func SliceUniq[T ~int | ~int64 | ~float64 | ~string](a []T) []T {
+	ret := make([]T, 0)
+
+	if len(a) == 0 {
+		return ret
+	}
+
+	m := make(map[T]struct{}, 0)
+
+	for _, v := range a {
+		if _, ok := m[v]; !ok {
+			ret = append(ret, v)
+			m[v] = struct{}{}
+		}
+	}
+
+	return ret
+}
+
+// SliceRand picks random entries out of a slice.
+// returns the whole shuffled slice if n == -1 or n > len(a).
+func SliceRand[T any](a []T, n int) []T {
+	if n == 0 || n < -1 {
+		return make([]T, 0)
+	}
+
+	count := len(a)
+	ret := make([]T, count)
+
+	copy(ret, a)
+
+	rand.Seed(time.Now().UnixNano())
+	rand.Shuffle(count, func(i, j int) {
+		ret[i], ret[j] = ret[j], ret[i]
+	})
+
+	if n == -1 || n > count {
+		return ret
+	}
+
+	return ret[:n]
+}
+
 // CreateFile creates or truncates the named file.
 // If the file already exists, it is truncated.
 // If the directory or file does not exist, it is created with mode 0775
@@ -298,7 +342,7 @@ func LoadCertFromPfxFile(pfxFile, password string) (tls.Certificate, error) {
 		return fail(err)
 	}
 
-	b, err := ioutil.ReadFile(certPath)
+	b, err := os.ReadFile(certPath)
 
 	if err != nil {
 		return fail(err)

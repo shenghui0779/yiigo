@@ -478,7 +478,7 @@ func NewPrivateKeyFromPemBlock(pemBlock []byte) (*PrivateKey, error) {
 	}
 
 	var (
-		pk  interface{}
+		pk  any
 		err error
 	)
 
