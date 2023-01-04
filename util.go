@@ -26,11 +26,11 @@ const (
 )
 
 const (
+	// OK defines for string `OK`
+	OK = "OK"
+
 	// Default defines for `default` name
 	Default = "default"
-
-	// OK
-	OK = "OK"
 )
 
 // X is a convenient alias for a map[string]any.

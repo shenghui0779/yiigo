@@ -123,6 +123,18 @@ func TestCreateFile(t *testing.T) {
 	f.Close()
 }
 
+func TestOpenFile(t *testing.T) {
+	f, err := OpenFile("app.log")
+
+	if err != nil {
+		assert.Fail(t, fmt.Sprintf("Expected nil, but got: %#v", err))
+
+		return
+	}
+
+	f.Close()
+}
+
 func TestVersionCompare(t *testing.T) {
 	ok, err := VersionCompare("1.0.0", "1.0.0")
 	assert.Nil(t, err)
