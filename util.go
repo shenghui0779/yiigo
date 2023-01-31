@@ -246,7 +246,7 @@ func SliceUniq[T ~int | ~int64 | ~float64 | ~string](a []T) []T {
 }
 
 // SliceRand picks random entries out of a slice.
-// returns the whole shuffled slice if n == -1 or n > len(a).
+// returns the whole shuffled slice if n == -1 or n >= len(a).
 func SliceRand[T any](a []T, n int) []T {
 	if n == 0 || n < -1 {
 		return make([]T, 0)
@@ -262,7 +262,7 @@ func SliceRand[T any](a []T, n int) []T {
 		ret[i], ret[j] = ret[j], ret[i]
 	})
 
-	if n == -1 || n > count {
+	if n == -1 || n >= count {
 		return ret
 	}
 
