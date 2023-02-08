@@ -31,9 +31,9 @@ const (
 type RSAPaddingMode int
 
 const (
-	// RSA_PKCS1 private key in PKCS#1 (RSA PRIVATE KEY | RSA PUBLIC KEY)
+	// RSA_PKCS1 this kind of key is commonly encoded in PEM blocks of type "RSA PRIVATE KEY" and "RSA PUBLIC KEY"
 	RSA_PKCS1 RSAPaddingMode = iota
-	// RSA_PKCS8 private key in PKCS#8 (PRIVATE KEY | PUBLIC KEY)
+	// RSA_PKCS8 this kind of key is commonly encoded in PEM blocks of type "PRIVATE KEY" and "PUBLIC KEY"
 	RSA_PKCS8
 )
 
@@ -46,7 +46,7 @@ type AESCrypto interface {
 	Decrypt(cipherText []byte) ([]byte, error)
 }
 
-// --------------------------- AES-CBC ---------------------------
+// ------------------------------------ AES-CBC ------------------------------------
 
 type cbccrypto struct {
 	key  []byte
@@ -119,7 +119,7 @@ func NewCBCCrypto(key, iv []byte, mode AESPaddingMode) AESCrypto {
 	}
 }
 
-// --------------------------- AES-ECB ---------------------------
+// ------------------------------------ AES-ECB ------------------------------------
 
 type ecbcrypto struct {
 	key  []byte
@@ -182,7 +182,7 @@ func NewECBCrypto(key []byte, mode AESPaddingMode) AESCrypto {
 	}
 }
 
-// --------------------------- AES-CFB ---------------------------
+// ------------------------------------ AES-CFB ------------------------------------
 
 type cfbcrypto struct {
 	key []byte
@@ -235,7 +235,7 @@ func NewCFBCrypto(key, iv []byte) AESCrypto {
 	}
 }
 
-// --------------------------- AES-OFB ---------------------------
+// ------------------------------------ AES-OFB ------------------------------------
 
 type ofbcrypto struct {
 	key []byte
@@ -288,7 +288,7 @@ func NewOFBCrypto(key, iv []byte) AESCrypto {
 	}
 }
 
-// --------------------------- AES-CTR ---------------------------
+// ------------------------------------ AES-CTR ------------------------------------
 
 type ctrcrypto struct {
 	key []byte
@@ -341,7 +341,7 @@ func NewCTRCrypto(key, iv []byte) AESCrypto {
 	}
 }
 
-// --------------------------- AES-GCM ---------------------------
+// ------------------------------------ AES-GCM ------------------------------------
 
 type gcmcrypto struct {
 	key   []byte
@@ -396,7 +396,7 @@ func NewGCMCrypto(key, nonce []byte) AESCrypto {
 	}
 }
 
-// --------------------------- RSA ---------------------------
+// ------------------------------------ RSA ------------------------------------
 
 // GenerateRSAKey returns rsa private and public key.
 func GenerateRSAKey(bitSize int, mode RSAPaddingMode) (privateKey, publicKey []byte, err error) {
@@ -684,7 +684,7 @@ func PKCS5Unpadding(plainText []byte, blockSize int) []byte {
 	return plainText[:(length - unpadding)]
 }
 
-// --------------------------- AES-256-ECB ---------------------------
+// --------------------------------- AES-256-ECB ---------------------------------
 
 type ecb struct {
 	b         cipher.Block
