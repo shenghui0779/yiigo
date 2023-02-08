@@ -7,7 +7,6 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"crypto/rsa"
-	"crypto/sha1"
 	"crypto/x509"
 	"encoding/pem"
 	"errors"
@@ -16,26 +15,26 @@ import (
 	"path/filepath"
 )
 
-// PaddingMode aes padding mode
-type PaddingMode string
+// AESPaddingMode aes padding mode
+type AESPaddingMode int
 
 const (
-	// ZERO zero padding mode
-	ZERO PaddingMode = "ZERO"
-	// PKCS5 PKCS#5 padding mode
-	PKCS5 PaddingMode = "PKCS#5"
-	// PKCS7 PKCS#7 padding mode
-	PKCS7 PaddingMode = "PKCS#7"
+	// AES_ZERO zero padding mode
+	AES_ZERO AESPaddingMode = iota
+	// AES_PKCS5 PKCS#5 padding mode
+	AES_PKCS5
+	// AES_PKCS7 PKCS#7 padding mode
+	AES_PKCS7
 )
 
-// PemBlockType pem block type which taken from the preamble.
-type PemBlockType string
+// RSAPaddingMode pem block type which taken from the preamble.
+type RSAPaddingMode int
 
 const (
-	// RSAPKCS1 private key in PKCS#1
-	RSAPKCS1 PemBlockType = "RSA PRIVATE KEY"
-	// RSAPKCS8 private key in PKCS#8
-	RSAPKCS8 PemBlockType = "PRIVATE KEY"
+	// RSA_PKCS1 private key in PKCS#1 (RSA PRIVATE KEY | RSA PUBLIC KEY)
+	RSA_PKCS1 RSAPaddingMode = iota
+	// RSA_PKCS8 private key in PKCS#8 (PRIVATE KEY | PUBLIC KEY)
+	RSA_PKCS8
 )
 
 // AESCrypto is the interface for aes crypto.
@@ -52,7 +51,7 @@ type AESCrypto interface {
 type cbccrypto struct {
 	key  []byte
 	iv   []byte
-	mode PaddingMode
+	mode AESPaddingMode
 }
 
 func (c *cbccrypto) Encrypt(plainText []byte) ([]byte, error) {
@@ -67,11 +66,11 @@ func (c *cbccrypto) Encrypt(plainText []byte) ([]byte, error) {
 	}
 
 	switch c.mode {
-	case ZERO:
+	case AES_ZERO:
 		plainText = ZeroPadding(plainText, block.BlockSize())
-	case PKCS5:
+	case AES_PKCS5:
 		plainText = PKCS5Padding(plainText, block.BlockSize())
-	case PKCS7:
+	case AES_PKCS7:
 		plainText = PKCS5Padding(plainText, len(c.key))
 	}
 
@@ -100,11 +99,11 @@ func (c *cbccrypto) Decrypt(cipherText []byte) ([]byte, error) {
 	blockMode.CryptBlocks(plainText, cipherText)
 
 	switch c.mode {
-	case ZERO:
+	case AES_ZERO:
 		plainText = ZeroUnPadding(plainText)
-	case PKCS5:
+	case AES_PKCS5:
 		plainText = PKCS5Unpadding(plainText, block.BlockSize())
-	case PKCS7:
+	case AES_PKCS7:
 		plainText = PKCS5Unpadding(plainText, len(c.key))
 	}
 
@@ -112,7 +111,7 @@ func (c *cbccrypto) Decrypt(cipherText []byte) ([]byte, error) {
 }
 
 // NewCBCCrypto returns a new aes-cbc crypto.
-func NewCBCCrypto(key, iv []byte, mode PaddingMode) AESCrypto {
+func NewCBCCrypto(key, iv []byte, mode AESPaddingMode) AESCrypto {
 	return &cbccrypto{
 		key:  key,
 		iv:   iv,
@@ -124,7 +123,7 @@ func NewCBCCrypto(key, iv []byte, mode PaddingMode) AESCrypto {
 
 type ecbcrypto struct {
 	key  []byte
-	mode PaddingMode
+	mode AESPaddingMode
 }
 
 func (c *ecbcrypto) Encrypt(plainText []byte) ([]byte, error) {
@@ -135,11 +134,11 @@ func (c *ecbcrypto) Encrypt(plainText []byte) ([]byte, error) {
 	}
 
 	switch c.mode {
-	case ZERO:
+	case AES_ZERO:
 		plainText = ZeroPadding(plainText, block.BlockSize())
-	case PKCS5:
+	case AES_PKCS5:
 		plainText = PKCS5Padding(plainText, block.BlockSize())
-	case PKCS7:
+	case AES_PKCS7:
 		plainText = PKCS5Padding(plainText, len(c.key))
 	}
 
@@ -164,11 +163,11 @@ func (c *ecbcrypto) Decrypt(cipherText []byte) ([]byte, error) {
 	blockMode.CryptBlocks(plainText, cipherText)
 
 	switch c.mode {
-	case ZERO:
+	case AES_ZERO:
 		plainText = ZeroUnPadding(plainText)
-	case PKCS5:
+	case AES_PKCS5:
 		plainText = PKCS5Unpadding(plainText, block.BlockSize())
-	case PKCS7:
+	case AES_PKCS7:
 		plainText = PKCS5Unpadding(plainText, len(c.key))
 	}
 
@@ -176,7 +175,7 @@ func (c *ecbcrypto) Decrypt(cipherText []byte) ([]byte, error) {
 }
 
 // NewECBCrypto returns a new aes-ecb crypto.
-func NewECBCrypto(key []byte, mode PaddingMode) AESCrypto {
+func NewECBCrypto(key []byte, mode AESPaddingMode) AESCrypto {
 	return &ecbcrypto{
 		key:  key,
 		mode: mode,
@@ -400,38 +399,46 @@ func NewGCMCrypto(key, nonce []byte) AESCrypto {
 // --------------------------- RSA ---------------------------
 
 // GenerateRSAKey returns rsa private and public key.
-func GenerateRSAKey(bitSize int, blockType PemBlockType) (privateKey, publicKey []byte, err error) {
-	prvKey, err := rsa.GenerateKey(rand.Reader, bitSize)
+func GenerateRSAKey(bitSize int, mode RSAPaddingMode) (privateKey, publicKey []byte, err error) {
+	privKey, err := rsa.GenerateKey(rand.Reader, bitSize)
 
 	if err != nil {
 		return
 	}
 
-	pkixb, err := x509.MarshalPKIXPublicKey(prvKey.Public())
+	switch mode {
+	case RSA_PKCS1:
+		privateKey = pem.EncodeToMemory(&pem.Block{
+			Type:  "RSA PRIVATE KEY",
+			Bytes: x509.MarshalPKCS1PrivateKey(privKey),
+		})
 
-	if err != nil {
-		return
-	}
-
-	privateBlock := &pem.Block{Type: string(blockType)}
-
-	switch blockType {
-	case RSAPKCS1:
-		privateBlock.Bytes = x509.MarshalPKCS1PrivateKey(prvKey)
-	case RSAPKCS8:
-		privateBlock.Bytes, err = x509.MarshalPKCS8PrivateKey(prvKey)
+		publicKey = pem.EncodeToMemory(&pem.Block{
+			Type:  "RSA PUBLIC KEY",
+			Bytes: x509.MarshalPKCS1PublicKey(&privKey.PublicKey),
+		})
+	case RSA_PKCS8:
+		privBlock := &pem.Block{
+			Type: "PRIVATE KEY",
+		}
+		privBlock.Bytes, err = x509.MarshalPKCS8PrivateKey(privKey)
 
 		if err != nil {
 			return
 		}
+
+		pubBlock := &pem.Block{
+			Type: "PUBLIC KEY",
+		}
+		pubBlock.Bytes, err = x509.MarshalPKIXPublicKey(&privKey.PublicKey)
+
+		if err != nil {
+			return
+		}
+
+		privateKey = pem.EncodeToMemory(privBlock)
+		publicKey = pem.EncodeToMemory(pubBlock)
 	}
-
-	privateKey = pem.EncodeToMemory(privateBlock)
-
-	publicKey = pem.EncodeToMemory(&pem.Block{
-		Type:  "PUBLIC KEY",
-		Bytes: pkixb,
-	})
 
 	return
 }
@@ -447,8 +454,12 @@ func (pk *PrivateKey) Decrypt(cipherText []byte) ([]byte, error) {
 }
 
 // DecryptOAEP rsa decrypt with PKCS #1 OAEP.
-func (pk *PrivateKey) DecryptOAEP(cipherText []byte) ([]byte, error) {
-	return rsa.DecryptOAEP(sha1.New(), rand.Reader, pk.key, cipherText, nil)
+func (pk *PrivateKey) DecryptOAEP(hash crypto.Hash, cipherText []byte) ([]byte, error) {
+	if !hash.Available() {
+		return nil, fmt.Errorf("crypto: requested hash function (%s) is unavailable", hash.String())
+	}
+
+	return rsa.DecryptOAEP(hash.New(), rand.Reader, pk.key, cipherText, nil)
 }
 
 // Sign returns sha-with-rsa signature.
@@ -470,7 +481,7 @@ func (pk *PrivateKey) Sign(hash crypto.Hash, data []byte) ([]byte, error) {
 }
 
 // NewPrivateKeyFromPemBlock returns new private key with pem block.
-func NewPrivateKeyFromPemBlock(pemBlock []byte) (*PrivateKey, error) {
+func NewPrivateKeyFromPemBlock(mode RSAPaddingMode, pemBlock []byte) (*PrivateKey, error) {
 	block, _ := pem.Decode(pemBlock)
 
 	if block == nil {
@@ -482,10 +493,10 @@ func NewPrivateKeyFromPemBlock(pemBlock []byte) (*PrivateKey, error) {
 		err error
 	)
 
-	switch PemBlockType(block.Type) {
-	case RSAPKCS1:
+	switch mode {
+	case RSA_PKCS1:
 		pk, err = x509.ParsePKCS1PrivateKey(block.Bytes)
-	case RSAPKCS8:
+	case RSA_PKCS8:
 		pk, err = x509.ParsePKCS8PrivateKey(block.Bytes)
 	}
 
@@ -497,7 +508,7 @@ func NewPrivateKeyFromPemBlock(pemBlock []byte) (*PrivateKey, error) {
 }
 
 // NewPrivateKeyFromPemFile returns new private key with pem file.
-func NewPrivateKeyFromPemFile(pemFile string) (*PrivateKey, error) {
+func NewPrivateKeyFromPemFile(mode RSAPaddingMode, pemFile string) (*PrivateKey, error) {
 	keyPath, err := filepath.Abs(pemFile)
 
 	if err != nil {
@@ -510,7 +521,7 @@ func NewPrivateKeyFromPemFile(pemFile string) (*PrivateKey, error) {
 		return nil, err
 	}
 
-	return NewPrivateKeyFromPemBlock(b)
+	return NewPrivateKeyFromPemBlock(mode, b)
 }
 
 // NewPrivateKeyFromPfxFile returns private key with pfx(p12) file.
@@ -535,8 +546,12 @@ func (pk *PublicKey) Encrypt(plainText []byte) ([]byte, error) {
 }
 
 // EncryptOAEP rsa encrypt with PKCS #1 OAEP.
-func (pk *PublicKey) EncryptOAEP(plainText []byte) ([]byte, error) {
-	return rsa.EncryptOAEP(sha1.New(), rand.Reader, pk.key, plainText, nil)
+func (pk *PublicKey) EncryptOAEP(hash crypto.Hash, plainText []byte) ([]byte, error) {
+	if !hash.Available() {
+		return nil, fmt.Errorf("crypto: requested hash function (%s) is unavailable", hash.String())
+	}
+
+	return rsa.EncryptOAEP(hash.New(), rand.Reader, pk.key, plainText, nil)
 }
 
 // Verify verifies the sha-with-rsa signature.
@@ -552,14 +567,24 @@ func (pk *PublicKey) Verify(hash crypto.Hash, data, signature []byte) error {
 }
 
 // NewPublicKeyFromPemBlock returns new public key with pem block.
-func NewPublicKeyFromPemBlock(pemBlock []byte) (*PublicKey, error) {
+func NewPublicKeyFromPemBlock(mode RSAPaddingMode, pemBlock []byte) (*PublicKey, error) {
 	block, _ := pem.Decode(pemBlock)
 
 	if block == nil {
 		return nil, errors.New("no PEM data is found")
 	}
 
-	pk, err := x509.ParsePKIXPublicKey(block.Bytes)
+	var (
+		pk  any
+		err error
+	)
+
+	switch mode {
+	case RSA_PKCS1:
+		pk, err = x509.ParsePKCS1PublicKey(block.Bytes)
+	case RSA_PKCS8:
+		pk, err = x509.ParsePKIXPublicKey(block.Bytes)
+	}
 
 	if err != nil {
 		return nil, err
@@ -569,7 +594,7 @@ func NewPublicKeyFromPemBlock(pemBlock []byte) (*PublicKey, error) {
 }
 
 // NewPublicKeyFromPemFile returns new public key with pem file.
-func NewPublicKeyFromPemFile(pemFile string) (*PublicKey, error) {
+func NewPublicKeyFromPemFile(mode RSAPaddingMode, pemFile string) (*PublicKey, error) {
 	keyPath, err := filepath.Abs(pemFile)
 
 	if err != nil {
@@ -582,7 +607,7 @@ func NewPublicKeyFromPemFile(pemFile string) (*PublicKey, error) {
 		return nil, err
 	}
 
-	return NewPublicKeyFromPemBlock(b)
+	return NewPublicKeyFromPemBlock(mode, b)
 }
 
 // NewPublicKeyFromDerBlock returns public key with DER block.

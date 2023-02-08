@@ -13,8 +13,8 @@ var (
 )
 
 func TestMain(m *testing.M) {
-	privateKey, publicKey, _ = GenerateRSAKey(2048, RSAPKCS1)
-	// privateKey, publicKey, _ = GenerateRSAKey(2048, RSAPKCS8)
+	privateKey, publicKey, _ = GenerateRSAKey(2048, RSA_PKCS1)
+	// privateKey, publicKey, _ = GenerateRSAKey(2048, RSA_PKCS8)
 
 	m.Run()
 }

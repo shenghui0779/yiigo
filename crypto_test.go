@@ -14,7 +14,7 @@ func TestCBCCrypto(t *testing.T) {
 	plainText := "IloveYiigo"
 
 	// ZERO_PADDING
-	zero := NewCBCCrypto(key, iv, ZERO)
+	zero := NewCBCCrypto(key, iv, AES_ZERO)
 
 	e0b, err := zero.Encrypt([]byte(plainText))
 	assert.Nil(t, err)
@@ -24,7 +24,7 @@ func TestCBCCrypto(t *testing.T) {
 	assert.Equal(t, plainText, string(d0b))
 
 	// PKCS5_PADDING
-	pkcs5 := NewCBCCrypto(key, iv, PKCS5)
+	pkcs5 := NewCBCCrypto(key, iv, AES_PKCS5)
 
 	e5b, err := pkcs5.Encrypt([]byte(plainText))
 	assert.Nil(t, err)
@@ -34,7 +34,7 @@ func TestCBCCrypto(t *testing.T) {
 	assert.Equal(t, plainText, string(d5b))
 
 	// PKCS7_PADDING
-	pkcs7 := NewCBCCrypto(key, iv, PKCS7)
+	pkcs7 := NewCBCCrypto(key, iv, AES_PKCS7)
 
 	e7b, err := pkcs7.Encrypt([]byte(plainText))
 	assert.Nil(t, err)
@@ -49,7 +49,7 @@ func TestECBCrypto(t *testing.T) {
 	plainText := "IloveYiigo"
 
 	// ZERO_PADDING
-	zero := NewECBCrypto(key, ZERO)
+	zero := NewECBCrypto(key, AES_ZERO)
 
 	e0b, err := zero.Encrypt([]byte(plainText))
 	assert.Nil(t, err)
@@ -59,7 +59,7 @@ func TestECBCrypto(t *testing.T) {
 	assert.Equal(t, plainText, string(d0b))
 
 	// PKCS5_PADDING
-	pkcs5 := NewECBCrypto(key, PKCS5)
+	pkcs5 := NewECBCrypto(key, AES_PKCS5)
 
 	e5b, err := pkcs5.Encrypt([]byte(plainText))
 	assert.Nil(t, err)
@@ -69,7 +69,7 @@ func TestECBCrypto(t *testing.T) {
 	assert.Equal(t, plainText, string(d5b))
 
 	// PKCS7_PADDING
-	pkcs7 := NewECBCrypto(key, PKCS7)
+	pkcs7 := NewECBCrypto(key, AES_PKCS7)
 
 	e7b, err := pkcs7.Encrypt([]byte(plainText))
 	assert.Nil(t, err)
@@ -142,11 +142,11 @@ func TestGCMCrypto(t *testing.T) {
 func TestRSACrypto(t *testing.T) {
 	plainText := "IloveYiigo"
 
-	pvtKey, err := NewPrivateKeyFromPemBlock(privateKey)
+	pvtKey, err := NewPrivateKeyFromPemBlock(RSA_PKCS1, privateKey)
 
 	assert.Nil(t, err)
 
-	pubKey, err := NewPublicKeyFromPemBlock(publicKey)
+	pubKey, err := NewPublicKeyFromPemBlock(RSA_PKCS1, publicKey)
 
 	assert.Nil(t, err)
 
@@ -159,11 +159,11 @@ func TestRSACrypto(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, plainText, string(db))
 
-	eboeap, err := pubKey.EncryptOAEP([]byte(plainText))
+	eboeap, err := pubKey.EncryptOAEP(crypto.SHA256, []byte(plainText))
 
 	assert.Nil(t, err)
 
-	dboeap, err := pvtKey.DecryptOAEP(eboeap)
+	dboeap, err := pvtKey.DecryptOAEP(crypto.SHA256, eboeap)
 
 	assert.Nil(t, err)
 	assert.Equal(t, plainText, string(dboeap))
