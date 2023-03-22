@@ -158,6 +158,71 @@ func NewPoint(x, y float64, options ...PointOption) *Point {
 	return p
 }
 
+// PolarPoint polar coordinate point
+type PolarPoint struct {
+	rad  float64
+	dist float64
+}
+
+// Rad returns radian
+func (pp *PolarPoint) Rad() float64 {
+	return pp.rad
+}
+
+// Angle returns angle
+func (pp *PolarPoint) Angle() float64 {
+	return pp.rad / math.Pi * 180
+}
+
+// Dist returns polar distance
+func (pp *PolarPoint) Dist() float64 {
+	return pp.dist
+}
+
+// XY returns the corresponding X&Y coordinate point.
+func (pp *PolarPoint) XY(options ...PointOption) *Point {
+	return NewPoint(pp.dist*math.Cos(pp.rad), pp.dist*math.Sin(pp.rad), options...)
+}
+
+// String implements Stringer interface for polar print.
+func (pp *PolarPoint) String() string {
+	return fmt.Sprintf("(rad: %.16f, dist: %.16f)", pp.rad, pp.dist)
+}
+
+// NewPolarPoint returns a new polar point.
+func NewPolarPoint(angle, dist float64) *PolarPoint {
+	rad := angle / 180 * math.Pi
+
+	if math.Abs(rad) > math.Pi {
+		rad = math.Atan2(dist*math.Sin(rad), dist*math.Cos(rad))
+	}
+
+	return &PolarPoint{
+		rad:  rad,
+		dist: dist,
+	}
+}
+
+// NewPolarPointFromRad returns a new polar point from radian.
+func NewPolarPointFromRad(rad, dist float64) *PolarPoint {
+	if math.Abs(rad) > math.Pi {
+		rad = math.Atan2(dist*math.Sin(rad), dist*math.Cos(rad))
+	}
+
+	return &PolarPoint{
+		rad:  rad,
+		dist: dist,
+	}
+}
+
+// NewPolarPointFromXY returns a new polar point from X&Y.
+func NewPolarPointFromXY(x, y float64) *PolarPoint {
+	return &PolarPoint{
+		rad:  math.Atan2(y, x),
+		dist: math.Sqrt(math.Pow(x, 2) + math.Pow(y, 2)),
+	}
+}
+
 // EllipsoidParameter params for ellipsoid.
 type EllipsoidParameter struct {
 	A   float64
@@ -210,7 +275,7 @@ type ZtGeoCoordTransform struct {
 }
 
 // NewZtGeoCoordTransform 返回经纬度与大地平面直角坐标系间的转换器
-// eg: zgct := yiigo.NewZtGeoCoordTransform(-360, 'g', NewWGS84Parameter())
+// eg: zgct := NewZtGeoCoordTransform(-360, 'g', NewWGS84Parameter())
 func NewZtGeoCoordTransform(ml float64, pt rune, ep *EllipsoidParameter) *ZtGeoCoordTransform {
 	return &ZtGeoCoordTransform{
 		ep:           ep,
