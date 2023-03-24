@@ -107,7 +107,7 @@ func NewLocation(lng, lat float64) *Location {
 	}
 }
 
-// Point coordinate point
+// Point X&Y coordinate point
 type Point struct {
 	x  float64
 	y  float64
