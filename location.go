@@ -158,68 +158,56 @@ func NewPoint(x, y float64, options ...PointOption) *Point {
 	return p
 }
 
-// PolarPoint polar coordinate point
-type PolarPoint struct {
-	rad  float64
-	dist float64
+// Polar polar coordinate point
+type Polar struct {
+	rho float64
+	rad float64
 }
 
-// Rad returns radian
-func (pp *PolarPoint) Rad() float64 {
-	return pp.rad
+// Rad returns radian of theta(θ)
+func (p *Polar) Rad() float64 {
+	return p.rad
 }
 
-// Angle returns angle
-func (pp *PolarPoint) Angle() float64 {
-	return pp.rad / math.Pi * 180
+// Angle returns theta(θ)
+func (p *Polar) Theta() float64 {
+	return p.rad / math.Pi * 180
 }
 
-// Dist returns polar distance
-func (pp *PolarPoint) Dist() float64 {
-	return pp.dist
+// Dist returns pho(ρ)
+func (p *Polar) Rho() float64 {
+	return p.rho
 }
 
-// XY returns the corresponding X&Y coordinate point.
-func (pp *PolarPoint) XY(options ...PointOption) *Point {
-	return NewPoint(pp.dist*math.Cos(pp.rad), pp.dist*math.Sin(pp.rad), options...)
+// XY returns the point of X&Y coordinate.
+func (p *Polar) XY(options ...PointOption) *Point {
+	return NewPoint(p.rho*math.Cos(p.rad), p.rho*math.Sin(p.rad), options...)
 }
 
 // String implements Stringer interface for polar print.
-func (pp *PolarPoint) String() string {
-	return fmt.Sprintf("(rad: %.16f, dist: %.16f)", pp.rad, pp.dist)
+func (p *Polar) String() string {
+	return fmt.Sprintf("(ρ: %.16f, θ: %.16f)", p.rho, p.rad/math.Pi*180)
 }
 
-// NewPolarPoint returns a new polar point.
-func NewPolarPoint(angle, dist float64) *PolarPoint {
-	rad := angle / 180 * math.Pi
+// NewPolar returns a new polar point.
+func NewPolar(rho, theta float64) *Polar {
+	rad := theta / 180 * math.Pi
 
 	if math.Abs(rad) > math.Pi {
-		rad = math.Atan2(dist*math.Sin(rad), dist*math.Cos(rad))
+		rad = math.Atan2(rho*math.Sin(rad), rho*math.Cos(rad))
 	}
 
-	return &PolarPoint{
-		rad:  rad,
-		dist: dist,
-	}
-}
-
-// NewPolarPointFromRad returns a new polar point from radian.
-func NewPolarPointFromRad(rad, dist float64) *PolarPoint {
-	if math.Abs(rad) > math.Pi {
-		rad = math.Atan2(dist*math.Sin(rad), dist*math.Cos(rad))
-	}
-
-	return &PolarPoint{
-		rad:  rad,
-		dist: dist,
+	return &Polar{
+		rho: rho,
+		rad: rad,
 	}
 }
 
-// NewPolarPointFromXY returns a new polar point from X&Y.
-func NewPolarPointFromXY(x, y float64) *PolarPoint {
-	return &PolarPoint{
-		rad:  math.Atan2(y, x),
-		dist: math.Sqrt(math.Pow(x, 2) + math.Pow(y, 2)),
+// NewPolarFromXY returns a new polar point from X&Y.
+func NewPolarFromXY(x, y float64) *Polar {
+	return &Polar{
+		rho: math.Sqrt(math.Pow(x, 2) + math.Pow(y, 2)),
+		rad: math.Atan2(y, x),
 	}
 }
 
