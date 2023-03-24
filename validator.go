@@ -49,7 +49,7 @@ func WithValuerType(types ...driver.Valuer) ValidatorOption {
 func WithValidation(tag string, fn validator.Func, callValidationEvenIfNull ...bool) ValidatorOption {
 	return func(validate *validator.Validate, trans ut.Translator) {
 		if err := validate.RegisterValidation(tag, fn, callValidationEvenIfNull...); err != nil {
-			logger.Error("[yiigo] err register validation", zap.Error(err))
+			logger.Error("err register validation", zap.Error(err))
 		}
 	}
 }
@@ -58,7 +58,7 @@ func WithValidation(tag string, fn validator.Func, callValidationEvenIfNull ...b
 func WithValidationCtx(tag string, fn validator.FuncCtx, callValidationEvenIfNull ...bool) ValidatorOption {
 	return func(validate *validator.Validate, trans ut.Translator) {
 		if err := validate.RegisterValidationCtx(tag, fn, callValidationEvenIfNull...); err != nil {
-			logger.Error("[yiigo] err register validation with ctx", zap.Error(err))
+			logger.Error("err register validation with ctx", zap.Error(err))
 		}
 	}
 }
@@ -153,7 +153,7 @@ func NewValidator(options ...ValidatorOption) *Validator {
 	trans, _ := ut.New(zhTrans, zhTrans).GetTranslator("zh")
 
 	if err := zhcn.RegisterDefaultTranslations(validate, trans); err != nil {
-		logger.Error("[yiigo] err validation translator", zap.Error(err))
+		logger.Error("err validation translator", zap.Error(err))
 	}
 
 	for _, f := range options {

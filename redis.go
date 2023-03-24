@@ -22,7 +22,7 @@ type RedisConn struct {
 // Close closes the connection resource
 func (rc *RedisConn) Close() {
 	if err := rc.Conn.Close(); err != nil {
-		logger.Error("[yiigo] err conn closed", zap.Error(err))
+		logger.Error("err conn closed", zap.Error(err))
 	}
 }
 
@@ -227,7 +227,7 @@ func (rp *redisResourcePool) Get(ctx context.Context) (*RedisConn, error) {
 
 	// If rc is error, close and reconnect
 	if err = rc.Err(); err != nil {
-		logger.Warn("[yiigo] err pool conn, reconnect", zap.Error(err))
+		logger.Warn("err pool conn, reconnect", zap.Error(err))
 
 		conn, dialErr := rp.dial()
 
@@ -272,7 +272,7 @@ func (rp *redisResourcePool) DoFunc(ctx context.Context, f func(ctx context.Cont
 		rp.Put(conn)
 
 		if r := recover(); r != nil {
-			logger.Error("[yiigo] redis do func panic", zap.Any("error", r), zap.ByteString("stack", debug.Stack()))
+			logger.Error("redis do func panic", zap.Any("error", r), zap.ByteString("stack", debug.Stack()))
 		}
 	}()
 
@@ -314,13 +314,13 @@ func initRedis(name string, cfg *RedisConfig) {
 	conn, err := pool.Get(context.TODO())
 
 	if err != nil {
-		logger.Panic(fmt.Sprintf("[yiigo] err redis.%s pool", name), zap.String("addr", cfg.Addr), zap.Error(err))
+		logger.Panic(fmt.Sprintf("err redis.%s pool", name), zap.String("addr", cfg.Addr), zap.Error(err))
 	}
 
 	if _, err = conn.Do("PING"); err != nil {
 		conn.Close()
 
-		logger.Panic(fmt.Sprintf("[yiigo] err redis.%s ping", name), zap.String("addr", cfg.Addr), zap.Error(err))
+		logger.Panic(fmt.Sprintf("err redis.%s ping", name), zap.String("addr", cfg.Addr), zap.Error(err))
 	}
 
 	pool.Put(conn)
@@ -331,14 +331,14 @@ func initRedis(name string, cfg *RedisConfig) {
 
 	redisMap.Store(name, pool)
 
-	logger.Info(fmt.Sprintf("[yiigo] redis.%s is OK", name))
+	logger.Info(fmt.Sprintf("redis.%s is OK", name))
 }
 
 // Redis returns a redis pool.
 func Redis(name ...string) RedisPool {
 	if len(name) == 0 || name[0] == Default {
 		if defaultRedis == nil {
-			logger.Panic(fmt.Sprintf("[yiigo] unknown redis.%s (forgotten configure?)", Default))
+			logger.Panic(fmt.Sprintf("unknown redis.%s (forgotten configure?)", Default))
 		}
 
 		return defaultRedis
@@ -347,7 +347,7 @@ func Redis(name ...string) RedisPool {
 	v, ok := redisMap.Load(name[0])
 
 	if !ok {
-		logger.Panic(fmt.Sprintf("[yiigo] unknown redis.%s (forgotten configure?)", name[0]))
+		logger.Panic(fmt.Sprintf("unknown redis.%s (forgotten configure?)", name[0]))
 	}
 
 	return v.(RedisPool)

@@ -16,7 +16,7 @@ type NSQLogger struct{}
 
 // Output implements the nsq logger interface
 func (l *NSQLogger) Output(calldepth int, s string) error {
-	logger.Error(fmt.Sprintf("[NSQ] %s", s), zap.Int("call_depth", calldepth))
+	logger.Error(fmt.Sprintf("err nsq: %s", s), zap.Int("call_depth", calldepth))
 
 	return nil
 }
@@ -35,7 +35,7 @@ func initNSQProducer(nsqd string, cfg *nsq.Config) error {
 	}
 
 	if err = producer.Ping(); err != nil {
-		logger.Panic("[yiigo] err nsq ping", zap.String("nsqd", nsqd), zap.Error(err))
+		logger.Panic("err nsq ping", zap.String("nsqd", nsqd), zap.Error(err))
 	}
 
 	producer.SetLogger(&NSQLogger{}, nsq.LogLevelError)
@@ -46,7 +46,7 @@ func initNSQProducer(nsqd string, cfg *nsq.Config) error {
 // NSQPublish synchronously publishes a message body to the specified topic.
 func NSQPublish(topic string, msg []byte) error {
 	if producer == nil {
-		return errors.New("producer is nil (forgotten configure?)")
+		return errors.New("nsq producer is nil (forgotten configure?)")
 	}
 
 	return producer.Publish(topic, msg)
@@ -56,7 +56,7 @@ func NSQPublish(topic string, msg []byte) error {
 // where the message will queue at the channel level until the timeout expires.
 func NSQDeferredPublish(topic string, msg []byte, duration time.Duration) error {
 	if producer == nil {
-		return errors.New("producer is nil (forgotten configure?)")
+		return errors.New("nsq producer is nil (forgotten configure?)")
 	}
 
 	return producer.DeferredPublish(topic, duration, msg)

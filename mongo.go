@@ -22,7 +22,7 @@ func initMongoDB(name, dsn string) {
 	client, err := mongo.Connect(context.Background(), opts)
 
 	if err != nil {
-		logger.Panic(fmt.Sprintf("[yiigo] err mongodb.%s connect", name), zap.String("dsn", dsn), zap.Error(err))
+		logger.Panic(fmt.Sprintf("err mongodb.%s connect", name), zap.String("dsn", dsn), zap.Error(err))
 	}
 
 	timeout := 10 * time.Second
@@ -36,7 +36,7 @@ func initMongoDB(name, dsn string) {
 
 	// verify connection
 	if err = client.Ping(ctx, opts.ReadPreference); err != nil {
-		logger.Panic(fmt.Sprintf("[yiigo] err mongodb.%s ping", name), zap.String("dsn", dsn), zap.Error(err))
+		logger.Panic(fmt.Sprintf("err mongodb.%s ping", name), zap.String("dsn", dsn), zap.Error(err))
 	}
 
 	if name == Default {
@@ -45,14 +45,14 @@ func initMongoDB(name, dsn string) {
 
 	mgoMap.Store(name, client)
 
-	logger.Info(fmt.Sprintf("[yiigo] mongodb.%s is OK", name))
+	logger.Info(fmt.Sprintf("mongodb.%s is OK", name))
 }
 
 // Mongo returns a mongo client.
 func Mongo(name ...string) *mongo.Client {
 	if len(name) == 0 || name[0] == Default {
 		if defaultMongo == nil {
-			logger.Panic(fmt.Sprintf("[yiigo] unknown mongodb.%s (forgotten configure?)", Default))
+			logger.Panic(fmt.Sprintf("unknown mongodb.%s (forgotten configure?)", Default))
 		}
 
 		return defaultMongo
@@ -61,7 +61,7 @@ func Mongo(name ...string) *mongo.Client {
 	v, ok := mgoMap.Load(name[0])
 
 	if !ok {
-		logger.Panic(fmt.Sprintf("[yiigo] unknown mongodb.%s (forgotten configure?)", name[0]))
+		logger.Panic(fmt.Sprintf("unknown mongodb.%s (forgotten configure?)", name[0]))
 	}
 
 	return v.(*mongo.Client)
