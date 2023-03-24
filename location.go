@@ -23,7 +23,7 @@ func (l *Location) Latitude() float64 {
 
 // String implements Stringer interface for print.
 func (l *Location) String() string {
-	return fmt.Sprintf("(lng: %.16f, lat: %.16f)", l.lng, l.lat)
+	return fmt.Sprintf("(lng: %v, lat: %v)", l.lng, l.lat)
 }
 
 // Distance calculates distance in meters with target location.
@@ -131,7 +131,7 @@ func (p *Point) MeridianLine() float64 {
 
 // String implements Stringer interface for print.
 func (p *Point) String() string {
-	return fmt.Sprintf("(x: %.16f, y: %.16f)", p.x, p.y)
+	return fmt.Sprintf("(x: %v, y: %v)", p.x, p.y)
 }
 
 // PointOption point option
@@ -186,7 +186,7 @@ func (p *Polar) XY(options ...PointOption) *Point {
 
 // String implements Stringer interface for polar print.
 func (p *Polar) String() string {
-	return fmt.Sprintf("(ρ: %.16f, θ: %.16f)", p.rho, p.rad/math.Pi*180)
+	return fmt.Sprintf("(ρ: %v, θ: %v)", p.rho, p.rad/math.Pi*180)
 }
 
 // NewPolar returns a new polar point.
@@ -263,7 +263,7 @@ type ZtGeoCoordTransform struct {
 }
 
 // NewZtGeoCoordTransform 返回经纬度与大地平面直角坐标系间的转换器
-// eg: zgct := NewZtGeoCoordTransform(-360, 'g', NewWGS84Parameter())
+// eg: zgct := yiigo.NewZtGeoCoordTransform(-360, 'g', NewWGS84Parameter())
 func NewZtGeoCoordTransform(ml float64, pt rune, ep *EllipsoidParameter) *ZtGeoCoordTransform {
 	return &ZtGeoCoordTransform{
 		ep:           ep,
@@ -326,16 +326,16 @@ func (zt *ZtGeoCoordTransform) XY2BL(p *Point) *Location {
 	}
 
 	var (
-		bf0        = y / zt.ep.A0
-		bf         float64
-		threshould = 1.0
+		bf0       = y / zt.ep.A0
+		bf        float64
+		threshold = 1.0
 	)
 
-	for threshould > 0.00000001 {
+	for threshold > 0.00000001 {
 		y0 := -zt.ep.A2*math.Sin(2*bf0)/2 + zt.ep.A4*math.Sin(4*bf0)/4 - zt.ep.A6*math.Sin(6*bf0)/6
 		bf = (y - y0) / zt.ep.A0
 
-		threshould = bf - bf0
+		threshold = bf - bf0
 		bf0 = bf
 	}
 
