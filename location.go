@@ -256,6 +256,7 @@ func NewWGS84Parameter() *EllipsoidParameter {
 }
 
 // ZtGeoCoordTransform 经纬度与大地平面直角坐标系间的转换
+// [翻译自C++代码](https://www.cnblogs.com/xingzhensun/p/11377963.html)
 type ZtGeoCoordTransform struct {
 	ep           *EllipsoidParameter
 	meridianLine float64
