@@ -5,28 +5,36 @@ import (
 	"math"
 )
 
-// Location geographic location
+// ProjType 投影类型
+type ProjType int
+
+const (
+	UTM    ProjType = 0 // UTM投影
+	GaussK ProjType = 1 // 高斯-克吕格(Gauss-Kruger)投影
+)
+
+// Location 地理位置(经纬度)
 type Location struct {
 	lng float64
 	lat float64
 }
 
-// Longtitude returns longtitude
+// Longtitude 返回经度
 func (l *Location) Longtitude() float64 {
 	return l.lng
 }
 
-// Latitude returns latitude
+// Latitude 返回维度
 func (l *Location) Latitude() float64 {
 	return l.lat
 }
 
-// String implements Stringer interface for print.
+// String 实现 Stringer 接口.
 func (l *Location) String() string {
 	return fmt.Sprintf("(lng: %v, lat: %v)", l.lng, l.lat)
 }
 
-// Distance calculates distance in meters with target location.
+// Distance 根据经纬度计算距离
 func (l *Location) Distance(t *Location) float64 {
 	R := 6378137.0 // radius of the earth
 	rad := math.Pi / 180.0
@@ -34,8 +42,8 @@ func (l *Location) Distance(t *Location) float64 {
 	lng1 := l.lng * rad
 	lat1 := l.lat * rad
 
-	lng2 := t.Longtitude() * rad
-	lat2 := t.Latitude() * rad
+	lng2 := t.lng * rad
+	lat2 := t.lat * rad
 
 	theta := lng2 - lng1
 
@@ -44,22 +52,22 @@ func (l *Location) Distance(t *Location) float64 {
 	return math.Acos(dist) * R
 }
 
-// Azimuth calculates azimuth angle with target location.
+// Azimuth 根据经纬度计算方位角(0 ～ 360)
 func (l *Location) Azimuth(t *Location) float64 {
-	if t.Longtitude() == l.lng && t.Latitude() == l.lat {
+	if t.lng == l.lng && t.lat == l.lat {
 		return 0
 	}
 
-	if t.Longtitude() == l.lng {
-		if t.Latitude() > l.lat {
+	if t.lng == l.lng {
+		if t.lat > l.lat {
 			return 0
 		}
 
 		return 180
 	}
 
-	if t.Latitude() == l.lat {
-		if t.Longtitude() > l.lng {
+	if t.lat == l.lat {
+		if t.lng > l.lng {
 			return 90
 		}
 
@@ -68,10 +76,10 @@ func (l *Location) Azimuth(t *Location) float64 {
 
 	rad := math.Pi / 180.0
 
-	a := (90 - t.Latitude()) * rad
+	a := (90 - t.lat) * rad
 	b := (90 - l.lat) * rad
 
-	AOC_BOC := (t.Longtitude() - l.lng) * rad
+	AOC_BOC := (t.lng - l.lng) * rad
 
 	cosc := math.Cos(a)*math.Cos(b) + math.Sin(a)*math.Sin(b)*math.Cos(AOC_BOC)
 	sinc := math.Sqrt(1 - cosc*cosc)
@@ -88,18 +96,18 @@ func (l *Location) Azimuth(t *Location) float64 {
 
 	angle := math.Asin(sinA) / math.Pi * 180
 
-	if t.Latitude() < l.lat {
+	if t.lat < l.lat {
 		return 180 - angle
 	}
 
-	if t.Longtitude() < l.lng {
+	if t.lng < l.lng {
 		return 360 + angle
 	}
 
 	return angle
 }
 
-// NewLocation returns a new location.
+// NewLocation 生成一个Location
 func NewLocation(lng, lat float64) *Location {
 	return &Location{
 		lng: lng,
@@ -107,89 +115,70 @@ func NewLocation(lng, lat float64) *Location {
 	}
 }
 
-// Point X&Y coordinate point
+// Point 直角坐标系点
 type Point struct {
 	x  float64
 	y  float64
 	ml float64
 }
 
-// X returns x
+// X 返回 X 坐标
 func (p *Point) X() float64 {
 	return p.x
 }
 
-// Y returns y
+// Y 返回 Y 坐标
 func (p *Point) Y() float64 {
 	return p.y
 }
 
-// MeridianLine returns meridian line for conversion between point and location.
-func (p *Point) MeridianLine() float64 {
-	return p.ml
-}
-
-// String implements Stringer interface for print.
+// String 实现 Stringer 接口
 func (p *Point) String() string {
 	return fmt.Sprintf("(x: %v, y: %v)", p.x, p.y)
 }
 
-// PointOption point option
-type PointOption func(p *Point)
-
-// WithMeridianLine specifies the meridian line for point.
-func WithMeridianLine(ml float64) PointOption {
-	return func(p *Point) {
-		p.ml = ml
-	}
-}
-
-// NewPoint returns a new point.
-func NewPoint(x, y float64, options ...PointOption) *Point {
+// NewPoint 生成一个直角坐标系的点
+func NewPoint(x, y float64) *Point {
 	p := &Point{
 		x: x,
 		y: y,
 	}
 
-	for _, f := range options {
-		f(p)
-	}
-
 	return p
 }
 
-// Polar polar coordinate point
+// Polar 极坐标系点
 type Polar struct {
 	rho float64
 	rad float64
 }
 
-// Rad returns radian of theta(θ)
+// Rad 返回极角(θ)弧度
 func (p *Polar) Rad() float64 {
 	return p.rad
 }
 
-// Angle returns theta(θ)
+// Angle 返回极角(θ)角度
 func (p *Polar) Theta() float64 {
 	return p.rad / math.Pi * 180
 }
 
-// Dist returns pho(ρ)
+// Dist 返回极径(ρ)
 func (p *Polar) Rho() float64 {
 	return p.rho
 }
 
-// XY returns the point of X&Y coordinate.
-func (p *Polar) XY(options ...PointOption) *Point {
-	return NewPoint(p.rho*math.Cos(p.rad), p.rho*math.Sin(p.rad), options...)
+// XY 转化为直角坐标系点
+func (p *Polar) XY() *Point {
+	return NewPoint(p.rho*math.Cos(p.rad), p.rho*math.Sin(p.rad))
 }
 
-// String implements Stringer interface for polar print.
+// String 实现 Stringer 接口
 func (p *Polar) String() string {
 	return fmt.Sprintf("(ρ: %v, θ: %v)", p.rho, p.rad/math.Pi*180)
 }
 
-// NewPolar returns a new polar point.
+// NewPolar 生成一个极坐标点
 func NewPolar(rho, theta float64) *Polar {
 	rad := theta / 180 * math.Pi
 
@@ -203,7 +192,7 @@ func NewPolar(rho, theta float64) *Polar {
 	}
 }
 
-// NewPolarFromXY returns a new polar point from X&Y.
+// NewPolarFromXY 由直角坐标系点生成一个极坐标点
 func NewPolarFromXY(x, y float64) *Polar {
 	return &Polar{
 		rho: math.Sqrt(math.Pow(x, 2) + math.Pow(y, 2)),
@@ -211,7 +200,7 @@ func NewPolarFromXY(x, y float64) *Polar {
 	}
 }
 
-// EllipsoidParameter params for ellipsoid.
+// EllipsoidParameter 椭球体参数
 type EllipsoidParameter struct {
 	A   float64
 	B   float64
@@ -225,7 +214,7 @@ type EllipsoidParameter struct {
 	A6  float64
 }
 
-// NewWGS84Parameter params for WGS84.
+// NewWGS84Parameter 生成 WGS84 椭球体参数
 func NewWGS84Parameter() *EllipsoidParameter {
 	ep := &EllipsoidParameter{
 		A:  6378137.0,
@@ -258,40 +247,45 @@ func NewWGS84Parameter() *EllipsoidParameter {
 // ZtGeoCoordTransform 经纬度与大地平面直角坐标系间的转换
 // [翻译自C++代码](https://www.cnblogs.com/xingzhensun/p/11377963.html)
 type ZtGeoCoordTransform struct {
-	ep           *EllipsoidParameter
-	meridianLine float64
-	projType     rune
+	ep *EllipsoidParameter
+	ml float64
+	pt ProjType
 }
 
 // NewZtGeoCoordTransform 返回经纬度与大地平面直角坐标系间的转换器
-// eg: zgct := yiigo.NewZtGeoCoordTransform(-360, 'g', NewWGS84Parameter())
-func NewZtGeoCoordTransform(ml float64, pt rune, ep *EllipsoidParameter) *ZtGeoCoordTransform {
-	return &ZtGeoCoordTransform{
-		ep:           ep,
-		meridianLine: ml,
-		projType:     pt,
+func NewZtGeoCoordTransform(options ...ZGCTOption) *ZtGeoCoordTransform {
+	zgct := &ZtGeoCoordTransform{
+		ep: NewWGS84Parameter(),
+		ml: -360,
+		pt: GaussK,
 	}
+
+	for _, f := range options {
+		f(zgct)
+	}
+
+	return zgct
 }
 
 // BL2XY 经纬度转大地平面直角坐标系点
-func (zt *ZtGeoCoordTransform) BL2XY(loc *Location) *Point {
-	meridianLine := zt.meridianLine
+func (zgct *ZtGeoCoordTransform) BL2XY(loc *Location) *Point {
+	ml := zgct.ml
 
-	if meridianLine < -180 {
-		meridianLine = float64(int((loc.Longtitude()+1.5)/3) * 3)
+	if ml < -180 {
+		ml = float64(int((loc.lng+1.5)/3) * 3)
 	}
 
-	lat := loc.Latitude() * 0.0174532925199432957692
-	dL := (loc.Longtitude() - meridianLine) * 0.0174532925199432957692
+	lat := loc.lat * 0.0174532925199432957692
+	dL := (loc.lng - ml) * 0.0174532925199432957692
 
-	X := zt.ep.A0*lat - zt.ep.A2*math.Sin(2*lat)/2 + zt.ep.A4*math.Sin(4*lat)/4 - zt.ep.A6*math.Sin(6*lat)/6
+	X := zgct.ep.A0*lat - zgct.ep.A2*math.Sin(2*lat)/2 + zgct.ep.A4*math.Sin(4*lat)/4 - zgct.ep.A6*math.Sin(6*lat)/6
 
 	tn := math.Tan(lat)
 	tn2 := tn * tn
 	tn4 := tn2 * tn2
 
-	j2 := (1/math.Pow(1-zt.ep.F, 2) - 1) * math.Pow(math.Cos(lat), 2)
-	n := zt.ep.A / math.Sqrt(1.0-zt.ep.E2*math.Sin(lat)*math.Sin(lat))
+	j2 := (1/math.Pow(1-zgct.ep.F, 2) - 1) * math.Pow(math.Cos(lat), 2)
+	n := zgct.ep.A / math.Sqrt(1.0-zgct.ep.E2*math.Sin(lat)*math.Sin(lat))
 
 	var temp [6]float64
 
@@ -305,47 +299,51 @@ func (zt *ZtGeoCoordTransform) BL2XY(loc *Location) *Point {
 	px := temp[3] + temp[4] + temp[5]
 	py := X + temp[0] + temp[1] + temp[2]
 
-	switch zt.projType {
-	case 'g':
+	switch zgct.pt {
+	case GaussK:
 		px += 500000
-	case 'u':
+	case UTM:
 		px = px*0.9996 + 500000
 		py = py * 0.9996
 	}
 
-	return NewPoint(px, py, WithMeridianLine(meridianLine))
+	return &Point{
+		x:  px,
+		y:  py,
+		ml: ml,
+	}
 }
 
 // XY2BL 大地平面直角坐标系点转经纬度
-func (zt *ZtGeoCoordTransform) XY2BL(p *Point) *Location {
-	x := p.X() - 500000
-	y := p.Y()
+func (zgct *ZtGeoCoordTransform) XY2BL(p *Point) *Location {
+	x := p.x - 500000
+	y := p.y
 
-	if zt.projType == 'u' {
+	if zgct.pt == UTM {
 		x = x / 0.9996
 		y = y / 0.9996
 	}
 
 	var (
-		bf0       = y / zt.ep.A0
+		bf0       = y / zgct.ep.A0
 		bf        float64
 		threshold = 1.0
 	)
 
 	for threshold > 0.00000001 {
-		y0 := -zt.ep.A2*math.Sin(2*bf0)/2 + zt.ep.A4*math.Sin(4*bf0)/4 - zt.ep.A6*math.Sin(6*bf0)/6
-		bf = (y - y0) / zt.ep.A0
+		y0 := -zgct.ep.A2*math.Sin(2*bf0)/2 + zgct.ep.A4*math.Sin(4*bf0)/4 - zgct.ep.A6*math.Sin(6*bf0)/6
+		bf = (y - y0) / zgct.ep.A0
 
 		threshold = bf - bf0
 		bf0 = bf
 	}
 
 	t := math.Tan(bf)
-	j2 := zt.ep.EP2 * math.Pow(math.Cos(bf), 2)
+	j2 := zgct.ep.EP2 * math.Pow(math.Cos(bf), 2)
 
-	v := math.Sqrt(1 - zt.ep.E2*math.Sin(bf)*math.Sin(bf))
-	n := zt.ep.A / v
-	m := zt.ep.A * (1 - zt.ep.E2) / math.Pow(v, 3)
+	v := math.Sqrt(1 - zgct.ep.E2*math.Sin(bf)*math.Sin(bf))
+	n := zgct.ep.A / v
+	m := zgct.ep.A * (1 - zgct.ep.E2) / math.Pow(v, 3)
 
 	temp0 := t * x * x / (2 * m * n)
 	temp1 := t * (5 + 3*t*t + j2 - 9*j2*t*t) * math.Pow(x, 4) / (24 * m * math.Pow(n, 3))
@@ -357,7 +355,34 @@ func (zt *ZtGeoCoordTransform) XY2BL(p *Point) *Location {
 	temp1 = (1 + 2*t*t + j2) * math.Pow(x, 3) / (6 * math.Pow(n, 3) * math.Cos(bf))
 	temp2 = (5 + 28*t*t + 6*j2 + 24*math.Pow(t, 4) + 8*t*t*j2) * math.Pow(x, 5) / (120 * math.Pow(n, 5) * math.Cos(bf))
 
-	lng := (temp0-temp1+temp2)*57.29577951308232 + p.MeridianLine()
+	lng := (temp0-temp1+temp2)*57.29577951308232 + p.ml
 
-	return NewLocation(lng, lat)
+	return &Location{
+		lng: lng,
+		lat: lat,
+	}
+}
+
+// ZGCTOption 经纬度与大地平面直角坐标系间的转换选项
+type ZGCTOption func(zgct *ZtGeoCoordTransform)
+
+// WithMeridianLine 设置子午线值
+func WithMeridianLine(ml float64) ZGCTOption {
+	return func(zgct *ZtGeoCoordTransform) {
+		zgct.ml = ml
+	}
+}
+
+// WithProjType 设置投影类型
+func WithProjType(pt ProjType) ZGCTOption {
+	return func(zgct *ZtGeoCoordTransform) {
+		zgct.pt = pt
+	}
+}
+
+// WithBaseLocation 设置基准点(以基准点子午线值建立坐标系)
+func WithBaseLocation(loc *Location) ZGCTOption {
+	return func(zgct *ZtGeoCoordTransform) {
+		zgct.ml = float64(int((loc.lng+1.5)/3) * 3)
+	}
 }
