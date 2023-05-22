@@ -29,14 +29,14 @@ func (l *Location) Latitude() float64 {
 	return l.lat
 }
 
-// String 实现 Stringer 接口.
+// String 实现 Stringer 接口
 func (l *Location) String() string {
 	return fmt.Sprintf("(lng: %v, lat: %v)", l.lng, l.lat)
 }
 
-// Distance 根据经纬度计算距离
+// Distance 根据经纬度计算距离(单位：m)
 func (l *Location) Distance(t *Location) float64 {
-	R := 6378137.0 // radius of the earth
+	R := 6378137.0 // 地球半径
 	rad := math.Pi / 180.0
 
 	lng1 := l.lng * rad

@@ -15,34 +15,29 @@ import (
 	"path/filepath"
 )
 
-// AESPaddingMode aes padding mode
+// AESPaddingMode AES填充模式
 type AESPaddingMode int
 
 const (
-	// AES_ZERO zero padding mode
-	AES_ZERO AESPaddingMode = iota
-	// AES_PKCS5 PKCS#5 padding mode
-	AES_PKCS5
-	// AES_PKCS7 PKCS#7 padding mode
-	AES_PKCS7
+	AES_ZERO  AESPaddingMode = iota // 0
+	AES_PKCS5                       // PKCS#5
+	AES_PKCS7                       // PKCS#7
 )
 
-// RSAPaddingMode pem block type which taken from the preamble.
+// RSAPaddingMode RSA PEM 填充模式
 type RSAPaddingMode int
 
 const (
-	// RSA_PKCS1 this kind of key is commonly encoded in PEM blocks of type "RSA PRIVATE KEY" and "RSA PUBLIC KEY"
-	RSA_PKCS1 RSAPaddingMode = iota
-	// RSA_PKCS8 this kind of key is commonly encoded in PEM blocks of type "PRIVATE KEY" and "PUBLIC KEY"
-	RSA_PKCS8
+	RSA_PKCS1 RSAPaddingMode = iota // PKCS#1 (格式：`RSA PRIVATE KEY` 和 `RSA PUBLIC KEY`)
+	RSA_PKCS8                       // PKCS#8 (格式：`PRIVATE KEY` 和 `PUBLIC KEY`)
 )
 
-// AESCrypto is the interface for aes crypto.
+// AESCrypto AES加解密
 type AESCrypto interface {
-	// Encrypt encrypts the plain text.
+	// Encrypt 加密
 	Encrypt(plainText []byte) ([]byte, error)
 
-	// Decrypt decrypts the cipher text.
+	// Decrypt 解密
 	Decrypt(cipherText []byte) ([]byte, error)
 }
 
@@ -110,7 +105,7 @@ func (c *cbccrypto) Decrypt(cipherText []byte) ([]byte, error) {
 	return plainText, nil
 }
 
-// NewCBCCrypto returns a new aes-cbc crypto.
+// NewCBCCrypto 生成 AES-CBC 加密模式
 func NewCBCCrypto(key, iv []byte, mode AESPaddingMode) AESCrypto {
 	return &cbccrypto{
 		key:  key,
@@ -174,7 +169,7 @@ func (c *ecbcrypto) Decrypt(cipherText []byte) ([]byte, error) {
 	return plainText, nil
 }
 
-// NewECBCrypto returns a new aes-ecb crypto.
+// NewECBCrypto 生成 AES-ECB 加密模式
 func NewECBCrypto(key []byte, mode AESPaddingMode) AESCrypto {
 	return &ecbcrypto{
 		key:  key,
