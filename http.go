@@ -13,46 +13,43 @@ import (
 	"time"
 )
 
-// httpSetting http request setting
 type httpSetting struct {
 	headers map[string]string
 	cookies []*http.Cookie
 	close   bool
 }
 
-// HTTPOption configures how we set up the http request.
+// HTTPOption HTTP请求选项
 type HTTPOption func(s *httpSetting)
 
-// WithHTTPHeader specifies the header to http request.
+// WithHTTPHeader 设置HTTP请求头
 func WithHTTPHeader(key, value string) HTTPOption {
 	return func(s *httpSetting) {
 		s.headers[key] = value
 	}
 }
 
-// WithHTTPCookies specifies the cookies to http request.
+// WithHTTPCookies 设置HTTP请求Cookie
 func WithHTTPCookies(cookies ...*http.Cookie) HTTPOption {
 	return func(s *httpSetting) {
 		s.cookies = cookies
 	}
 }
 
-// WithHTTPClose specifies close the connection after
-// replying to this request (for servers) or after sending this
-// request and reading its response (for clients).
+// WithHTTPClose 请求结束后关闭请求
 func WithHTTPClose() HTTPOption {
 	return func(s *httpSetting) {
 		s.close = true
 	}
 }
 
-// UploadForm is the interface for http upload.
+// UploadForm HTTP文件上传表单
 type UploadForm interface {
-	// Write writes fields to multipart writer
+	// Write 将表单字段写入流
 	Write(w *multipart.Writer) error
 }
 
-// FormFileFunc writes file content to multipart writer.
+// FormFileFunc 将上传文件写入流
 type FormFileFunc func(w io.Writer) error
 
 type formfile struct {
@@ -92,10 +89,10 @@ func (f *uploadform) Write(w *multipart.Writer) error {
 	return nil
 }
 
-// UploadField configures how we set up the upload from.
+// UploadField 文件上传表单字段
 type UploadField func(f *uploadform)
 
-// WithFormFile specifies the file field to upload from.
+// WithFormFile 设置表单文件字段
 func WithFormFile(fieldname, filename string, fn FormFileFunc) UploadField {
 	return func(f *uploadform) {
 		f.formfiles = append(f.formfiles, &formfile{
@@ -106,14 +103,14 @@ func WithFormFile(fieldname, filename string, fn FormFileFunc) UploadField {
 	}
 }
 
-// WithFormField specifies the form field to upload from.
+// WithFormField 设置表单普通字段
 func WithFormField(fieldname, fieldvalue string) UploadField {
 	return func(u *uploadform) {
 		u.formfields[fieldname] = fieldvalue
 	}
 }
 
-// NewUploadForm returns an upload form
+// NewUploadForm 生成一个文件上传表单
 func NewUploadForm(fields ...UploadField) UploadForm {
 	form := &uploadform{
 		formfiles:  make([]*formfile, 0),
@@ -127,14 +124,14 @@ func NewUploadForm(fields ...UploadField) UploadForm {
 	return form
 }
 
-// HTTPClient is the interface for a http client.
+// HTTPClient HTTP客户端
 type HTTPClient interface {
-	// Do sends an HTTP request and returns an HTTP response.
-	// Should use context to specify the timeout for request.
+	// Do 发送HTTP请求
+	// 注意：应该使用Context设置请求超时时间
 	Do(ctx context.Context, method, reqURL string, body []byte, options ...HTTPOption) (*http.Response, error)
 
-	// Upload issues a UPLOAD to the specified URL.
-	// Should use context to specify the timeout for request.
+	// Upload 上传文件
+	// 注意：应该使用Context设置请求超时时间
 	Upload(ctx context.Context, reqURL string, form UploadForm, options ...HTTPOption) (*http.Response, error)
 }
 
@@ -212,7 +209,7 @@ func (c *httpclient) Upload(ctx context.Context, reqURL string, form UploadForm,
 	return c.Do(ctx, http.MethodPost, reqURL, buf.Bytes(), options...)
 }
 
-// NewDefaultHTTPClient returns a new client with default http.Client
+// NewDefaultHTTPClient 生成一个默认的HTTP客户端
 func NewDefaultHTTPClient() HTTPClient {
 	return &httpclient{
 		client: &http.Client{
@@ -236,7 +233,7 @@ func NewDefaultHTTPClient() HTTPClient {
 	}
 }
 
-// NewHTTPClient returns a new client with http.Client
+// NewHTTPClient 通过官方 `http.Client` 生成一个HTTP客户端
 func NewHTTPClient(client *http.Client) HTTPClient {
 	return &httpclient{
 		client: client,
@@ -245,29 +242,29 @@ func NewHTTPClient(client *http.Client) HTTPClient {
 
 var defaultHTTPClient = NewDefaultHTTPClient()
 
-// HTTPGet issues a GET to the specified URL.
+// HTTPGet 发送GET请求
 func HTTPGet(ctx context.Context, reqURL string, options ...HTTPOption) (*http.Response, error) {
 	return defaultHTTPClient.Do(ctx, http.MethodGet, reqURL, nil, options...)
 }
 
-// HTTPPost issues a POST to the specified URL.
+// HTTPPost 发送POST请求
 func HTTPPost(ctx context.Context, reqURL string, body []byte, options ...HTTPOption) (*http.Response, error) {
 	return defaultHTTPClient.Do(ctx, http.MethodPost, reqURL, body, options...)
 }
 
-// HTTPPostForm issues a POST to the specified URL, with data's keys and values URL-encoded as the request body.
+// HTTPPostForm 发送POST表单请求
 func HTTPPostForm(ctx context.Context, reqURL string, data url.Values, options ...HTTPOption) (*http.Response, error) {
 	options = append(options, WithHTTPHeader("Content-Type", "application/x-www-form-urlencoded"))
 
 	return defaultHTTPClient.Do(ctx, http.MethodPost, reqURL, []byte(data.Encode()), options...)
 }
 
-// HTTPUpload issues a UPLOAD to the specified URL.
+// HTTPUpload 文件上传
 func HTTPUpload(ctx context.Context, reqURL string, form UploadForm, options ...HTTPOption) (*http.Response, error) {
 	return defaultHTTPClient.Upload(ctx, reqURL, form, options...)
 }
 
-// HTTPDo sends an HTTP request and returns an HTTP response
+// HTTPDo 发送HTTP请求
 func HTTPDo(ctx context.Context, method, reqURL string, body []byte, options ...HTTPOption) (*http.Response, error) {
 	return defaultHTTPClient.Do(ctx, method, reqURL, body, options...)
 }

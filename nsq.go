@@ -11,10 +11,10 @@ import (
 
 var producer *nsq.Producer
 
-// NSQLogger nsq logger
+// NSQLogger 实现nsq日志接口
 type NSQLogger struct{}
 
-// Output implements the nsq logger interface
+// Output nsq错误输出
 func (l *NSQLogger) Output(calldepth int, s string) error {
 	logger.Error(fmt.Sprintf("err nsq: %s", s), zap.Int("call_depth", calldepth))
 
@@ -43,7 +43,7 @@ func initNSQProducer(nsqd string, cfg *nsq.Config) error {
 	return nil
 }
 
-// NSQPublish synchronously publishes a message body to the specified topic.
+// NSQPublish 同步推送消息到指定Topic
 func NSQPublish(topic string, msg []byte) error {
 	if producer == nil {
 		return errors.New("nsq producer is nil (forgotten configure?)")
@@ -52,8 +52,7 @@ func NSQPublish(topic string, msg []byte) error {
 	return producer.Publish(topic, msg)
 }
 
-// NSQDeferredPublish synchronously publishes a message body to the specified topic
-// where the message will queue at the channel level until the timeout expires.
+// NSQDeferredPublish 同步推送延迟消息到指定Topic
 func NSQDeferredPublish(topic string, msg []byte, duration time.Duration) error {
 	if producer == nil {
 		return errors.New("nsq producer is nil (forgotten configure?)")
@@ -62,12 +61,20 @@ func NSQDeferredPublish(topic string, msg []byte, duration time.Duration) error 
 	return producer.DeferredPublish(topic, duration, msg)
 }
 
-// NSQConsumer nsq consumer
+// NSQConsumer nsq消费者接口
 type NSQConsumer interface {
 	nsq.Handler
+
+	// Topic 指定消费的Topic
 	Topic() string
+
+	// Channel 设置消费通道
 	Channel() string
+
+	// Attempts 设置重试次数
 	Attempts() uint16
+
+	// nsq相关配置
 	Config() *nsq.Config
 }
 
@@ -105,7 +112,7 @@ func setNSQConsumers(lookupd []string, consumers ...NSQConsumer) error {
 	return nil
 }
 
-// NextAttemptDelay returns the delay time for nsq next attempt.
+// NextAttemptDelay 一个帮助方法，用于返回下一次尝试的等待时间
 func NextAttemptDelay(attempts uint16) time.Duration {
 	var d time.Duration
 

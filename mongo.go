@@ -48,7 +48,7 @@ func initMongoDB(name, dsn string) {
 	logger.Info(fmt.Sprintf("mongodb.%s is OK", name))
 }
 
-// Mongo returns a mongo client.
+// Mongo 返回一个MongoDB客户端
 func Mongo(name ...string) *mongo.Client {
 	if len(name) == 0 || name[0] == Default {
 		if defaultMongo == nil {

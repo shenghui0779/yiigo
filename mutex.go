@@ -7,12 +7,14 @@ import (
 	"github.com/gomodule/redigo/redis"
 )
 
-// Mutex is a reader/writer mutual exclusion lock.
+// Mutex 基于Redis实现的分布式锁
 type Mutex interface {
-	// Lock attempts to acquire lock at regular intervals.
+	// Lock 尝试获取锁
+	// interval - 每隔指定时间尝试获取一次锁
+	// timeout - 获取锁的超时时间
 	Lock(ctx context.Context, interval, timeout time.Duration) error
 
-	// UnLock releases the lock.
+	// UnLock 释放锁
 	UnLock(ctx context.Context) error
 }
 
@@ -95,25 +97,25 @@ func (d *distributed) attempt(conn *RedisConn) (bool, error) {
 	return false, nil
 }
 
-// MutexOption mutex option
+// MutexOption 锁选项
 type MutexOption func(d *distributed)
 
-// WithMutexRedis specifies redis pool for mutex.
+// WithMutexRedis 指定Redis实例
 func WithMutexRedis(name string) MutexOption {
 	return func(d *distributed) {
 		d.pool = Redis(name)
 	}
 }
 
-// WithMutexExpire specifies expire time (ms) for mutex.
+// WithMutexExpire 设置锁的有效期
 func WithMutexExpire(e time.Duration) MutexOption {
 	return func(d *distributed) {
 		d.expire = e
 	}
 }
 
-// DistributedMutex returns a simple distributed mutual exclusion lock.
-// uniqueID: suggest to use the request id.
+// DistributedMutex 返回一个分布式锁实例
+// uniqueID - 建议使用RequestID
 func DistributedMutex(key, uniqueID string, options ...MutexOption) Mutex {
 	mutex := &distributed{
 		pool:   defaultRedis,

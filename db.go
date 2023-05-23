@@ -16,7 +16,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// DBDriver db driver
+// DBDriver 数据库驱动
 type DBDriver string
 
 const (
@@ -33,38 +33,34 @@ var (
 	entmap           sync.Map
 )
 
-// DBConfig keeps the settings to setup db connection.
+// DBConfig 数据库初始化配置
 type DBConfig struct {
-	// DSN data source name
+	// DSN 数据源名称
 	// [-- MySQL] username:password@tcp(localhost:3306)/dbname?timeout=10s&charset=utf8mb4&collation=utf8mb4_general_ci&parseTime=True&loc=Local
 	// [Postgres] host=localhost port=5432 user=root password=secret dbname=test connect_timeout=10 sslmode=disable
 	// [- SQLite] file::memory:?cache=shared
 	DSN string `json:"dsn"`
 
-	// Options optional settings to setup db connection.
+	// Options 配置选项
 	Options *DBOptions `json:"options"`
 }
 
-// DBOptions optional settings to setup db connection.
+// DBOptions 数据库配置选项
 type DBOptions struct {
-	// MaxOpenConns is the maximum number of open connections to the database.
-	// Use value -1 for no timeout and 0 for default.
-	// Default is 20.
+	// MaxOpenConns 设置最大可打开的连接数
+	// -1：不限；默认：20
 	MaxOpenConns int `json:"max_open_conns"`
 
-	// MaxIdleConns is the maximum number of connections in the idle connection pool.
-	// Use value -1 for no timeout and 0 for default.
-	// Default is 10.
+	// MaxIdleConns 连接池最大闲置连接数
+	// -1：不限；默认：10
 	MaxIdleConns int `json:"max_idle_conns"`
 
-	// ConnMaxLifetime is the maximum amount of time a connection may be reused.
-	// Use value -1 for no timeout and 0 for default.
-	// Default is 10 minutes.
+	// ConnMaxLifetime 连接的最大生命时长
+	// -1：不限；默认：10分钟
 	ConnMaxLifetime time.Duration `json:"conn_max_lifetime"`
 
-	// ConnMaxIdleTime is the maximum amount of time a connection may be idle.
-	// Use value -1 for no timeout and 0 for default.
-	// Default is 5 minutes.
+	// ConnMaxIdleTime 连接最大闲置时间
+	// -1：不限；默认：5分钟
 	ConnMaxIdleTime time.Duration `json:"conn_max_idle_time"`
 }
 
@@ -145,7 +141,7 @@ func initDB(name string, driver DBDriver, cfg *DBConfig) {
 	logger.Info(fmt.Sprintf("db.%s is OK", name))
 }
 
-// DB returns a db.
+// DB 返回一个sqlx数据库实例
 func DB(name ...string) *sqlx.DB {
 	if len(name) == 0 || name[0] == Default {
 		if defaultDB == nil {
@@ -164,7 +160,7 @@ func DB(name ...string) *sqlx.DB {
 	return v.(*sqlx.DB)
 }
 
-// EntDriver returns an ent dialect.Driver.
+// EntDriver 返回一个ent驱动实例
 func EntDriver(name ...string) *entsql.Driver {
 	if len(name) == 0 || name[0] == Default {
 		if defaultEntDriver == nil {
@@ -183,8 +179,7 @@ func EntDriver(name ...string) *entsql.Driver {
 	return v.(*entsql.Driver)
 }
 
-// DBTransaction Executes db transaction with callback function.
-// The provided context is used until the transaction is committed or rolledback.
+// DBTransaction 执行数据库事物
 func DBTransaction(ctx context.Context, db *sqlx.DB, f func(ctx context.Context, tx *sqlx.Tx) error) error {
 	tx, err := db.BeginTxx(ctx, nil)
 

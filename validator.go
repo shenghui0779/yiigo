@@ -14,17 +14,17 @@ import (
 	"go.uber.org/zap"
 )
 
-// ValidatorOption configures how we set up the validator.
+// ValidatorOption 验证器选项
 type ValidatorOption func(validate *validator.Validate, trans ut.Translator)
 
-// SetValidateTag allows for changing of the default validate tag name: valid.
-func SetValidateTag(tagname string) ValidatorOption {
+// WithValidateTag 设置Tag名称，默认：valid
+func WithValidateTag(tagname string) ValidatorOption {
 	return func(validate *validator.Validate, trans ut.Translator) {
 		validate.SetTagName(tagname)
 	}
 }
 
-// WithValuerType registers a number of custom validate types which implement the driver.Valuer interface.
+// WithValuerType 注册自定义验证类型
 func WithValuerType(types ...driver.Valuer) ValidatorOption {
 	customTypes := make([]any, 0, len(types))
 
@@ -45,7 +45,7 @@ func WithValuerType(types ...driver.Valuer) ValidatorOption {
 	}
 }
 
-// WithValidation adds a custom validation with the given tag.
+// WithValidation 注册自定义验证器
 func WithValidation(tag string, fn validator.Func, callValidationEvenIfNull ...bool) ValidatorOption {
 	return func(validate *validator.Validate, trans ut.Translator) {
 		if err := validate.RegisterValidation(tag, fn, callValidationEvenIfNull...); err != nil {
@@ -54,7 +54,7 @@ func WithValidation(tag string, fn validator.Func, callValidationEvenIfNull ...b
 	}
 }
 
-// WithValidationCtx does the same as WithValidation on accepts a FuncCtx validation allowing context.Context validation support.
+// WithValidationCtx 注册带Context的自定义验证器
 func WithValidationCtx(tag string, fn validator.FuncCtx, callValidationEvenIfNull ...bool) ValidatorOption {
 	return func(validate *validator.Validate, trans ut.Translator) {
 		if err := validate.RegisterValidationCtx(tag, fn, callValidationEvenIfNull...); err != nil {
@@ -63,8 +63,8 @@ func WithValidationCtx(tag string, fn validator.FuncCtx, callValidationEvenIfNul
 	}
 }
 
-// WithTranslation registers custom validate translation against the provided tag.
-// Param text, eg: {0}为必填字段 或 {0}必须大于{1}
+// WithTranslation 注册自定义错误翻译
+// 参数 `text` 示例：{0}为必填字段 或 {0}必须大于{1}
 func WithTranslation(tag, text string, override bool) ValidatorOption {
 	return func(validate *validator.Validate, trans ut.Translator) {
 		validate.RegisterTranslation(tag, trans, func(ut ut.Translator) error {
@@ -77,13 +77,14 @@ func WithTranslation(tag, text string, override bool) ValidatorOption {
 	}
 }
 
-// Validator a validator which can be used for Gin.
+// Validator 可被用于Gin框架的验证器
+// 具体支持的验证规则，可以参考：https://pkg.go.dev/github.com/go-playground/validator/v10
 type Validator struct {
 	validator  *validator.Validate
 	translator ut.Translator
 }
 
-// ValidateStruct receives any kind of type, but only performed struct or pointer to struct type.
+// ValidateStruct 验证结构体
 func (v *Validator) ValidateStruct(obj any) error {
 	if reflect.Indirect(reflect.ValueOf(obj)).Kind() != reflect.Struct {
 		return nil
@@ -109,7 +110,7 @@ func (v *Validator) ValidateStruct(obj any) error {
 	return nil
 }
 
-// ValidateStruct receives any kind of type, but only performed struct or pointer to struct type and allows passing of context.Context for contextual validation information.
+// ValidateStructCtx 验证结构体，带Context
 func (v *Validator) ValidateStructCtx(ctx context.Context, obj any) error {
 	if reflect.Indirect(reflect.ValueOf(obj)).Kind() != reflect.Struct {
 		return nil
@@ -135,16 +136,13 @@ func (v *Validator) ValidateStructCtx(ctx context.Context, obj any) error {
 	return nil
 }
 
-// Engine returns the underlying validator engine which powers the default
-// Validator instance. This is useful if you want to register custom validations
-// or struct level validations. See validator GoDoc for more info -
-// https://pkg.go.dev/github.com/go-playground/validator/v10
+// Engine 实现Gin验证器接口
 func (v *Validator) Engine() any {
 	return v.validator
 }
 
-// NewValidator returns a new validator with default tag name: valid.
-// Used for Gin: binding.Validator = yiigo.NewValidator()
+// NewValidator 生成一个验证器实例
+// 在Gin中使用：binding.Validator = yiigo.NewValidator()
 func NewValidator(options ...ValidatorOption) *Validator {
 	validate := validator.New()
 	validate.SetTagName("valid")

@@ -370,7 +370,7 @@ func TestToUpdate(t *testing.T) {
 	sql, args, err = builder.Wrap(
 		Table("product"),
 		Where("id = ?", 1),
-	).ToUpdate(ctx, X{"price": Clause("price * ? + ?", 2, 100)})
+	).ToUpdate(ctx, X{"price": SQLExpr("price * ? + ?", 2, 100)})
 
 	assert.Nil(t, err)
 	assert.Equal(t, "UPDATE product SET price = price * ? + ? WHERE id = ?", sql)

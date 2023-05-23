@@ -11,10 +11,10 @@ import (
 
 type ctxTWKey int
 
-// CtxTaskAddedAt is the key that holds the time in a task context when the task added to timingwheel.
+// CtxTaskAddedAt Context存储任务入队时间的Key
 const CtxTaskAddedAt ctxTWKey = 0
 
-// TWTask timingwheel task.
+// TWTask 时间轮任务
 type TWTask struct {
 	ctx         context.Context
 	uniqID      string
@@ -27,13 +27,13 @@ type TWTask struct {
 	callback    func(ctx context.Context, taskID string) error
 }
 
-// TimingWheel a simple single timingwheel.
+// TimingWheel 一个简易个单时间轮
 type TimingWheel interface {
-	// AddTask adds a task which will be executed when expired, it will be retried if attempts > 0 and an error is returned.
-	// NOTE: Context should be cloned without timeout for executing tasks asynchronously.
+	// AddTask 添加一个任务，到期被执行，默认仅执行一次；若指定了重试次数，则在发生错误后重试
+	// 注意：任务是异步执行的，故Context应该是一个克隆的且不带超时时间的
 	AddTask(ctx context.Context, taskID string, handler func(ctx context.Context, taskID string) error, options ...TaskOption)
 
-	// Stop stops the timingwheel.
+	// Stop 终止时间轮
 	Stop()
 }
 
@@ -178,34 +178,34 @@ func (tw *timewheel) run(task *TWTask) {
 	}
 }
 
-// TWOption timingwheel option.
+// TWOption 时间轮选项
 type TWOption func(tw *timewheel)
 
-// WithTWLogger specifies logger for timingwheel.
+// WithTWLogger 指定时间轮日志
 func WithTWLogger(fn func(ctx context.Context, v ...any)) TWOption {
 	return func(tw *timewheel) {
 		tw.log = fn
 	}
 }
 
-// TaskOption timingwheel task option.
+// TaskOption 时间轮任务选项
 type TaskOption func(t *TWTask)
 
-// WithTaskAttempts specifies attempt count for timingwheel task and 1 for default.
+// WithTaskAttempts 指定任务重试次数；默认：1
 func WithTaskAttempts(attempts uint16) TaskOption {
 	return func(t *TWTask) {
 		t.maxAttempts = attempts
 	}
 }
 
-// WithTaskDefer specifies the task to be executed until the timeout expires and 0 for default.
+// WithTaskDefer 指定任务延迟执行时间；默认：立即执行
 func WithTaskDefer(fn func(attempts uint16) time.Duration) TaskOption {
 	return func(t *TWTask) {
 		t.deferFn = fn
 	}
 }
 
-// NewTimingWheel returns a new timingwheel.
+// NewTimingWheel 返回一个时间轮实例
 func NewTimingWheel(tick time.Duration, size int, options ...TWOption) TimingWheel {
 	tw := &timewheel{
 		tick:   tick,

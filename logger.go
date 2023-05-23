@@ -15,45 +15,36 @@ var (
 	logMap sync.Map
 )
 
-// LoggerConfig keeps the settings to configure logger.
+// LoggerConfig 日志初始化配置
 type LoggerConfig struct {
-	// Filename is the file to write logs to.
+	// Filename 日志名称
 	Filename string `json:"filename"`
 
-	// Options optional settings to configure logger.
+	// Options 日志选项
 	Options *LoggerOptions `json:"options"`
 }
 
-// LoggerOptions optional settings to configure logger.
+// LoggerOptions 日志配置选项
 type LoggerOptions struct {
-	// MaxSize is the maximum size in megabytes of the log file before it gets
-	// rotated. It defaults to 100 megabytes.
+	// MaxSize 当前文件多大时轮替；默认：100MB
 	MaxSize int `json:"max_size"`
 
-	// MaxAge is the maximum number of days to retain old log files based on the
-	// timestamp encoded in their filename.  Note that a day is defined as 24
-	// hours and may not exactly correspond to calendar days due to daylight
-	// savings, leap seconds, etc. The default is not to remove old log files
-	// based on age.
+	// MaxAge 轮替的旧文件最大保留时长；默认：不限
 	MaxAge int `json:"max_age"`
 
-	// MaxBackups is the maximum number of old log files to retain. The default
-	// is to retain all old log files (though MaxAge may still cause them to get
-	// deleted.)
+	// MaxBackups 轮替的旧文件最大保留数量；默认：不限
 	MaxBackups int `json:"max_backups"`
 
-	// Compress determines if the rotated log files should be compressed
-	// using gzip. The default is not to perform compression.
+	// Compress 轮替的旧文件是否压缩；默认：不压缩
 	Compress bool `json:"compress"`
 
-	// Stderr specifies the stderr for logger
+	// Stderr 是否输出到控制台
 	Stderr bool `json:"stderr"`
 
-	// ZapOptions specifies the zap options stderr for logger
+	// ZapOptions Zap日志选项
 	ZapOptions []zap.Option `json:"zap_options"`
 }
 
-// newLogger returns a new logger.
 func newLogger(cfg *LoggerConfig) *zap.Logger {
 	if len(cfg.Filename) == 0 {
 		return debugLogger(cfg.Options.ZapOptions...)
@@ -112,7 +103,7 @@ func initLogger(name string, cfg *LoggerConfig) {
 	logMap.Store(name, l)
 }
 
-// Logger returns a logger
+// Logger 返回一个日志实例
 func Logger(name ...string) *zap.Logger {
 	if len(name) == 0 || name[0] == Default {
 		return logger
@@ -127,7 +118,7 @@ func Logger(name ...string) *zap.Logger {
 	return v.(*zap.Logger)
 }
 
-// MyTimeEncoder zap time encoder.
+// MyTimeEncoder 自定义时间格式化
 func MyTimeEncoder(t time.Time, e zapcore.PrimitiveArrayEncoder) {
 	e.AppendString(t.In(timezone).Format(layouttime))
 }

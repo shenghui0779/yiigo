@@ -14,88 +14,75 @@ import (
 	"go.uber.org/zap"
 )
 
-// RedisConn redis connection resource
+// RedisConn Redis连接
 type RedisConn struct {
 	redis.Conn
 }
 
-// Close closes the connection resource
+// Close 关闭Redis连接
 func (rc *RedisConn) Close() {
 	if err := rc.Conn.Close(); err != nil {
 		logger.Error("err conn closed", zap.Error(err))
 	}
 }
 
-// RedisPool redis pool resource
+// RedisPool Redis连接池
 type RedisPool interface {
-	// Get returns a connection resource from the pool.
-	// Context with timeout can specify the wait timeout for pool.
+	// Get 获取一个连接；Context可用于控制获取等待超时时长
 	Get(ctx context.Context) (*RedisConn, error)
 
-	// Put returns a connection resource to the pool.
+	// Put 连接放回连接池
 	Put(rc *RedisConn)
 
-	// Do sends a command to the server and returns the received reply.
+	// Do 执行命令
 	Do(ctx context.Context, cmd string, args ...any) (any, error)
 
-	// DoFunc sends commands to the server with callback function.
+	// DoFunc 通过回调函数执行一组命令
 	DoFunc(ctx context.Context, f func(ctx context.Context, conn *RedisConn) error) error
 }
 
-// RedisConfig keeps the settings to setup redis connection.
+// RedisConfig Redis初始化配置
 type RedisConfig struct {
-	// Addr host:port address.
+	// Addr 连接地址
 	Addr string `json:"addr"`
 
-	// Options optional settings to setup redis connection.
+	// Options 配置选项
 	Options *RedisOptions `json:"options"`
 }
 
-// RedisOptions optional settings to setup redis connection.
+// RedisOptions Redis配置选项
 type RedisOptions struct {
-	// Dialer is a custom dial function for creating TCP connections,
-	// otherwise a net.Dialer customized via the other options is used.
+	// Dialer 指定一个自定义的TCP连接创建方法；否则，使用其它配置选项
 	Dialer func(ctx context.Context, network, addr string) (net.Conn, error) `json:"dialer"`
 
-	// Username to be used when connecting to the Redis server when Redis ACLs are used.
+	// Username 授权用户名
 	Username string `json:"username"`
 
-	// Password to be used when connecting to the Redis server.
+	// Password 授权密码
 	Password string `json:"password"`
 
-	// Database to be selected when dialing a connection.
+	// Database 指定使用的数据库
 	Database int `json:"database"`
 
-	// ConnTimeout is the timeout for connecting to the Redis server.
-	// Use value -1 for no timeout and 0 for default.
-	// Default is 10 seconds.
+	// ConnTimeout 连接超时；-1：不限；默认：10秒
 	ConnTimeout time.Duration `json:"conn_timeout"`
 
-	// ReadTimeout is the timeout for reading a single command reply.
-	// Use value -1 for no timeout and 0 for default.
-	// Default is 10 seconds.
+	// ReadTimeout 读超时；-1：不限；默认：10秒
 	ReadTimeout time.Duration `json:"read_timeout"`
 
-	// WriteTimeout is the timeout for writing a single command.
-	// Use value -1 for no timeout and 0 for default.
-	// Default is 10 seconds.
+	// WriteTimeout 写超时；-1：不限；默认：10秒
 	WriteTimeout time.Duration `json:"write_timeout"`
 
-	// PoolSize is the maximum number of possible resources in the pool.
-	// Use value -1 for no timeout and 0 for default.
-	// Default is 10.
+	// PoolSize 连接池大小；默认：10
 	PoolSize int `json:"pool_size"`
 
-	// PoolPrefill is the number of resources to be pre-filled in the pool.
-	// Default is no pre-filled.
+	// PoolPrefill 连接池预填充连接数；默认：不填充
 	PoolPrefill int `json:"pool_prefill"`
 
-	// IdleTimeout is the amount of time after which client closes idle connections.
-	// Use value -1 for no timeout and 0 for default.
-	// Default is 5 minutes.
+	// IdleTimeout 连接最大闲置时间；-1：不限；默认：5分钟
 	IdleTimeout time.Duration `json:"idle_timeout"`
 
-	// TLSConfig to be used when a TLS connection is dialed.
+	// TLSConfig TLS连接配置
 	TLSConfig *tls.Config `json:"tls_config"`
 }
 
@@ -334,7 +321,7 @@ func initRedis(name string, cfg *RedisConfig) {
 	logger.Info(fmt.Sprintf("redis.%s is OK", name))
 }
 
-// Redis returns a redis pool.
+// Redis 返回一个Redis连接池实例
 func Redis(name ...string) RedisPool {
 	if len(name) == 0 || name[0] == Default {
 		if defaultRedis == nil {

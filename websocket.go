@@ -12,7 +12,7 @@ import (
 
 var wsupgrader *websocket.Upgrader
 
-// WSMsg websocket message
+// WSMsg websocket消息
 type WSMsg interface {
 	// T returns ws msg type.
 	T() int
@@ -21,7 +21,6 @@ type WSMsg interface {
 	V() []byte
 }
 
-// wsmsg websocket message
 type wsmsg struct {
 	t int
 	v []byte
@@ -35,7 +34,7 @@ func (m *wsmsg) V() []byte {
 	return m.v
 }
 
-// NewWSMsg returns a new ws message.
+// NewWSMsg 返回一个websocket消息
 func NewWSMsg(t int, v []byte) WSMsg {
 	return &wsmsg{
 		t: t,
@@ -43,7 +42,7 @@ func NewWSMsg(t int, v []byte) WSMsg {
 	}
 }
 
-// NewWSTextMsg returns a new ws text message.
+// NewWSTextMsg 返回一个websocket纯文本消息
 func NewWSTextMsg(v []byte) WSMsg {
 	return &wsmsg{
 		t: websocket.TextMessage,
@@ -51,7 +50,7 @@ func NewWSTextMsg(v []byte) WSMsg {
 	}
 }
 
-// NewWSBinaryMsg returns a new ws binary message.
+// NewWSBinaryMsg 返回一个websocket字节消息
 func NewWSBinaryMsg(v []byte) WSMsg {
 	return &wsmsg{
 		t: websocket.BinaryMessage,
@@ -59,18 +58,18 @@ func NewWSBinaryMsg(v []byte) WSMsg {
 	}
 }
 
-// WSHandler the function to handle ws message.
+// WSHandler websocket消息处理方法
 type WSHandler func(ctx context.Context, msg WSMsg) (WSMsg, error)
 
-// WSConn websocket connection
+// WSConn websocket连接
 type WSConn interface {
-	// Read reads message from ws connection.
+	// Read 读消息
 	Read(ctx context.Context, callback WSHandler) error
 
-	// Write writes message to ws connection.
+	// Write 写消息
 	Write(ctx context.Context, msg WSMsg) error
 
-	// Close closes ws connection.
+	// Close 关闭连接
 	Close(ctx context.Context)
 }
 
@@ -163,24 +162,24 @@ func (c *wsconn) Close(ctx context.Context) {
 	}
 }
 
-// WSOption ws connection option.
+// WSOption websocket连接选项
 type WSOption func(c *wsconn)
 
-// WithWSAuth specifies authorization for ws connection.
+// WithWSAuth 设置授权方法
 func WithWSAuth(fn WSHandler) WSOption {
 	return func(c *wsconn) {
 		c.authFn = fn
 	}
 }
 
-// WithWSLogger specifies logger for ws connection.
+// WithWSLogger 设置日志
 func WithWSLogger(fn func(ctx context.Context, v ...any)) WSOption {
 	return func(c *wsconn) {
 		c.log = fn
 	}
 }
 
-// NewWSConn returns a new ws connection.
+// NewWSConn 生成一个websocket连接
 func NewWSConn(name string, w http.ResponseWriter, r *http.Request, options ...WSOption) (WSConn, error) {
 	if wsupgrader == nil {
 		return nil, errors.New("upgrader is nil (forgotten configure?)")

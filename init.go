@@ -9,10 +9,10 @@ import (
 	"github.com/nsqio/go-nsq"
 )
 
-// InitOption configures how we set up the yiigo initialization.
+// InitOption yiigo初始化选项
 type InitOption func(wg *sync.WaitGroup)
 
-// WithMySQL register mysql db.
+// WithMySQL 注册MySQL
 func WithMySQL(name string, cfg *DBConfig) InitOption {
 	return func(wg *sync.WaitGroup) {
 		defer wg.Done()
@@ -21,7 +21,7 @@ func WithMySQL(name string, cfg *DBConfig) InitOption {
 	}
 }
 
-// WithPostgres register postgres db.
+// WithPostgres 注册Postgres
 func WithPostgres(name string, cfg *DBConfig) InitOption {
 	return func(wg *sync.WaitGroup) {
 		defer wg.Done()
@@ -30,7 +30,7 @@ func WithPostgres(name string, cfg *DBConfig) InitOption {
 	}
 }
 
-// WithSQLite register sqlite db.
+// WithSQLite 注册SQLite
 func WithSQLite(name string, cfg *DBConfig) InitOption {
 	return func(wg *sync.WaitGroup) {
 		defer wg.Done()
@@ -39,7 +39,7 @@ func WithSQLite(name string, cfg *DBConfig) InitOption {
 	}
 }
 
-// WithMongo register mongodb.
+// WithMongo 注册MongoDB
 // [DSN] mongodb://localhost:27017/?connectTimeoutMS=10000&minPoolSize=10&maxPoolSize=20&maxIdleTimeMS=60000&readPreference=primary
 // [Reference] https://docs.mongodb.com/manual/reference/connection-string
 func WithMongo(name string, dsn string) InitOption {
@@ -50,7 +50,7 @@ func WithMongo(name string, dsn string) InitOption {
 	}
 }
 
-// WithRedis register redis.
+// WithRedis 注册Redis
 func WithRedis(name string, cfg *RedisConfig) InitOption {
 	return func(wg *sync.WaitGroup) {
 		defer wg.Done()
@@ -59,7 +59,7 @@ func WithRedis(name string, cfg *RedisConfig) InitOption {
 	}
 }
 
-// WithLogger register logger.
+// WithLogger 注册日志
 func WithLogger(name string, cfg *LoggerConfig) InitOption {
 	return func(wg *sync.WaitGroup) {
 		defer wg.Done()
@@ -72,7 +72,7 @@ func WithLogger(name string, cfg *LoggerConfig) InitOption {
 	}
 }
 
-// WithNSQProducer specifies the nsq producer.
+// WithNSQProducer 设置nsq生产者
 func WithNSQProducer(nsqd string, cfg *nsq.Config) InitOption {
 	return func(wg *sync.WaitGroup) {
 		defer wg.Done()
@@ -81,7 +81,7 @@ func WithNSQProducer(nsqd string, cfg *nsq.Config) InitOption {
 	}
 }
 
-// WithNSQConsumers set the nsq consumers.
+// WithNSQConsumers 设置nsq消费者
 func WithNSQConsumers(lookupd []string, consumers ...NSQConsumer) InitOption {
 	return func(wg *sync.WaitGroup) {
 		defer wg.Done()
@@ -90,7 +90,7 @@ func WithNSQConsumers(lookupd []string, consumers ...NSQConsumer) InitOption {
 	}
 }
 
-// WithWebsocket specifies the websocket upgrader.
+// WithWebsocket 设置websocket
 func WithWebsocket(upgrader *websocket.Upgrader) InitOption {
 	return func(wg *sync.WaitGroup) {
 		defer wg.Done()
@@ -99,7 +99,7 @@ func WithWebsocket(upgrader *websocket.Upgrader) InitOption {
 	}
 }
 
-// Init yiigo initialization.
+// Init yiigo初始化
 func Init(options ...InitOption) {
 	var wg sync.WaitGroup
 

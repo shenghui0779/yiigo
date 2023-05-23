@@ -13,7 +13,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// EnvOnChangeFunc the function that runs each time env change occurs.
+// EnvOnChangeFunc 配置文件发生改变时执行的方法
 type EnvOnChangeFunc func(e fsnotify.Event)
 
 type environment struct {
@@ -22,10 +22,10 @@ type environment struct {
 	eventFn EnvOnChangeFunc
 }
 
-// EnvOption configures how we set up env file.
+// EnvOption 配置文件选项
 type EnvOption func(e *environment)
 
-// WithEnvFile specifies the env file.
+// WithEnvFile 指定配置文件
 func WithEnvFile(filename string) EnvOption {
 	return func(e *environment) {
 		if v := strings.TrimSpace(filename); len(v) != 0 {
@@ -34,7 +34,7 @@ func WithEnvFile(filename string) EnvOption {
 	}
 }
 
-// WithEnvWatcher watching and re-reading env file.
+// WithEnvWatcher 监听配置文件
 func WithEnvWatcher(fn EnvOnChangeFunc) EnvOption {
 	return func(e *environment) {
 		e.watcher = true
@@ -42,8 +42,7 @@ func WithEnvWatcher(fn EnvOnChangeFunc) EnvOption {
 	}
 }
 
-// LoadEnv will read your env file(s) and load them into ENV for this process.
-// It will default to loading .env in the current path if not specifies the filename.
+// LoadEnv 加载配置文件；如未指定，则默认加载当前目录下的.env文件
 func LoadEnv(options ...EnvOption) {
 	env := &environment{path: ".env"}
 

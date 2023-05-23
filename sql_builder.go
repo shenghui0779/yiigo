@@ -10,40 +10,40 @@ import (
 )
 
 var (
-	// ErrUpsertData invalid insert or update data.
+	// ErrUpsertData 不合法的插入或更新数据类型错误
 	ErrUpsertData = errors.New("invaild data, expects struct, *struct, yiigo.X")
 
-	// ErrBatchInsertData invalid batch insert data.
+	// ErrBatchInsertData 不合法的批量插入数据类型错误
 	ErrBatchInsertData = errors.New("invaild data, expects []struct, []*struct, []yiigo.X")
 )
 
-// SQLBuilder is the interface for wrapping query options.
+// SQLBuilder SQL构造器
 type SQLBuilder interface {
-	// Wrap wrapping query options
+	// Wrap 包装查询选项
 	Wrap(options ...QueryOption) SQLWrapper
 }
 
-// SQLWrapper is the interface for building sql statement.
+// SQLWrapper SQL包装器
 type SQLWrapper interface {
-	// ToQuery returns query statement and binds.
+	// ToQuery 生成SELECT语句
 	ToQuery(ctx context.Context) (sql string, args []any, err error)
 
-	// ToInsert returns insert statement and binds.
-	// data expects `struct`, `*struct`, `yiigo.X`.
+	// ToInsert 生成INSERT语句
+	// 数据类型：`struct`, `*struct`, `yiigo.X`.
 	ToInsert(ctx context.Context, data any) (sql string, args []any, err error)
 
-	// ToBatchInsert returns batch insert statement and binds.
-	// data expects `[]struct`, `[]*struct`, `[]yiigo.X`.
+	// ToBatchInsert 生成批量INSERT语句
+	// 数据类型：`[]struct`, `[]*struct`, `[]yiigo.X`.
 	ToBatchInsert(ctx context.Context, data any) (sql string, args []any, err error)
 
-	// ToUpdate returns update statement and binds.
-	// data expects `struct`, `*struct`, `yiigo.X`.
+	// ToUpdate 生成UPDATE语句
+	// 数据类型：`struct`, `*struct`, `yiigo.X`.
 	ToUpdate(ctx context.Context, data any) (sql string, args []any, err error)
 
-	// ToDelete returns delete statement and binds.
+	// ToDelete 生成DELETE语句
 	ToDelete(ctx context.Context) (sql string, args []any, err error)
 
-	// ToTruncate returns truncate statement
+	// ToTruncate 生成TRUNCATE语句
 	ToTruncate(ctx context.Context) string
 }
 
@@ -64,29 +64,29 @@ func (b *queryBuilder) Wrap(options ...QueryOption) SQLWrapper {
 	return wrapper
 }
 
-// NewSQLBuilder returns new SQLBuilder
+// NewSQLBuilder 生成一个指定驱动类型的SQL构造器
 func NewSQLBuilder(driver DBDriver) SQLBuilder {
 	return &queryBuilder{
 		driver: driver,
 	}
 }
 
-// NewMySQLBuilder returns new SQLBuilder for MySQL
+// NewMySQLBuilder 生成一个MySQL构造器
 func NewMySQLBuilder() SQLBuilder {
 	return NewSQLBuilder(MySQL)
 }
 
-// NewPGSQLBuilder returns new SQLBuilder for Postgres
+// NewPGSQLBuilder 生成一个Postgres构造器
 func NewPGSQLBuilder() SQLBuilder {
 	return NewSQLBuilder(Postgres)
 }
 
-// NewSQLiteBuilder returns new SQLBuilder for SQLite
+// NewSQLiteBuilder 生成一个SQLite构造器
 func NewSQLiteBuilder() SQLBuilder {
 	return NewSQLBuilder(SQLite)
 }
 
-// SQLClause SQL clause
+// SQLClause SQL语句
 type SQLClause struct {
 	table   string
 	keyword string
@@ -94,8 +94,8 @@ type SQLClause struct {
 	binds   []any
 }
 
-// Clause returns sql clause, eg: yiigo.Clause("price * ? + ?", 2, 100).
-func Clause(query string, binds ...any) *SQLClause {
+// SQLExpr 生成一个语句表达式，例如：yiigo.SQLExpr("price * ? + ?", 2, 100)
+func SQLExpr(query string, binds ...any) *SQLClause {
 	return &SQLClause{
 		query: query,
 		binds: binds,
@@ -671,24 +671,24 @@ func (w *queryWrapper) ToTruncate(ctx context.Context) string {
 	return builder.String()
 }
 
-// QueryOption configures how we set up the SQL query statement.
+// QueryOption SQL查询选项
 type QueryOption func(w *queryWrapper)
 
-// Table specifies the query table.
+// Table 指定查询表名称
 func Table(name string) QueryOption {
 	return func(w *queryWrapper) {
 		w.table = name
 	}
 }
 
-// Select specifies the query columns.
+// Select 指定查询字段名
 func Select(columns ...string) QueryOption {
 	return func(w *queryWrapper) {
 		w.columns = columns
 	}
 }
 
-// Distinct specifies the `distinct` clause.
+// Distinct 指定 `DISTINCT` 语句
 func Distinct(columns ...string) QueryOption {
 	return func(w *queryWrapper) {
 		w.columns = columns
@@ -696,7 +696,7 @@ func Distinct(columns ...string) QueryOption {
 	}
 }
 
-// Join specifies the `inner join` clause.
+// Join 指定 `INNER JOIN` 语句
 func Join(table, on string) QueryOption {
 	return func(w *queryWrapper) {
 		w.joins = append(w.joins, &SQLClause{
@@ -707,7 +707,7 @@ func Join(table, on string) QueryOption {
 	}
 }
 
-// LeftJoin specifies the `left join` clause.
+// LeftJoin 指定 `LEFT JOIN` 语句
 func LeftJoin(table, on string) QueryOption {
 	return func(w *queryWrapper) {
 		w.joins = append(w.joins, &SQLClause{
@@ -718,7 +718,7 @@ func LeftJoin(table, on string) QueryOption {
 	}
 }
 
-// RightJoin specifies the `right join` clause.
+// RightJoin 指定 `RIGHT JOIN` 语句
 func RightJoin(table, on string) QueryOption {
 	return func(w *queryWrapper) {
 		w.joins = append(w.joins, &SQLClause{
@@ -729,7 +729,7 @@ func RightJoin(table, on string) QueryOption {
 	}
 }
 
-// FullJoin specifies the `full join` clause.
+// FullJoin 指定 `FULL JOIN` 语句
 func FullJoin(table, on string) QueryOption {
 	return func(w *queryWrapper) {
 		w.joins = append(w.joins, &SQLClause{
@@ -740,7 +740,7 @@ func FullJoin(table, on string) QueryOption {
 	}
 }
 
-// CrossJoin specifies the `cross join` clause.
+// CrossJoin 指定 `CROSS JOIN` 语句
 func CrossJoin(table string) QueryOption {
 	return func(w *queryWrapper) {
 		w.joins = append(w.joins, &SQLClause{
@@ -750,7 +750,7 @@ func CrossJoin(table string) QueryOption {
 	}
 }
 
-// Where specifies the `where` clause.
+// Where 指定 `WHERE` 语句
 func Where(query string, binds ...any) QueryOption {
 	return func(w *queryWrapper) {
 		w.where = &SQLClause{
@@ -760,7 +760,7 @@ func Where(query string, binds ...any) QueryOption {
 	}
 }
 
-// WhereIn specifies the `where in` clause.
+// WhereIn 指定 `WHERE IN` 语句
 func WhereIn(query string, binds ...any) QueryOption {
 	return func(w *queryWrapper) {
 		w.where = &SQLClause{
@@ -772,14 +772,14 @@ func WhereIn(query string, binds ...any) QueryOption {
 	}
 }
 
-// GroupBy specifies the `group by` clause.
+// GroupBy 指定 `GROUP BY` 语句
 func GroupBy(columns ...string) QueryOption {
 	return func(w *queryWrapper) {
 		w.groups = columns
 	}
 }
 
-// Having specifies the `having` clause.
+// Having 指定 `HAVING` 语句
 func Having(query string, binds ...any) QueryOption {
 	return func(w *queryWrapper) {
 		w.having = &SQLClause{
@@ -789,28 +789,28 @@ func Having(query string, binds ...any) QueryOption {
 	}
 }
 
-// OrderBy specifies the `order by` clause.
+// OrderBy 指定 `ORDER BY` 语句
 func OrderBy(columns ...string) QueryOption {
 	return func(w *queryWrapper) {
 		w.orders = columns
 	}
 }
 
-// Offset specifies the `offset` clause.
+// Offset 指定 `OFFSET` 语句
 func Offset(n int) QueryOption {
 	return func(w *queryWrapper) {
 		w.offset = n
 	}
 }
 
-// Limit specifies the `limit` clause.
+// Limit 指定 `LIMIT` 语句
 func Limit(n int) QueryOption {
 	return func(w *queryWrapper) {
 		w.limit = n
 	}
 }
 
-// Union specifies the `union` clause.
+// Union 指定 `UNION` 语句
 func Union(wrappers ...SQLWrapper) QueryOption {
 	return func(w *queryWrapper) {
 		for _, wrapper := range wrappers {
@@ -835,7 +835,7 @@ func Union(wrappers ...SQLWrapper) QueryOption {
 	}
 }
 
-// UnionAll specifies the `union all` clause.
+// UnionAll 指定 `UNION ALL` 语句
 func UnionAll(wrappers ...SQLWrapper) QueryOption {
 	return func(w *queryWrapper) {
 		for _, wrapper := range wrappers {

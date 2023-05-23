@@ -10,7 +10,7 @@ import (
 	"fmt"
 )
 
-// MD5 calculates the md5 hash of a string.
+// MD5 计算md5值
 func MD5(s string) string {
 	h := md5.New()
 	h.Write([]byte(s))
@@ -18,7 +18,7 @@ func MD5(s string) string {
 	return hex.EncodeToString(h.Sum(nil))
 }
 
-// SHA1 calculates the sha1 hash of a string.
+// SHA1 计算sha1值
 func SHA1(s string) string {
 	h := sha1.New()
 	h.Write([]byte(s))
@@ -26,7 +26,7 @@ func SHA1(s string) string {
 	return hex.EncodeToString(h.Sum(nil))
 }
 
-// SHA256 calculates the sha256 hash of a string.
+// SHA256 计算sha256值
 func SHA256(s string) string {
 	h := sha256.New()
 	h.Write([]byte(s))
@@ -34,7 +34,7 @@ func SHA256(s string) string {
 	return hex.EncodeToString(h.Sum(nil))
 }
 
-// Hash generates a hash value.
+// Hash 计算指定算法的hash值
 func Hash(hash crypto.Hash, s string) (string, error) {
 	if !hash.Available() {
 		return "", fmt.Errorf("crypto: requested hash function (%s) is unavailable", hash.String())
@@ -46,7 +46,7 @@ func Hash(hash crypto.Hash, s string) (string, error) {
 	return hex.EncodeToString(h.Sum(nil)), nil
 }
 
-// HMacSHA256 generates a keyed sha256 hash value.
+// HMacSHA256 计算hmac-sha256值
 func HMacSHA256(key, s string) string {
 	mac := hmac.New(sha256.New, []byte(key))
 	mac.Write([]byte(s))
@@ -54,7 +54,7 @@ func HMacSHA256(key, s string) string {
 	return hex.EncodeToString(mac.Sum(nil))
 }
 
-// HMac generates a keyed hash value.
+// HMac 计算指定hash算法的hmac值
 func HMac(hash crypto.Hash, key, s string) (string, error) {
 	if !hash.Available() {
 		return "", fmt.Errorf("crypto: requested hash function (%s) is unavailable", hash.String())

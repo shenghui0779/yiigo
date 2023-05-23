@@ -33,29 +33,26 @@ const (
 	Default = "default"
 )
 
-// X is a convenient alias for a map[string]any.
+// X `map[string]any` 的别名.
 type X map[string]any
 
-// CDATA XML CDATA section which is defined as blocks of text that are not parsed by the parser, but are otherwise recognized as markup.
+// CDATA XML `CDATA` 标记
 type CDATA string
 
-// MarshalXML encodes the receiver as zero or more XML elements.
+// MarshalXML XML `CDATA` 标记序列号
 func (c CDATA) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	return e.EncodeElement(struct {
 		string `xml:",cdata"`
 	}{string(c)}, start)
 }
 
-// SetTimezone sets timezone for time display.
-// The default timezone is GMT+8.
+// SetTimezone 设置时区；默认：GMT+8
 func SetTimezone(loc *time.Location) {
 	timezone = loc
 }
 
-// Date format a local time/date and
-// returns a string formatted according to the given layout using the given timestamp of int64.
-// If timestamp < 0, use `time.Now()` to format.
-// The default format is: 2006-01-02 15:04:05.
+// Date 格式化时间戳；默认格式：2006-01-02 15:04:05
+// 若 timestamp < 0，则使用 `time.Now()`
 func Date(timestamp int64, format ...string) string {
 	layout := layouttime
 
@@ -70,8 +67,7 @@ func Date(timestamp int64, format ...string) string {
 	return time.Unix(timestamp, 0).In(timezone).Format(layout)
 }
 
-// StrToTime Parse English textual datetime description into a Unix timestamp.
-// The default format is: 2006-01-02 15:04:05
+// StrToTime 解析时间字符串为时间戳；默认格式：2006-01-02 15:04:05
 func StrToTime(datetime string, format ...string) int64 {
 	if len(datetime) == 0 {
 		return 0
@@ -92,8 +88,7 @@ func StrToTime(datetime string, format ...string) int64 {
 	return t.Unix()
 }
 
-// WeekAround returns the monday and sunday of the week for the given time.
-// The default format is: 2006-01-02
+// WeekAround 返回给定时间戳所在的周的「周一」和「周日」；默认格式：2006-01-02 15:04:05
 func WeekAround(timestamp int64, format ...string) (monday, sunday string) {
 	t := time.Unix(timestamp, 0).In(timezone)
 
@@ -128,7 +123,7 @@ func WeekAround(timestamp int64, format ...string) (monday, sunday string) {
 	return
 }
 
-// IP2Long converts a string containing an (IPv4) Internet Protocol dotted address into an uint32 integer.
+// IP2Long IP地址转整数
 func IP2Long(ip string) uint32 {
 	ipv4 := net.ParseIP(ip).To4()
 
@@ -139,12 +134,12 @@ func IP2Long(ip string) uint32 {
 	return uint32(ipv4[0])<<24 | uint32(ipv4[1])<<16 | uint32(ipv4[2])<<8 | uint32(ipv4[3])
 }
 
-// Long2IP converts an uint32 integer address into a string in (IPv4) Internet standard dotted format.
+// Long2IP 整数转IP地址
 func Long2IP(ip uint32) string {
 	return net.IPv4(byte(ip>>24), byte(ip>>16), byte(ip>>8), byte(ip)).String()
 }
 
-// MarshalNoEscapeHTML marshal with no escape HTML
+// MarshalNoEscapeHTML 不带HTML转义的序列化
 func MarshalNoEscapeHTML(v any) ([]byte, error) {
 	buf := bytes.NewBuffer(nil)
 
@@ -166,7 +161,7 @@ func MarshalNoEscapeHTML(v any) ([]byte, error) {
 	return b, nil
 }
 
-// AddSlashes returns a string with backslashes added before characters that need to be escaped.
+// AddSlashes 在字符串的每个引号前添加反斜杠
 func AddSlashes(s string) string {
 	var builder strings.Builder
 
@@ -181,7 +176,7 @@ func AddSlashes(s string) string {
 	return builder.String()
 }
 
-// StripSlashes returns a string with backslashes stripped off. (\' becomes ' and so on.) Double backslashes (\\) are made into a single backslash (\).
+// StripSlashes 删除字符串中的反斜杠
 func StripSlashes(s string) string {
 	var builder strings.Builder
 
@@ -209,7 +204,7 @@ func StripSlashes(s string) string {
 	return builder.String()
 }
 
-// QuoteMeta returns a version of str with a backslash character (\) before every character that is among these: . \ + * ? [ ^ ] ( $ )
+// QuoteMeta 在字符串预定义的字符前添加反斜杠
 func QuoteMeta(s string) string {
 	var builder strings.Builder
 
@@ -225,7 +220,7 @@ func QuoteMeta(s string) string {
 	return builder.String()
 }
 
-// SliceUniq removes duplicate values from a slice.
+// SliceUniq 切片去重
 func SliceUniq[T ~int | ~int64 | ~float64 | ~string](a []T) []T {
 	ret := make([]T, 0)
 
@@ -245,8 +240,8 @@ func SliceUniq[T ~int | ~int64 | ~float64 | ~string](a []T) []T {
 	return ret
 }
 
-// SliceRand picks random entries out of a slice.
-// returns the whole shuffled slice if n == -1 or n >= len(a).
+// SliceRand 返回一个指定随机挑选个数的切片
+// 若 n == -1 or n >= len(a)，则返回打乱的切片
 func SliceRand[T any](a []T, n int) []T {
 	if n == 0 || n < -1 {
 		return make([]T, 0)
@@ -269,9 +264,8 @@ func SliceRand[T any](a []T, n int) []T {
 	return ret[:n]
 }
 
-// CreateFile creates or truncates the named file.
-// If the file already exists, it is truncated.
-// If the directory or file does not exist, it is created with mode 0775
+// CreateFile 创建或清空指定的文件
+// 文件已存在，则清空；文件或目录不存在，则以0775权限创建
 func CreateFile(filename string) (*os.File, error) {
 	abspath, err := filepath.Abs(filename)
 
@@ -286,9 +280,8 @@ func CreateFile(filename string) (*os.File, error) {
 	return os.OpenFile(abspath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0775)
 }
 
-// OpenFile opens the named file.
-// If the file already exists, appends data to it when writing.
-// If the directory or file does not exist, it is created with mode 0775
+// OpenFile 打开指定的文件
+// 文件已存在，则追加内容；文件或目录不存在，则以0775权限创建
 func OpenFile(filename string) (*os.File, error) {
 	abspath, err := filepath.Abs(filename)
 
@@ -303,8 +296,8 @@ func OpenFile(filename string) (*os.File, error) {
 	return os.OpenFile(abspath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0775)
 }
 
-// VersionCompare compares semantic versions range, support: >, >=, =, !=, <, <=, | (or), & (and).
-// Param `rangeVer` eg: 1.0.0, =1.0.0, >2.0.0, >=1.0.0&<2.0.0, <2.0.0|>3.0.0, !=4.0.4
+// VersionCompare 语义化的版本比较，支持：>, >=, =, !=, <, <=, | (or), & (and).
+// 参数 `rangeVer` 示例：1.0.0, =1.0.0, >2.0.0, >=1.0.0&<2.0.0, <2.0.0|>3.0.0, !=4.0.4
 func VersionCompare(rangeVer, curVer string) (bool, error) {
 	semVer, err := version.NewVersion(curVer)
 
@@ -332,7 +325,7 @@ func VersionCompare(rangeVer, curVer string) (bool, error) {
 	return false, nil
 }
 
-// LoadCertFromPfxFile returns tls certificate from pfx(p12) file.
+// LoadCertFromPfxFile 通过pfx(p12)文件生成TLS证书
 func LoadCertFromPfxFile(pfxFile, password string) (tls.Certificate, error) {
 	fail := func(err error) (tls.Certificate, error) { return tls.Certificate{}, err }
 
