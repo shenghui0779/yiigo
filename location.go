@@ -9,8 +9,8 @@ import (
 type ProjType int
 
 const (
-	UTM    ProjType = 0 // UTM投影
-	GaussK ProjType = 1 // 高斯-克吕格(Gauss-Kruger)投影
+	UTM ProjType = 0 // UTM投影
+	GK  ProjType = 1 // 高斯-克吕格(Gauss-Kruger)投影
 )
 
 // Location 地理位置(经纬度)
@@ -257,7 +257,7 @@ func NewZtGeoCoordTransform(options ...ZGCTOption) *ZtGeoCoordTransform {
 	zgct := &ZtGeoCoordTransform{
 		ep: NewWGS84Parameter(),
 		ml: -360,
-		pt: GaussK,
+		pt: GK,
 	}
 
 	for _, f := range options {
@@ -300,7 +300,7 @@ func (zgct *ZtGeoCoordTransform) BL2XY(loc *Location) *Point {
 	py := X + temp[0] + temp[1] + temp[2]
 
 	switch zgct.pt {
-	case GaussK:
+	case GK:
 		px += 500000
 	case UTM:
 		px = px*0.9996 + 500000
