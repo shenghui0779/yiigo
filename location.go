@@ -9,8 +9,8 @@ import (
 type ProjType int
 
 const (
-	GK  ProjType = 0 // 高斯-克吕格(Gauss-Kruger)投影
-	UTM ProjType = 1 // UTM投影
+	GK  ProjType = iota // 高斯-克吕格(Gauss-Kruger)投影
+	UTM                 // UTM投影
 )
 
 // Location 地理位置(经纬度)
