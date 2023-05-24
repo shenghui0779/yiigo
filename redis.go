@@ -52,7 +52,7 @@ type RedisConfig struct {
 
 // RedisOptions Redis配置选项
 type RedisOptions struct {
-	// Dialer 指定一个自定义的TCP连接创建方法；否则，使用其它配置选项
+	// Dialer 自定义TCP连接创建方法；否则，使用其它配置选项
 	Dialer func(ctx context.Context, network, addr string) (net.Conn, error) `json:"dialer"`
 
 	// Username 授权用户名
@@ -61,7 +61,7 @@ type RedisOptions struct {
 	// Password 授权密码
 	Password string `json:"password"`
 
-	// Database 指定使用的数据库
+	// Database 指定数据库
 	Database int `json:"database"`
 
 	// ConnTimeout 连接超时；-1：不限；默认：10秒

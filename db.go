@@ -47,20 +47,16 @@ type DBConfig struct {
 
 // DBOptions 数据库配置选项
 type DBOptions struct {
-	// MaxOpenConns 设置最大可打开的连接数
-	// -1：不限；默认：20
+	// MaxOpenConns 设置最大可打开的连接数；-1：不限；默认：20
 	MaxOpenConns int `json:"max_open_conns"`
 
-	// MaxIdleConns 连接池最大闲置连接数
-	// -1：不限；默认：10
+	// MaxIdleConns 连接池最大闲置连接数；-1：不限；默认：10
 	MaxIdleConns int `json:"max_idle_conns"`
 
-	// ConnMaxLifetime 连接的最大生命时长
-	// -1：不限；默认：10分钟
+	// ConnMaxLifetime 连接的最大生命时长；-1：不限；默认：10分钟
 	ConnMaxLifetime time.Duration `json:"conn_max_lifetime"`
 
-	// ConnMaxIdleTime 连接最大闲置时间
-	// -1：不限；默认：5分钟
+	// ConnMaxIdleTime 连接最大闲置时间；-1：不限；默认：5分钟
 	ConnMaxIdleTime time.Duration `json:"conn_max_idle_time"`
 }
 
