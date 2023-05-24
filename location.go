@@ -119,7 +119,7 @@ func NewLocation(lng, lat float64) *Location {
 type Point struct {
 	x  float64
 	y  float64
-	ml float64
+	ml int
 }
 
 // X 返回 X 坐标
@@ -248,7 +248,7 @@ func NewWGS84Parameter() *EllipsoidParameter {
 // [翻译自C++代码](https://www.cnblogs.com/xingzhensun/p/11377963.html)
 type ZtGeoCoordTransform struct {
 	ep *EllipsoidParameter
-	ml float64
+	ml int
 	pt ProjType
 }
 
@@ -272,11 +272,11 @@ func (zgct *ZtGeoCoordTransform) BL2XY(loc *Location) *Point {
 	ml := zgct.ml
 
 	if ml < -180 {
-		ml = float64(int((loc.lng+1.5)/3) * 3)
+		ml = int((loc.lng+1.5)/3) * 3
 	}
 
 	lat := loc.lat * 0.0174532925199432957692
-	dL := (loc.lng - ml) * 0.0174532925199432957692
+	dL := (loc.lng - float64(ml)) * 0.0174532925199432957692
 
 	X := zgct.ep.A0*lat - zgct.ep.A2*math.Sin(2*lat)/2 + zgct.ep.A4*math.Sin(4*lat)/4 - zgct.ep.A6*math.Sin(6*lat)/6
 
@@ -355,7 +355,7 @@ func (zgct *ZtGeoCoordTransform) XY2BL(p *Point) *Location {
 	temp1 = (1 + 2*t*t + j2) * math.Pow(x, 3) / (6 * math.Pow(n, 3) * math.Cos(bf))
 	temp2 = (5 + 28*t*t + 6*j2 + 24*math.Pow(t, 4) + 8*t*t*j2) * math.Pow(x, 5) / (120 * math.Pow(n, 5) * math.Cos(bf))
 
-	lng := (temp0-temp1+temp2)*57.29577951308232 + p.ml
+	lng := (temp0-temp1+temp2)*57.29577951308232 + float64(p.ml)
 
 	return &Location{
 		lng: lng,
@@ -366,8 +366,8 @@ func (zgct *ZtGeoCoordTransform) XY2BL(p *Point) *Location {
 // ZGCTOption 经纬度与大地平面直角坐标系间的转换选项
 type ZGCTOption func(zgct *ZtGeoCoordTransform)
 
-// WithMeridianLine 设置子午线值
-func WithMeridianLine(ml float64) ZGCTOption {
+// WithMerLine 设置子午线值
+func WithMerLine(ml int) ZGCTOption {
 	return func(zgct *ZtGeoCoordTransform) {
 		zgct.ml = ml
 	}
@@ -380,9 +380,9 @@ func WithProjType(pt ProjType) ZGCTOption {
 	}
 }
 
-// WithBaseLocation 设置基准点(以基准点子午线值建立坐标系)
-func WithBaseLocation(loc *Location) ZGCTOption {
+// WithBaseLoc 设置基准点(以基准点子午线值建立坐标系)
+func WithBaseLoc(loc *Location) ZGCTOption {
 	return func(zgct *ZtGeoCoordTransform) {
-		zgct.ml = float64(int((loc.lng+1.5)/3) * 3)
+		zgct.ml = int((loc.lng+1.5)/3) * 3
 	}
 }
