@@ -210,8 +210,7 @@ type ZtGeoCoordTransform struct {
 }
 
 // NewZtGeoCoordTransform 返回经纬度与大地平面直角坐标系间的转换器；
-// 参数 `ml` 是子午线值，当 < -180 时，会根据经纬度自动计算；
-// 参数 `pt` 是投影类型
+// [示例] zgct := yiigo.NewZtGeoCoordTransform(-360, yiigo.GK)
 func NewZtGeoCoordTransform(ml int, pt ProjType) *ZtGeoCoordTransform {
 	return &ZtGeoCoordTransform{
 		ep: NewWGS84Parameter(),
