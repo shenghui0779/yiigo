@@ -132,72 +132,29 @@ func (p *Point) Y() float64 {
 	return p.y
 }
 
+// MLine 返回用于大地平面直角坐标系间转经纬度的子午线值
+func (p *Point) MLine() int {
+	return p.ml
+}
+
 // String 实现 Stringer 接口
 func (p *Point) String() string {
 	return fmt.Sprintf("(x: %v, y: %v)", p.x, p.y)
 }
 
-// NewPoint 生成一个直角坐标系的点
-func NewPoint(x, y float64) *Point {
+// NewPoint 生成一个直角坐标系的点；
+// 可选参数 `ml` 是用于大地平面直角坐标系间转经纬度的子午线值
+func NewPoint(x, y float64, ml ...int) *Point {
 	p := &Point{
 		x: x,
 		y: y,
 	}
 
+	if len(ml) != 0 {
+		p.ml = ml[0]
+	}
+
 	return p
-}
-
-// Polar 极坐标系点
-type Polar struct {
-	rho float64
-	rad float64
-}
-
-// Rad 返回极角(θ)弧度
-func (p *Polar) Rad() float64 {
-	return p.rad
-}
-
-// Angle 返回极角(θ)角度
-func (p *Polar) Theta() float64 {
-	return p.rad / math.Pi * 180
-}
-
-// Dist 返回极径(ρ)
-func (p *Polar) Rho() float64 {
-	return p.rho
-}
-
-// XY 转化为直角坐标系点
-func (p *Polar) XY() *Point {
-	return NewPoint(p.rho*math.Cos(p.rad), p.rho*math.Sin(p.rad))
-}
-
-// String 实现 Stringer 接口
-func (p *Polar) String() string {
-	return fmt.Sprintf("(ρ: %v, θ: %v)", p.rho, p.rad/math.Pi*180)
-}
-
-// NewPolar 生成一个极坐标点
-func NewPolar(rho, theta float64) *Polar {
-	rad := theta / 180 * math.Pi
-
-	if math.Abs(rad) > math.Pi {
-		rad = math.Atan2(rho*math.Sin(rad), rho*math.Cos(rad))
-	}
-
-	return &Polar{
-		rho: rho,
-		rad: rad,
-	}
-}
-
-// NewPolarFromXY 由直角坐标系点生成一个极坐标点
-func NewPolarFromXY(x, y float64) *Polar {
-	return &Polar{
-		rho: math.Sqrt(math.Pow(x, 2) + math.Pow(y, 2)),
-		rad: math.Atan2(y, x),
-	}
 }
 
 // EllipsoidParameter 椭球体参数
@@ -244,7 +201,7 @@ func NewWGS84Parameter() *EllipsoidParameter {
 	return ep
 }
 
-// ZtGeoCoordTransform 经纬度与大地平面直角坐标系间的转换
+// ZtGeoCoordTransform 经纬度与大地平面直角坐标系间的转换；
 // [翻译自C++代码](https://www.cnblogs.com/xingzhensun/p/11377963.html)
 type ZtGeoCoordTransform struct {
 	ep *EllipsoidParameter
@@ -252,19 +209,15 @@ type ZtGeoCoordTransform struct {
 	pt ProjType
 }
 
-// NewZtGeoCoordTransform 返回经纬度与大地平面直角坐标系间的转换器
-func NewZtGeoCoordTransform(options ...ZGCTOption) *ZtGeoCoordTransform {
-	zgct := &ZtGeoCoordTransform{
+// NewZtGeoCoordTransform 返回经纬度与大地平面直角坐标系间的转换器；
+// 参数 `ml` 是子午线值，当 < -180 时，会根据经纬度自动计算；
+// 参数 `pt` 是投影类型
+func NewZtGeoCoordTransform(ml int, pt ProjType) *ZtGeoCoordTransform {
+	return &ZtGeoCoordTransform{
 		ep: NewWGS84Parameter(),
-		ml: -360,
-		pt: GK,
+		ml: ml,
+		pt: pt,
 	}
-
-	for _, f := range options {
-		f(zgct)
-	}
-
-	return zgct
 }
 
 // BL2XY 经纬度转大地平面直角坐标系点
@@ -307,11 +260,7 @@ func (zgct *ZtGeoCoordTransform) BL2XY(loc *Location) *Point {
 		py = py * 0.9996
 	}
 
-	return &Point{
-		x:  px,
-		y:  py,
-		ml: ml,
-	}
+	return NewPoint(px, py, ml)
 }
 
 // XY2BL 大地平面直角坐标系点转经纬度
@@ -357,32 +306,5 @@ func (zgct *ZtGeoCoordTransform) XY2BL(p *Point) *Location {
 
 	lng := (temp0-temp1+temp2)*57.29577951308232 + float64(p.ml)
 
-	return &Location{
-		lng: lng,
-		lat: lat,
-	}
-}
-
-// ZGCTOption 经纬度与大地平面直角坐标系间的转换选项
-type ZGCTOption func(zgct *ZtGeoCoordTransform)
-
-// WithMerLine 设置子午线值
-func WithMerLine(ml int) ZGCTOption {
-	return func(zgct *ZtGeoCoordTransform) {
-		zgct.ml = ml
-	}
-}
-
-// WithProjType 设置投影类型
-func WithProjType(pt ProjType) ZGCTOption {
-	return func(zgct *ZtGeoCoordTransform) {
-		zgct.pt = pt
-	}
-}
-
-// WithBaseLoc 设置基准点(以基准点子午线值建立坐标系)
-func WithBaseLoc(loc *Location) ZGCTOption {
-	return func(zgct *ZtGeoCoordTransform) {
-		zgct.ml = int((loc.lng+1.5)/3) * 3
-	}
+	return NewLocation(lng, lat)
 }

@@ -25,7 +25,7 @@ func TestAzimuth(t *testing.T) {
 }
 
 func TestXYBL(t *testing.T) {
-	zgct := NewZtGeoCoordTransform()
+	zgct := NewZtGeoCoordTransform(-360, GK)
 
 	// 真值 (x: 440000, y: 4400000)
 	p := zgct.BL2XY(NewLocation(116.300105669, 39.731939769))
