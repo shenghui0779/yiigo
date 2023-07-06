@@ -35,7 +35,7 @@ func (v Values) Has(key string) bool {
 // 例如：("=", "&") ---> bar=baz&foo=quux；
 // 例如：(":", "#") ---> bar:baz#foo:quux；
 func (v Values) Encode(sym, sep string) string {
-	if v == nil {
+	if len(v) == 0 {
 		return ""
 	}
 
