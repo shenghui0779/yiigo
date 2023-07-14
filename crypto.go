@@ -19,37 +19,30 @@ import (
 type AESPaddingMode int
 
 const (
-	AES_ZERO  AESPaddingMode = iota // 0
-	AES_PKCS5                       // PKCS#5
-	AES_PKCS7                       // PKCS#7
+	AES_ZERO  AESPaddingMode = 0 // 0
+	AES_PKCS5 AESPaddingMode = 5 // PKCS#5
+	AES_PKCS7 AESPaddingMode = 7 // PKCS#7
 )
 
 // RSAPaddingMode RSA PEM 填充模式
 type RSAPaddingMode int
 
 const (
-	RSA_PKCS1 RSAPaddingMode = iota // PKCS#1 (格式：`RSA PRIVATE KEY` 和 `RSA PUBLIC KEY`)
-	RSA_PKCS8                       // PKCS#8 (格式：`PRIVATE KEY` 和 `PUBLIC KEY`)
+	RSA_PKCS1 RSAPaddingMode = 1 // PKCS#1 (格式：`RSA PRIVATE KEY` 和 `RSA PUBLIC KEY`)
+	RSA_PKCS8 RSAPaddingMode = 8 // PKCS#8 (格式：`PRIVATE KEY` 和 `PUBLIC KEY`)
 )
 
-// AESCrypto AES加解密
-type AESCrypto interface {
-	// Encrypt 加密
-	Encrypt(plainText []byte) ([]byte, error)
+// ------------------------------------ AES ------------------------------------
 
-	// Decrypt 解密
-	Decrypt(cipherText []byte) ([]byte, error)
-}
-
-// ------------------------------------ AES-CBC ------------------------------------
-
-type cbccrypto struct {
+// AES-CBC 加密算法
+type CBCCrypto struct {
 	key  []byte
 	iv   []byte
 	mode AESPaddingMode
 }
 
-func (c *cbccrypto) Encrypt(plainText []byte) ([]byte, error) {
+// Encrypt AES-CBC 加密
+func (c *CBCCrypto) Encrypt(plainText []byte) ([]byte, error) {
 	block, err := aes.NewCipher(c.key)
 
 	if err != nil {
@@ -77,7 +70,8 @@ func (c *cbccrypto) Encrypt(plainText []byte) ([]byte, error) {
 	return cipherText, nil
 }
 
-func (c *cbccrypto) Decrypt(cipherText []byte) ([]byte, error) {
+// Decrypt AES-CBC 解密
+func (c *CBCCrypto) Decrypt(cipherText []byte) ([]byte, error) {
 	block, err := aes.NewCipher(c.key)
 
 	if err != nil {
@@ -106,22 +100,22 @@ func (c *cbccrypto) Decrypt(cipherText []byte) ([]byte, error) {
 }
 
 // NewCBCCrypto 生成 AES-CBC 加密模式
-func NewCBCCrypto(key, iv []byte, mode AESPaddingMode) AESCrypto {
-	return &cbccrypto{
+func NewCBCCrypto(key, iv []byte, mode AESPaddingMode) *CBCCrypto {
+	return &CBCCrypto{
 		key:  key,
 		iv:   iv,
 		mode: mode,
 	}
 }
 
-// ------------------------------------ AES-ECB ------------------------------------
-
-type ecbcrypto struct {
+// AES-ECB 加密算法
+type ECBCrypto struct {
 	key  []byte
 	mode AESPaddingMode
 }
 
-func (c *ecbcrypto) Encrypt(plainText []byte) ([]byte, error) {
+// Encrypt AES-ECB 加密
+func (c *ECBCrypto) Encrypt(plainText []byte) ([]byte, error) {
 	block, err := aes.NewCipher(c.key)
 
 	if err != nil {
@@ -145,7 +139,8 @@ func (c *ecbcrypto) Encrypt(plainText []byte) ([]byte, error) {
 	return cipherText, nil
 }
 
-func (c *ecbcrypto) Decrypt(cipherText []byte) ([]byte, error) {
+// Decrypt AES-ECB 解密
+func (c *ECBCrypto) Decrypt(cipherText []byte) ([]byte, error) {
 	block, err := aes.NewCipher(c.key)
 
 	if err != nil {
@@ -170,21 +165,21 @@ func (c *ecbcrypto) Decrypt(cipherText []byte) ([]byte, error) {
 }
 
 // NewECBCrypto 生成 AES-ECB 加密模式
-func NewECBCrypto(key []byte, mode AESPaddingMode) AESCrypto {
-	return &ecbcrypto{
+func NewECBCrypto(key []byte, mode AESPaddingMode) *ECBCrypto {
+	return &ECBCrypto{
 		key:  key,
 		mode: mode,
 	}
 }
 
-// ------------------------------------ AES-CFB ------------------------------------
-
-type cfbcrypto struct {
+// AES-CFB 加密算法
+type CFBCrypto struct {
 	key []byte
 	iv  []byte
 }
 
-func (c *cfbcrypto) Encrypt(plainText []byte) ([]byte, error) {
+// Encrypt AES-CFB 加密
+func (c *CFBCrypto) Encrypt(plainText []byte) ([]byte, error) {
 	block, err := aes.NewCipher(c.key)
 
 	if err != nil {
@@ -203,7 +198,8 @@ func (c *cfbcrypto) Encrypt(plainText []byte) ([]byte, error) {
 	return cipherText, nil
 }
 
-func (c *cfbcrypto) Decrypt(cipherText []byte) ([]byte, error) {
+// Decrypt AES-CFB 解密
+func (c *CFBCrypto) Decrypt(cipherText []byte) ([]byte, error) {
 	block, err := aes.NewCipher(c.key)
 
 	if err != nil {
@@ -223,21 +219,21 @@ func (c *cfbcrypto) Decrypt(cipherText []byte) ([]byte, error) {
 }
 
 // NewCFBCrypto 生成 AES-CFB 加密模式
-func NewCFBCrypto(key, iv []byte) AESCrypto {
-	return &cfbcrypto{
+func NewCFBCrypto(key, iv []byte) *CFBCrypto {
+	return &CFBCrypto{
 		key: key,
 		iv:  iv,
 	}
 }
 
-// ------------------------------------ AES-OFB ------------------------------------
-
-type ofbcrypto struct {
+// AES-OFB 加密算法
+type OFBCrypto struct {
 	key []byte
 	iv  []byte
 }
 
-func (c *ofbcrypto) Encrypt(plainText []byte) ([]byte, error) {
+// Encrypt AES-OFB 加密
+func (c *OFBCrypto) Encrypt(plainText []byte) ([]byte, error) {
 	block, err := aes.NewCipher(c.key)
 
 	if err != nil {
@@ -256,7 +252,8 @@ func (c *ofbcrypto) Encrypt(plainText []byte) ([]byte, error) {
 	return cipherText, nil
 }
 
-func (c *ofbcrypto) Decrypt(cipherText []byte) ([]byte, error) {
+// Decrypt AES-OFB 解密
+func (c *OFBCrypto) Decrypt(cipherText []byte) ([]byte, error) {
 	block, err := aes.NewCipher(c.key)
 
 	if err != nil {
@@ -276,21 +273,21 @@ func (c *ofbcrypto) Decrypt(cipherText []byte) ([]byte, error) {
 }
 
 // NewOFBCrypto 生成 AES-OFB 加密模式
-func NewOFBCrypto(key, iv []byte) AESCrypto {
-	return &ofbcrypto{
+func NewOFBCrypto(key, iv []byte) *OFBCrypto {
+	return &OFBCrypto{
 		key: key,
 		iv:  iv,
 	}
 }
 
-// ------------------------------------ AES-CTR ------------------------------------
-
-type ctrcrypto struct {
+// AES-CTR 加密算法
+type CTRCrypto struct {
 	key []byte
 	iv  []byte
 }
 
-func (c *ctrcrypto) Encrypt(plainText []byte) ([]byte, error) {
+// Encrypt AES-CTR 加密
+func (c *CTRCrypto) Encrypt(plainText []byte) ([]byte, error) {
 	block, err := aes.NewCipher(c.key)
 
 	if err != nil {
@@ -309,7 +306,8 @@ func (c *ctrcrypto) Encrypt(plainText []byte) ([]byte, error) {
 	return cipherText, nil
 }
 
-func (c *ctrcrypto) Decrypt(cipherText []byte) ([]byte, error) {
+// Decrypt AES-CTR 解密
+func (c *CTRCrypto) Decrypt(cipherText []byte) ([]byte, error) {
 	block, err := aes.NewCipher(c.key)
 
 	if err != nil {
@@ -329,41 +327,42 @@ func (c *ctrcrypto) Decrypt(cipherText []byte) ([]byte, error) {
 }
 
 // NewCTRCrypto 生成 AES-CTR 加密模式
-func NewCTRCrypto(key, iv []byte) AESCrypto {
-	return &ctrcrypto{
+func NewCTRCrypto(key, iv []byte) *CTRCrypto {
+	return &CTRCrypto{
 		key: key,
 		iv:  iv,
 	}
 }
 
-// ------------------------------------ AES-GCM ------------------------------------
-
-type gcmcrypto struct {
+// AES-GCM 加密算法
+type GCMCrypto struct {
 	key   []byte
 	nonce []byte
 }
 
-func (c *gcmcrypto) Encrypt(plainText []byte) ([]byte, error) {
+// Encrypt AES-GCM 加密
+func (c *GCMCrypto) Encrypt(plainText, additionalData []byte) ([]byte, error) {
 	block, err := aes.NewCipher(c.key)
 
 	if err != nil {
 		return nil, err
 	}
 
-	aesgcm, err := cipher.NewGCM(block)
+	aead, err := cipher.NewGCM(block)
 
 	if err != nil {
 		return nil, err
 	}
 
-	if len(c.nonce) != aesgcm.NonceSize() {
+	if len(c.nonce) != aead.NonceSize() {
 		return nil, errors.New("nonce length must equal gcm standard nonce size")
 	}
 
-	return aesgcm.Seal(nil, c.nonce, plainText, nil), nil
+	return aead.Seal(nil, c.nonce, plainText, additionalData), nil
 }
 
-func (c *gcmcrypto) Decrypt(cipherText []byte) ([]byte, error) {
+// Decrypt AES-GCM 解密
+func (c *GCMCrypto) Decrypt(cipherText, additionalData []byte) ([]byte, error) {
 	block, err := aes.NewCipher(c.key)
 
 	if err != nil {
@@ -380,12 +379,12 @@ func (c *gcmcrypto) Decrypt(cipherText []byte) ([]byte, error) {
 		return nil, errors.New("nonce length must equal gcm standard nonce size")
 	}
 
-	return aesgcm.Open(nil, c.nonce, cipherText, nil)
+	return aesgcm.Open(nil, c.nonce, cipherText, additionalData)
 }
 
 // NewGCMCrypto 生成 AES-GCM 加密模式
-func NewGCMCrypto(key, nonce []byte) AESCrypto {
-	return &gcmcrypto{
+func NewGCMCrypto(key, nonce []byte) *GCMCrypto {
+	return &GCMCrypto{
 		key:   key,
 		nonce: nonce,
 	}

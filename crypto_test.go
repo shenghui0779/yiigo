@@ -131,10 +131,10 @@ func TestGCMCrypto(t *testing.T) {
 
 	gcm := NewGCMCrypto(key, nonce)
 
-	eb, err := gcm.Encrypt([]byte(plainText))
+	eb, err := gcm.Encrypt([]byte(plainText), nil)
 	assert.Nil(t, err)
 
-	db, err := gcm.Decrypt(eb)
+	db, err := gcm.Decrypt(eb, nil)
 	assert.Nil(t, err)
 	assert.Equal(t, plainText, string(db))
 }

@@ -48,10 +48,10 @@ func Hash(hash crypto.Hash, str string) (string, error) {
 
 // HMacSHA256 计算hmac-sha256值
 func HMacSHA256(key, str string) string {
-	mac := hmac.New(sha256.New, []byte(key))
-	mac.Write([]byte(str))
+	h := hmac.New(sha256.New, []byte(key))
+	h.Write([]byte(str))
 
-	return hex.EncodeToString(mac.Sum(nil))
+	return hex.EncodeToString(h.Sum(nil))
 }
 
 // HMac 计算指定hash算法的hmac值
@@ -60,8 +60,8 @@ func HMac(hash crypto.Hash, key, str string) (string, error) {
 		return "", fmt.Errorf("crypto: requested hash function (%s) is unavailable", hash.String())
 	}
 
-	mac := hmac.New(hash.New, []byte(key))
-	mac.Write([]byte(str))
+	h := hmac.New(hash.New, []byte(key))
+	h.Write([]byte(str))
 
-	return hex.EncodeToString(mac.Sum(nil)), nil
+	return hex.EncodeToString(h.Sum(nil)), nil
 }
