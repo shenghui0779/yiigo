@@ -14,7 +14,7 @@ import (
 )
 
 type httpSetting struct {
-	headers map[string]string
+	headers V
 	cookies []*http.Cookie
 	close   bool
 }
@@ -25,7 +25,7 @@ type HTTPOption func(s *httpSetting)
 // WithHTTPHeader 设置HTTP请求头
 func WithHTTPHeader(key, value string) HTTPOption {
 	return func(s *httpSetting) {
-		s.headers[key] = value
+		s.headers.Set(key, value)
 	}
 }
 
@@ -45,6 +45,9 @@ func WithHTTPClose() HTTPOption {
 
 // UploadForm HTTP文件上传表单
 type UploadForm interface {
+	// Field 返回表单普通字段
+	Field(name string) string
+
 	// Write 将表单字段写入流
 	Write(w *multipart.Writer) error
 }
@@ -59,16 +62,20 @@ type formfile struct {
 }
 
 type uploadform struct {
-	formfiles  []*formfile
-	formfields map[string]string
+	files  []*formfile
+	fields V
 }
 
-func (f *uploadform) Write(w *multipart.Writer) error {
-	if len(f.formfiles) == 0 {
+func (form *uploadform) Field(name string) string {
+	return form.fields.Get(name)
+}
+
+func (form *uploadform) Write(w *multipart.Writer) error {
+	if len(form.files) == 0 {
 		return errors.New("empty file field")
 	}
 
-	for _, v := range f.formfiles {
+	for _, v := range form.files {
 		part, err := w.CreateFormFile(v.fieldname, v.filename)
 
 		if err != nil {
@@ -80,7 +87,7 @@ func (f *uploadform) Write(w *multipart.Writer) error {
 		}
 	}
 
-	for name, value := range f.formfields {
+	for name, value := range form.fields {
 		if err := w.WriteField(name, value); err != nil {
 			return err
 		}
@@ -90,12 +97,12 @@ func (f *uploadform) Write(w *multipart.Writer) error {
 }
 
 // UploadField 文件上传表单字段
-type UploadField func(f *uploadform)
+type UploadField func(form *uploadform)
 
 // WithFormFile 设置表单文件字段
 func WithFormFile(fieldname, filename string, fn FormFileFunc) UploadField {
-	return func(f *uploadform) {
-		f.formfiles = append(f.formfiles, &formfile{
+	return func(form *uploadform) {
+		form.files = append(form.files, &formfile{
 			fieldname: fieldname,
 			filename:  filename,
 			filefunc:  fn,
@@ -104,17 +111,17 @@ func WithFormFile(fieldname, filename string, fn FormFileFunc) UploadField {
 }
 
 // WithFormField 设置表单普通字段
-func WithFormField(fieldname, fieldvalue string) UploadField {
-	return func(u *uploadform) {
-		u.formfields[fieldname] = fieldvalue
+func WithFormField(name, value string) UploadField {
+	return func(form *uploadform) {
+		form.fields.Set(name, value)
 	}
 }
 
 // NewUploadForm 生成一个文件上传表单
 func NewUploadForm(fields ...UploadField) UploadForm {
 	form := &uploadform{
-		formfiles:  make([]*formfile, 0),
-		formfields: make(map[string]string),
+		files:  make([]*formfile, 0),
+		fields: make(V),
 	}
 
 	for _, f := range fields {
@@ -149,7 +156,7 @@ func (c *httpclient) Do(ctx context.Context, method, reqURL string, body []byte,
 	setting := new(httpSetting)
 
 	if len(options) != 0 {
-		setting.headers = make(map[string]string)
+		setting.headers = make(V)
 
 		for _, f := range options {
 			f(setting)
