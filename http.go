@@ -52,7 +52,7 @@ type UploadForm interface {
 	Write(w *multipart.Writer) error
 }
 
-// FormFileFunc 将上传文件写入流
+// FormFileFunc 将文件写入表单流
 type FormFileFunc func(w io.Writer) error
 
 type formfile struct {
