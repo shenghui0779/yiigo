@@ -139,14 +139,14 @@ func Long2IP(ip uint32) string {
 	return net.IPv4(byte(ip>>24), byte(ip>>16), byte(ip>>8), byte(ip)).String()
 }
 
-// MarshalNoEscapeHTML 不带HTML转义的序列化
+// MarshalNoEscapeHTML 不带HTML转义的JSON序列化
 func MarshalNoEscapeHTML(v any) ([]byte, error) {
 	buf := bytes.NewBuffer(nil)
 
-	jsonEncoder := json.NewEncoder(buf)
-	jsonEncoder.SetEscapeHTML(false)
+	encoder := json.NewEncoder(buf)
+	encoder.SetEscapeHTML(false)
 
-	if err := jsonEncoder.Encode(v); err != nil {
+	if err := encoder.Encode(v); err != nil {
 		return nil, err
 	}
 
