@@ -37,12 +37,12 @@ func (v V) Has(key string) bool {
 // Encode 通过自定义的符号和分隔符按照key的ASCII码升序格式化为字符串。
 // 例如：("=", "&") ---> bar=baz&foo=quux；
 // 例如：(":", "#") ---> bar:baz#foo:quux；
-func (v V) Encode(sym, sep string, options ...EncodeVOption) string {
+func (v V) Encode(sym, sep string, options ...VEncOption) string {
 	if len(v) == 0 {
 		return ""
 	}
 
-	setting := &encodeVSetting{
+	setting := &vencSetting{
 		ignoreKeys: make(map[string]struct{}),
 	}
 
@@ -65,7 +65,7 @@ func (v V) Encode(sym, sep string, options ...EncodeVOption) string {
 	for _, k := range keys {
 		val := v[k]
 
-		if len(val) == 0 && setting.emptyMode == EmptyEncodeIgnore {
+		if len(val) == 0 && setting.emptyMode == EmptyEncIgnore {
 			continue
 		}
 
@@ -92,7 +92,7 @@ func (v V) Encode(sym, sep string, options ...EncodeVOption) string {
 		}
 
 		// 保留符号
-		if setting.emptyMode != EmptyEncodeOnlyKey {
+		if setting.emptyMode != EmptyEncOnlyKey {
 			buf.WriteString(sym)
 		}
 	}
@@ -100,41 +100,41 @@ func (v V) Encode(sym, sep string, options ...EncodeVOption) string {
 	return buf.String()
 }
 
-// VEmptyEncodeMode 值为空时的Encode模式
-type VEmptyEncodeMode int
+// VEmptyEncMode 值为空时的Encode模式
+type VEmptyEncMode int
 
 const (
-	EmptyEncodeDefault VEmptyEncodeMode = iota // 默认：bar=baz&foo=
-	EmptyEncodeIgnore                          // 忽略：bar=baz
-	EmptyEncodeOnlyKey                         // 仅保留Key：bar=baz&foo
+	EmptyEncDefault VEmptyEncMode = iota // 默认：bar=baz&foo=
+	EmptyEncIgnore                       // 忽略：bar=baz
+	EmptyEncOnlyKey                      // 仅保留Key：bar=baz&foo
 )
 
-type encodeVSetting struct {
+type vencSetting struct {
 	escape     bool
-	emptyMode  VEmptyEncodeMode
+	emptyMode  VEmptyEncMode
 	ignoreKeys map[string]struct{}
 }
 
-// EncodeVOption V Encode 选项
-type EncodeVOption func(s *encodeVSetting)
+// VEncOption V Encode 选项
+type VEncOption func(s *vencSetting)
 
-// WithEmptyEncodeMode 设置值为空时的Encode模式
-func WithEmptyEncodeMode(mode VEmptyEncodeMode) EncodeVOption {
-	return func(s *encodeVSetting) {
+// WithEmptyEncMode 设置值为空时的Encode模式
+func WithEmptyEncMode(mode VEmptyEncMode) VEncOption {
+	return func(s *vencSetting) {
 		s.emptyMode = mode
 	}
 }
 
 // WithKVEscape 设置K-V是否需要QueryEscape
-func WithKVEscape() EncodeVOption {
-	return func(s *encodeVSetting) {
+func WithKVEscape() VEncOption {
+	return func(s *vencSetting) {
 		s.escape = true
 	}
 }
 
 // WithIgnoreKeys 设置Encode时忽略的key
-func WithIgnoreKeys(keys ...string) EncodeVOption {
-	return func(s *encodeVSetting) {
+func WithIgnoreKeys(keys ...string) VEncOption {
+	return func(s *vencSetting) {
 		for _, k := range keys {
 			s.ignoreKeys[k] = struct{}{}
 		}

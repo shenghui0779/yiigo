@@ -30,11 +30,11 @@ func TestV(t *testing.T) {
 	v3.Set("foo", "")
 
 	assert.Equal(t, "bar=baz&foo=&hello=world", v3.Encode("=", "&"))
-	assert.Equal(t, "bar=baz&foo=&hello=world", v3.Encode("=", "&", WithEmptyEncodeMode(EmptyEncodeDefault)))
-	assert.Equal(t, "bar=baz&foo&hello=world", v3.Encode("=", "&", WithEmptyEncodeMode(EmptyEncodeOnlyKey)))
-	assert.Equal(t, "bar=baz&hello=world", v3.Encode("=", "&", WithEmptyEncodeMode(EmptyEncodeIgnore)))
+	assert.Equal(t, "bar=baz&foo=&hello=world", v3.Encode("=", "&", WithEmptyEncMode(EmptyEncDefault)))
+	assert.Equal(t, "bar=baz&foo&hello=world", v3.Encode("=", "&", WithEmptyEncMode(EmptyEncOnlyKey)))
+	assert.Equal(t, "bar=baz&hello=world", v3.Encode("=", "&", WithEmptyEncMode(EmptyEncIgnore)))
 	assert.Equal(t, "bar=baz&foo=", v3.Encode("=", "&", WithIgnoreKeys("hello")))
-	assert.Equal(t, "bar=baz", v3.Encode("=", "&", WithIgnoreKeys("hello"), WithEmptyEncodeMode(EmptyEncodeIgnore)))
+	assert.Equal(t, "bar=baz", v3.Encode("=", "&", WithIgnoreKeys("hello"), WithEmptyEncMode(EmptyEncIgnore)))
 }
 
 func TestXML(t *testing.T) {
