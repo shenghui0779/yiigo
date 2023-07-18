@@ -678,7 +678,7 @@ func PKCS5Unpadding(plainText []byte, blockSize int) []byte {
 	return plainText[:(length - unpadding)]
 }
 
-// --------------------------------- AES-256-ECB ---------------------------------
+// --------------------------------- ECB BlockMode ---------------------------------
 
 type ecb struct {
 	b         cipher.Block
@@ -712,6 +712,7 @@ func (x *ecbEncrypter) CryptBlocks(dst, src []byte) {
 
 	for len(src) > 0 {
 		x.b.Encrypt(dst, src[:x.blockSize])
+
 		src = src[x.blockSize:]
 		dst = dst[x.blockSize:]
 	}
