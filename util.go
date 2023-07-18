@@ -39,7 +39,7 @@ type X map[string]any
 // CDATA XML `CDATA` 标记
 type CDATA string
 
-// MarshalXML XML `CDATA` 标记序列号
+// MarshalXML XML 带 `CDATA` 标记序列化
 func (c CDATA) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	return e.EncodeElement(struct {
 		string `xml:",cdata"`
