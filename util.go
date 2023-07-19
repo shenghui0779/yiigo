@@ -326,6 +326,7 @@ func VersionCompare(rangeVer, curVer string) (bool, error) {
 }
 
 // LoadCertFromPfxFile 通过pfx(p12)文件生成TLS证书
+// 注意：证书需采用「TripleDES-SHA1」加密方式
 func LoadCertFromPfxFile(pfxFile, password string) (tls.Certificate, error) {
 	fail := func(err error) (tls.Certificate, error) { return tls.Certificate{}, err }
 

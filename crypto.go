@@ -518,7 +518,8 @@ func NewPrivateKeyFromPemFile(mode RSAPaddingMode, pemFile string) (*PrivateKey,
 	return NewPrivateKeyFromPemBlock(mode, b)
 }
 
-// NewPrivateKeyFromPfxFile 通过pfx(p12)文件生成RSA私钥
+// NewPrivateKeyFromPfxFile 通过pfx(p12)证书生成RSA私钥
+// 注意：证书需采用「TripleDES-SHA1」加密方式
 func NewPrivateKeyFromPfxFile(pfxFile, password string) (*PrivateKey, error) {
 	cert, err := LoadCertFromPfxFile(pfxFile, password)
 
@@ -623,7 +624,7 @@ func NewPublicKeyFromDerBlock(pemBlock []byte) (*PublicKey, error) {
 	return &PublicKey{key: cert.PublicKey.(*rsa.PublicKey)}, nil
 }
 
-// NewPublicKeyFromDerFile 通过DER文件生成RSA公钥
+// NewPublicKeyFromDerFile 通过DER证书生成RSA公钥
 // 注意PEM格式: -----BEGIN CERTIFICATE----- | -----END CERTIFICATE-----
 // DER转换命令: openssl x509 -inform der -in cert.cer -out cert.pem
 func NewPublicKeyFromDerFile(pemFile string) (*PublicKey, error) {
