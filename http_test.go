@@ -1,6 +1,7 @@
 package yiigo
 
 import (
+	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -8,8 +9,8 @@ import (
 
 func TestHTTPOption(t *testing.T) {
 	setting := &httpSetting{
-		headers: make(map[string]string),
-		close:   false,
+		header: http.Header{},
+		close:  false,
 	}
 
 	options := []HTTPOption{
@@ -22,8 +23,8 @@ func TestHTTPOption(t *testing.T) {
 	}
 
 	assert.Equal(t, &httpSetting{
-		headers: map[string]string{
-			"Content-Type": "application/x-www-form-urlencoded",
+		header: http.Header{
+			"Content-Type": []string{"application/x-www-form-urlencoded"},
 		},
 		close: true,
 	}, setting)
