@@ -171,12 +171,12 @@ func (c *httpclient) Do(ctx context.Context, method, reqURL string, body []byte,
 		}
 	}
 
-	// headers
+	// header
 	if len(setting.header) != 0 {
 		req.Header = setting.header
 	}
 
-	// cookies
+	// cookie
 	if len(setting.cookie) != 0 {
 		for _, v := range setting.cookie {
 			req.AddCookie(v)
