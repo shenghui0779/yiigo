@@ -265,9 +265,16 @@ func HTTPPost(ctx context.Context, reqURL string, body []byte, options ...HTTPOp
 	return defaultHTTPClient.Do(ctx, http.MethodPost, reqURL, body, options...)
 }
 
+// HTTPPostJSON 发送POST请求(json数据)
+func HTTPPostJSON(ctx context.Context, reqURL string, body []byte, options ...HTTPOption) (*http.Response, error) {
+	options = append(options, WithHTTPHeader(HeaderContentType, ContentForm))
+
+	return defaultHTTPClient.Do(ctx, http.MethodPost, reqURL, body, options...)
+}
+
 // HTTPPostForm 发送POST表单请求
 func HTTPPostForm(ctx context.Context, reqURL string, data url.Values, options ...HTTPOption) (*http.Response, error) {
-	options = append(options, WithHTTPHeader("Content-Type", "application/x-www-form-urlencoded"))
+	options = append(options, WithHTTPHeader(HeaderContentType, ContentForm))
 
 	return defaultHTTPClient.Do(ctx, http.MethodPost, reqURL, []byte(data.Encode()), options...)
 }

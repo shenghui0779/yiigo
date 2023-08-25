@@ -17,7 +17,7 @@ var (
 )
 
 func ContentType(r *http.Request) string {
-	content := r.Header.Get("Content-Type")
+	content := r.Header.Get(HeaderContentType)
 
 	for i, char := range content {
 		if char == ' ' || char == ';' {

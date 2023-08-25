@@ -26,6 +26,16 @@ const (
 )
 
 const (
+	HeaderAuthorization = "Authorization"
+	HeaderContentType   = "Content-Type"
+)
+
+const (
+	ContentJSON = "application/json;charset=utf-8"
+	ContentForm = "application/x-www-form-urlencoded"
+)
+
+const (
 	// OK defines for string `OK`
 	OK = "OK"
 
