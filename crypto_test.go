@@ -128,13 +128,14 @@ func TestAesGCM(t *testing.T) {
 	key := []byte("AES256Key-32Characters1234567890")
 	nonce := key[:12]
 	plainText := "IloveYiigo"
+	additionalData := "IIInsomnia"
 
 	gcm := NewAesGCM(key, nonce)
 
-	eb, err := gcm.Encrypt([]byte(plainText), nil)
+	eb, err := gcm.Encrypt([]byte(plainText), []byte(additionalData))
 	assert.Nil(t, err)
 
-	db, err := gcm.Decrypt(eb, nil)
+	db, err := gcm.Decrypt(eb, []byte(additionalData))
 	assert.Nil(t, err)
 	assert.Equal(t, plainText, string(db))
 }

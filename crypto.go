@@ -62,10 +62,15 @@ func (c *AesCBC) Encrypt(plainText []byte) ([]byte, error) {
 		plainText = PKCS5Padding(plainText, len(c.key))
 	}
 
+	bm := cipher.NewCBCEncrypter(block, c.iv)
+
+	if len(plainText)%bm.BlockSize() != 0 {
+		return nil, errors.New("input not full blocks")
+	}
+
 	cipherText := make([]byte, len(plainText))
 
-	blockMode := cipher.NewCBCEncrypter(block, c.iv)
-	blockMode.CryptBlocks(cipherText, plainText)
+	bm.CryptBlocks(cipherText, plainText)
 
 	return cipherText, nil
 }
@@ -82,10 +87,15 @@ func (c *AesCBC) Decrypt(cipherText []byte) ([]byte, error) {
 		return nil, errors.New("IV length must equal block size")
 	}
 
+	bm := cipher.NewCBCDecrypter(block, c.iv)
+
+	if len(cipherText)%bm.BlockSize() != 0 {
+		return nil, errors.New("input not full blocks")
+	}
+
 	plainText := make([]byte, len(cipherText))
 
-	blockMode := cipher.NewCBCDecrypter(block, c.iv)
-	blockMode.CryptBlocks(plainText, cipherText)
+	bm.CryptBlocks(plainText, cipherText)
 
 	switch c.mode {
 	case AES_ZERO:
@@ -131,10 +141,15 @@ func (c *AesECB) Encrypt(plainText []byte) ([]byte, error) {
 		plainText = PKCS5Padding(plainText, len(c.key))
 	}
 
+	bm := NewECBEncrypter(block)
+
+	if len(plainText)%bm.BlockSize() != 0 {
+		return nil, errors.New("input not full blocks")
+	}
+
 	cipherText := make([]byte, len(plainText))
 
-	blockMode := NewECBEncrypter(block)
-	blockMode.CryptBlocks(cipherText, plainText)
+	bm.CryptBlocks(cipherText, plainText)
 
 	return cipherText, nil
 }
@@ -147,10 +162,15 @@ func (c *AesECB) Decrypt(cipherText []byte) ([]byte, error) {
 		return nil, err
 	}
 
+	bm := NewECBDecrypter(block)
+
+	if len(cipherText)%bm.BlockSize() != 0 {
+		return nil, errors.New("input not full blocks")
+	}
+
 	plainText := make([]byte, len(cipherText))
 
-	blockMode := NewECBDecrypter(block)
-	blockMode.CryptBlocks(plainText, cipherText)
+	bm.CryptBlocks(plainText, cipherText)
 
 	switch c.mode {
 	case AES_ZERO:
@@ -355,7 +375,11 @@ func (c *AesGCM) Encrypt(plainText, additionalData []byte) ([]byte, error) {
 	}
 
 	if len(c.nonce) != aead.NonceSize() {
-		return nil, errors.New("nonce length must equal gcm standard nonce size")
+		return nil, errors.New("incorrect nonce length given to GCM")
+	}
+
+	if uint64(len(plainText)) > ((1<<32)-2)*uint64(block.BlockSize()) {
+		return nil, errors.New("message too large for GCM")
 	}
 
 	return aead.Seal(nil, c.nonce, plainText, additionalData), nil
@@ -376,7 +400,7 @@ func (c *AesGCM) Decrypt(cipherText, additionalData []byte) ([]byte, error) {
 	}
 
 	if len(c.nonce) != aesgcm.NonceSize() {
-		return nil, errors.New("nonce length must equal gcm standard nonce size")
+		return nil, errors.New("incorrect nonce length given to GCM")
 	}
 
 	return aesgcm.Open(nil, c.nonce, cipherText, additionalData)
