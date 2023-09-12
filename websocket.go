@@ -102,7 +102,6 @@ func (c *wsconn) Read(ctx context.Context, callback WSHandler) error {
 			} else {
 				if callback != nil {
 					msg, err = callback(ctx, NewWSMsg(t, b))
-
 					if err != nil {
 						msg = NewWSTextMsg([]byte(err.Error()))
 					}
@@ -130,11 +129,7 @@ func (c *wsconn) Write(ctx context.Context, msg WSMsg) error {
 		return errors.New("write msg disabled due to unauthorized")
 	}
 
-	if err := c.conn.WriteMessage(msg.T(), msg.V()); err != nil {
-		return err
-	}
-
-	return nil
+	return c.conn.WriteMessage(msg.T(), msg.V())
 }
 
 func (c *wsconn) Close(ctx context.Context) error {
