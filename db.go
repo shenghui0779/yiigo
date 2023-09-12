@@ -178,7 +178,6 @@ func EntDriver(name ...string) *entsql.Driver {
 // DBTransaction 执行数据库事物
 func DBTransaction(ctx context.Context, db *sqlx.DB, f func(ctx context.Context, tx *sqlx.Tx) error) error {
 	tx, err := db.BeginTxx(ctx, nil)
-
 	if err != nil {
 		return err
 	}

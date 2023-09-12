@@ -29,7 +29,6 @@ func initNSQProducer(nsqd string, cfg *nsq.Config) error {
 	var err error
 
 	producer, err = nsq.NewProducer(nsqd, cfg)
-
 	if err != nil {
 		return err
 	}
@@ -96,7 +95,6 @@ func setNSQConsumers(lookupd []string, consumers ...NSQConsumer) error {
 		}
 
 		nc, err := nsq.NewConsumer(c.Topic(), c.Channel(), cfg)
-
 		if err != nil {
 			return err
 		}

@@ -44,7 +44,6 @@ type AesCBC struct {
 // Encrypt AES-CBC 加密
 func (c *AesCBC) Encrypt(plainText []byte) ([]byte, error) {
 	block, err := aes.NewCipher(c.key)
-
 	if err != nil {
 		return nil, err
 	}
@@ -63,13 +62,11 @@ func (c *AesCBC) Encrypt(plainText []byte) ([]byte, error) {
 	}
 
 	bm := cipher.NewCBCEncrypter(block, c.iv)
-
 	if len(plainText)%bm.BlockSize() != 0 {
 		return nil, errors.New("input not full blocks")
 	}
 
 	cipherText := make([]byte, len(plainText))
-
 	bm.CryptBlocks(cipherText, plainText)
 
 	return cipherText, nil
@@ -78,7 +75,6 @@ func (c *AesCBC) Encrypt(plainText []byte) ([]byte, error) {
 // Decrypt AES-CBC 解密
 func (c *AesCBC) Decrypt(cipherText []byte) ([]byte, error) {
 	block, err := aes.NewCipher(c.key)
-
 	if err != nil {
 		return nil, err
 	}
@@ -88,13 +84,11 @@ func (c *AesCBC) Decrypt(cipherText []byte) ([]byte, error) {
 	}
 
 	bm := cipher.NewCBCDecrypter(block, c.iv)
-
 	if len(cipherText)%bm.BlockSize() != 0 {
 		return nil, errors.New("input not full blocks")
 	}
 
 	plainText := make([]byte, len(cipherText))
-
 	bm.CryptBlocks(plainText, cipherText)
 
 	switch c.mode {
@@ -127,7 +121,6 @@ type AesECB struct {
 // Encrypt AES-ECB 加密
 func (c *AesECB) Encrypt(plainText []byte) ([]byte, error) {
 	block, err := aes.NewCipher(c.key)
-
 	if err != nil {
 		return nil, err
 	}
@@ -142,13 +135,11 @@ func (c *AesECB) Encrypt(plainText []byte) ([]byte, error) {
 	}
 
 	bm := NewECBEncrypter(block)
-
 	if len(plainText)%bm.BlockSize() != 0 {
 		return nil, errors.New("input not full blocks")
 	}
 
 	cipherText := make([]byte, len(plainText))
-
 	bm.CryptBlocks(cipherText, plainText)
 
 	return cipherText, nil
@@ -157,19 +148,16 @@ func (c *AesECB) Encrypt(plainText []byte) ([]byte, error) {
 // Decrypt AES-ECB 解密
 func (c *AesECB) Decrypt(cipherText []byte) ([]byte, error) {
 	block, err := aes.NewCipher(c.key)
-
 	if err != nil {
 		return nil, err
 	}
 
 	bm := NewECBDecrypter(block)
-
 	if len(cipherText)%bm.BlockSize() != 0 {
 		return nil, errors.New("input not full blocks")
 	}
 
 	plainText := make([]byte, len(cipherText))
-
 	bm.CryptBlocks(plainText, cipherText)
 
 	switch c.mode {
@@ -201,7 +189,6 @@ type AesCFB struct {
 // Encrypt AES-CFB 加密
 func (c *AesCFB) Encrypt(plainText []byte) ([]byte, error) {
 	block, err := aes.NewCipher(c.key)
-
 	if err != nil {
 		return nil, err
 	}
@@ -221,7 +208,6 @@ func (c *AesCFB) Encrypt(plainText []byte) ([]byte, error) {
 // Decrypt AES-CFB 解密
 func (c *AesCFB) Decrypt(cipherText []byte) ([]byte, error) {
 	block, err := aes.NewCipher(c.key)
-
 	if err != nil {
 		return nil, err
 	}
@@ -255,7 +241,6 @@ type AesOFB struct {
 // Encrypt AES-OFB 加密
 func (c *AesOFB) Encrypt(plainText []byte) ([]byte, error) {
 	block, err := aes.NewCipher(c.key)
-
 	if err != nil {
 		return nil, err
 	}
@@ -275,7 +260,6 @@ func (c *AesOFB) Encrypt(plainText []byte) ([]byte, error) {
 // Decrypt AES-OFB 解密
 func (c *AesOFB) Decrypt(cipherText []byte) ([]byte, error) {
 	block, err := aes.NewCipher(c.key)
-
 	if err != nil {
 		return nil, err
 	}
@@ -309,7 +293,6 @@ type AesCTR struct {
 // Encrypt AES-CTR 加密
 func (c *AesCTR) Encrypt(plainText []byte) ([]byte, error) {
 	block, err := aes.NewCipher(c.key)
-
 	if err != nil {
 		return nil, err
 	}
@@ -329,7 +312,6 @@ func (c *AesCTR) Encrypt(plainText []byte) ([]byte, error) {
 // Decrypt AES-CTR 解密
 func (c *AesCTR) Decrypt(cipherText []byte) ([]byte, error) {
 	block, err := aes.NewCipher(c.key)
-
 	if err != nil {
 		return nil, err
 	}
@@ -363,13 +345,11 @@ type AesGCM struct {
 // Encrypt AES-GCM 加密
 func (c *AesGCM) Encrypt(plainText, additionalData []byte) ([]byte, error) {
 	block, err := aes.NewCipher(c.key)
-
 	if err != nil {
 		return nil, err
 	}
 
 	aead, err := cipher.NewGCM(block)
-
 	if err != nil {
 		return nil, err
 	}
@@ -388,13 +368,11 @@ func (c *AesGCM) Encrypt(plainText, additionalData []byte) ([]byte, error) {
 // Decrypt AES-GCM 解密
 func (c *AesGCM) Decrypt(cipherText, additionalData []byte) ([]byte, error) {
 	block, err := aes.NewCipher(c.key)
-
 	if err != nil {
 		return nil, err
 	}
 
 	aesgcm, err := cipher.NewGCM(block)
-
 	if err != nil {
 		return nil, err
 	}
@@ -418,8 +396,7 @@ func NewAesGCM(key, nonce []byte) *AesGCM {
 
 // GenerateRSAKey 生成RSA私钥和公钥
 func GenerateRSAKey(bitSize int, mode RSAPaddingMode) (privateKey, publicKey []byte, err error) {
-	privKey, err := rsa.GenerateKey(rand.Reader, bitSize)
-
+	prvKey, err := rsa.GenerateKey(rand.Reader, bitSize)
 	if err != nil {
 		return
 	}
@@ -428,19 +405,19 @@ func GenerateRSAKey(bitSize int, mode RSAPaddingMode) (privateKey, publicKey []b
 	case RSA_PKCS1:
 		privateKey = pem.EncodeToMemory(&pem.Block{
 			Type:  "RSA PRIVATE KEY",
-			Bytes: x509.MarshalPKCS1PrivateKey(privKey),
+			Bytes: x509.MarshalPKCS1PrivateKey(prvKey),
 		})
 
 		publicKey = pem.EncodeToMemory(&pem.Block{
 			Type:  "RSA PUBLIC KEY",
-			Bytes: x509.MarshalPKCS1PublicKey(&privKey.PublicKey),
+			Bytes: x509.MarshalPKCS1PublicKey(&prvKey.PublicKey),
 		})
 	case RSA_PKCS8:
-		privBlock := &pem.Block{
+		prvBlock := &pem.Block{
 			Type: "PRIVATE KEY",
 		}
-		privBlock.Bytes, err = x509.MarshalPKCS8PrivateKey(privKey)
 
+		prvBlock.Bytes, err = x509.MarshalPKCS8PrivateKey(prvKey)
 		if err != nil {
 			return
 		}
@@ -448,13 +425,13 @@ func GenerateRSAKey(bitSize int, mode RSAPaddingMode) (privateKey, publicKey []b
 		pubBlock := &pem.Block{
 			Type: "PUBLIC KEY",
 		}
-		pubBlock.Bytes, err = x509.MarshalPKIXPublicKey(&privKey.PublicKey)
 
+		pubBlock.Bytes, err = x509.MarshalPKIXPublicKey(&prvKey.PublicKey)
 		if err != nil {
 			return
 		}
 
-		privateKey = pem.EncodeToMemory(privBlock)
+		privateKey = pem.EncodeToMemory(prvBlock)
 		publicKey = pem.EncodeToMemory(pubBlock)
 	}
 
@@ -489,19 +466,12 @@ func (pk *PrivateKey) Sign(hash crypto.Hash, data []byte) ([]byte, error) {
 	h := hash.New()
 	h.Write(data)
 
-	signature, err := rsa.SignPKCS1v15(rand.Reader, pk.key, hash, h.Sum(nil))
-
-	if err != nil {
-		return nil, err
-	}
-
-	return signature, nil
+	return rsa.SignPKCS1v15(rand.Reader, pk.key, hash, h.Sum(nil))
 }
 
 // NewPrivateKeyFromPemBlock 通过PEM字节生成RSA私钥
 func NewPrivateKeyFromPemBlock(mode RSAPaddingMode, pemBlock []byte) (*PrivateKey, error) {
 	block, _ := pem.Decode(pemBlock)
-
 	if block == nil {
 		return nil, errors.New("no PEM data is found")
 	}
@@ -528,13 +498,11 @@ func NewPrivateKeyFromPemBlock(mode RSAPaddingMode, pemBlock []byte) (*PrivateKe
 // NewPrivateKeyFromPemFile  通过PEM文件生成RSA私钥
 func NewPrivateKeyFromPemFile(mode RSAPaddingMode, pemFile string) (*PrivateKey, error) {
 	keyPath, err := filepath.Abs(pemFile)
-
 	if err != nil {
 		return nil, err
 	}
 
 	b, err := os.ReadFile(keyPath)
-
 	if err != nil {
 		return nil, err
 	}
@@ -546,7 +514,6 @@ func NewPrivateKeyFromPemFile(mode RSAPaddingMode, pemFile string) (*PrivateKey,
 // 注意：证书需采用「TripleDES-SHA1」加密方式
 func NewPrivateKeyFromPfxFile(pfxFile, password string) (*PrivateKey, error) {
 	cert, err := LoadCertFromPfxFile(pfxFile, password)
-
 	if err != nil {
 		return nil, err
 	}
@@ -588,7 +555,6 @@ func (pk *PublicKey) Verify(hash crypto.Hash, data, signature []byte) error {
 // NewPublicKeyFromPemBlock 通过PEM字节生成RSA公钥
 func NewPublicKeyFromPemBlock(mode RSAPaddingMode, pemBlock []byte) (*PublicKey, error) {
 	block, _ := pem.Decode(pemBlock)
-
 	if block == nil {
 		return nil, errors.New("no PEM data is found")
 	}
@@ -615,13 +581,11 @@ func NewPublicKeyFromPemBlock(mode RSAPaddingMode, pemBlock []byte) (*PublicKey,
 // NewPublicKeyFromPemFile 通过PEM文件生成RSA公钥
 func NewPublicKeyFromPemFile(mode RSAPaddingMode, pemFile string) (*PublicKey, error) {
 	keyPath, err := filepath.Abs(pemFile)
-
 	if err != nil {
 		return nil, err
 	}
 
 	b, err := os.ReadFile(keyPath)
-
 	if err != nil {
 		return nil, err
 	}
@@ -634,13 +598,11 @@ func NewPublicKeyFromPemFile(mode RSAPaddingMode, pemFile string) (*PublicKey, e
 // DER转换命令: openssl x509 -inform der -in cert.cer -out cert.pem
 func NewPublicKeyFromDerBlock(pemBlock []byte) (*PublicKey, error) {
 	block, _ := pem.Decode(pemBlock)
-
 	if block == nil {
 		return nil, errors.New("no PEM data is found")
 	}
 
 	cert, err := x509.ParseCertificate(block.Bytes)
-
 	if err != nil {
 		return nil, err
 	}
@@ -653,13 +615,11 @@ func NewPublicKeyFromDerBlock(pemBlock []byte) (*PublicKey, error) {
 // DER转换命令: openssl x509 -inform der -in cert.cer -out cert.pem
 func NewPublicKeyFromDerFile(pemFile string) (*PublicKey, error) {
 	keyPath, err := filepath.Abs(pemFile)
-
 	if err != nil {
 		return nil, err
 	}
 
 	b, err := os.ReadFile(keyPath)
-
 	if err != nil {
 		return nil, err
 	}
@@ -682,7 +642,6 @@ func ZeroUnPadding(plainText []byte) []byte {
 
 func PKCS5Padding(cipherText []byte, blockSize int) []byte {
 	padding := blockSize - len(cipherText)%blockSize
-
 	if padding == 0 {
 		padding = blockSize
 	}

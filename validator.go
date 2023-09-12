@@ -92,7 +92,6 @@ func (v *Validator) ValidateStruct(obj any) error {
 
 	if err := v.validator.Struct(obj); err != nil {
 		e, ok := err.(validator.ValidationErrors)
-
 		if !ok {
 			return err
 		}
@@ -118,7 +117,6 @@ func (v *Validator) ValidateStructCtx(ctx context.Context, obj any) error {
 
 	if err := v.validator.StructCtx(ctx, obj); err != nil {
 		e, ok := err.(validator.ValidationErrors)
-
 		if !ok {
 			return err
 		}

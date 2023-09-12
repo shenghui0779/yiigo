@@ -65,7 +65,6 @@ func SetTimezone(loc *time.Location) {
 // 若 timestamp < 0，则使用 `time.Now()`
 func Date(timestamp int64, format ...string) string {
 	layout := layouttime
-
 	if len(format) != 0 {
 		layout = format[0]
 	}
@@ -84,13 +83,11 @@ func StrToTime(datetime string, format ...string) int64 {
 	}
 
 	layout := layouttime
-
 	if len(format) != 0 {
 		layout = format[0]
 	}
 
 	t, err := time.ParseInLocation(layout, datetime, timezone)
-
 	if err != nil {
 		return 0
 	}
@@ -106,7 +103,6 @@ func WeekAround(timestamp int64, format ...string) (monday, sunday string) {
 
 	// monday
 	offset := int(time.Monday - weekday)
-
 	if offset > 0 {
 		offset = -6
 	}
@@ -114,7 +110,6 @@ func WeekAround(timestamp int64, format ...string) (monday, sunday string) {
 	today := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, timezone)
 
 	layout := layoutdate
-
 	if len(format) != 0 {
 		layout = format[0]
 	}
@@ -123,7 +118,6 @@ func WeekAround(timestamp int64, format ...string) (monday, sunday string) {
 
 	// sunday
 	offset = int(time.Sunday - weekday)
-
 	if offset < 0 {
 		offset += 7
 	}
@@ -262,8 +256,8 @@ func SliceRand[T any](a []T, n int) []T {
 
 	copy(ret, a)
 
-	rand.Seed(time.Now().UnixNano())
-	rand.Shuffle(count, func(i, j int) {
+	rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
+	rnd.Shuffle(count, func(i, j int) {
 		ret[i], ret[j] = ret[j], ret[i]
 	})
 
@@ -278,7 +272,6 @@ func SliceRand[T any](a []T, n int) []T {
 // 文件已存在，则清空；文件或目录不存在，则以0775权限创建
 func CreateFile(filename string) (*os.File, error) {
 	abspath, err := filepath.Abs(filename)
-
 	if err != nil {
 		return nil, err
 	}
@@ -294,7 +287,6 @@ func CreateFile(filename string) (*os.File, error) {
 // 文件已存在，则追加内容；文件或目录不存在，则以0775权限创建
 func OpenFile(filename string) (*os.File, error) {
 	abspath, err := filepath.Abs(filename)
-
 	if err != nil {
 		return nil, err
 	}
@@ -310,8 +302,6 @@ func OpenFile(filename string) (*os.File, error) {
 // 参数 `rangeVer` 示例：1.0.0, =1.0.0, >2.0.0, >=1.0.0&<2.0.0, <2.0.0|>3.0.0, !=4.0.4
 func VersionCompare(rangeVer, curVer string) (bool, error) {
 	semVer, err := version.NewVersion(curVer)
-
-	// invalid semantic version
 	if err != nil {
 		return false, err
 	}
@@ -322,7 +312,6 @@ func VersionCompare(rangeVer, curVer string) (bool, error) {
 		andVers := strings.Split(ver, "&")
 
 		constraints, err := version.NewConstraint(strings.Join(andVers, ","))
-
 		if err != nil {
 			return false, err
 		}
@@ -341,19 +330,16 @@ func LoadCertFromPfxFile(pfxFile, password string) (tls.Certificate, error) {
 	fail := func(err error) (tls.Certificate, error) { return tls.Certificate{}, err }
 
 	certPath, err := filepath.Abs(filepath.Clean(pfxFile))
-
 	if err != nil {
 		return fail(err)
 	}
 
 	b, err := os.ReadFile(certPath)
-
 	if err != nil {
 		return fail(err)
 	}
 
 	blocks, err := pkcs12.ToPEM(b, password)
-
 	if err != nil {
 		return fail(err)
 	}

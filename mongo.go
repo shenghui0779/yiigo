@@ -20,7 +20,6 @@ func initMongoDB(name, dsn string) {
 	opts := options.Client().ApplyURI(dsn)
 
 	client, err := mongo.Connect(context.Background(), opts)
-
 	if err != nil {
 		logger.Panic(fmt.Sprintf("err mongodb.%s connect", name), zap.String("dsn", dsn), zap.Error(err))
 	}

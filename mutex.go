@@ -30,11 +30,9 @@ func (d *distributed) Lock(ctx context.Context, interval, timeout time.Duration)
 	defer cancel()
 
 	conn, err := d.pool.Get(ctx)
-
 	if err != nil {
 		return err
 	}
-
 	defer d.pool.Put(conn)
 
 	for {
@@ -60,15 +58,12 @@ func (d *distributed) Lock(ctx context.Context, interval, timeout time.Duration)
 
 func (d *distributed) UnLock(ctx context.Context) error {
 	conn, err := d.pool.Get(ctx)
-
 	if err != nil {
 		return err
 	}
-
 	defer d.pool.Put(conn)
 
 	v, err := redis.String(conn.Do("GET", d.key))
-
 	if err != nil {
 		return err
 	}
@@ -85,7 +80,6 @@ func (d *distributed) UnLock(ctx context.Context) error {
 func (d *distributed) attempt(conn *RedisConn) (bool, error) {
 	// attempt to acquire lock with `setnx`
 	reply, err := redis.String(conn.Do("SET", d.key, d.uniqID, "PX", d.expire.Milliseconds(), "NX"))
-
 	if err != nil && err != redis.ErrNil {
 		return false, err
 	}

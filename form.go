@@ -74,6 +74,7 @@ func (form formSource) TrySet(value reflect.Value, field reflect.StructField, ta
 
 func MappingByPtr(ptr any, setter setter, tag string) error {
 	_, err := mapping(reflect.ValueOf(ptr), emptyField, setter, tag)
+
 	return err
 }
 
@@ -95,7 +96,6 @@ func mapping(value reflect.Value, field reflect.StructField, setter setter, tag 
 		}
 
 		isSetted, err := mapping(vPtr.Elem(), field, setter, tag)
-
 		if err != nil {
 			return false, err
 		}
@@ -109,7 +109,6 @@ func mapping(value reflect.Value, field reflect.StructField, setter setter, tag 
 
 	if vKind != reflect.Struct || !field.Anonymous {
 		ok, err := tryToSetValue(value, field, setter, tag)
-
 		if err != nil {
 			return false, err
 		}
@@ -132,7 +131,6 @@ func mapping(value reflect.Value, field reflect.StructField, setter setter, tag 
 			}
 
 			ok, err := mapping(value.Field(i), tValue.Field(i), setter, tag)
-
 			if err != nil {
 				return false, err
 			}
@@ -272,7 +270,6 @@ func setIntField(val string, bitSize int, field reflect.Value) error {
 	}
 
 	intVal, err := strconv.ParseInt(val, 10, bitSize)
-
 	if err == nil {
 		field.SetInt(intVal)
 	}
@@ -286,7 +283,6 @@ func setUintField(val string, bitSize int, field reflect.Value) error {
 	}
 
 	uintVal, err := strconv.ParseUint(val, 10, bitSize)
-
 	if err == nil {
 		field.SetUint(uintVal)
 	}
@@ -300,7 +296,6 @@ func setBoolField(val string, field reflect.Value) error {
 	}
 
 	boolVal, err := strconv.ParseBool(val)
-
 	if err == nil {
 		field.SetBool(boolVal)
 	}
@@ -332,7 +327,6 @@ func setTimeField(val string, structField reflect.StructField, value reflect.Val
 	switch tf := strings.ToLower(timeFormat); tf {
 	case "unix", "unixnano":
 		tv, err := strconv.ParseInt(val, 10, 64)
-
 		if err != nil {
 			return err
 		}
@@ -361,7 +355,6 @@ func setTimeField(val string, structField reflect.StructField, value reflect.Val
 
 	if locTag := structField.Tag.Get("time_location"); locTag != "" {
 		loc, err := time.LoadLocation(locTag)
-
 		if err != nil {
 			return err
 		}
@@ -370,7 +363,6 @@ func setTimeField(val string, structField reflect.StructField, value reflect.Val
 	}
 
 	t, err := time.ParseInLocation(timeFormat, val, l)
-
 	if err != nil {
 		return err
 	}
@@ -382,9 +374,7 @@ func setTimeField(val string, structField reflect.StructField, value reflect.Val
 
 func setArray(vals []string, value reflect.Value, field reflect.StructField) error {
 	for i, s := range vals {
-		err := setWithProperType(s, value.Index(i), field)
-
-		if err != nil {
+		if err := setWithProperType(s, value.Index(i), field); err != nil {
 			return err
 		}
 	}
@@ -394,9 +384,8 @@ func setArray(vals []string, value reflect.Value, field reflect.StructField) err
 
 func setSlice(vals []string, value reflect.Value, field reflect.StructField) error {
 	slice := reflect.MakeSlice(value.Type(), len(vals), len(vals))
-	err := setArray(vals, slice, field)
 
-	if err != nil {
+	if err := setArray(vals, slice, field); err != nil {
 		return err
 	}
 
@@ -407,7 +396,6 @@ func setSlice(vals []string, value reflect.Value, field reflect.StructField) err
 
 func setTimeDuration(val string, value reflect.Value, field reflect.StructField) error {
 	d, err := time.ParseDuration(val)
-
 	if err != nil {
 		return err
 	}

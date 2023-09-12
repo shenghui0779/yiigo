@@ -51,7 +51,6 @@ func LoadEnv(options ...EnvOption) {
 	}
 
 	filename, err := filepath.Abs(env.path)
-
 	if err != nil {
 		logger.Panic("err load env", zap.Error(err))
 	}
@@ -77,7 +76,6 @@ func statEnvFile(filename string) {
 	}
 
 	f, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0775)
-
 	if err != nil {
 		return
 	}
@@ -93,7 +91,6 @@ func watchEnvFile(filename string, fn EnvOnChangeFunc) {
 	}()
 
 	watcher, err := fsnotify.NewWatcher()
-
 	if err != nil {
 		logger.Error("err env watcher", zap.Error(err))
 

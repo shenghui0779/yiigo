@@ -145,7 +145,6 @@ func (w *queryWrapper) ToQuery(ctx context.Context) (sql string, args []any, err
 	// where in
 	if w.whereIn {
 		sql, args, err = sqlx.In(sql, args...)
-
 		if err != nil {
 			return
 		}
@@ -564,7 +563,6 @@ func (w *queryWrapper) ToUpdate(ctx context.Context, data any) (sql string, args
 
 	if w.whereIn {
 		sql, args, err = sqlx.In(sql, args...)
-
 		if err != nil {
 			return
 		}
@@ -651,7 +649,6 @@ func (w *queryWrapper) ToDelete(ctx context.Context) (sql string, args []any, er
 
 	if w.whereIn {
 		sql, args, err = sqlx.In(sql, args...)
-
 		if err != nil {
 			return
 		}

@@ -188,7 +188,6 @@ func (rp *redisResourcePool) init() {
 
 	df := func() (vitess_pool.Resource, error) {
 		conn, err := rp.dial()
-
 		if err != nil {
 			return nil, err
 		}
@@ -205,7 +204,6 @@ func (rp *redisResourcePool) Get(ctx context.Context) (*RedisConn, error) {
 	}
 
 	resource, err := rp.pool.Get(ctx)
-
 	if err != nil {
 		return nil, err
 	}
@@ -217,7 +215,6 @@ func (rp *redisResourcePool) Get(ctx context.Context) (*RedisConn, error) {
 		logger.Warn("err pool conn, reconnect", zap.Error(err))
 
 		conn, dialErr := rp.dial()
-
 		if dialErr != nil {
 			rp.pool.Put(rc)
 
@@ -238,11 +235,9 @@ func (rp *redisResourcePool) Put(conn *RedisConn) {
 
 func (rp *redisResourcePool) Do(ctx context.Context, cmd string, args ...any) (any, error) {
 	conn, err := rp.Get(ctx)
-
 	if err != nil {
 		return nil, err
 	}
-
 	defer rp.Put(conn)
 
 	return conn.Do(cmd, args...)
