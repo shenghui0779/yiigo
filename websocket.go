@@ -10,62 +10,51 @@ import (
 
 var wsupgrader *websocket.Upgrader
 
-// WSMsg websocket消息
-type WSMsg interface {
-	// T returns ws msg type.
-	T() int
-
-	// V returns ws msg value.
-	V() []byte
-}
-
-type wsmsg struct {
+// WSMessage websocket消息
+type WSMessage struct {
 	t int
 	v []byte
 }
 
-func (m *wsmsg) T() int {
+func (m *WSMessage) T() int {
 	return m.t
 }
 
-func (m *wsmsg) V() []byte {
+func (m *WSMessage) V() []byte {
 	return m.v
 }
 
-// NewWSMsg 返回一个websocket消息
-func NewWSMsg(t int, v []byte) WSMsg {
-	return &wsmsg{
+// NewWSMessage 返回一个websocket消息
+func NewWSMessage(t int, v []byte) *WSMessage {
+	return &WSMessage{
 		t: t,
 		v: v,
 	}
 }
 
-// NewWSTextMsg 返回一个websocket纯文本消息
-func NewWSTextMsg(v []byte) WSMsg {
-	return &wsmsg{
+// NewWSTextMsg 返回一个websocket.TextMessage
+func NewWSTextMsg(s string) *WSMessage {
+	return &WSMessage{
 		t: websocket.TextMessage,
-		v: v,
+		v: []byte(s),
 	}
 }
 
-// NewWSBinaryMsg 返回一个websocket字节消息
-func NewWSBinaryMsg(v []byte) WSMsg {
-	return &wsmsg{
+// NewWSBinaryMsg 返回一个websocket.BinaryMessage
+func NewWSBinaryMsg(v []byte) *WSMessage {
+	return &WSMessage{
 		t: websocket.BinaryMessage,
 		v: v,
 	}
 }
 
-// WSHandler websocket消息处理方法
-type WSHandler func(ctx context.Context, msg WSMsg) (WSMsg, error)
-
 // WSConn websocket连接
 type WSConn interface {
 	// Read 读消息
-	Read(ctx context.Context, callback WSHandler) error
+	Read(ctx context.Context, handler func(ctx context.Context, msg *WSMessage) (*WSMessage, error)) error
 
 	// Write 写消息
-	Write(ctx context.Context, msg WSMsg) error
+	Write(ctx context.Context, msg *WSMessage) error
 
 	// Close 关闭连接
 	Close(ctx context.Context) error
@@ -74,10 +63,10 @@ type WSConn interface {
 type wsconn struct {
 	conn   *websocket.Conn
 	authOK bool
-	authFn WSHandler
+	authFn func(ctx context.Context, msg *WSMessage) (*WSMessage, error)
 }
 
-func (c *wsconn) Read(ctx context.Context, callback WSHandler) error {
+func (c *wsconn) Read(ctx context.Context, handler func(ctx context.Context, msg *WSMessage) (*WSMessage, error)) error {
 	for {
 		select {
 		case <-ctx.Done():
@@ -88,22 +77,22 @@ func (c *wsconn) Read(ctx context.Context, callback WSHandler) error {
 				return err
 			}
 
-			var msg WSMsg
+			var msg *WSMessage
 
 			// if `authFunc` is not nil and unauthorized, need to authorize first.
 			if c.authFn != nil && !c.authOK {
-				msg, err = c.authFn(ctx, NewWSMsg(t, b))
+				msg, err = c.authFn(ctx, NewWSMessage(t, b))
 
 				if err != nil {
-					msg = NewWSTextMsg([]byte(err.Error()))
+					msg = NewWSTextMsg(err.Error())
 				} else {
 					c.authOK = true
 				}
 			} else {
-				if callback != nil {
-					msg, err = callback(ctx, NewWSMsg(t, b))
+				if handler != nil {
+					msg, err = handler(ctx, NewWSMessage(t, b))
 					if err != nil {
-						msg = NewWSTextMsg([]byte(err.Error()))
+						msg = NewWSTextMsg(err.Error())
 					}
 				}
 			}
@@ -117,7 +106,7 @@ func (c *wsconn) Read(ctx context.Context, callback WSHandler) error {
 	}
 }
 
-func (c *wsconn) Write(ctx context.Context, msg WSMsg) error {
+func (c *wsconn) Write(ctx context.Context, msg *WSMessage) error {
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
@@ -137,7 +126,7 @@ func (c *wsconn) Close(ctx context.Context) error {
 }
 
 // NewWSConn 生成一个websocket连接
-func NewWSConn(w http.ResponseWriter, r *http.Request, authFn WSHandler) (WSConn, error) {
+func NewWSConn(w http.ResponseWriter, r *http.Request, authFn func(ctx context.Context, msg *WSMessage) (*WSMessage, error)) (WSConn, error) {
 	if wsupgrader == nil {
 		return nil, errors.New("upgrader is nil (forgotten configure?)")
 	}
