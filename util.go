@@ -345,7 +345,6 @@ func LoadCertFromPfxFile(pfxFile, password string) (tls.Certificate, error) {
 	}
 
 	pemData := make([]byte, 0)
-
 	for _, b := range blocks {
 		pemData = append(pemData, pem.EncodeToMemory(b)...)
 	}

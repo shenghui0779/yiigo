@@ -51,13 +51,11 @@ func (v V) Encode(sym, sep string, options ...VEncOption) string {
 	}
 
 	keys := make([]string, 0, len(v))
-
 	for k := range v {
 		if _, ok := setting.ignoreKeys[k]; !ok {
 			keys = append(keys, k)
 		}
 	}
-
 	sort.Strings(keys)
 
 	var buf strings.Builder
