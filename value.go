@@ -179,7 +179,6 @@ func ParseXMLToV(b []byte) (V, error) {
 
 	for {
 		tk, err = d.Token()
-
 		if err != nil {
 			if err == io.EOF {
 				return m, nil
