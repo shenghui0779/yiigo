@@ -149,11 +149,11 @@ type HTTPClient interface {
 	Upload(ctx context.Context, reqURL string, form UploadForm, options ...HTTPOption) (*http.Response, error)
 }
 
-type httpclient struct {
+type httpCli struct {
 	client *http.Client
 }
 
-func (c *httpclient) Do(ctx context.Context, method, reqURL string, body []byte, options ...HTTPOption) (*http.Response, error) {
+func (c *httpCli) Do(ctx context.Context, method, reqURL string, body []byte, options ...HTTPOption) (*http.Response, error) {
 	req, err := http.NewRequestWithContext(ctx, method, reqURL, bytes.NewReader(body))
 	if err != nil {
 		return nil, err
@@ -200,7 +200,7 @@ func (c *httpclient) Do(ctx context.Context, method, reqURL string, body []byte,
 	return resp, nil
 }
 
-func (c *httpclient) Upload(ctx context.Context, reqURL string, form UploadForm, options ...HTTPOption) (*http.Response, error) {
+func (c *httpCli) Upload(ctx context.Context, reqURL string, form UploadForm, options ...HTTPOption) (*http.Response, error) {
 	buf := bytes.NewBuffer(make([]byte, 0, 20<<10)) // 20kb
 	w := multipart.NewWriter(buf)
 
@@ -221,7 +221,7 @@ func (c *httpclient) Upload(ctx context.Context, reqURL string, form UploadForm,
 
 // NewDefaultHTTPClient 生成一个默认的HTTP客户端
 func NewDefaultHTTPClient() HTTPClient {
-	return &httpclient{
+	return &httpCli{
 		client: &http.Client{
 			Transport: &http.Transport{
 				Proxy: http.ProxyFromEnvironment,
@@ -245,7 +245,7 @@ func NewDefaultHTTPClient() HTTPClient {
 
 // NewHTTPClient 通过官方 `http.Client` 生成一个HTTP客户端
 func NewHTTPClient(client *http.Client) HTTPClient {
-	return &httpclient{
+	return &httpCli{
 		client: client,
 	}
 }
