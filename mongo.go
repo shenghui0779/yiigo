@@ -58,7 +58,6 @@ func Mongo(name ...string) *mongo.Client {
 	}
 
 	v, ok := mgoMap.Load(name[0])
-
 	if !ok {
 		logger.Panic(fmt.Sprintf("unknown mongodb.%s (forgotten configure?)", name[0]))
 	}

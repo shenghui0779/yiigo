@@ -96,14 +96,12 @@ func (o *DBOptions) rebuild(opt *DBOptions) {
 
 func initDB(name string, driver DBDriver, cfg *DBConfig) {
 	db, err := sql.Open(string(driver), cfg.DSN)
-
 	if err != nil {
 		logger.Panic(fmt.Sprintf("err db.%s open", name), zap.String("dsn", cfg.DSN), zap.Error(err))
 	}
 
 	if err = db.Ping(); err != nil {
 		db.Close()
-
 		logger.Panic(fmt.Sprintf("err db.%s ping", name), zap.String("dsn", cfg.DSN), zap.Error(err))
 	}
 
@@ -148,7 +146,6 @@ func DB(name ...string) *sqlx.DB {
 	}
 
 	v, ok := dbmap.Load(name[0])
-
 	if !ok {
 		logger.Panic(fmt.Sprintf("unknown db.%s (forgotten configure?)", name[0]))
 	}
@@ -167,7 +164,6 @@ func EntDriver(name ...string) *entsql.Driver {
 	}
 
 	v, ok := entmap.Load(name[0])
-
 	if !ok {
 		logger.Panic(fmt.Sprintf("unknown db.%s (forgotten configure?)", name[0]))
 	}
@@ -184,29 +180,25 @@ func DBTransaction(ctx context.Context, db *sqlx.DB, f func(ctx context.Context,
 
 	defer func() {
 		if r := recover(); r != nil {
-			logger.Error("db tx panic", zap.Any("error", r), zap.ByteString("stack", debug.Stack()))
+			logger.Error("executing transaction panic", zap.Any("error", r), zap.ByteString("stack", debug.Stack()))
 
-			rollback(tx)
+			if err := tx.Rollback(); err != nil && err != sql.ErrTxDone {
+				logger.Error("err rolling back transaction when panic", zap.Error(err))
+			}
 		}
 	}()
 
 	if err = f(ctx, tx); err != nil {
-		rollback(tx)
+		if rerr := tx.Rollback(); rerr != nil {
+			err = fmt.Errorf("%w: rolling back transaction: %v", err, rerr)
+		}
 
 		return err
 	}
 
 	if err = tx.Commit(); err != nil {
-		rollback(tx)
-
-		return err
+		return fmt.Errorf("committing transaction: %w", err)
 	}
 
 	return nil
-}
-
-func rollback(tx *sqlx.Tx) {
-	if err := tx.Rollback(); err != nil && err != sql.ErrTxDone {
-		logger.Error("err db tx rollback", zap.Error(err))
-	}
 }

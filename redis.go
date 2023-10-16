@@ -245,7 +245,6 @@ func (rp *redisResourcePool) Do(ctx context.Context, cmd string, args ...any) (a
 
 func (rp *redisResourcePool) DoFunc(ctx context.Context, f func(ctx context.Context, conn *RedisConn) error) error {
 	conn, err := rp.Get(ctx)
-
 	if err != nil {
 		return err
 	}
@@ -294,14 +293,12 @@ func initRedis(name string, cfg *RedisConfig) {
 
 	// verify connection
 	conn, err := pool.Get(context.TODO())
-
 	if err != nil {
 		logger.Panic(fmt.Sprintf("err redis.%s pool", name), zap.String("addr", cfg.Addr), zap.Error(err))
 	}
 
 	if _, err = conn.Do("PING"); err != nil {
 		conn.Close()
-
 		logger.Panic(fmt.Sprintf("err redis.%s ping", name), zap.String("addr", cfg.Addr), zap.Error(err))
 	}
 
@@ -327,7 +324,6 @@ func Redis(name ...string) RedisPool {
 	}
 
 	v, ok := redisMap.Load(name[0])
-
 	if !ok {
 		logger.Panic(fmt.Sprintf("unknown redis.%s (forgotten configure?)", name[0]))
 	}
