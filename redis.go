@@ -260,10 +260,7 @@ func (rp *redisResourcePool) DoFunc(ctx context.Context, f func(ctx context.Cont
 	return f(ctx, conn)
 }
 
-var (
-	defaultRedis RedisPool
-	redisMap     sync.Map
-)
+var redisMap sync.Map
 
 func newRedisPool(cfg *RedisConfig) RedisPool {
 	pool := &redisResourcePool{
@@ -303,30 +300,32 @@ func initRedis(name string, cfg *RedisConfig) {
 	}
 
 	pool.Put(conn)
-
-	if name == Default {
-		defaultRedis = pool
-	}
-
 	redisMap.Store(name, pool)
 
 	logger.Info(fmt.Sprintf("redis.%s is OK", name))
 }
 
 // Redis 返回一个Redis连接池实例
-func Redis(name ...string) RedisPool {
-	if len(name) == 0 || name[0] == Default {
-		if defaultRedis == nil {
-			logger.Panic(fmt.Sprintf("unknown redis.%s (forgotten configure?)", Default))
-		}
-
-		return defaultRedis
+func Redis(name ...string) (RedisPool, error) {
+	key := Default
+	if len(name) != 0 {
+		key = name[0]
 	}
 
 	v, ok := redisMap.Load(name[0])
 	if !ok {
-		logger.Panic(fmt.Sprintf("unknown redis.%s (forgotten configure?)", name[0]))
+		return nil, fmt.Errorf("unknown redis.%s (forgotten configure?)", key)
 	}
 
-	return v.(RedisPool)
+	return v.(RedisPool), nil
+}
+
+// MustRedis 返回一个Redis连接池实例，如果不存在，则Panic
+func MustRedis(name ...string) RedisPool {
+	pool, err := Redis(name...)
+	if err != nil {
+		logger.Panic(err.Error())
+	}
+
+	return pool
 }

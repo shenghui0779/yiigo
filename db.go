@@ -26,11 +26,8 @@ const (
 )
 
 var (
-	defaultDB *sqlx.DB
-	dbmap     sync.Map
-
-	defaultEntDriver *entsql.Driver
-	entmap           sync.Map
+	dbMap  sync.Map
+	entMap sync.Map
 )
 
 // DBConfig 数据库初始化配置
@@ -121,54 +118,60 @@ func initDB(name string, driver DBDriver, cfg *DBConfig) {
 	db.SetConnMaxLifetime(opt.ConnMaxLifetime)
 	db.SetConnMaxIdleTime(opt.ConnMaxIdleTime)
 
-	sqlxDB := sqlx.NewDb(db, string(driver))
-	entDriver := entsql.OpenDB(string(driver), db)
-
-	if name == Default {
-		defaultDB = sqlxDB
-		defaultEntDriver = entDriver
-	}
-
-	dbmap.Store(name, sqlxDB)
-	entmap.Store(name, entDriver)
+	dbMap.Store(name, sqlx.NewDb(db, string(driver)))
+	entMap.Store(name, entsql.OpenDB(string(driver), db))
 
 	logger.Info(fmt.Sprintf("db.%s is OK", name))
 }
 
 // DB 返回一个sqlx数据库实例
-func DB(name ...string) *sqlx.DB {
-	if len(name) == 0 || name[0] == Default {
-		if defaultDB == nil {
-			logger.Panic(fmt.Sprintf("unknown db.%s (forgotten configure?)", Default))
-		}
-
-		return defaultDB
+func DB(name ...string) (*sqlx.DB, error) {
+	key := Default
+	if len(name) != 0 {
+		key = name[0]
 	}
 
-	v, ok := dbmap.Load(name[0])
+	v, ok := dbMap.Load(key)
 	if !ok {
-		logger.Panic(fmt.Sprintf("unknown db.%s (forgotten configure?)", name[0]))
+		return nil, fmt.Errorf("unknown db.%s (forgotten configure?)", key)
 	}
 
-	return v.(*sqlx.DB)
+	return v.(*sqlx.DB), nil
+}
+
+// MustDB 返回一个sqlx数据库实例，如果不存在，则Panic
+func MustDB(name ...string) *sqlx.DB {
+	db, err := DB(name...)
+	if err != nil {
+		logger.Panic(err.Error())
+	}
+
+	return db
 }
 
 // EntDriver 返回一个ent驱动实例
-func EntDriver(name ...string) *entsql.Driver {
-	if len(name) == 0 || name[0] == Default {
-		if defaultEntDriver == nil {
-			logger.Panic(fmt.Sprintf("unknown db.%s (forgotten configure?)", Default))
-		}
-
-		return defaultEntDriver
+func EntDriver(name ...string) (*entsql.Driver, error) {
+	key := Default
+	if len(name) != 0 {
+		key = name[0]
 	}
 
-	v, ok := entmap.Load(name[0])
+	v, ok := dbMap.Load(key)
 	if !ok {
-		logger.Panic(fmt.Sprintf("unknown db.%s (forgotten configure?)", name[0]))
+		return nil, fmt.Errorf("unknown db.%s (forgotten configure?)", key)
 	}
 
-	return v.(*entsql.Driver)
+	return v.(*entsql.Driver), nil
+}
+
+// MustEntDriver 返回一个ent驱动实例，如果不存在，则Panic
+func MustEntDriver(name ...string) *entsql.Driver {
+	driver, err := EntDriver(name...)
+	if err != nil {
+		logger.Panic(err.Error())
+	}
+
+	return driver
 }
 
 // DBTransaction 执行数据库事物

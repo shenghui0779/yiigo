@@ -43,7 +43,6 @@ func (d *distributed) Lock(ctx context.Context, interval, timeout time.Duration)
 		}
 
 		ok, err := d.attempt(conn)
-
 		if err != nil {
 			return err
 		}
@@ -97,7 +96,7 @@ type MutexOption func(d *distributed)
 // WithMutexRedis 指定Redis实例
 func WithMutexRedis(name string) MutexOption {
 	return func(d *distributed) {
-		d.pool = Redis(name)
+		d.pool = MustRedis(name)
 	}
 }
 
@@ -112,7 +111,7 @@ func WithMutexExpire(e time.Duration) MutexOption {
 // uniqueID - 建议使用RequestID
 func DistributedMutex(key, uniqueID string, options ...MutexOption) Mutex {
 	mutex := &distributed{
-		pool:   defaultRedis,
+		pool:   MustRedis(),
 		key:    key,
 		uniqID: uniqueID,
 		expire: 10 * time.Second,

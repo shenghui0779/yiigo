@@ -11,10 +11,7 @@ import (
 	"go.uber.org/zap"
 )
 
-var (
-	defaultMongo *mongo.Client
-	mgoMap       sync.Map
-)
+var mgoMap sync.Map
 
 func initMongoDB(name, dsn string) {
 	opts := options.Client().ApplyURI(dsn)
@@ -25,7 +22,6 @@ func initMongoDB(name, dsn string) {
 	}
 
 	timeout := 10 * time.Second
-
 	if opts.ConnectTimeout != nil {
 		timeout = *opts.ConnectTimeout
 	}
@@ -38,29 +34,32 @@ func initMongoDB(name, dsn string) {
 		logger.Panic(fmt.Sprintf("err mongodb.%s ping", name), zap.String("dsn", dsn), zap.Error(err))
 	}
 
-	if name == Default {
-		defaultMongo = client
-	}
-
 	mgoMap.Store(name, client)
 
 	logger.Info(fmt.Sprintf("mongodb.%s is OK", name))
 }
 
 // Mongo 返回一个MongoDB客户端
-func Mongo(name ...string) *mongo.Client {
-	if len(name) == 0 || name[0] == Default {
-		if defaultMongo == nil {
-			logger.Panic(fmt.Sprintf("unknown mongodb.%s (forgotten configure?)", Default))
-		}
-
-		return defaultMongo
+func Mongo(name ...string) (*mongo.Client, error) {
+	key := Default
+	if len(name) != 0 {
+		key = name[0]
 	}
 
 	v, ok := mgoMap.Load(name[0])
 	if !ok {
-		logger.Panic(fmt.Sprintf("unknown mongodb.%s (forgotten configure?)", name[0]))
+		return nil, fmt.Errorf("unknown mongodb.%s (forgotten configure?)", key)
 	}
 
-	return v.(*mongo.Client)
+	return v.(*mongo.Client), nil
+}
+
+// MustMongo 返回一个MongoDB客户端，如果不存在，则Panic
+func MustMongo(name ...string) *mongo.Client {
+	cli, err := Mongo(name...)
+	if err != nil {
+		logger.Panic(err.Error())
+	}
+
+	return cli
 }
