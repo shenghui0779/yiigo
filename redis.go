@@ -260,7 +260,7 @@ func (rp *redisResourcePool) DoFunc(ctx context.Context, f func(ctx context.Cont
 	return f(ctx, conn)
 }
 
-var redisMap sync.Map
+var redisMap = make(map[string]RedisPool)
 
 func newRedisPool(cfg *RedisConfig) RedisPool {
 	pool := &redisResourcePool{
@@ -300,7 +300,7 @@ func initRedis(name string, cfg *RedisConfig) {
 	}
 
 	pool.Put(conn)
-	redisMap.Store(name, pool)
+	redisMap[name] = pool
 
 	logger.Info(fmt.Sprintf("redis.%s is OK", name))
 }
@@ -312,12 +312,12 @@ func Redis(name ...string) (RedisPool, error) {
 		key = name[0]
 	}
 
-	v, ok := redisMap.Load(name[0])
+	pool, ok := redisMap[key]
 	if !ok {
 		return nil, fmt.Errorf("unknown redis.%s (forgotten configure?)", key)
 	}
 
-	return v.(RedisPool), nil
+	return pool, nil
 }
 
 // MustRedis 返回一个Redis连接池实例，如果不存在，则Panic

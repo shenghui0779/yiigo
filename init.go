@@ -16,7 +16,6 @@ type InitOption func(wg *sync.WaitGroup)
 func WithMySQL(name string, cfg *DBConfig) InitOption {
 	return func(wg *sync.WaitGroup) {
 		defer wg.Done()
-
 		initDB(name, MySQL, cfg)
 	}
 }
@@ -25,7 +24,6 @@ func WithMySQL(name string, cfg *DBConfig) InitOption {
 func WithPostgres(name string, cfg *DBConfig) InitOption {
 	return func(wg *sync.WaitGroup) {
 		defer wg.Done()
-
 		initDB(name, Postgres, cfg)
 	}
 }
@@ -34,7 +32,6 @@ func WithPostgres(name string, cfg *DBConfig) InitOption {
 func WithSQLite(name string, cfg *DBConfig) InitOption {
 	return func(wg *sync.WaitGroup) {
 		defer wg.Done()
-
 		initDB(name, SQLite, cfg)
 	}
 }
@@ -45,7 +42,6 @@ func WithSQLite(name string, cfg *DBConfig) InitOption {
 func WithMongo(name string, dsn string) InitOption {
 	return func(wg *sync.WaitGroup) {
 		defer wg.Done()
-
 		initMongoDB(name, dsn)
 	}
 }
@@ -54,7 +50,6 @@ func WithMongo(name string, dsn string) InitOption {
 func WithRedis(name string, cfg *RedisConfig) InitOption {
 	return func(wg *sync.WaitGroup) {
 		defer wg.Done()
-
 		initRedis(name, cfg)
 	}
 }
@@ -76,7 +71,6 @@ func WithLogger(name string, cfg *LoggerConfig) InitOption {
 func WithNSQProducer(nsqd string, cfg *nsq.Config) InitOption {
 	return func(wg *sync.WaitGroup) {
 		defer wg.Done()
-
 		initNSQProducer(nsqd, cfg)
 	}
 }
@@ -85,7 +79,6 @@ func WithNSQProducer(nsqd string, cfg *nsq.Config) InitOption {
 func WithNSQConsumers(lookupd []string, consumers ...NSQConsumer) InitOption {
 	return func(wg *sync.WaitGroup) {
 		defer wg.Done()
-
 		setNSQConsumers(lookupd, consumers...)
 	}
 }
@@ -94,7 +87,6 @@ func WithNSQConsumers(lookupd []string, consumers ...NSQConsumer) InitOption {
 func WithWebsocket(upgrader *websocket.Upgrader) InitOption {
 	return func(wg *sync.WaitGroup) {
 		defer wg.Done()
-
 		wsupgrader = upgrader
 	}
 }
@@ -105,7 +97,6 @@ func Init(options ...InitOption) {
 
 	for _, f := range options {
 		wg.Add(1)
-
 		go f(&wg)
 	}
 

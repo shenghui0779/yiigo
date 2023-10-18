@@ -3,7 +3,6 @@ package yiigo
 import (
 	"context"
 	"fmt"
-	"sync"
 	"time"
 
 	"go.mongodb.org/mongo-driver/mongo"
@@ -11,7 +10,7 @@ import (
 	"go.uber.org/zap"
 )
 
-var mgoMap sync.Map
+var mgoMap = make(map[string]*mongo.Client)
 
 func initMongoDB(name, dsn string) {
 	opts := options.Client().ApplyURI(dsn)
@@ -34,7 +33,7 @@ func initMongoDB(name, dsn string) {
 		logger.Panic(fmt.Sprintf("err mongodb.%s ping", name), zap.String("dsn", dsn), zap.Error(err))
 	}
 
-	mgoMap.Store(name, client)
+	mgoMap[name] = client
 
 	logger.Info(fmt.Sprintf("mongodb.%s is OK", name))
 }
@@ -46,12 +45,12 @@ func Mongo(name ...string) (*mongo.Client, error) {
 		key = name[0]
 	}
 
-	v, ok := mgoMap.Load(name[0])
+	cli, ok := mgoMap[key]
 	if !ok {
 		return nil, fmt.Errorf("unknown mongodb.%s (forgotten configure?)", key)
 	}
 
-	return v.(*mongo.Client), nil
+	return cli, nil
 }
 
 // MustMongo 返回一个MongoDB客户端，如果不存在，则Panic

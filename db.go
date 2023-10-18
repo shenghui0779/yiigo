@@ -5,10 +5,8 @@ import (
 	"database/sql"
 	"fmt"
 	"runtime/debug"
-	"sync"
 	"time"
 
-	entsql "entgo.io/ent/dialect/sql"
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/jmoiron/sqlx"
@@ -25,10 +23,7 @@ const (
 	SQLite   DBDriver = "sqlite3"
 )
 
-var (
-	dbMap  sync.Map
-	entMap sync.Map
-)
+var dbMap = make(map[string]*sqlx.DB)
 
 // DBConfig 数据库初始化配置
 type DBConfig struct {
@@ -118,8 +113,7 @@ func initDB(name string, driver DBDriver, cfg *DBConfig) {
 	db.SetConnMaxLifetime(opt.ConnMaxLifetime)
 	db.SetConnMaxIdleTime(opt.ConnMaxIdleTime)
 
-	dbMap.Store(name, sqlx.NewDb(db, string(driver)))
-	entMap.Store(name, entsql.OpenDB(string(driver), db))
+	dbMap[name] = sqlx.NewDb(db, string(driver))
 
 	logger.Info(fmt.Sprintf("db.%s is OK", name))
 }
@@ -131,12 +125,12 @@ func DB(name ...string) (*sqlx.DB, error) {
 		key = name[0]
 	}
 
-	v, ok := dbMap.Load(key)
+	db, ok := dbMap[key]
 	if !ok {
 		return nil, fmt.Errorf("unknown db.%s (forgotten configure?)", key)
 	}
 
-	return v.(*sqlx.DB), nil
+	return db, nil
 }
 
 // MustDB 返回一个sqlx数据库实例，如果不存在，则Panic
@@ -147,31 +141,6 @@ func MustDB(name ...string) *sqlx.DB {
 	}
 
 	return db
-}
-
-// EntDriver 返回一个ent驱动实例
-func EntDriver(name ...string) (*entsql.Driver, error) {
-	key := Default
-	if len(name) != 0 {
-		key = name[0]
-	}
-
-	v, ok := dbMap.Load(key)
-	if !ok {
-		return nil, fmt.Errorf("unknown db.%s (forgotten configure?)", key)
-	}
-
-	return v.(*entsql.Driver), nil
-}
-
-// MustEntDriver 返回一个ent驱动实例，如果不存在，则Panic
-func MustEntDriver(name ...string) *entsql.Driver {
-	driver, err := EntDriver(name...)
-	if err != nil {
-		logger.Panic(err.Error())
-	}
-
-	return driver
 }
 
 // DBTransaction 执行数据库事物

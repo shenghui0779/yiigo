@@ -2,7 +2,6 @@ package yiigo
 
 import (
 	"os"
-	"sync"
 	"time"
 
 	"go.uber.org/zap"
@@ -12,7 +11,7 @@ import (
 
 var (
 	logger = debugLogger()
-	logMap sync.Map
+	logMap = make(map[string]*zap.Logger)
 )
 
 // LoggerConfig 日志初始化配置
@@ -43,6 +42,19 @@ type LoggerOptions struct {
 
 	// ZapOptions Zap日志选项
 	ZapOptions []zap.Option `json:"zap_options"`
+}
+
+func debugLogger(options ...zap.Option) *zap.Logger {
+	cfg := zap.NewDevelopmentConfig()
+
+	cfg.DisableCaller = true
+	cfg.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
+	cfg.EncoderConfig.EncodeTime = MyTimeEncoder
+	cfg.EncoderConfig.EncodeCaller = zapcore.FullCallerEncoder
+
+	l, _ := cfg.Build(options...)
+
+	return l
 }
 
 func newLogger(cfg *LoggerConfig) *zap.Logger {
@@ -76,46 +88,32 @@ func newLogger(cfg *LoggerConfig) *zap.Logger {
 	return zap.New(core, cfg.Options.ZapOptions...)
 }
 
-func debugLogger(options ...zap.Option) *zap.Logger {
-	cfg := zap.NewDevelopmentConfig()
-
-	cfg.DisableCaller = true
-	cfg.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
-	cfg.EncoderConfig.EncodeTime = MyTimeEncoder
-	cfg.EncoderConfig.EncodeCaller = zapcore.FullCallerEncoder
-
-	l, _ := cfg.Build(options...)
-
-	return l
-}
-
 func initLogger(name string, cfg *LoggerConfig) {
 	if cfg.Options == nil {
 		cfg.Options = new(LoggerOptions)
 	}
 
 	l := newLogger(cfg)
-
 	if name == Default {
 		logger = l
 	}
 
-	logMap.Store(name, l)
+	logMap[name] = l
 }
 
 // Logger 返回一个日志实例
 func Logger(name ...string) *zap.Logger {
-	if len(name) == 0 || name[0] == Default {
-		return logger
+	key := Default
+	if len(name) != 0 {
+		key = name[0]
 	}
 
-	v, ok := logMap.Load(name[0])
-
+	l, ok := logMap[key]
 	if !ok {
 		return logger
 	}
 
-	return v.(*zap.Logger)
+	return l
 }
 
 // MyTimeEncoder 自定义时间格式化
