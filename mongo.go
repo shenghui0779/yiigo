@@ -7,17 +7,16 @@ import (
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.uber.org/zap"
 )
 
 var mgoMap = make(map[string]*mongo.Client)
 
-func initMongoDB(name, dsn string) {
+func initMongoDB(name, dsn string) error {
 	opts := options.Client().ApplyURI(dsn)
 
 	client, err := mongo.Connect(context.Background(), opts)
 	if err != nil {
-		logger.Panic(fmt.Sprintf("err mongodb.%s connect", name), zap.String("dsn", dsn), zap.Error(err))
+		return err
 	}
 
 	timeout := 10 * time.Second
@@ -30,12 +29,12 @@ func initMongoDB(name, dsn string) {
 
 	// verify connection
 	if err = client.Ping(ctx, opts.ReadPreference); err != nil {
-		logger.Panic(fmt.Sprintf("err mongodb.%s ping", name), zap.String("dsn", dsn), zap.Error(err))
+		return err
 	}
 
 	mgoMap[name] = client
 
-	logger.Info(fmt.Sprintf("mongodb.%s is OK", name))
+	return nil
 }
 
 // Mongo 返回一个MongoDB客户端

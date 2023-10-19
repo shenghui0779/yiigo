@@ -34,7 +34,7 @@ func initNSQProducer(nsqd string, cfg *nsq.Config) error {
 	}
 
 	if err = producer.Ping(); err != nil {
-		logger.Panic("err nsq ping", zap.String("nsqd", nsqd), zap.Error(err))
+		return err
 	}
 
 	producer.SetLogger(&NSQLogger{}, nsq.LogLevelError)

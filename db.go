@@ -86,15 +86,15 @@ func (o *DBOptions) rebuild(opt *DBOptions) {
 	}
 }
 
-func initDB(name string, driver DBDriver, cfg *DBConfig) {
+func initDB(name string, driver DBDriver, cfg *DBConfig) error {
 	db, err := sql.Open(string(driver), cfg.DSN)
 	if err != nil {
-		logger.Panic(fmt.Sprintf("err db.%s open", name), zap.String("dsn", cfg.DSN), zap.Error(err))
+		return err
 	}
 
 	if err = db.Ping(); err != nil {
 		db.Close()
-		logger.Panic(fmt.Sprintf("err db.%s ping", name), zap.String("dsn", cfg.DSN), zap.Error(err))
+		return err
 	}
 
 	opt := &DBOptions{
@@ -115,7 +115,7 @@ func initDB(name string, driver DBDriver, cfg *DBConfig) {
 
 	dbMap[name] = sqlx.NewDb(db, string(driver))
 
-	logger.Info(fmt.Sprintf("db.%s is OK", name))
+	return nil
 }
 
 // DB 返回一个sqlx数据库实例

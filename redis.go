@@ -285,24 +285,24 @@ func newRedisPool(cfg *RedisConfig) RedisPool {
 	return pool
 }
 
-func initRedis(name string, cfg *RedisConfig) {
+func initRedis(name string, cfg *RedisConfig) error {
 	pool := newRedisPool(cfg)
 
 	// verify connection
 	conn, err := pool.Get(context.TODO())
 	if err != nil {
-		logger.Panic(fmt.Sprintf("err redis.%s pool", name), zap.String("addr", cfg.Addr), zap.Error(err))
+		return err
 	}
 
 	if _, err = conn.Do("PING"); err != nil {
 		conn.Close()
-		logger.Panic(fmt.Sprintf("err redis.%s ping", name), zap.String("addr", cfg.Addr), zap.Error(err))
+		return nil
 	}
 
 	pool.Put(conn)
 	redisMap[name] = pool
 
-	logger.Info(fmt.Sprintf("redis.%s is OK", name))
+	return nil
 }
 
 // Redis 返回一个Redis连接池实例
