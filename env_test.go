@@ -25,7 +25,6 @@ func NullStringRequired(fl validator.FieldLevel) bool {
 
 func NullIntGTE(fl validator.FieldLevel) bool {
 	i, err := strconv.ParseInt(fl.Param(), 0, 64)
-
 	if err != nil {
 		return false
 	}

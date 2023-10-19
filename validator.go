@@ -36,7 +36,6 @@ func WithValuerType(types ...driver.Valuer) ValidatorOption {
 		validate.RegisterCustomTypeFunc(func(field reflect.Value) any {
 			if valuer, ok := field.Interface().(driver.Valuer); ok {
 				v, _ := valuer.Value()
-
 				return v
 			}
 
@@ -71,7 +70,6 @@ func WithTranslation(tag, text string, override bool) ValidatorOption {
 			return ut.Add(tag, text, override)
 		}, func(ut ut.Translator, fe validator.FieldError) string {
 			t, _ := ut.T(tag, fe.Field(), fe.Param())
-
 			return t
 		})
 	}

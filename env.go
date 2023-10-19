@@ -93,7 +93,6 @@ func watchEnvFile(filename string, fn EnvOnChangeFunc) {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		logger.Error("err env watcher", zap.Error(err))
-
 		return
 	}
 
@@ -117,7 +116,6 @@ func watchEnvFile(filename string, fn EnvOnChangeFunc) {
 			case event, ok := <-watcher.Events:
 				if !ok {
 					done <- errors.New("channel(watcher.Events) is closed")
-
 					return
 				}
 

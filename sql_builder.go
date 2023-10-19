@@ -161,7 +161,6 @@ func (w *queryWrapper) subquery() (string, []any) {
 	var builder strings.Builder
 
 	builder.WriteString("SELECT ")
-
 	if w.distinct {
 		builder.WriteString("DISTINCT ")
 	}
@@ -245,10 +244,8 @@ func (w *queryWrapper) ToInsert(ctx context.Context, data any) (sql string, args
 	switch v.Kind() {
 	case reflect.Map:
 		x, ok := data.(X)
-
 		if !ok {
 			err = ErrUpsertData
-
 			return
 		}
 
@@ -257,7 +254,6 @@ func (w *queryWrapper) ToInsert(ctx context.Context, data any) (sql string, args
 		columns, args = w.insertWithStruct(v)
 	default:
 		err = ErrUpsertData
-
 		return
 	}
 
@@ -276,11 +272,9 @@ func (w *queryWrapper) ToInsert(ctx context.Context, data any) (sql string, args
 		}
 
 		builder.WriteString(") VALUES (?")
-
 		for i := 1; i < l; i++ {
 			builder.WriteString(", ?")
 		}
-
 		builder.WriteString(")")
 	}
 
@@ -317,8 +311,8 @@ func (w *queryWrapper) insertWithStruct(v reflect.Value) (columns []string, bind
 
 	for i := 0; i < fieldNum; i++ {
 		fieldT := t.Field(i)
-		tag := fieldT.Tag.Get("db")
 
+		tag := fieldT.Tag.Get("db")
 		if tag == "-" {
 			continue
 		}
@@ -328,7 +322,6 @@ func (w *queryWrapper) insertWithStruct(v reflect.Value) (columns []string, bind
 
 		if len(tag) != 0 {
 			name, opts := parseTag(tag)
-
 			if opts.Contains("omitempty") && isEmptyValue(fieldV) {
 				continue
 			}
@@ -348,13 +341,11 @@ func (w *queryWrapper) ToBatchInsert(ctx context.Context, data any) (sql string,
 
 	if v.Kind() != reflect.Slice {
 		err = ErrBatchInsertData
-
 		return
 	}
 
 	if v.Len() == 0 {
 		err = errors.New("err empty data")
-
 		return
 	}
 
@@ -365,10 +356,8 @@ func (w *queryWrapper) ToBatchInsert(ctx context.Context, data any) (sql string,
 	switch e.Kind() {
 	case reflect.Map:
 		x, ok := data.([]X)
-
 		if !ok {
 			err = ErrBatchInsertData
-
 			return
 		}
 
@@ -378,14 +367,12 @@ func (w *queryWrapper) ToBatchInsert(ctx context.Context, data any) (sql string,
 	case reflect.Ptr:
 		if e.Elem().Kind() != reflect.Struct {
 			err = ErrBatchInsertData
-
 			return
 		}
 
 		columns, args = w.batchInsertWithStruct(v)
 	default:
 		err = ErrBatchInsertData
-
 		return
 	}
 
@@ -403,13 +390,11 @@ func (w *queryWrapper) ToBatchInsert(ctx context.Context, data any) (sql string,
 			builder.WriteString(column)
 		}
 
-		builder.WriteString(") VALUES (?")
-
 		// 首行
+		builder.WriteString(") VALUES (?")
 		for i := 1; i < l; i++ {
 			builder.WriteString(", ?")
 		}
-
 		builder.WriteString(")")
 
 		rows := len(args) / l
@@ -417,11 +402,9 @@ func (w *queryWrapper) ToBatchInsert(ctx context.Context, data any) (sql string,
 		// 其余行
 		for i := 1; i < rows; i++ {
 			builder.WriteString(", (?")
-
 			for j := 1; j < l; j++ {
 				builder.WriteString(", ?")
 			}
-
 			builder.WriteString(")")
 		}
 	}
@@ -467,7 +450,6 @@ func (w *queryWrapper) batchInsertWithStruct(v reflect.Value) (columns []string,
 			fieldT := t.Field(j)
 
 			tag := fieldT.Tag.Get("db")
-
 			if tag == "-" {
 				continue
 			}
@@ -477,7 +459,6 @@ func (w *queryWrapper) batchInsertWithStruct(v reflect.Value) (columns []string,
 
 			if len(tag) != 0 {
 				name, opts := parseTag(tag)
-
 				if opts.Contains("omitempty") && isEmptyValue(fieldV) {
 					continue
 				}
@@ -507,10 +488,8 @@ func (w *queryWrapper) ToUpdate(ctx context.Context, data any) (sql string, args
 	switch v.Kind() {
 	case reflect.Map:
 		x, ok := data.(X)
-
 		if !ok {
 			err = ErrUpsertData
-
 			return
 		}
 
@@ -519,7 +498,6 @@ func (w *queryWrapper) ToUpdate(ctx context.Context, data any) (sql string, args
 		columns, args = w.updateWithStruct(v)
 	default:
 		err = ErrUpsertData
-
 		return
 	}
 
@@ -606,8 +584,8 @@ func (w *queryWrapper) updateWithStruct(v reflect.Value) (columns []string, bind
 
 	for i := 0; i < fieldNum; i++ {
 		fieldT := t.Field(i)
-		tag := fieldT.Tag.Get("db")
 
+		tag := fieldT.Tag.Get("db")
 		if tag == "-" {
 			continue
 		}
@@ -617,7 +595,6 @@ func (w *queryWrapper) updateWithStruct(v reflect.Value) (columns []string, bind
 
 		if len(tag) != 0 {
 			name, opts := parseTag(tag)
-
 			if opts.Contains("omitempty") && isEmptyValue(fieldV) {
 				continue
 			}
@@ -812,7 +789,6 @@ func Union(wrappers ...SQLWrapper) QueryOption {
 	return func(w *queryWrapper) {
 		for _, wrapper := range wrappers {
 			v, ok := wrapper.(*queryWrapper)
-
 			if !ok {
 				continue
 			}
@@ -837,7 +813,6 @@ func UnionAll(wrappers ...SQLWrapper) QueryOption {
 	return func(w *queryWrapper) {
 		for _, wrapper := range wrappers {
 			v, ok := wrapper.(*queryWrapper)
-
 			if !ok {
 				continue
 			}
@@ -875,7 +850,6 @@ func (o tagOptions) Contains(optionName string) bool {
 		var next string
 
 		i := strings.Index(s, ",")
-
 		if i >= 0 {
 			s, next = s[:i], s[i+1:]
 		}

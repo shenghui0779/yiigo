@@ -332,7 +332,6 @@ func setTimeField(val string, structField reflect.StructField, value reflect.Val
 		}
 
 		d := time.Duration(1)
-
 		if tf == "unixnano" {
 			d = time.Second
 		}
@@ -348,7 +347,6 @@ func setTimeField(val string, structField reflect.StructField, value reflect.Val
 	}
 
 	l := time.Local
-
 	if isUTC, _ := strconv.ParseBool(structField.Tag.Get("time_utc")); isUTC {
 		l = time.UTC
 	}
@@ -407,7 +405,6 @@ func setTimeDuration(val string, value reflect.Value, field reflect.StructField)
 
 func head(str, sep string) (head string, tail string) {
 	idx := strings.Index(str, sep)
-
 	if idx < 0 {
 		return str, ""
 	}
@@ -420,7 +417,6 @@ func setFormMap(ptr any, form map[string][]string) error {
 
 	if el.Kind() == reflect.Slice {
 		ptrMap, ok := ptr.(map[string][]string)
-
 		if !ok {
 			return errors.New("cannot convert to map slices of strings")
 		}
@@ -433,7 +429,6 @@ func setFormMap(ptr any, form map[string][]string) error {
 	}
 
 	ptrMap, ok := ptr.(map[string]string)
-
 	if !ok {
 		return errors.New("cannot convert to map of strings")
 	}
