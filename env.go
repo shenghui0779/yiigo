@@ -85,8 +85,8 @@ func statEnvFile(filename string) {
 
 func watchEnvFile(filename string, fn EnvOnChangeFunc) {
 	defer func() {
-		if r := recover(); r != nil {
-			logger.Error("env watcher panic", zap.Any("error", r), zap.String("env_file", filename), zap.ByteString("stack", debug.Stack()))
+		if v := recover(); v != nil {
+			logger.Error("env watcher panic", zap.Any("error", v), zap.String("env_file", filename), zap.ByteString("stack", debug.Stack()))
 		}
 	}()
 
@@ -95,7 +95,6 @@ func watchEnvFile(filename string, fn EnvOnChangeFunc) {
 		logger.Error("err env watcher", zap.Error(err))
 		return
 	}
-
 	defer watcher.Close()
 
 	done := make(chan error)
@@ -103,8 +102,8 @@ func watchEnvFile(filename string, fn EnvOnChangeFunc) {
 
 	go func() {
 		defer func() {
-			if r := recover(); r != nil {
-				logger.Error("env watcher panic", zap.Any("error", r), zap.String("env_file", filename), zap.ByteString("stack", debug.Stack()))
+			if v := recover(); v != nil {
+				logger.Error("env watcher panic", zap.Any("error", v), zap.String("env_file", filename), zap.ByteString("stack", debug.Stack()))
 			}
 		}()
 
@@ -125,7 +124,7 @@ func watchEnvFile(filename string, fn EnvOnChangeFunc) {
 					// the env file was created or modified
 					if event.Op&createOrWriteMask != 0 {
 						if err := godotenv.Overload(filename); err != nil {
-							logger.Error("err env reload", zap.Error(err), zap.String("env_file", filename))
+							logger.Error("err reload env", zap.Error(err), zap.String("env_file", filename))
 						}
 
 						if fn != nil {
@@ -142,7 +141,7 @@ func watchEnvFile(filename string, fn EnvOnChangeFunc) {
 						realEnvFile = currentEnvFile
 
 						if err := godotenv.Overload(filename); err != nil {
-							logger.Error("err env reload", zap.Error(err), zap.String("env_file", filename))
+							logger.Error("err reload env", zap.Error(err), zap.String("env_file", filename))
 						}
 
 						if fn != nil {

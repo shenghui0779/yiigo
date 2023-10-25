@@ -27,7 +27,6 @@ func WithValidateTag(tagname string) ValidatorOption {
 // WithValuerType 注册自定义验证类型
 func WithValuerType(types ...driver.Valuer) ValidatorOption {
 	customTypes := make([]any, 0, len(types))
-
 	for _, t := range types {
 		customTypes = append(customTypes, t)
 	}
@@ -147,7 +146,7 @@ func NewValidator(options ...ValidatorOption) *Validator {
 	trans, _ := ut.New(zhTrans, zhTrans).GetTranslator("zh")
 
 	if err := zhcn.RegisterDefaultTranslations(validate, trans); err != nil {
-		logger.Error("err validation translator", zap.Error(err))
+		logger.Error("err validator translation", zap.Error(err))
 	}
 
 	for _, f := range options {

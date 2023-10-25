@@ -86,7 +86,6 @@ func (tw *timewheel) requeue(task *TWTask) {
 	select {
 	case <-tw.stop:
 		tw.log(task.ctx, fmt.Sprintf("task(%s) attempt(%d) failed, because the timingwheel has stopped", task.uniqID, task.attempts+1))
-
 		return
 	default:
 	}
@@ -147,7 +146,6 @@ func (tw *timewheel) process(slot int) {
 
 		if task.round > 0 {
 			task.round--
-
 			return true
 		}
 
@@ -160,15 +158,15 @@ func (tw *timewheel) process(slot int) {
 }
 
 func (tw *timewheel) run(task *TWTask) {
+	defer func() {
+		if v := recover(); v != nil {
+			tw.log(task.ctx, fmt.Sprintf("task(%s) run panic: %v", task.uniqID, v))
+		}
+	}()
+
 	if task.remainder > 0 {
 		time.Sleep(task.remainder)
 	}
-
-	defer func() {
-		if err := recover(); err != nil {
-			tw.log(task.ctx, fmt.Sprintf("task(%s) run panic: %v", task.uniqID, err))
-		}
-	}()
 
 	if err := task.callback(task.ctx, task.uniqID); err != nil {
 		tw.log(task.ctx, fmt.Sprintf("task(%s) run error: %v", task.uniqID, err))

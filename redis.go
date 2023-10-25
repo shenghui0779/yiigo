@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net"
-	"runtime/debug"
 	"sync"
 	"time"
 
@@ -16,13 +15,19 @@ import (
 
 // RedisConn Redis连接
 type RedisConn struct {
+	name string
 	redis.Conn
+}
+
+// Name 返回Redis连接名称
+func (rc *RedisConn) Name() string {
+	return rc.name
 }
 
 // Close 关闭Redis连接
 func (rc *RedisConn) Close() {
 	if err := rc.Conn.Close(); err != nil {
-		logger.Error("err conn closed", zap.Error(err))
+		logger.Error(fmt.Sprintf("err redis.%s conn close", rc.name), zap.Error(err))
 	}
 }
 
@@ -144,6 +149,7 @@ func (o *RedisOptions) rebuild(opt *RedisOptions) {
 }
 
 type redisResourcePool struct {
+	name   string
 	config *RedisConfig
 	pool   *vitess_pool.ResourcePool
 	mutex  sync.Mutex
@@ -192,7 +198,10 @@ func (rp *redisResourcePool) init() {
 			return nil, err
 		}
 
-		return &RedisConn{conn}, nil
+		return &RedisConn{
+			name: rp.name,
+			Conn: conn,
+		}, nil
 	}
 
 	rp.pool = vitess_pool.NewResourcePool(df, rp.config.Options.PoolSize, rp.config.Options.PoolSize, rp.config.Options.IdleTimeout, rp.config.Options.PoolPrefill)
@@ -212,18 +221,20 @@ func (rp *redisResourcePool) Get(ctx context.Context) (*RedisConn, error) {
 
 	// If rc is error, close and reconnect
 	if err = rc.Err(); err != nil {
-		logger.Warn("err pool conn, reconnect", zap.Error(err))
+		logger.Warn(fmt.Sprintf("err redis.%s pool conn, reconnect", rc.name), zap.Error(err))
 
 		conn, dialErr := rp.dial()
 		if dialErr != nil {
 			rp.pool.Put(rc)
-
 			return nil, dialErr
 		}
 
 		rc.Close()
 
-		return &RedisConn{conn}, nil
+		return &RedisConn{
+			name: rp.name,
+			Conn: conn,
+		}, nil
 	}
 
 	return rc, nil
@@ -248,22 +259,16 @@ func (rp *redisResourcePool) DoFunc(ctx context.Context, f func(ctx context.Cont
 	if err != nil {
 		return err
 	}
-
-	defer func() {
-		rp.Put(conn)
-
-		if r := recover(); r != nil {
-			logger.Error("redis do func panic", zap.Any("error", r), zap.ByteString("stack", debug.Stack()))
-		}
-	}()
+	defer rp.Put(conn)
 
 	return f(ctx, conn)
 }
 
 var redisMap = make(map[string]RedisPool)
 
-func newRedisPool(cfg *RedisConfig) RedisPool {
+func newRedisPool(name string, cfg *RedisConfig) RedisPool {
 	pool := &redisResourcePool{
+		name: name,
 		config: &RedisConfig{
 			Addr: cfg.Addr,
 			Options: &RedisOptions{
@@ -286,7 +291,7 @@ func newRedisPool(cfg *RedisConfig) RedisPool {
 }
 
 func initRedis(name string, cfg *RedisConfig) error {
-	pool := newRedisPool(cfg)
+	pool := newRedisPool(name, cfg)
 
 	// verify connection
 	conn, err := pool.Get(context.TODO())

@@ -82,7 +82,6 @@ func (c *wsconn) Read(ctx context.Context, handler func(ctx context.Context, msg
 			// if `authFunc` is not nil and unauthorized, need to authorize first.
 			if c.authFn != nil && !c.authOK {
 				msg, err = c.authFn(ctx, NewWSMessage(t, b))
-
 				if err != nil {
 					msg = NewWSTextMsg(err.Error())
 				} else {
