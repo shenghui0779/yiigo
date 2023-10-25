@@ -21,11 +21,6 @@ import (
 var timezone = time.FixedZone("CST", 8*3600)
 
 const (
-	layoutdate = "2006-01-02"
-	layouttime = "2006-01-02 15:04:05"
-)
-
-const (
 	HeaderAuthorization = "Authorization"
 	HeaderContentType   = "Content-Type"
 )
@@ -36,14 +31,11 @@ const (
 )
 
 const (
-	// OK defines for string `OK`
-	OK = "OK"
-
-	// Default defines for `default` name
+	OK      = "OK"
 	Default = "default"
 )
 
-// X `map[string]any` 的别名.
+// X 类型别名
 type X map[string]any
 
 // CDATA XML `CDATA` 标记
@@ -64,7 +56,7 @@ func SetTimezone(loc *time.Location) {
 // Date 格式化时间戳；默认格式：2006-01-02 15:04:05
 // 若 timestamp < 0，则使用 `time.Now()`
 func Date(timestamp int64, format ...string) string {
-	layout := layouttime
+	layout := time.DateTime
 	if len(format) != 0 {
 		layout = format[0]
 	}
@@ -82,7 +74,7 @@ func StrToTime(datetime string, format ...string) int64 {
 		return 0
 	}
 
-	layout := layouttime
+	layout := time.DateTime
 	if len(format) != 0 {
 		layout = format[0]
 	}
@@ -109,7 +101,7 @@ func WeekAround(timestamp int64, format ...string) (monday, sunday string) {
 
 	today := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, timezone)
 
-	layout := layoutdate
+	layout := time.DateOnly
 	if len(format) != 0 {
 		layout = format[0]
 	}
