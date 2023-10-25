@@ -93,22 +93,27 @@ yiigo.Init(
 
 ```go
 // default db
-yiigo.DB().Get(&User{}, "SELECT * FROM user WHERE id = ?", 1)
+yiigo.MustDB().Get(&User{}, "SELECT * FROM user WHERE id = ?", 1)
 
 // other db
-yiigo.DB("other").Get(&User{}, "SELECT * FROM user WHERE id = ?", 1)
+yiigo.MustDB("other").Get(&User{}, "SELECT * FROM user WHERE id = ?", 1)
 ```
 
 - ent
 
 ```go
-import "<your_project>/ent"
+import (
+    "<your_project>/ent"
+    entsql "entgo.io/ent/dialect/sql"
+)
 
 // default driver
-client := ent.NewClient(ent.Driver(yiigo.EntDriver()))
+db := yiigo.MustDB()
+cli := ent.NewClient(ent.Driver(entsql.OpenDB(db.DriverName(), db.DB)))
 
 // other driver
-client := ent.NewClient(ent.Driver(yiigo.EntDriver("other")))
+db := yiigo.MustDB("other")
+cli := ent.NewClient(ent.Driver(entsql.OpenDB(db.DriverName(), db.DB)))
 ```
 
 #### MongoDB
@@ -121,10 +126,10 @@ yiigo.Init(
 )
 
 // default mongodb
-yiigo.Mongo().Database("test").Collection("numbers").InsertOne(context.Background(), bson.M{"name": "pi", "value": 3.14159})
+yiigo.MustMongo().Database("test").Collection("numbers").InsertOne(context.Background(), bson.M{"name": "pi", "value": 3.14159})
 
 // other mongodb
-yiigo.Mongo("other").Database("test").Collection("numbers").InsertOne(context.Background(), bson.M{"name": "pi", "value": 3.14159})
+yiigo.MustMongo("other").Database("test").Collection("numbers").InsertOne(context.Background(), bson.M{"name": "pi", "value": 3.14159})
 ```
 
 #### Redis
@@ -156,9 +161,9 @@ yiigo.Init(
 )
 
 // default redis
-yiigo.Redis().Do(context.Background(), "SET", "test_key", "hello world")
+yiigo.MustRedis().Do(context.Background(), "SET", "test_key", "hello world")
 
-yiigo.Redis().DoFunc(context.Background(), func(ctx context.Context, conn *RedisConn) error {
+yiigo.MustRedis().DoFunc(context.Background(), func(ctx context.Context, conn *RedisConn) error {
     if _, err := conn.Do("SET", "key1", "hello"); err != nil {
         return err
     }
@@ -171,9 +176,9 @@ yiigo.Redis().DoFunc(context.Background(), func(ctx context.Context, conn *Redis
 })
 
 // other redis
-yiigo.Redis("other").Do(context.Background(), "SET", "test_key", "hello world")
+yiigo.MustRedis("other").Do(context.Background(), "SET", "test_key", "hello world")
 
-yiigo.Redis("other").DoFunc(context.Background(), func(ctx context.Context, conn *RedisConn) error {
+yiigo.MustRedis("other").DoFunc(context.Background(), func(ctx context.Context, conn *RedisConn) error {
     if _, err := conn.Do("SET", "key1", "hello"); err != nil {
         return err
     }
