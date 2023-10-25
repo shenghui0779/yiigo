@@ -4,14 +4,12 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"runtime/debug"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
-	"go.uber.org/zap"
 )
 
 // DBDriver 数据库驱动
@@ -143,20 +141,17 @@ func MustDB(name ...string) *sqlx.DB {
 	return db
 }
 
-// DBTransaction 执行数据库事物
-func DBTransaction(ctx context.Context, db *sqlx.DB, f func(ctx context.Context, tx *sqlx.Tx) error) error {
+// Transaction 执行数据库事物
+func Transaction(ctx context.Context, db *sqlx.DB, f func(ctx context.Context, tx *sqlx.Tx) error) error {
 	tx, err := db.BeginTxx(ctx, nil)
 	if err != nil {
 		return err
 	}
 
 	defer func() {
-		if r := recover(); r != nil {
-			logger.Error("executing transaction panic", zap.Any("error", r), zap.ByteString("stack", debug.Stack()))
-
-			if err := tx.Rollback(); err != nil && err != sql.ErrTxDone {
-				logger.Error("err rolling back transaction when panic", zap.Error(err))
-			}
+		if v := recover(); v != nil {
+			tx.Rollback()
+			panic(v)
 		}
 	}()
 
