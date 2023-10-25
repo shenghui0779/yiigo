@@ -48,19 +48,14 @@ func (c CDATA) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	}{string(c)}, start)
 }
 
-// SetTimezone 设置时区；默认：GMT+8
-func SetTimezone(loc *time.Location) {
+// SetTimeZone 设置时区；默认：GMT+8
+func SetTimeZone(loc *time.Location) {
 	timezone = loc
 }
 
-// Date 格式化时间戳；默认格式：2006-01-02 15:04:05
+// TimeToStr 时间戳格式化为时间字符串
 // 若 timestamp < 0，则使用 `time.Now()`
-func Date(timestamp int64, format ...string) string {
-	layout := time.DateTime
-	if len(format) != 0 {
-		layout = format[0]
-	}
-
+func TimeToStr(timestamp int64, layout string) string {
 	if timestamp < 0 {
 		return time.Now().In(timezone).Format(layout)
 	}
@@ -68,27 +63,15 @@ func Date(timestamp int64, format ...string) string {
 	return time.Unix(timestamp, 0).In(timezone).Format(layout)
 }
 
-// StrToTime 解析时间字符串为时间戳；默认格式：2006-01-02 15:04:05
-func StrToTime(datetime string, format ...string) int64 {
-	if len(datetime) == 0 {
-		return 0
-	}
+// StrToTime 时间字符串解析为时间戳
+func StrToTime(datetime, layout string) time.Time {
+	t, _ := time.ParseInLocation(layout, datetime, timezone)
 
-	layout := time.DateTime
-	if len(format) != 0 {
-		layout = format[0]
-	}
-
-	t, err := time.ParseInLocation(layout, datetime, timezone)
-	if err != nil {
-		return 0
-	}
-
-	return t.Unix()
+	return t
 }
 
-// WeekAround 返回给定时间戳所在的周的「周一」和「周日」；默认格式：2006-01-02 15:04:05
-func WeekAround(timestamp int64, format ...string) (monday, sunday string) {
+// WeekAround 返回给定时间戳所在周的「周一」和「周日」时间字符串
+func WeekAround(timestamp int64, layout string) (monday, sunday string) {
 	t := time.Unix(timestamp, 0).In(timezone)
 
 	weekday := t.Weekday()
@@ -100,11 +83,6 @@ func WeekAround(timestamp int64, format ...string) (monday, sunday string) {
 	}
 
 	today := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, timezone)
-
-	layout := time.DateOnly
-	if len(format) != 0 {
-		layout = format[0]
-	}
 
 	monday = today.AddDate(0, 0, offset).Format(layout)
 
