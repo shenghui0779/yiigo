@@ -622,12 +622,12 @@ func (p *pkcsPadding) Padding(data []byte) []byte {
 func (p *pkcsPadding) UnPadding(data []byte) []byte {
 	length := len(data)
 
-	unpadding := int(data[length-1])
-	if unpadding < 1 || unpadding > p.blockSize {
-		unpadding = 0
+	padding := int(data[length-1])
+	if padding < 1 || padding > p.blockSize {
+		padding = 0
 	}
 
-	return data[:(length - unpadding)]
+	return data[:(length - padding)]
 }
 
 // AES_PKCS5 pcks#5填充模式(16个字节)
