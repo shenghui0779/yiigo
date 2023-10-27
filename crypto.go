@@ -614,9 +614,9 @@ func (p *pkcsPadding) Padding(data []byte) []byte {
 		padding = p.blockSize
 	}
 
-	padText := bytes.Repeat([]byte{byte(padding)}, padding)
+	b := bytes.Repeat([]byte{byte(padding)}, padding)
 
-	return append(data, padText...)
+	return append(data, b...)
 }
 
 func (p *pkcsPadding) UnPadding(data []byte) []byte {
@@ -654,9 +654,9 @@ func (p *zeroPadding) BlockSize() int {
 
 func (p *zeroPadding) Padding(data []byte) []byte {
 	padding := p.blockSize - len(data)%p.blockSize
-	padText := bytes.Repeat([]byte{0}, padding)
+	b := bytes.Repeat([]byte{0}, padding)
 
-	return append(data, padText...)
+	return append(data, b...)
 }
 
 func (p *zeroPadding) UnPadding(plainText []byte) []byte {
