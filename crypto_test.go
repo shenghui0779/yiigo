@@ -14,7 +14,7 @@ func TestAesCBC(t *testing.T) {
 	plainText := "IloveYiigo"
 
 	// ZERO_PADDING
-	zero := NewAesCBC(key, iv, AES_ZERO)
+	zero := NewAesCBC(key, iv, AES_ZERO())
 
 	e0b, err := zero.Encrypt([]byte(plainText))
 	assert.Nil(t, err)
@@ -24,7 +24,7 @@ func TestAesCBC(t *testing.T) {
 	assert.Equal(t, plainText, string(d0b))
 
 	// PKCS5_PADDING
-	pkcs5 := NewAesCBC(key, iv, AES_PKCS5)
+	pkcs5 := NewAesCBC(key, iv, AES_PKCS5())
 
 	e5b, err := pkcs5.Encrypt([]byte(plainText))
 	assert.Nil(t, err)
@@ -34,7 +34,7 @@ func TestAesCBC(t *testing.T) {
 	assert.Equal(t, plainText, string(d5b))
 
 	// PKCS7_PADDING
-	pkcs7 := NewAesCBC(key, iv, AES_PKCS7)
+	pkcs7 := NewAesCBC(key, iv, AES_PKCS7(32))
 
 	e7b, err := pkcs7.Encrypt([]byte(plainText))
 	assert.Nil(t, err)
@@ -49,7 +49,7 @@ func TestAesECB(t *testing.T) {
 	plainText := "IloveYiigo"
 
 	// ZERO_PADDING
-	zero := NewAesECB(key, AES_ZERO)
+	zero := NewAesECB(key, AES_ZERO())
 
 	e0b, err := zero.Encrypt([]byte(plainText))
 	assert.Nil(t, err)
@@ -59,7 +59,7 @@ func TestAesECB(t *testing.T) {
 	assert.Equal(t, plainText, string(d0b))
 
 	// PKCS5_PADDING
-	pkcs5 := NewAesECB(key, AES_PKCS5)
+	pkcs5 := NewAesECB(key, AES_PKCS5())
 
 	e5b, err := pkcs5.Encrypt([]byte(plainText))
 	assert.Nil(t, err)
@@ -69,7 +69,7 @@ func TestAesECB(t *testing.T) {
 	assert.Equal(t, plainText, string(d5b))
 
 	// PKCS7_PADDING
-	pkcs7 := NewAesECB(key, AES_PKCS7)
+	pkcs7 := NewAesECB(key, AES_PKCS7(32))
 
 	e7b, err := pkcs7.Encrypt([]byte(plainText))
 	assert.Nil(t, err)
