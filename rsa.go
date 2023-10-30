@@ -20,8 +20,6 @@ const (
 	RSA_PKCS8 RSAPadding = 8 // PKCS#8 (格式：`PRIVATE KEY` & `PUBLIC KEY`)
 )
 
-// ------------------------------------ RSA ------------------------------------
-
 // GenerateRSAKey 生成RSA私钥和公钥
 func GenerateRSAKey(bitSize int, padding RSAPadding) (privateKey, publicKey []byte, err error) {
 	prvKey, err := rsa.GenerateKey(rand.Reader, bitSize)
