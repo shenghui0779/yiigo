@@ -36,7 +36,7 @@ func (ct *CipherText) Tag() []byte {
 
 // ------------------------------------ AES-CBC ------------------------------------
 
-// AESEncryptCBC AES-CBC 加密
+// AESEncryptCBC AES-CBC 加密(pkcs#7, 默认填充BlockSize)
 func AESEncryptCBC(key, iv, data []byte) (*CipherText, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
@@ -62,7 +62,7 @@ func AESEncryptCBC(key, iv, data []byte) (*CipherText, error) {
 	}, nil
 }
 
-// AESEncryptCBCWithPaddingSize AES-CBC 加密(指定填充字节大小)
+// AESEncryptCBCWithPaddingSize AES-CBC 加密(pkcs#7, 指定填充字节大小)
 func AESEncryptCBCWithPaddingSize(key, iv, data []byte, paddingSize uint8) (*CipherText, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
@@ -88,7 +88,7 @@ func AESEncryptCBCWithPaddingSize(key, iv, data []byte, paddingSize uint8) (*Cip
 	}, nil
 }
 
-// AESDecryptCBC AES-CBC 解密
+// AESDecryptCBC AES-CBC 解密(pkcs#7)
 func AESDecryptCBC(key, iv, data []byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
@@ -112,7 +112,7 @@ func AESDecryptCBC(key, iv, data []byte) ([]byte, error) {
 
 // ------------------------------------ AES-ECB ------------------------------------
 
-// AESEncryptECB AES-ECB 加密
+// AESEncryptECB AES-ECB 加密(pkcs#7, 默认填充BlockSize)
 func AESEncryptECB(key, data []byte) (*CipherText, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
@@ -134,7 +134,7 @@ func AESEncryptECB(key, data []byte) (*CipherText, error) {
 	}, nil
 }
 
-// AESEncryptECBWithPaddingSize AES-ECB 加密(指定填充字节大小)
+// AESEncryptECBWithPaddingSize AES-ECB 加密(pkcs#7, 指定填充字节大小)
 func AESEncryptECBWithPaddingSize(key, data []byte, paddingSize uint8) (*CipherText, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
@@ -156,7 +156,7 @@ func AESEncryptECBWithPaddingSize(key, data []byte, paddingSize uint8) (*CipherT
 	}, nil
 }
 
-// AESDecryptECB AES-ECB 解密
+// AESDecryptECB AES-ECB 解密(pkcs#7)
 func AESDecryptECB(key, data []byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
@@ -418,7 +418,7 @@ func AESEncryptGCMWithNonceSize(key, nonce, data, aad []byte, nonceSize int) (*C
 	}, nil
 }
 
-// AESDecryptWithNonceSize AES-GCM 指定NonceSize解密 (NonceSize > 0)
+// AESDecryptGCMWithNonceSize AES-GCM 指定NonceSize解密 (NonceSize > 0)
 func AESDecryptGCMWithNonceSize(key, nonce []byte, data, aad []byte, nonceSize int) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
@@ -439,14 +439,14 @@ func AESDecryptGCMWithNonceSize(key, nonce []byte, data, aad []byte, nonceSize i
 
 // --------------------------------- AES Padding ---------------------------------
 
-// func ZeroPadding(data []byte, blockSize int) []byte {
+// func zeropadding(data []byte, blockSize int) []byte {
 // 	padding := blockSize - len(data)%blockSize
 // 	b := bytes.Repeat([]byte{0}, padding)
 
 // 	return append(data, b...)
 // }
 
-// func ZeroUnPadding(data []byte) []byte {
+// func zerounpadding(data []byte) []byte {
 // 	return bytes.TrimRightFunc(data, func(r rune) bool {
 // 		return r == rune(0)
 // 	})
