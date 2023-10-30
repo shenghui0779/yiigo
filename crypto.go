@@ -37,8 +37,8 @@ type AESPadding interface {
 type RSAPadding int
 
 const (
-	RSA_PKCS1 RSAPadding = 1 // PKCS#1 (格式：`RSA PRIVATE KEY` 和 `RSA PUBLIC KEY`)
-	RSA_PKCS8 RSAPadding = 8 // PKCS#8 (格式：`PRIVATE KEY` 和 `PUBLIC KEY`)
+	RSA_PKCS1 RSAPadding = 1 // PKCS#1 (格式：`RSA PRIVATE KEY` & `RSA PUBLIC KEY`)
+	RSA_PKCS8 RSAPadding = 8 // PKCS#8 (格式：`PRIVATE KEY` & `PUBLIC KEY`)
 )
 
 // ------------------------------------ AES ------------------------------------
@@ -319,7 +319,7 @@ type AesGCM struct {
 	nonce []byte
 }
 
-// Encrypt AES-GCM 加密
+// Encrypt AES-GCM 加密 (tag := cipher[len(cipher)-TagSize:])
 func (c *AesGCM) Encrypt(data, aad []byte) ([]byte, error) {
 	block, err := aes.NewCipher(c.key)
 	if err != nil {
