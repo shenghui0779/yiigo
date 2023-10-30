@@ -15,6 +15,12 @@ import (
 	"path/filepath"
 )
 
+const (
+	GcmTagSize   = 16
+	GcmNonceSize = 12
+	GcmBlockSize = 16
+)
+
 // AESPadding AES 填充模式
 type AESPadding interface {
 	// BlockSize 填充字节数
@@ -45,7 +51,7 @@ type AesCBC struct {
 }
 
 // Encrypt AES-CBC 加密
-func (c *AesCBC) Encrypt(plainText []byte) ([]byte, error) {
+func (c *AesCBC) Encrypt(data []byte) ([]byte, error) {
 	block, err := aes.NewCipher(c.key)
 	if err != nil {
 		return nil, err
@@ -55,21 +61,21 @@ func (c *AesCBC) Encrypt(plainText []byte) ([]byte, error) {
 		return nil, errors.New("IV length must equal block size")
 	}
 
-	plainText = c.mode.Padding(plainText)
+	data = c.mode.Padding(data)
 
 	bm := cipher.NewCBCEncrypter(block, c.iv)
-	if len(plainText)%bm.BlockSize() != 0 {
+	if len(data)%bm.BlockSize() != 0 {
 		return nil, errors.New("input not full blocks")
 	}
 
-	cipherText := make([]byte, len(plainText))
-	bm.CryptBlocks(cipherText, plainText)
+	out := make([]byte, len(data))
+	bm.CryptBlocks(out, data)
 
-	return cipherText, nil
+	return out, nil
 }
 
 // Decrypt AES-CBC 解密
-func (c *AesCBC) Decrypt(cipherText []byte) ([]byte, error) {
+func (c *AesCBC) Decrypt(data []byte) ([]byte, error) {
 	block, err := aes.NewCipher(c.key)
 	if err != nil {
 		return nil, err
@@ -80,14 +86,14 @@ func (c *AesCBC) Decrypt(cipherText []byte) ([]byte, error) {
 	}
 
 	bm := cipher.NewCBCDecrypter(block, c.iv)
-	if len(cipherText)%bm.BlockSize() != 0 {
+	if len(data)%bm.BlockSize() != 0 {
 		return nil, errors.New("input not full blocks")
 	}
 
-	plainText := make([]byte, len(cipherText))
-	bm.CryptBlocks(plainText, cipherText)
+	out := make([]byte, len(data))
+	bm.CryptBlocks(out, data)
 
-	return c.mode.UnPadding(plainText), nil
+	return c.mode.UnPadding(out), nil
 }
 
 // NewAesCBC 生成 AES-CBC 加密模式
@@ -106,41 +112,41 @@ type AesECB struct {
 }
 
 // Encrypt AES-ECB 加密
-func (c *AesECB) Encrypt(plainText []byte) ([]byte, error) {
+func (c *AesECB) Encrypt(data []byte) ([]byte, error) {
 	block, err := aes.NewCipher(c.key)
 	if err != nil {
 		return nil, err
 	}
 
-	plainText = c.mode.Padding(plainText)
+	data = c.mode.Padding(data)
 
 	bm := NewECBEncrypter(block)
-	if len(plainText)%bm.BlockSize() != 0 {
+	if len(data)%bm.BlockSize() != 0 {
 		return nil, errors.New("input not full blocks")
 	}
 
-	cipherText := make([]byte, len(plainText))
-	bm.CryptBlocks(cipherText, plainText)
+	out := make([]byte, len(data))
+	bm.CryptBlocks(out, data)
 
-	return cipherText, nil
+	return out, nil
 }
 
 // Decrypt AES-ECB 解密
-func (c *AesECB) Decrypt(cipherText []byte) ([]byte, error) {
+func (c *AesECB) Decrypt(data []byte) ([]byte, error) {
 	block, err := aes.NewCipher(c.key)
 	if err != nil {
 		return nil, err
 	}
 
 	bm := NewECBDecrypter(block)
-	if len(cipherText)%bm.BlockSize() != 0 {
+	if len(data)%bm.BlockSize() != 0 {
 		return nil, errors.New("input not full blocks")
 	}
 
-	plainText := make([]byte, len(cipherText))
-	bm.CryptBlocks(plainText, cipherText)
+	out := make([]byte, len(data))
+	bm.CryptBlocks(out, data)
 
-	return c.mode.UnPadding(plainText), nil
+	return c.mode.UnPadding(out), nil
 }
 
 // NewAesECB 生成 AES-ECB 加密模式
@@ -158,7 +164,7 @@ type AesCFB struct {
 }
 
 // Encrypt AES-CFB 加密
-func (c *AesCFB) Encrypt(plainText []byte) ([]byte, error) {
+func (c *AesCFB) Encrypt(data []byte) ([]byte, error) {
 	block, err := aes.NewCipher(c.key)
 	if err != nil {
 		return nil, err
@@ -168,16 +174,16 @@ func (c *AesCFB) Encrypt(plainText []byte) ([]byte, error) {
 		return nil, errors.New("IV length must equal block size")
 	}
 
-	cipherText := make([]byte, len(plainText))
+	out := make([]byte, len(data))
 
 	stream := cipher.NewCFBEncrypter(block, c.iv)
-	stream.XORKeyStream(cipherText, plainText)
+	stream.XORKeyStream(out, data)
 
-	return cipherText, nil
+	return out, nil
 }
 
 // Decrypt AES-CFB 解密
-func (c *AesCFB) Decrypt(cipherText []byte) ([]byte, error) {
+func (c *AesCFB) Decrypt(data []byte) ([]byte, error) {
 	block, err := aes.NewCipher(c.key)
 	if err != nil {
 		return nil, err
@@ -187,12 +193,12 @@ func (c *AesCFB) Decrypt(cipherText []byte) ([]byte, error) {
 		return nil, errors.New("IV length must equal block size")
 	}
 
-	plainText := make([]byte, len(cipherText))
+	out := make([]byte, len(data))
 
 	stream := cipher.NewCFBDecrypter(block, c.iv)
-	stream.XORKeyStream(plainText, cipherText)
+	stream.XORKeyStream(out, data)
 
-	return plainText, nil
+	return out, nil
 }
 
 // NewAesCFB 生成 AES-CFB 加密模式
@@ -210,7 +216,7 @@ type AesOFB struct {
 }
 
 // Encrypt AES-OFB 加密
-func (c *AesOFB) Encrypt(plainText []byte) ([]byte, error) {
+func (c *AesOFB) Encrypt(data []byte) ([]byte, error) {
 	block, err := aes.NewCipher(c.key)
 	if err != nil {
 		return nil, err
@@ -220,16 +226,16 @@ func (c *AesOFB) Encrypt(plainText []byte) ([]byte, error) {
 		return nil, errors.New("IV length must equal block size")
 	}
 
-	cipherText := make([]byte, len(plainText))
+	out := make([]byte, len(data))
 
 	stream := cipher.NewOFB(block, c.iv)
-	stream.XORKeyStream(cipherText, plainText)
+	stream.XORKeyStream(out, data)
 
-	return cipherText, nil
+	return out, nil
 }
 
 // Decrypt AES-OFB 解密
-func (c *AesOFB) Decrypt(cipherText []byte) ([]byte, error) {
+func (c *AesOFB) Decrypt(data []byte) ([]byte, error) {
 	block, err := aes.NewCipher(c.key)
 	if err != nil {
 		return nil, err
@@ -239,12 +245,12 @@ func (c *AesOFB) Decrypt(cipherText []byte) ([]byte, error) {
 		return nil, errors.New("IV length must equal block size")
 	}
 
-	plainText := make([]byte, len(cipherText))
+	out := make([]byte, len(data))
 
 	stream := cipher.NewOFB(block, c.iv)
-	stream.XORKeyStream(plainText, cipherText)
+	stream.XORKeyStream(out, data)
 
-	return plainText, nil
+	return out, nil
 }
 
 // NewAesOFB 生成 AES-OFB 加密模式
@@ -262,7 +268,7 @@ type AesCTR struct {
 }
 
 // Encrypt AES-CTR 加密
-func (c *AesCTR) Encrypt(plainText []byte) ([]byte, error) {
+func (c *AesCTR) Encrypt(data []byte) ([]byte, error) {
 	block, err := aes.NewCipher(c.key)
 	if err != nil {
 		return nil, err
@@ -272,16 +278,16 @@ func (c *AesCTR) Encrypt(plainText []byte) ([]byte, error) {
 		return nil, errors.New("IV length must equal block size")
 	}
 
-	cipherText := make([]byte, len(plainText))
+	out := make([]byte, len(data))
 
 	stream := cipher.NewCTR(block, c.iv)
-	stream.XORKeyStream(cipherText, plainText)
+	stream.XORKeyStream(out, data)
 
-	return cipherText, nil
+	return out, nil
 }
 
 // Decrypt AES-CTR 解密
-func (c *AesCTR) Decrypt(cipherText []byte) ([]byte, error) {
+func (c *AesCTR) Decrypt(data []byte) ([]byte, error) {
 	block, err := aes.NewCipher(c.key)
 	if err != nil {
 		return nil, err
@@ -291,12 +297,12 @@ func (c *AesCTR) Decrypt(cipherText []byte) ([]byte, error) {
 		return nil, errors.New("IV length must equal block size")
 	}
 
-	plainText := make([]byte, len(cipherText))
+	out := make([]byte, len(data))
 
 	stream := cipher.NewCTR(block, c.iv)
-	stream.XORKeyStream(plainText, cipherText)
+	stream.XORKeyStream(out, data)
 
-	return plainText, nil
+	return out, nil
 }
 
 // NewAesCTR 生成 AES-CTR 加密模式
@@ -314,7 +320,7 @@ type AesGCM struct {
 }
 
 // Encrypt AES-GCM 加密
-func (c *AesGCM) Encrypt(plainText, additionalData []byte) ([]byte, error) {
+func (c *AesGCM) Encrypt(data, aad []byte) ([]byte, error) {
 	block, err := aes.NewCipher(c.key)
 	if err != nil {
 		return nil, err
@@ -329,15 +335,15 @@ func (c *AesGCM) Encrypt(plainText, additionalData []byte) ([]byte, error) {
 		return nil, errors.New("incorrect nonce length given to GCM")
 	}
 
-	if uint64(len(plainText)) > ((1<<32)-2)*uint64(block.BlockSize()) {
+	if uint64(len(data)) > ((1<<32)-2)*uint64(block.BlockSize()) {
 		return nil, errors.New("message too large for GCM")
 	}
 
-	return aead.Seal(nil, c.nonce, plainText, additionalData), nil
+	return aead.Seal(nil, c.nonce, data, aad), nil
 }
 
 // Decrypt AES-GCM 解密
-func (c *AesGCM) Decrypt(cipherText, additionalData []byte) ([]byte, error) {
+func (c *AesGCM) Decrypt(data, aad []byte) ([]byte, error) {
 	block, err := aes.NewCipher(c.key)
 	if err != nil {
 		return nil, err
@@ -352,7 +358,7 @@ func (c *AesGCM) Decrypt(cipherText, additionalData []byte) ([]byte, error) {
 		return nil, errors.New("incorrect nonce length given to GCM")
 	}
 
-	return aesgcm.Open(nil, c.nonce, cipherText, additionalData)
+	return aesgcm.Open(nil, c.nonce, data, aad)
 }
 
 // NewAesGCM 生成 AES-GCM 加密模式
@@ -415,17 +421,17 @@ type PrivateKey struct {
 }
 
 // Decrypt RSA私钥 PKCS#1 v1.5 解密
-func (pk *PrivateKey) Decrypt(cipherText []byte) ([]byte, error) {
-	return rsa.DecryptPKCS1v15(rand.Reader, pk.key, cipherText)
+func (pk *PrivateKey) Decrypt(data []byte) ([]byte, error) {
+	return rsa.DecryptPKCS1v15(rand.Reader, pk.key, data)
 }
 
 // DecryptOAEP RSA私钥 PKCS#1 OAEP 解密
-func (pk *PrivateKey) DecryptOAEP(hash crypto.Hash, cipherText []byte) ([]byte, error) {
+func (pk *PrivateKey) DecryptOAEP(hash crypto.Hash, data []byte) ([]byte, error) {
 	if !hash.Available() {
 		return nil, fmt.Errorf("crypto: requested hash function (%s) is unavailable", hash.String())
 	}
 
-	return rsa.DecryptOAEP(hash.New(), rand.Reader, pk.key, cipherText, nil)
+	return rsa.DecryptOAEP(hash.New(), rand.Reader, pk.key, data, nil)
 }
 
 // Sign RSA私钥签名
@@ -498,17 +504,17 @@ type PublicKey struct {
 }
 
 // Encrypt RSA公钥 PKCS#1 v1.5 加密
-func (pk *PublicKey) Encrypt(plainText []byte) ([]byte, error) {
-	return rsa.EncryptPKCS1v15(rand.Reader, pk.key, plainText)
+func (pk *PublicKey) Encrypt(data []byte) ([]byte, error) {
+	return rsa.EncryptPKCS1v15(rand.Reader, pk.key, data)
 }
 
 // EncryptOAEP RSA公钥 PKCS#1 OAEP 加密
-func (pk *PublicKey) EncryptOAEP(hash crypto.Hash, plainText []byte) ([]byte, error) {
+func (pk *PublicKey) EncryptOAEP(hash crypto.Hash, data []byte) ([]byte, error) {
 	if !hash.Available() {
 		return nil, fmt.Errorf("crypto: requested hash function (%s) is unavailable", hash.String())
 	}
 
-	return rsa.EncryptOAEP(hash.New(), rand.Reader, pk.key, plainText, nil)
+	return rsa.EncryptOAEP(hash.New(), rand.Reader, pk.key, data, nil)
 }
 
 // Verify RSA公钥验签
@@ -659,8 +665,8 @@ func (p *zeroPadding) Padding(data []byte) []byte {
 	return append(data, padText...)
 }
 
-func (p *zeroPadding) UnPadding(plainText []byte) []byte {
-	return bytes.TrimRightFunc(plainText, func(r rune) bool {
+func (p *zeroPadding) UnPadding(data []byte) []byte {
+	return bytes.TrimRightFunc(data, func(r rune) bool {
 		return r == rune(0)
 	})
 }
