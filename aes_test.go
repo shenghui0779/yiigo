@@ -20,6 +20,14 @@ func TestAesCBC(t *testing.T) {
 	plain, err := AESDecryptCBC([]byte(key), []byte(iv), cipher.Bytes())
 	assert.Nil(t, err)
 	assert.Equal(t, data, string(plain))
+
+	cipher2, err := AESEncryptCBCWithPaddingSize([]byte(key), []byte(iv), []byte(data), 32)
+	assert.Nil(t, err)
+	assert.Equal(t, "4gxKE4uo0MNIe3TY+LOT2CqDKi9aBQ48KOTKjZDJnEs=", cipher2.String())
+
+	plain2, err := AESDecryptCBC([]byte(key), []byte(iv), cipher2.Bytes())
+	assert.Nil(t, err)
+	assert.Equal(t, data, string(plain2))
 }
 
 func TestAesECB(t *testing.T) {
