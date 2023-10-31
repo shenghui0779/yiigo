@@ -1,7 +1,6 @@
 package yiigo
 
 import (
-	"crypto/aes"
 	"encoding/base64"
 	"testing"
 
@@ -10,7 +9,7 @@ import (
 
 func TestAesCBC(t *testing.T) {
 	key := "AES256Key-32Characters1234567890"
-	iv := key[:aes.BlockSize]
+	iv := key[:16]
 	data := "IloveYiigo"
 
 	cipher, err := AESEncryptCBC([]byte(key), []byte(iv), []byte(data))
@@ -53,7 +52,7 @@ func TestAesECB(t *testing.T) {
 
 func TestAesCFB(t *testing.T) {
 	key := "AES256Key-32Characters1234567890"
-	iv := key[:aes.BlockSize]
+	iv := key[:16]
 	data := "IloveYiigo"
 
 	cipher, err := AESEncryptCFB([]byte(key), []byte(iv), []byte(data))
@@ -67,7 +66,7 @@ func TestAesCFB(t *testing.T) {
 
 func TestAesOFB(t *testing.T) {
 	key := "AES256Key-32Characters1234567890"
-	iv := key[:aes.BlockSize]
+	iv := key[:16]
 	data := "IloveYiigo"
 
 	cipher, err := AESEncryptOFB([]byte(key), []byte(iv), []byte(data))
@@ -81,7 +80,7 @@ func TestAesOFB(t *testing.T) {
 
 func TestAesCTR(t *testing.T) {
 	key := "AES256Key-32Characters1234567890"
-	iv := key[:aes.BlockSize]
+	iv := key[:16]
 	data := "IloveYiigo"
 
 	cipher, err := AESEncryptCTR([]byte(key), []byte(iv), []byte(data))
