@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/gomodule/redigo/redis"
+	"github.com/redis/go-redis/v9"
 )
 
 // Mutex 基于Redis实现的分布式锁
@@ -19,7 +19,7 @@ type Mutex interface {
 }
 
 type distributed struct {
-	pool   RedisPool
+	cli    redis.UniversalClient
 	key    string
 	uniqID string
 	expire time.Duration
@@ -29,12 +29,6 @@ func (d *distributed) Lock(ctx context.Context, interval, timeout time.Duration)
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	conn, err := d.pool.Get(ctx)
-	if err != nil {
-		return err
-	}
-	defer d.pool.Put(conn)
-
 	for {
 		select {
 		case <-ctx.Done(): // timeout or canceled
@@ -42,7 +36,7 @@ func (d *distributed) Lock(ctx context.Context, interval, timeout time.Duration)
 		default:
 		}
 
-		ok, err := d.attempt(conn)
+		ok, err := d.attempt(ctx)
 		if err != nil {
 			return err
 		}
@@ -56,13 +50,7 @@ func (d *distributed) Lock(ctx context.Context, interval, timeout time.Duration)
 }
 
 func (d *distributed) UnLock(ctx context.Context) error {
-	conn, err := d.pool.Get(ctx)
-	if err != nil {
-		return err
-	}
-	defer d.pool.Put(conn)
-
-	v, err := redis.String(conn.Do("GET", d.key))
+	v, err := d.cli.Get(ctx, d.key).Result()
 	if err != nil {
 		return err
 	}
@@ -71,19 +59,17 @@ func (d *distributed) UnLock(ctx context.Context) error {
 		return nil
 	}
 
-	_, err = conn.Do("DEL", d.key)
-
-	return err
+	return d.cli.Del(ctx, d.key).Err()
 }
 
-func (d *distributed) attempt(conn *RedisConn) (bool, error) {
+func (d *distributed) attempt(ctx context.Context) (bool, error) {
 	// attempt to acquire lock with `setnx`
-	reply, err := redis.String(conn.Do("SET", d.key, d.uniqID, "PX", d.expire.Milliseconds(), "NX"))
-	if err != nil && err != redis.ErrNil {
+	cmd := d.cli.SetNX(ctx, d.key, d.uniqID, d.expire)
+	if err := cmd.Err(); err != nil && err != redis.Nil {
 		return false, err
 	}
 
-	if reply == OK {
+	if cmd.String() == OK {
 		return true, nil
 	}
 
@@ -96,7 +82,7 @@ type MutexOption func(d *distributed)
 // WithMutexRedis 指定Redis实例
 func WithMutexRedis(name string) MutexOption {
 	return func(d *distributed) {
-		d.pool = MustRedis(name)
+		d.cli = MustRedis(name)
 	}
 }
 
@@ -111,7 +97,7 @@ func WithMutexExpire(e time.Duration) MutexOption {
 // uniqueID - 建议使用RequestID
 func DistributedMutex(key, uniqueID string, options ...MutexOption) Mutex {
 	mutex := &distributed{
-		pool:   MustRedis(),
+		cli:    MustRedis(),
 		key:    key,
 		uniqID: uniqueID,
 		expire: 10 * time.Second,

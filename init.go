@@ -7,6 +7,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/nsqio/go-nsq"
+	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 )
 
@@ -76,14 +77,14 @@ func WithMongo(name string, dsn string) InitOption {
 }
 
 // WithRedis 注册Redis
-func WithRedis(name string, cfg *RedisConfig) InitOption {
+func WithRedis(name string, cfg *redis.UniversalOptions) InitOption {
 	return func() {
 		if len(name) == 0 || cfg == nil {
 			return
 		}
 
 		if err := initRedis(name, cfg); err != nil {
-			logger.Panic(fmt.Sprintf("err redis.%s init", name), zap.String("addr", cfg.Addr), zap.Error(err))
+			logger.Panic(fmt.Sprintf("err redis.%s init", name), zap.Strings("addr", cfg.Addrs), zap.Error(err))
 		}
 
 		logger.Info(fmt.Sprintf("redis.%s is OK", name))
