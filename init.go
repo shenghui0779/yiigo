@@ -7,6 +7,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/nsqio/go-nsq"
+	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 )
 
@@ -58,32 +59,15 @@ func WithSQLite(name string, cfg *DBConfig) InitOption {
 	}
 }
 
-// WithMongo 注册MongoDB
-// [DSN] mongodb://localhost:27017/?connectTimeoutMS=10000&minPoolSize=10&maxPoolSize=20&maxIdleTimeMS=60000&readPreference=primary
-// [Reference] https://docs.mongodb.com/manual/reference/connection-string
-func WithMongo(name string, dsn string) InitOption {
-	return func() {
-		if len(name) == 0 || len(dsn) == 0 {
-			return
-		}
-
-		if err := initMongoDB(name, dsn); err != nil {
-			logger.Panic(fmt.Sprintf("err mongodb.%s init", name), zap.String("dsn", dsn), zap.Error(err))
-		}
-
-		logger.Info(fmt.Sprintf("mongodb.%s is OK", name))
-	}
-}
-
 // WithRedis 注册Redis
-func WithRedis(name string, cfg *RedisConfig) InitOption {
+func WithRedis(name string, cfg *redis.UniversalOptions) InitOption {
 	return func() {
 		if len(name) == 0 || cfg == nil {
 			return
 		}
 
 		if err := initRedis(name, cfg); err != nil {
-			logger.Panic(fmt.Sprintf("err redis.%s init", name), zap.String("addr", cfg.Addr), zap.Error(err))
+			logger.Panic(fmt.Sprintf("err redis.%s init", name), zap.Strings("addr", cfg.Addrs), zap.Error(err))
 		}
 
 		logger.Info(fmt.Sprintf("redis.%s is OK", name))

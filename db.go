@@ -10,6 +10,7 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
+	"go.uber.org/zap"
 )
 
 // DBDriver 数据库驱动
@@ -139,6 +140,27 @@ func MustDB(name ...string) *sqlx.DB {
 	}
 
 	return db
+}
+
+// CloseDB 关闭数据库连接，如果未制定名称，则关闭全部
+func CloseDB(name ...string) {
+	if len(name) == 0 {
+		for key, db := range dbMap {
+			if err := db.Close(); err != nil {
+				logger.Error(fmt.Sprintf("db.%s close error", key), zap.Error(err))
+			}
+		}
+
+		return
+	}
+
+	for _, key := range name {
+		if db, ok := dbMap[key]; ok {
+			if err := db.Close(); err != nil {
+				logger.Error(fmt.Sprintf("db.%s close error", key), zap.Error(err))
+			}
+		}
+	}
 }
 
 // Transaction 执行数据库事物
