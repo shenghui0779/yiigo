@@ -301,7 +301,7 @@ func initRedis(name string, cfg *RedisConfig) error {
 
 	if _, err = conn.Do("PING"); err != nil {
 		conn.Close()
-		return nil
+		return err
 	}
 
 	pool.Put(conn)
