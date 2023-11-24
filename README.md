@@ -9,8 +9,7 @@
 - 支持 [MySQL](https://github.com/go-sql-driver/mysql)
 - 支持 [PostgreSQL](https://github.com/jackc/pgx)
 - 支持 [SQLite3](https://github.com/mattn/go-sqlite3)
-- 支持 [MongoDB](https://github.com/mongodb/mongo-go-driver)
-- 支持 [Redis](https://github.com/gomodule/redigo)
+- 支持 [Redis](https://github.com/redis/go-redis)
 - 支持 [NSQ](https://github.com/nsqio/go-nsq)
 - SQL使用 [sqlx](https://github.com/jmoiron/sqlx)
 - ORM推荐 [ent](https://github.com/ent/ent)
@@ -116,22 +115,6 @@ db := yiigo.MustDB("other")
 cli := ent.NewClient(ent.Driver(entsql.OpenDB(db.DriverName(), db.DB)))
 ```
 
-#### MongoDB
-
-```go
-// register
-yiigo.Init(
-    yiigo.WithMongo(yiigo.Default, "dsn"),
-    yiigo.WithMongo("other", "dsn"),
-)
-
-// default mongodb
-yiigo.MustMongo().Database("test").Collection("numbers").InsertOne(context.Background(), bson.M{"name": "pi", "value": 3.14159})
-
-// other mongodb
-yiigo.MustMongo("other").Database("test").Collection("numbers").InsertOne(context.Background(), bson.M{"name": "pi", "value": 3.14159})
-```
-
 #### Redis
 
 ```go
@@ -234,11 +217,9 @@ form := yiigo.NewUploadForm(
     yiigo.WithFormField("description", "DESCRIPTION"),
     yiigo.WithFormFile("media", "demo.mp4", func(w io.Writer) error {
         f, err := os.Open("demo.mp4")
-
         if err != nil {
             return err
         }
-
         defer f.Close()
 
         if _, err = io.Copy(w, f); err != nil {
@@ -470,7 +451,7 @@ builder.Wrap(
     yiigo.Table("product"),
     yiigo.Where("id = ?", 1),
 ).ToUpdate(ctx, yiigo.X{
-    "price": yiigo.Clause("price * ? + ?", 2, 100),
+    "price": yiigo.SQLExpr("price * ? + ?", 2, 100),
 })
 // UPDATE product SET price = price * ? + ? WHERE id = ?
 // [2 100 1]
