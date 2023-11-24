@@ -123,7 +123,7 @@ func WithWebsocket(upgrader *websocket.Upgrader) InitOption {
 // Init yiigo初始化
 func Init(options ...InitOption) {
 	for _, f := range options {
-		go f()
+		f()
 	}
 
 	logger.Info("yiigo init complete!")
