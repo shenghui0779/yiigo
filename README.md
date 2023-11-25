@@ -75,7 +75,6 @@ yiigo.Init(
             ConnMaxIdleTime: 5 * time.Minute,
         },
     }),
-
     yiigo.WithMySQL("other", &yiigo.DBConfig{
         DSN: "dsn",
         Options: &yiigo.DBOptions{
@@ -120,58 +119,19 @@ cli := ent.NewClient(ent.Driver(entsql.OpenDB(db.DriverName(), db.DB)))
 ```go
 // register
 yiigo.Init(
-    yiigo.WithRedis(yiigo.Default, &yiigo.RedisConfig{
-        Addr: "addr",
-        Options: &yiigo.RedisOptions{
-            ConnTimeout:  10 * time.Second,
-            ReadTimeout:  10 * time.Second,
-            WriteTimeout: 10 * time.Second,
-            PoolSize:     10,
-            IdleTimeout:  5 * time.Minute,
-        },
+    yiigo.WithRedis(yiigo.Default, &redis.UniversalOptions{
+        Addrs: []string{":6379"}
     }),
-
-    yiigo.WithRedis("other", &yiigo.RedisConfig{
-        Addr: "addr",
-        Options: &yiigo.RedisOptions{
-            ConnTimeout:  10 * time.Second,
-            ReadTimeout:  10 * time.Second,
-            WriteTimeout: 10 * time.Second,
-            PoolSize:     10,
-            IdleTimeout:  5 * time.Minute,
-        },
+    yiigo.WithRedis("other", &redis.UniversalOptions{
+        Addrs: []string{":6379"}
     }),
 )
 
 // default redis
-yiigo.MustRedis().Do(context.Background(), "SET", "test_key", "hello world")
-
-yiigo.MustRedis().DoFunc(context.Background(), func(ctx context.Context, conn *RedisConn) error {
-    if _, err := conn.Do("SET", "key1", "hello"); err != nil {
-        return err
-    }
-
-    if _, err := conn.Do("SET", "key2", "world"); err != nil {
-        return err
-    }
-
-    return nil
-})
+yiigo.MustRedis().Set(context.Background(), "key", "value", 0)
 
 // other redis
-yiigo.MustRedis("other").Do(context.Background(), "SET", "test_key", "hello world")
-
-yiigo.MustRedis("other").DoFunc(context.Background(), func(ctx context.Context, conn *RedisConn) error {
-    if _, err := conn.Do("SET", "key1", "hello"); err != nil {
-        return err
-    }
-
-    if _, err := conn.Do("SET", "key2", "world"); err != nil {
-        return err
-    }
-
-    return nil
-})
+yiigo.MustRedis("other").Set(context.Background(), "key", "value", 0)
 ```
 
 #### Logger
