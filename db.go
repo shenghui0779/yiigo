@@ -142,7 +142,7 @@ func MustDB(name ...string) *sqlx.DB {
 	return db
 }
 
-// CloseDB 关闭数据库连接，如果未制定名称，则关闭全部
+// CloseDB 关闭数据库连接，如果未指定名称，则关闭全部
 func CloseDB(name ...string) {
 	if len(name) == 0 {
 		for key, db := range dbMap {

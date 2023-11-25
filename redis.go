@@ -49,7 +49,7 @@ func MustRedis(name ...string) redis.UniversalClient {
 	return cli
 }
 
-// CloseRedis 关闭Redis连接，如果未制定名称，则关闭全部
+// CloseRedis 关闭Redis连接，如果未指定名称，则关闭全部
 func CloseRedis(name ...string) {
 	if len(name) == 0 {
 		for key, cli := range redisMap {

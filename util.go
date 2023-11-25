@@ -100,7 +100,6 @@ func WeekAround(timestamp int64, layout string) (monday, sunday string) {
 // IP2Long IP地址转整数
 func IP2Long(ip string) uint32 {
 	ipv4 := net.ParseIP(ip).To4()
-
 	if ipv4 == nil {
 		return 0
 	}
@@ -119,7 +118,6 @@ func MarshalNoEscapeHTML(v any) ([]byte, error) {
 
 	encoder := json.NewEncoder(buf)
 	encoder.SetEscapeHTML(false)
-
 	if err := encoder.Encode(v); err != nil {
 		return nil, err
 	}
@@ -197,7 +195,6 @@ func QuoteMeta(s string) string {
 // SliceUniq 切片去重
 func SliceUniq[T ~int | ~int64 | ~float64 | ~string](a []T) []T {
 	ret := make([]T, 0)
-
 	if len(a) == 0 {
 		return ret
 	}
