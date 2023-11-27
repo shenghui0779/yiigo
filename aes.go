@@ -303,7 +303,7 @@ func AESEncryptGCM(key, nonce, data, aad []byte, opt *GCMOption) (*CipherText, e
 	}, nil
 }
 
-// AESDecryptGCM AES-GCM 解密 (NonceSize = 12 & TagSize = 16)
+// AESDecryptGCM AES-GCM 解密 (默认：NonceSize = 12 & TagSize = 16)
 func AESDecryptGCM(key, nonce []byte, data, aad []byte, opt *GCMOption) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
