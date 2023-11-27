@@ -20,7 +20,7 @@ func TestAesCBC(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, data, string(plain))
 
-	cipher2, err := AESEncryptCBCWithPaddingSize([]byte(key), []byte(iv), []byte(data), 32)
+	cipher2, err := AESEncryptCBC([]byte(key), []byte(iv), []byte(data), 32)
 	assert.Nil(t, err)
 	assert.Equal(t, "hSXsKUV2fbG8F2JlVcnra876xvKxyXwoJvaebTtWGzQ=", cipher2.String())
 
@@ -41,7 +41,7 @@ func TestAesECB(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, data, string(plain))
 
-	cipher2, err := AESEncryptECBWithPaddingSize([]byte(key), []byte(data), 32)
+	cipher2, err := AESEncryptECB([]byte(key), []byte(data), 32)
 	assert.Nil(t, err)
 	assert.Equal(t, "FqrgSRCY4zBRYBOg4Pe3Vbpl6eN3wP/L8phJTP4aWFE=", cipher2.String())
 
@@ -98,13 +98,13 @@ func TestAesGCM(t *testing.T) {
 	data := "ILoveYiigo"
 	aad := "IIInsomnia"
 
-	cipher, err := AESEncryptGCM([]byte(key), []byte(nonce), []byte(data), []byte(aad))
+	cipher, err := AESEncryptGCM([]byte(key), []byte(nonce), []byte(data), []byte(aad), &GCMOption{})
 	assert.Nil(t, err)
 	assert.Equal(t, "qciumnRZKY42HVjng/cUjd0V+OJZB6ZwRF8=", cipher.String())
 	assert.Equal(t, "qciumnRZKY42HQ==", base64.StdEncoding.EncodeToString(cipher.Data()))
 	assert.Equal(t, "WOeD9xSN3RX44lkHpnBEXw==", base64.StdEncoding.EncodeToString(cipher.Tag()))
 
-	plain, err := AESDecryptGCM([]byte(key), []byte(nonce), cipher.Bytes(), []byte(aad))
+	plain, err := AESDecryptGCM([]byte(key), []byte(nonce), cipher.Bytes(), []byte(aad), nil)
 	assert.Nil(t, err)
 	assert.Equal(t, data, string(plain))
 }

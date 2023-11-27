@@ -37,7 +37,7 @@ func (ct *CipherText) Tag() []byte {
 // ------------------------------------ AES-CBC ------------------------------------
 
 // AESEncryptCBC AES-CBC 加密(pkcs#7, 默认填充BlockSize)
-func AESEncryptCBC(key, iv, data []byte) (*CipherText, error) {
+func AESEncryptCBC(key, iv, data []byte, paddingSize ...uint8) (*CipherText, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		return nil, err
@@ -47,33 +47,11 @@ func AESEncryptCBC(key, iv, data []byte) (*CipherText, error) {
 		return nil, errors.New("IV length must equal block size")
 	}
 
-	data = pkcs7padding(data, block.BlockSize())
-
-	bm := cipher.NewCBCEncrypter(block, iv)
-	if len(data)%bm.BlockSize() != 0 {
-		return nil, errors.New("input not full blocks")
+	blockSize := block.BlockSize()
+	if len(paddingSize) != 0 {
+		blockSize = int(paddingSize[0])
 	}
-
-	out := make([]byte, len(data))
-	bm.CryptBlocks(out, data)
-
-	return &CipherText{
-		bytes: out,
-	}, nil
-}
-
-// AESEncryptCBCWithPaddingSize AES-CBC 加密(pkcs#7, 指定填充字节大小)
-func AESEncryptCBCWithPaddingSize(key, iv, data []byte, paddingSize uint8) (*CipherText, error) {
-	block, err := aes.NewCipher(key)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(iv) != block.BlockSize() {
-		return nil, errors.New("IV length must equal block size")
-	}
-
-	data = pkcs7padding(data, int(paddingSize))
+	data = pkcs7padding(data, blockSize)
 
 	bm := cipher.NewCBCEncrypter(block, iv)
 	if len(data)%bm.BlockSize() != 0 {
@@ -113,35 +91,17 @@ func AESDecryptCBC(key, iv, data []byte) ([]byte, error) {
 // ------------------------------------ AES-ECB ------------------------------------
 
 // AESEncryptECB AES-ECB 加密(pkcs#7, 默认填充BlockSize)
-func AESEncryptECB(key, data []byte) (*CipherText, error) {
+func AESEncryptECB(key, data []byte, paddingSize ...uint8) (*CipherText, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		return nil, err
 	}
 
-	data = pkcs7padding(data, block.BlockSize())
-
-	bm := NewECBEncrypter(block)
-	if len(data)%bm.BlockSize() != 0 {
-		return nil, errors.New("input not full blocks")
+	blockSize := block.BlockSize()
+	if len(paddingSize) != 0 {
+		blockSize = int(paddingSize[0])
 	}
-
-	out := make([]byte, len(data))
-	bm.CryptBlocks(out, data)
-
-	return &CipherText{
-		bytes: out,
-	}, nil
-}
-
-// AESEncryptECBWithPaddingSize AES-ECB 加密(pkcs#7, 指定填充字节大小)
-func AESEncryptECBWithPaddingSize(key, data []byte, paddingSize uint8) (*CipherText, error) {
-	block, err := aes.NewCipher(key)
-	if err != nil {
-		return nil, err
-	}
-
-	data = pkcs7padding(data, int(paddingSize))
+	data = pkcs7padding(data, blockSize)
 
 	bm := NewECBEncrypter(block)
 	if len(data)%bm.BlockSize() != 0 {
@@ -302,14 +262,29 @@ func AESDecryptCTR(key, iv, data []byte) ([]byte, error) {
 
 // ------------------------------------ AES-GCM ------------------------------------
 
-// AESEncryptGCM AES-GCM 加密 (NonceSize = 12 & TagSize = 16)
-func AESEncryptGCM(key, nonce, data, aad []byte) (*CipherText, error) {
+// GCMOption AES-GCM 加密选项(二选一)，指定 TagSize[12, 16] 和 NonceSize(0, ~)
+type GCMOption struct {
+	TagSize   int
+	NonceSize int
+}
+
+// AESEncryptGCM AES-GCM 加密 (默认：NonceSize = 12 & TagSize = 16)
+func AESEncryptGCM(key, nonce, data, aad []byte, opt *GCMOption) (*CipherText, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		return nil, err
 	}
 
-	aead, err := cipher.NewGCM(block)
+	var aead cipher.AEAD
+	if opt != nil && (opt.TagSize != 0 || opt.NonceSize != 0) {
+		if opt.TagSize != 0 {
+			aead, err = cipher.NewGCMWithTagSize(block, opt.TagSize)
+		} else {
+			aead, err = cipher.NewGCMWithNonceSize(block, opt.NonceSize)
+		}
+	} else {
+		aead, err = cipher.NewGCM(block)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -329,103 +304,22 @@ func AESEncryptGCM(key, nonce, data, aad []byte) (*CipherText, error) {
 }
 
 // AESDecryptGCM AES-GCM 解密 (NonceSize = 12 & TagSize = 16)
-func AESDecryptGCM(key, nonce []byte, data, aad []byte) ([]byte, error) {
+func AESDecryptGCM(key, nonce []byte, data, aad []byte, opt *GCMOption) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		return nil, err
 	}
 
-	aead, err := cipher.NewGCM(block)
-	if err != nil {
-		return nil, err
+	var aead cipher.AEAD
+	if opt != nil && (opt.TagSize != 0 || opt.NonceSize != 0) {
+		if opt.TagSize != 0 {
+			aead, err = cipher.NewGCMWithTagSize(block, opt.TagSize)
+		} else {
+			aead, err = cipher.NewGCMWithNonceSize(block, opt.NonceSize)
+		}
+	} else {
+		aead, err = cipher.NewGCM(block)
 	}
-
-	if len(nonce) != aead.NonceSize() {
-		return nil, errors.New("incorrect nonce length given to GCM")
-	}
-
-	return aead.Open(nil, nonce, data, aad)
-}
-
-// AESEncryptGCMWithTagSize AES-GCM 指定TagSize加密 (12 <= TagSize <= 16)
-func AESEncryptGCMWithTagSize(key, nonce, data, aad []byte, tagSize int) (*CipherText, error) {
-	block, err := aes.NewCipher(key)
-	if err != nil {
-		return nil, err
-	}
-
-	aead, err := cipher.NewGCMWithTagSize(block, tagSize)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(nonce) != aead.NonceSize() {
-		return nil, errors.New("incorrect nonce length given to GCM")
-	}
-
-	if uint64(len(data)) > ((1<<32)-2)*uint64(block.BlockSize()) {
-		return nil, errors.New("message too large for GCM")
-	}
-
-	return &CipherText{
-		bytes:   aead.Seal(nil, nonce, data, aad),
-		tagsize: aead.Overhead(),
-	}, nil
-}
-
-// AESDecryptGCMWithTagSize AES-GCM 指定TagSize解密 (12 <= TagSize <= 16)
-func AESDecryptGCMWithTagSize(key, nonce []byte, data, aad []byte, tagSize int) ([]byte, error) {
-	block, err := aes.NewCipher(key)
-	if err != nil {
-		return nil, err
-	}
-
-	aead, err := cipher.NewGCMWithTagSize(block, tagSize)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(nonce) != aead.NonceSize() {
-		return nil, errors.New("incorrect nonce length given to GCM")
-	}
-
-	return aead.Open(nil, nonce, data, aad)
-}
-
-// AESEncryptGCMWithNonceSize AES-GCM 指定NonceSize加密 (NonceSize > 0)
-func AESEncryptGCMWithNonceSize(key, nonce, data, aad []byte, nonceSize int) (*CipherText, error) {
-	block, err := aes.NewCipher(key)
-	if err != nil {
-		return nil, err
-	}
-
-	aead, err := cipher.NewGCMWithNonceSize(block, nonceSize)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(nonce) != aead.NonceSize() {
-		return nil, errors.New("incorrect nonce length given to GCM")
-	}
-
-	if uint64(len(data)) > ((1<<32)-2)*uint64(block.BlockSize()) {
-		return nil, errors.New("message too large for GCM")
-	}
-
-	return &CipherText{
-		bytes:   aead.Seal(nil, nonce, data, aad),
-		tagsize: aead.Overhead(),
-	}, nil
-}
-
-// AESDecryptGCMWithNonceSize AES-GCM 指定NonceSize解密 (NonceSize > 0)
-func AESDecryptGCMWithNonceSize(key, nonce []byte, data, aad []byte, nonceSize int) ([]byte, error) {
-	block, err := aes.NewCipher(key)
-	if err != nil {
-		return nil, err
-	}
-
-	aead, err := cipher.NewGCMWithNonceSize(block, nonceSize)
 	if err != nil {
 		return nil, err
 	}
