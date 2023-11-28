@@ -8,7 +8,6 @@ import (
 
 func TestV(t *testing.T) {
 	v1 := V{}
-
 	v1.Set("bar", "baz")
 	v1.Set("foo", "quux")
 
@@ -16,7 +15,6 @@ func TestV(t *testing.T) {
 	assert.Equal(t, "bar:baz#foo:quux", v1.Encode(":", "#"))
 
 	v2 := V{}
-
 	v2.Set("bar", "baz@666")
 	v2.Set("foo", "quux%666")
 
@@ -24,7 +22,6 @@ func TestV(t *testing.T) {
 	assert.Equal(t, "bar=baz%40666&foo=quux%25666", v2.Encode("=", "&", WithKVEscape()))
 
 	v3 := V{}
-
 	v3.Set("hello", "world")
 	v3.Set("bar", "baz")
 	v3.Set("foo", "")
@@ -48,11 +45,9 @@ func TestXML(t *testing.T) {
 	}
 
 	x, err := FormatVToXML(m)
-
 	assert.Nil(t, err)
 
 	r, err := ParseXMLToV([]byte(x))
-
 	assert.Nil(t, err)
 	assert.Equal(t, m, r)
 }

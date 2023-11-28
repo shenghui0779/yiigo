@@ -45,7 +45,6 @@ func WithEnvWatcher(fn EnvOnChangeFunc) EnvOption {
 // LoadEnv 加载配置文件；如未指定，则默认加载当前目录下的.env文件
 func LoadEnv(options ...EnvOption) {
 	env := &environment{path: ".env"}
-
 	for _, f := range options {
 		f(env)
 	}

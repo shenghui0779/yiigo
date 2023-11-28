@@ -2,11 +2,26 @@ package yiigo
 
 import (
 	"database/sql"
+	"strconv"
 	"testing"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 )
+
+func NullStringRequired(fl validator.FieldLevel) bool {
+	return len(fl.Field().String()) != 0
+}
+
+func NullIntGTE(fl validator.FieldLevel) bool {
+	i, err := strconv.ParseInt(fl.Param(), 0, 64)
+	if err != nil {
+		return false
+	}
+
+	return fl.Field().Int() >= i
+}
 
 type ParamsValidate struct {
 	ID   sql.NullInt64  `valid:"nullint_gte=10"`
@@ -23,14 +38,12 @@ func TestValidator(t *testing.T) {
 	)
 
 	params1 := new(ParamsValidate)
-
 	params1.ID = sql.NullInt64{
 		Int64: 9,
 		Valid: true,
 	}
 
 	err := validator.ValidateStruct(params1)
-
 	assert.NotNil(t, err)
 
 	logger.Info("err validate params", zap.Error(err))
@@ -47,6 +60,5 @@ func TestValidator(t *testing.T) {
 	}
 
 	err = validator.ValidateStruct(params2)
-
 	assert.Nil(t, err)
 }

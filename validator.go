@@ -95,7 +95,6 @@ func (v *Validator) ValidateStruct(obj any) error {
 
 		errM := e.Translate(v.translator)
 		msgs := make([]string, 0, len(errM))
-
 		for _, v := range errM {
 			msgs = append(msgs, v)
 		}
@@ -120,7 +119,6 @@ func (v *Validator) ValidateStructCtx(ctx context.Context, obj any) error {
 
 		errM := e.Translate(v.translator)
 		msgs := make([]string, 0, len(errM))
-
 		for _, v := range errM {
 			msgs = append(msgs, v)
 		}

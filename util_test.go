@@ -35,7 +35,6 @@ func TestMarshalNoEscapeHTML(t *testing.T) {
 	data := map[string]string{"url": "https://github.com/shenghui0779/yiigo?id=996&name=yiigo"}
 
 	b, err := MarshalNoEscapeHTML(data)
-
 	assert.Nil(t, err)
 	assert.Equal(t, string(b), `{"url":"https://github.com/shenghui0779/yiigo?id=996&name=yiigo"}`)
 }
@@ -114,25 +113,19 @@ func TestSliceRand(t *testing.T) {
 
 func TestCreateFile(t *testing.T) {
 	f, err := CreateFile("app.log")
-
 	if err != nil {
 		assert.Fail(t, fmt.Sprintf("Expected nil, but got: %#v", err))
-
 		return
 	}
-
 	f.Close()
 }
 
 func TestOpenFile(t *testing.T) {
 	f, err := OpenFile("app.log")
-
 	if err != nil {
 		assert.Fail(t, fmt.Sprintf("Expected nil, but got: %#v", err))
-
 		return
 	}
-
 	f.Close()
 }
 
