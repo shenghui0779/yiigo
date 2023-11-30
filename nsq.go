@@ -73,7 +73,7 @@ type NSQConsumer interface {
 	// Attempts 设置重试次数
 	Attempts() uint16
 
-	// nsq相关配置
+	// Config nsq相关配置
 	Config() *nsq.Config
 }
 

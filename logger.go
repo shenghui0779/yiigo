@@ -118,5 +118,5 @@ func Logger(name ...string) *zap.Logger {
 
 // MyTimeEncoder 自定义时间格式化
 func MyTimeEncoder(t time.Time, e zapcore.PrimitiveArrayEncoder) {
-	e.AppendString(t.In(timezone).Format(time.DateTime))
+	e.AppendString(t.In(GMT8).Format(time.DateTime))
 }

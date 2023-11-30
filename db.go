@@ -38,51 +38,17 @@ type DBConfig struct {
 
 // DBOptions 数据库配置选项
 type DBOptions struct {
-	// MaxOpenConns 设置最大可打开的连接数；-1：不限；默认：20
+	// MaxOpenConns 设置最大可打开的连接数
 	MaxOpenConns int `json:"max_open_conns"`
 
-	// MaxIdleConns 连接池最大闲置连接数；-1：不限；默认：10
+	// MaxIdleConns 连接池最大闲置连接数
 	MaxIdleConns int `json:"max_idle_conns"`
 
-	// ConnMaxLifetime 连接的最大生命时长；-1：不限；默认：10分钟
+	// ConnMaxLifetime 连接的最大生命时长
 	ConnMaxLifetime time.Duration `json:"conn_max_lifetime"`
 
-	// ConnMaxIdleTime 连接最大闲置时间；-1：不限；默认：5分钟
+	// ConnMaxIdleTime 连接最大闲置时间
 	ConnMaxIdleTime time.Duration `json:"conn_max_idle_time"`
-}
-
-func (o *DBOptions) rebuild(opt *DBOptions) {
-	if opt.MaxOpenConns > 0 {
-		o.MaxOpenConns = opt.MaxOpenConns
-	} else {
-		if opt.MaxOpenConns == -1 {
-			o.MaxOpenConns = 0
-		}
-	}
-
-	if opt.MaxIdleConns > 0 {
-		o.MaxIdleConns = opt.MaxIdleConns
-	} else {
-		if opt.MaxIdleConns == -1 {
-			o.MaxIdleConns = 0
-		}
-	}
-
-	if opt.ConnMaxLifetime > 0 {
-		o.ConnMaxLifetime = opt.ConnMaxLifetime
-	} else {
-		if opt.ConnMaxLifetime == -1 {
-			o.ConnMaxLifetime = 0
-		}
-	}
-
-	if opt.ConnMaxIdleTime > 0 {
-		o.ConnMaxIdleTime = opt.ConnMaxIdleTime
-	} else {
-		if opt.ConnMaxIdleTime == -1 {
-			o.ConnMaxIdleTime = 0
-		}
-	}
 }
 
 func initDB(name string, driver DBDriver, cfg *DBConfig) error {
@@ -90,27 +56,17 @@ func initDB(name string, driver DBDriver, cfg *DBConfig) error {
 	if err != nil {
 		return err
 	}
-
 	if err = db.Ping(); err != nil {
 		db.Close()
 		return err
 	}
 
-	opt := &DBOptions{
-		MaxOpenConns:    20,
-		MaxIdleConns:    10,
-		ConnMaxLifetime: 10 * time.Minute,
-		ConnMaxIdleTime: 5 * time.Minute,
-	}
-
 	if cfg.Options != nil {
-		opt.rebuild(cfg.Options)
+		db.SetMaxOpenConns(cfg.Options.MaxOpenConns)
+		db.SetMaxIdleConns(cfg.Options.MaxIdleConns)
+		db.SetConnMaxLifetime(cfg.Options.ConnMaxLifetime)
+		db.SetConnMaxIdleTime(cfg.Options.ConnMaxIdleTime)
 	}
-
-	db.SetMaxOpenConns(opt.MaxOpenConns)
-	db.SetMaxIdleConns(opt.MaxIdleConns)
-	db.SetConnMaxLifetime(opt.ConnMaxLifetime)
-	db.SetConnMaxIdleTime(opt.ConnMaxIdleTime)
 
 	dbMap[name] = sqlx.NewDb(db, string(driver))
 
