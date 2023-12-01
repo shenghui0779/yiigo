@@ -68,20 +68,22 @@ func newLogger(cfg *LoggerConfig) *zap.Logger {
 	c.EncodeTime = MyTimeEncoder
 	c.EncodeCaller = zapcore.FullCallerEncoder
 
-	ws := make([]zapcore.WriteSyncer, 0, 2)
-
-	ws = append(ws, zapcore.AddSync(&lumberjack.Logger{
-		Filename:   cfg.Filename,
-		MaxSize:    cfg.Options.MaxSize,
-		MaxAge:     cfg.Options.MaxAge,
-		MaxBackups: cfg.Options.MaxBackups,
-		Compress:   cfg.Options.Compress,
-		LocalTime:  true,
-	}))
-
-	if cfg.Options.Stderr {
-		ws = append(ws, zapcore.Lock(os.Stderr))
+	w := &lumberjack.Logger{
+		Filename:  cfg.Filename,
+		LocalTime: true,
 	}
+	ws := make([]zapcore.WriteSyncer, 0, 2)
+	if cfg.Options != nil {
+		w.MaxSize = cfg.Options.MaxSize
+		w.MaxAge = cfg.Options.MaxAge
+		w.MaxBackups = cfg.Options.MaxBackups
+		w.Compress = cfg.Options.Compress
+
+		if cfg.Options.Stderr {
+			ws = append(ws, zapcore.Lock(os.Stderr))
+		}
+	}
+	ws = append(ws, zapcore.AddSync(w))
 
 	core := zapcore.NewCore(zapcore.NewJSONEncoder(c), zapcore.NewMultiWriteSyncer(ws...), zap.DebugLevel)
 
