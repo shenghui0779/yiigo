@@ -250,38 +250,38 @@ func NewHTTPClient(client *http.Client) HTTPClient {
 	}
 }
 
-var defaultHTTPClient = NewDefaultHTTPClient()
+var defaultHttpCli = NewDefaultHTTPClient()
 
 // HTTPGet 发送GET请求
 func HTTPGet(ctx context.Context, reqURL string, options ...HTTPOption) (*http.Response, error) {
-	return defaultHTTPClient.Do(ctx, http.MethodGet, reqURL, nil, options...)
+	return defaultHttpCli.Do(ctx, http.MethodGet, reqURL, nil, options...)
 }
 
 // HTTPPost 发送POST请求
 func HTTPPost(ctx context.Context, reqURL string, body []byte, options ...HTTPOption) (*http.Response, error) {
-	return defaultHTTPClient.Do(ctx, http.MethodPost, reqURL, body, options...)
+	return defaultHttpCli.Do(ctx, http.MethodPost, reqURL, body, options...)
 }
 
 // HTTPPostJSON 发送POST请求(json数据)
 func HTTPPostJSON(ctx context.Context, reqURL string, body []byte, options ...HTTPOption) (*http.Response, error) {
 	options = append(options, WithHTTPHeader(HeaderContentType, ContentForm))
 
-	return defaultHTTPClient.Do(ctx, http.MethodPost, reqURL, body, options...)
+	return defaultHttpCli.Do(ctx, http.MethodPost, reqURL, body, options...)
 }
 
 // HTTPPostForm 发送POST表单请求
 func HTTPPostForm(ctx context.Context, reqURL string, data url.Values, options ...HTTPOption) (*http.Response, error) {
 	options = append(options, WithHTTPHeader(HeaderContentType, ContentForm))
 
-	return defaultHTTPClient.Do(ctx, http.MethodPost, reqURL, []byte(data.Encode()), options...)
+	return defaultHttpCli.Do(ctx, http.MethodPost, reqURL, []byte(data.Encode()), options...)
 }
 
 // HTTPUpload 文件上传
 func HTTPUpload(ctx context.Context, reqURL string, form UploadForm, options ...HTTPOption) (*http.Response, error) {
-	return defaultHTTPClient.Upload(ctx, reqURL, form, options...)
+	return defaultHttpCli.Upload(ctx, reqURL, form, options...)
 }
 
 // HTTPDo 发送HTTP请求
 func HTTPDo(ctx context.Context, method, reqURL string, body []byte, options ...HTTPOption) (*http.Response, error) {
-	return defaultHTTPClient.Do(ctx, method, reqURL, body, options...)
+	return defaultHttpCli.Do(ctx, method, reqURL, body, options...)
 }
