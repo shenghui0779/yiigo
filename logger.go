@@ -40,8 +40,8 @@ type LoggerOptions struct {
 	// Stderr 是否输出到控制台
 	Stderr bool `json:"stderr"`
 
-	// ZapOptions Zap日志选项
-	ZapOptions []zap.Option `json:"zap_options"`
+	// ZapOpts Zap日志选项
+	ZapOpts []zap.Option `json:"zap_opts"`
 }
 
 func debugLogger(options ...zap.Option) *zap.Logger {
@@ -59,14 +59,16 @@ func debugLogger(options ...zap.Option) *zap.Logger {
 
 func newLogger(cfg *LoggerConfig) *zap.Logger {
 	if len(cfg.Filename) == 0 {
-		return debugLogger(cfg.Options.ZapOptions...)
+		return debugLogger(cfg.Options.ZapOpts...)
 	}
 
-	c := zap.NewProductionEncoderConfig()
+	ec := zap.NewProductionEncoderConfig()
 
-	c.TimeKey = "time"
-	c.EncodeTime = MyTimeEncoder
-	c.EncodeCaller = zapcore.FullCallerEncoder
+	ec.TimeKey = "time"
+	ec.EncodeTime = MyTimeEncoder
+	ec.EncodeCaller = zapcore.FullCallerEncoder
+
+	var zapOpts []zap.Option
 
 	w := &lumberjack.Logger{
 		Filename:  cfg.Filename,
@@ -74,6 +76,8 @@ func newLogger(cfg *LoggerConfig) *zap.Logger {
 	}
 	ws := make([]zapcore.WriteSyncer, 0, 2)
 	if cfg.Options != nil {
+		zapOpts = cfg.Options.ZapOpts
+
 		w.MaxSize = cfg.Options.MaxSize
 		w.MaxAge = cfg.Options.MaxAge
 		w.MaxBackups = cfg.Options.MaxBackups
@@ -85,9 +89,7 @@ func newLogger(cfg *LoggerConfig) *zap.Logger {
 	}
 	ws = append(ws, zapcore.AddSync(w))
 
-	core := zapcore.NewCore(zapcore.NewJSONEncoder(c), zapcore.NewMultiWriteSyncer(ws...), zap.DebugLevel)
-
-	return zap.New(core, cfg.Options.ZapOptions...)
+	return zap.New(zapcore.NewCore(zapcore.NewJSONEncoder(ec), zapcore.NewMultiWriteSyncer(ws...), zap.DebugLevel), zapOpts...)
 }
 
 func initLogger(name string, cfg *LoggerConfig) {
