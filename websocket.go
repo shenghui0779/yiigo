@@ -8,7 +8,7 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-var wsupgrader *websocket.Upgrader
+var upgrader *websocket.Upgrader
 
 // WSMessage websocket消息
 type WSMessage struct {
@@ -126,11 +126,11 @@ func (c *wsconn) Close(ctx context.Context) error {
 
 // NewWSConn 生成一个websocket连接
 func NewWSConn(w http.ResponseWriter, r *http.Request, authFn func(ctx context.Context, msg *WSMessage) (*WSMessage, error)) (WSConn, error) {
-	if wsupgrader == nil {
+	if upgrader == nil {
 		return nil, errors.New("upgrader is nil (forgotten configure?)")
 	}
 
-	c, err := wsupgrader.Upgrade(w, r, nil)
+	c, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		return nil, err
 	}

@@ -91,32 +91,21 @@ func WithLogger(name string, cfg *LoggerConfig) InitOption {
 	}
 }
 
-// WithNSQProducer 设置nsq生产者
-func WithNSQProducer(nsqd string, cfg *nsq.Config) InitOption {
+// WithNSQ 设置NSQ
+func WithNSQ(nsqd string, lookupd []string, cfg *nsq.Config, consumers ...NSQConsumer) InitOption {
 	return func() {
-		if err := initNSQProducer(nsqd, cfg); err != nil {
-			logger.Panic("err nsq producer init", zap.String("nsqd", nsqd), zap.Error(err))
+		if err := initNSQ(nsqd, lookupd, cfg, consumers...); err != nil {
+			logger.Panic("err nsq init", zap.String("nsqd", nsqd), zap.Strings("lookupd", lookupd), zap.Error(err))
 		}
 
 		logger.Info("nsq producer is OK")
 	}
 }
 
-// WithNSQConsumers 设置nsq消费者
-func WithNSQConsumers(lookupd []string, consumers ...NSQConsumer) InitOption {
-	return func() {
-		if err := setNSQConsumers(lookupd, consumers...); err != nil {
-			logger.Panic("err set nsq consumers", zap.Strings("lookupd", lookupd), zap.Error(err))
-		}
-
-		logger.Info("nsq consumers set OK")
-	}
-}
-
 // WithWebsocket 设置websocket
-func WithWebsocket(upgrader *websocket.Upgrader) InitOption {
+func WithWebsocket(up *websocket.Upgrader) InitOption {
 	return func() {
-		wsupgrader = upgrader
+		upgrader = up
 	}
 }
 

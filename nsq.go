@@ -21,7 +21,7 @@ func (l *NSQLogger) Output(calldepth int, s string) error {
 	return nil
 }
 
-func initNSQProducer(nsqd string, cfg *nsq.Config) error {
+func initNSQ(nsqd string, lookupd []string, cfg *nsq.Config, consumers ...NSQConsumer) error {
 	if cfg == nil {
 		cfg = nsq.NewConfig()
 	}
@@ -38,6 +38,11 @@ func initNSQProducer(nsqd string, cfg *nsq.Config) error {
 	}
 
 	producer.SetLogger(&NSQLogger{}, nsq.LogLevelError)
+
+	// set consumers
+	if err = consumerSet(lookupd, consumers...); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -77,7 +82,7 @@ type NSQConsumer interface {
 	Config() *nsq.Config
 }
 
-func setNSQConsumers(lookupd []string, consumers ...NSQConsumer) error {
+func consumerSet(lookupd []string, consumers ...NSQConsumer) error {
 	for _, c := range consumers {
 		cfg := c.Config()
 
