@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/gorilla/websocket"
+	"github.com/nsqio/go-nsq"
 	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 )
@@ -91,21 +92,17 @@ func WithLogger(name string, cfg *LoggerConfig) InitOption {
 }
 
 // WithNSQ 设置NSQ
-func WithNSQ(cfg *NSQConfig) InitOption {
+func WithNSQ(nsqd string, lookupd []string, cfg *nsq.Config, consumers ...NSQConsumer) InitOption {
 	return func() {
-		nsqd, lookupd := "", make([]string, 0)
-		if cfg.Producer != nil {
-			nsqd = cfg.Producer.Nsqd
-		}
-		if cfg.Consumer != nil {
-			lookupd = cfg.Consumer.Lookupd
+		if cfg == nil {
+			cfg = nsq.NewConfig()
 		}
 
-		if err := initNSQ(cfg); err != nil {
+		if err := initNSQ(nsqd, lookupd, cfg, consumers...); err != nil {
 			logger.Panic("err nsq init", zap.String("nsqd", nsqd), zap.Strings("lookupd", lookupd), zap.Error(err))
 		}
 
-		logger.Info("nsq is OK", zap.String("nsqd", nsqd), zap.Strings("lookupd", lookupd))
+		logger.Info("nsq producer is OK", zap.String("nsqd", nsqd), zap.Strings("lookupd", lookupd))
 	}
 }
 
