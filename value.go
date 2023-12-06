@@ -41,7 +41,7 @@ func (v V) Encode(sym, sep string, options ...VEncOption) string {
 		return ""
 	}
 
-	setting := &vencSetting{
+	setting := &vEncOptions{
 		ignoreKeys: make(map[string]struct{}),
 	}
 
@@ -62,7 +62,7 @@ func (v V) Encode(sym, sep string, options ...VEncOption) string {
 	for _, k := range keys {
 		val := v[k]
 
-		if len(val) == 0 && setting.emptyMode == EmptyEncIgnore {
+		if len(val) == 0 && setting.emptyMode == EmptyIgnore {
 			continue
 		}
 
@@ -89,7 +89,7 @@ func (v V) Encode(sym, sep string, options ...VEncOption) string {
 		}
 
 		// 保留符号
-		if setting.emptyMode != EmptyEncOnlyKey {
+		if setting.emptyMode != EmptyOnlyKey {
 			buf.WriteString(sym)
 		}
 	}
@@ -97,43 +97,43 @@ func (v V) Encode(sym, sep string, options ...VEncOption) string {
 	return buf.String()
 }
 
-// VEmptyEncMode 值为空时的Encode模式
-type VEmptyEncMode int
+// VEmptyMode 值为空时的Encode模式
+type VEmptyMode int
 
 const (
-	EmptyEncDefault VEmptyEncMode = iota // 默认：bar=baz&foo=
-	EmptyEncIgnore                       // 忽略：bar=baz
-	EmptyEncOnlyKey                      // 仅保留Key：bar=baz&foo
+	EmptyDefault VEmptyMode = iota // 默认：bar=baz&foo=
+	EmptyIgnore                    // 忽略：bar=baz
+	EmptyOnlyKey                   // 仅保留Key：bar=baz&foo
 )
 
-type vencSetting struct {
+type vEncOptions struct {
 	escape     bool
-	emptyMode  VEmptyEncMode
+	emptyMode  VEmptyMode
 	ignoreKeys map[string]struct{}
 }
 
 // VEncOption V Encode 选项
-type VEncOption func(s *vencSetting)
+type VEncOption func(o *vEncOptions)
 
-// WithEmptyEncMode 设置值为空时的Encode模式
-func WithEmptyEncMode(mode VEmptyEncMode) VEncOption {
-	return func(s *vencSetting) {
-		s.emptyMode = mode
+// WithEmptyMode 设置值为空时的Encode模式
+func WithEmptyMode(mode VEmptyMode) VEncOption {
+	return func(o *vEncOptions) {
+		o.emptyMode = mode
 	}
 }
 
 // WithKVEscape 设置K-V是否需要QueryEscape
 func WithKVEscape() VEncOption {
-	return func(s *vencSetting) {
-		s.escape = true
+	return func(o *vEncOptions) {
+		o.escape = true
 	}
 }
 
 // WithIgnoreKeys 设置Encode时忽略的key
 func WithIgnoreKeys(keys ...string) VEncOption {
-	return func(s *vencSetting) {
+	return func(o *vEncOptions) {
 		for _, k := range keys {
-			s.ignoreKeys[k] = struct{}{}
+			o.ignoreKeys[k] = struct{}{}
 		}
 	}
 }
@@ -143,17 +143,13 @@ func FormatVToXML(vals V) ([]byte, error) {
 	var builder strings.Builder
 
 	builder.WriteString("<xml>")
-
 	for k, v := range vals {
 		builder.WriteString("<" + k + ">")
-
 		if err := xml.EscapeText(&builder, []byte(v)); err != nil {
 			return nil, err
 		}
-
 		builder.WriteString("</" + k + ">")
 	}
-
 	builder.WriteString("</xml>")
 
 	return []byte(builder.String()), nil

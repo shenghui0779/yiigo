@@ -21,27 +21,50 @@ func (l *NSQLogger) Output(calldepth int, s string) error {
 	return nil
 }
 
-func initNSQ(nsqd string, lookupd []string, cfg *nsq.Config, consumers ...NSQConsumer) error {
-	if cfg == nil {
-		cfg = nsq.NewConfig()
+// NSQConfig nsq初始化配置
+type NSQConfig struct {
+	Producer *Producer
+	Consumer *Consumer
+}
+
+// Producer nsq生产者配置
+type Producer struct {
+	Nsqd   string
+	Config *nsq.Config
+}
+
+// Consumer nsq消费者配置
+type Consumer struct {
+	Lookupd []string
+	List    []NSQConsumer
+}
+
+func initNSQ(cfg *NSQConfig) error {
+	// set producer
+	if cfg.Producer != nil {
+		var err error
+
+		if cfg.Producer.Config == nil {
+			cfg.Producer.Config = nsq.NewConfig()
+		}
+
+		producer, err = nsq.NewProducer(cfg.Producer.Nsqd, cfg.Producer.Config)
+		if err != nil {
+			return err
+		}
+
+		if err = producer.Ping(); err != nil {
+			return err
+		}
+
+		producer.SetLogger(&NSQLogger{}, nsq.LogLevelError)
 	}
-
-	var err error
-
-	producer, err = nsq.NewProducer(nsqd, cfg)
-	if err != nil {
-		return err
-	}
-
-	if err = producer.Ping(); err != nil {
-		return err
-	}
-
-	producer.SetLogger(&NSQLogger{}, nsq.LogLevelError)
 
 	// set consumers
-	if err = consumerSet(lookupd, consumers...); err != nil {
-		return err
+	if cfg.Consumer != nil {
+		if err := consumerSet(cfg.Consumer.Lookupd, cfg.Consumer.List...); err != nil {
+			return err
+		}
 	}
 
 	return nil

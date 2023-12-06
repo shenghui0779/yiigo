@@ -13,41 +13,41 @@ import (
 	"time"
 )
 
-type httpSetting struct {
+type httpOptions struct {
 	header http.Header
 	cookie []*http.Cookie
 	close  bool
 }
 
 // HTTPOption HTTP请求选项
-type HTTPOption func(s *httpSetting)
+type HTTPOption func(o *httpOptions)
 
 // WithHTTPHeader 设置HTTP请求头
 func WithHTTPHeader(key string, vals ...string) HTTPOption {
-	return func(s *httpSetting) {
+	return func(o *httpOptions) {
 		if len(vals) == 1 {
-			s.header.Set(key, vals[0])
+			o.header.Set(key, vals[0])
 
 			return
 		}
 
 		for _, v := range vals {
-			s.header.Add(key, v)
+			o.header.Add(key, v)
 		}
 	}
 }
 
 // WithHTTPCookies 设置HTTP请求Cookie
 func WithHTTPCookies(cookies ...*http.Cookie) HTTPOption {
-	return func(s *httpSetting) {
-		s.cookie = cookies
+	return func(o *httpOptions) {
+		o.cookie = cookies
 	}
 }
 
 // WithHTTPClose 请求结束后关闭请求
 func WithHTTPClose() HTTPOption {
-	return func(s *httpSetting) {
-		s.close = true
+	return func(o *httpOptions) {
+		o.close = true
 	}
 }
 
@@ -159,35 +159,34 @@ func (c *httpCli) Do(ctx context.Context, method, reqURL string, body []byte, op
 		return nil, err
 	}
 
-	setting := new(httpSetting)
-
+	opts := new(httpOptions)
 	if len(options) != 0 {
-		setting.header = http.Header{}
+		opts.header = http.Header{}
 
 		for _, f := range options {
-			f(setting)
+			f(opts)
 		}
 	}
 
 	// header
-	if len(setting.header) != 0 {
-		req.Header = setting.header
+	if len(opts.header) != 0 {
+		req.Header = opts.header
 	}
 
 	// cookie
-	if len(setting.cookie) != 0 {
-		for _, v := range setting.cookie {
+	if len(opts.cookie) != 0 {
+		for _, v := range opts.cookie {
 			req.AddCookie(v)
 		}
 	}
 
-	if setting.close {
+	if opts.close {
 		req.Close = true
 	}
 
 	resp, err := c.client.Do(req)
 	if err != nil {
-		// If the context has been canceled, the context's error is probably more useful.
+		// If the context has been canceled, the context'o error is probably more useful.
 		select {
 		case <-ctx.Done():
 			err = ctx.Err()
