@@ -13,6 +13,16 @@ import (
 	"time"
 )
 
+const (
+	HeaderAuthorization = "Authorization"
+	HeaderContentType   = "Content-Type"
+)
+
+const (
+	ContentJSON = "application/json; charset=utf-8"
+	ContentForm = "application/x-www-form-urlencoded"
+)
+
 type httpOptions struct {
 	header http.Header
 	cookie []*http.Cookie
