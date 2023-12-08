@@ -3,10 +3,9 @@ package yiigo
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"sync"
 	"time"
-
-	"go.uber.org/zap"
 )
 
 type ctxTWKey int
@@ -17,22 +16,23 @@ const CtxTaskAddedAt ctxTWKey = 0
 // TWTask 时间轮任务
 type TWTask struct {
 	ctx         context.Context
-	uniqID      string
-	round       int
-	attempts    uint16        // 当前尝试的次数
-	maxAttempts uint16        // 最大尝试次数
-	remainder   time.Duration // 任务执行前的剩余延迟（小于时间轮精度）
-	cumulative  int64         // 多次重试的累计时长（单位：ns）
-	deferFn     func(attempts uint16) time.Duration
-	callback    func(ctx context.Context, taskID string) error
+	uniqID      string                                         // 任务唯一标识
+	round       int                                            // 延迟执行的轮数
+	attempts    uint16                                         // 当前尝试的次数
+	maxAttempts uint16                                         // 最大尝试次数
+	remainder   time.Duration                                  // 任务执行前的剩余延迟（小于时间轮精度）
+	cumulative  int64                                          // 多次重试的累计时长（单位：ns）
+	deferFn     func(attempts uint16) time.Duration            // 返回任务下一次延迟执行的时间
+	callback    func(ctx context.Context, taskID string) error // 任务回调函数
 }
 
-// TimingWheel 一个简易个单时间轮
-type TimingWheel interface {
+// TimeWheel 单时间轮
+type TimeWheel interface {
 	// AddTask 添加一个任务，到期被执行，默认仅执行一次；若指定了重试次数，则在发生错误后重试
 	// 注意：任务是异步执行的，故Context应该是一个克隆的且不带超时时间的
 	AddTask(ctx context.Context, taskID string, handler func(ctx context.Context, taskID string) error, options ...TaskOption)
-
+	// Run 运行时间轮
+	Run()
 	// Stop 终止时间轮
 	Stop()
 }
@@ -64,18 +64,21 @@ func (tw *timewheel) AddTask(ctx context.Context, taskID string, handler func(ct
 	tw.requeue(task)
 }
 
+func (tw *timewheel) Run() {
+	go tw.scheduler()
+}
+
 func (tw *timewheel) Stop() {
 	select {
 	case <-tw.stop:
 		tw.log(context.Background(), "timingwheel stopped")
-
 		return
 	default:
 	}
 
 	close(tw.stop)
 
-	tw.log(context.Background(), fmt.Sprintf("timingwheel stoped at: %s", time.Now().String()))
+	tw.log(context.Background(), "timewheel stopped", "at="+time.Now().String())
 }
 
 func (tw *timewheel) requeue(task *TWTask) {
@@ -85,7 +88,7 @@ func (tw *timewheel) requeue(task *TWTask) {
 
 	select {
 	case <-tw.stop:
-		tw.log(task.ctx, fmt.Sprintf("task(%s) attempt(%d) failed, because the timingwheel has stopped", task.uniqID, task.attempts+1))
+		tw.log(task.ctx, "task requeue failed because of timewheel has stopped", "task_id="+task.uniqID, "attempts="+strconv.Itoa(int(task.attempts+1)))
 		return
 	default:
 	}
@@ -102,7 +105,6 @@ func (tw *timewheel) requeue(task *TWTask) {
 	task.round = int(duration / (tick * int64(tw.size)))
 
 	slot := int(task.cumulative/tick) % tw.size
-
 	if slot == tw.slot {
 		if task.round == 0 {
 			task.remainder = delay
@@ -160,7 +162,7 @@ func (tw *timewheel) process(slot int) {
 func (tw *timewheel) run(task *TWTask) {
 	defer func() {
 		if v := recover(); v != nil {
-			tw.log(task.ctx, fmt.Sprintf("task(%s) run panic: %v", task.uniqID, v))
+			tw.log(task.ctx, "task do panic", "task_id="+task.uniqID, fmt.Sprintf("error=%v", v))
 		}
 	}()
 
@@ -169,7 +171,7 @@ func (tw *timewheel) run(task *TWTask) {
 	}
 
 	if err := task.callback(task.ctx, task.uniqID); err != nil {
-		tw.log(task.ctx, fmt.Sprintf("task(%s) run error: %v", task.uniqID, err))
+		tw.log(task.ctx, "task do error", "task_id="+task.uniqID, "error="+err.Error())
 		tw.requeue(task)
 
 		return
@@ -179,10 +181,12 @@ func (tw *timewheel) run(task *TWTask) {
 // TWOption 时间轮选项
 type TWOption func(tw *timewheel)
 
-// WithTWLogger 指定时间轮日志
-func WithTWLogger(fn func(ctx context.Context, v ...any)) TWOption {
+// WithTWErrLog 设置时间轮错误日志
+func WithTWErrLog(fn func(ctx context.Context, v ...any)) TWOption {
 	return func(tw *timewheel) {
-		tw.log = fn
+		if fn != nil {
+			tw.log = fn
+		}
 	}
 }
 
@@ -192,34 +196,34 @@ type TaskOption func(t *TWTask)
 // WithTaskAttempts 指定任务重试次数；默认：1
 func WithTaskAttempts(attempts uint16) TaskOption {
 	return func(t *TWTask) {
-		t.maxAttempts = attempts
+		if attempts > 0 {
+			t.maxAttempts = attempts
+		}
 	}
 }
 
 // WithTaskDefer 指定任务延迟执行时间；默认：立即执行
 func WithTaskDefer(fn func(attempts uint16) time.Duration) TaskOption {
 	return func(t *TWTask) {
-		t.deferFn = fn
+		if fn != nil {
+			t.deferFn = fn
+		}
 	}
 }
 
-// NewTimingWheel 返回一个时间轮实例
-func NewTimingWheel(tick time.Duration, size int, options ...TWOption) TimingWheel {
+// NewTimeWheel 返回一个时间轮实例
+func NewTimeWheel(tick time.Duration, size int, options ...TWOption) TimeWheel {
 	tw := &timewheel{
 		tick:   tick,
 		size:   size,
 		bucket: make([]sync.Map, size),
 		stop:   make(chan struct{}),
-		log: func(ctx context.Context, v ...any) {
-			logger.Error("err timingwheel", zap.String("err", fmt.Sprint(v...)))
-		},
+		log:    func(ctx context.Context, v ...any) {},
 	}
 
 	for _, f := range options {
 		f(tw)
 	}
-
-	go tw.scheduler()
 
 	return tw
 }
