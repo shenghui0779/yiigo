@@ -18,7 +18,6 @@ var (
 type LoggerConfig struct {
 	// Filename 日志名称
 	Filename string `json:"filename"`
-
 	// Options 日志选项
 	Options *LoggerOptions `json:"options"`
 }
@@ -27,19 +26,14 @@ type LoggerConfig struct {
 type LoggerOptions struct {
 	// MaxSize 当前文件多大时轮替；默认：100MB
 	MaxSize int `json:"max_size"`
-
 	// MaxAge 轮替的旧文件最大保留时长；默认：不限
 	MaxAge int `json:"max_age"`
-
 	// MaxBackups 轮替的旧文件最大保留数量；默认：不限
 	MaxBackups int `json:"max_backups"`
-
 	// Compress 轮替的旧文件是否压缩；默认：不压缩
 	Compress bool `json:"compress"`
-
 	// Stderr 是否输出到控制台
 	Stderr bool `json:"stderr"`
-
 	// ZapOpts Zap日志选项
 	ZapOpts []zap.Option `json:"zap_opts"`
 }
@@ -59,7 +53,7 @@ func debugLogger(options ...zap.Option) *zap.Logger {
 
 func newLogger(cfg *LoggerConfig) *zap.Logger {
 	if len(cfg.Filename) == 0 {
-		return debugLogger(cfg.Options.ZapOpts...)
+		return debugLogger()
 	}
 
 	ec := zap.NewProductionEncoderConfig()

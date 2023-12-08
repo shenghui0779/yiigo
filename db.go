@@ -31,7 +31,6 @@ type DBConfig struct {
 	// [Postgres] host=localhost port=5432 user=root password=secret dbname=test connect_timeout=10 sslmode=disable
 	// [- SQLite] file::memory:?cache=shared
 	DSN string `json:"dsn"`
-
 	// Options 配置选项
 	Options *DBOptions `json:"options"`
 }
@@ -40,13 +39,10 @@ type DBConfig struct {
 type DBOptions struct {
 	// MaxOpenConns 设置最大可打开的连接数
 	MaxOpenConns int `json:"max_open_conns"`
-
 	// MaxIdleConns 连接池最大闲置连接数
 	MaxIdleConns int `json:"max_idle_conns"`
-
 	// ConnMaxLifetime 连接的最大生命时长
 	ConnMaxLifetime time.Duration `json:"conn_max_lifetime"`
-
 	// ConnMaxIdleTime 连接最大闲置时间
 	ConnMaxIdleTime time.Duration `json:"conn_max_idle_time"`
 }
