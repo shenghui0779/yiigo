@@ -65,7 +65,6 @@ func WithHTTPClose() HTTPOption {
 type UploadForm interface {
 	// Field 返回表单普通字段
 	Field(name string) string
-
 	// Write 将表单文件写入流
 	Write(w *multipart.Writer) error
 }
@@ -153,7 +152,6 @@ type HTTPClient interface {
 	// Do 发送HTTP请求
 	// 注意：应该使用Context设置请求超时时间
 	Do(ctx context.Context, method, reqURL string, body []byte, options ...HTTPOption) (*http.Response, error)
-
 	// Upload 上传文件
 	// 注意：应该使用Context设置请求超时时间
 	Upload(ctx context.Context, reqURL string, form UploadForm, options ...HTTPOption) (*http.Response, error)

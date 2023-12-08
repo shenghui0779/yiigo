@@ -52,10 +52,8 @@ func NewWSBinaryMsg(v []byte) *WSMessage {
 type WSConn interface {
 	// Read 读消息
 	Read(ctx context.Context, handler func(ctx context.Context, msg *WSMessage) (*WSMessage, error)) error
-
 	// Write 写消息
 	Write(ctx context.Context, msg *WSMessage) error
-
 	// Close 关闭连接
 	Close(ctx context.Context) error
 }

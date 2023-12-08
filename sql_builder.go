@@ -27,22 +27,17 @@ type SQLBuilder interface {
 type SQLWrapper interface {
 	// ToQuery 生成SELECT语句
 	ToQuery(ctx context.Context) (sql string, args []any, err error)
-
 	// ToInsert 生成INSERT语句
 	// 数据类型：`struct`, `*struct`, `yiigo.X`.
 	ToInsert(ctx context.Context, data any) (sql string, args []any, err error)
-
 	// ToBatchInsert 生成批量INSERT语句
 	// 数据类型：`[]struct`, `[]*struct`, `[]yiigo.X`.
 	ToBatchInsert(ctx context.Context, data any) (sql string, args []any, err error)
-
 	// ToUpdate 生成UPDATE语句
 	// 数据类型：`struct`, `*struct`, `yiigo.X`.
 	ToUpdate(ctx context.Context, data any) (sql string, args []any, err error)
-
 	// ToDelete 生成DELETE语句
 	ToDelete(ctx context.Context) (sql string, args []any, err error)
-
 	// ToTruncate 生成TRUNCATE语句
 	ToTruncate(ctx context.Context) string
 }

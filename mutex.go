@@ -13,7 +13,6 @@ type Mutex interface {
 	// interval - 每隔指定时间尝试获取一次锁
 	// timeout - 获取锁的超时时间
 	Lock(ctx context.Context, interval, timeout time.Duration) error
-
 	// UnLock 释放锁
 	UnLock(ctx context.Context) error
 }
