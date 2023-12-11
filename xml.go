@@ -17,7 +17,7 @@ func (c CDATA) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	}{string(c)}, start)
 }
 
-// FormatVToXML format map to xml
+// FormatVToXML Map转XML(仅单层结构)
 func FormatVToXML(vals V) ([]byte, error) {
 	var builder strings.Builder
 
@@ -34,7 +34,7 @@ func FormatVToXML(vals V) ([]byte, error) {
 	return []byte(builder.String()), nil
 }
 
-// ParseXMLToV parse xml to map
+// ParseXMLToV XML转Map(仅单层结构)
 func ParseXMLToV(b []byte) (V, error) {
 	m := make(V)
 
