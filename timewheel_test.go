@@ -15,15 +15,13 @@ func TestTimeWheel_1(t *testing.T) {
 	ch := make(chan string)
 	defer close(ch)
 
-	tw := NewTimeWheel(time.Second, 60)
+	tw := NewTimeWheel(time.Second, 7)
 
 	for i := 0; i < 10; i++ {
 		n := i + 1
-		now := time.Now()
 
 		tw.AddTask(context.Background(), "task#"+strconv.Itoa(n), func(ctx context.Context, taskID string) error {
-			ch <- fmt.Sprintf("%s - %ds", taskID, int64(time.Since(now).Seconds()))
-
+			ch <- fmt.Sprintf("%s run after %ds", taskID, int64(time.Since(TaskAddedAt(ctx)).Seconds()))
 			return nil
 		}, WithTaskDefer(func(attempts uint16) time.Duration {
 			return time.Second * time.Duration(n+i)
@@ -42,16 +40,16 @@ func TestTimeWheel_1(t *testing.T) {
 	}
 
 	assert.Equal(t, []string{
-		"task#1 - 1s",
-		"task#2 - 3s",
-		"task#3 - 5s",
-		"task#4 - 7s",
-		"task#5 - 9s",
-		"task#6 - 11s",
-		"task#7 - 13s",
-		"task#8 - 15s",
-		"task#9 - 17s",
-		"task#10 - 19s",
+		"task#1 run after 1s",
+		"task#2 run after 3s",
+		"task#3 run after 5s",
+		"task#4 run after 7s",
+		"task#5 run after 9s",
+		"task#6 run after 11s",
+		"task#7 run after 13s",
+		"task#8 run after 15s",
+		"task#9 run after 17s",
+		"task#10 run after 19s",
 	}, ret)
 }
 
@@ -65,11 +63,9 @@ func TestTimeWheel_2(t *testing.T) {
 
 	for i := 0; i < 10; i++ {
 		n := i + 1
-		now := time.Now()
 
 		tw.AddTask(context.Background(), "task#"+strconv.Itoa(n), func(ctx context.Context, taskID string) error {
-			ch <- fmt.Sprintf("%s - %ds", taskID, int64(time.Since(now).Seconds()))
-
+			ch <- fmt.Sprintf("%s run after %ds", taskID, int64(time.Since(TaskAddedAt(ctx)).Seconds()))
 			return nil
 		}, WithTaskDefer(func(attempts uint16) time.Duration {
 			return time.Second * time.Duration(n+i)
@@ -86,15 +82,15 @@ func TestTimeWheel_2(t *testing.T) {
 	}
 
 	assert.Equal(t, []string{
-		"task#1 - 1s",
-		"task#2 - 3s",
-		"task#3 - 5s",
-		"task#4 - 7s",
-		"task#5 - 9s",
-		"task#6 - 11s",
-		"task#7 - 13s",
-		"task#8 - 15s",
-		"task#9 - 17s",
-		"task#10 - 19s",
+		"task#1 run after 1s",
+		"task#2 run after 3s",
+		"task#3 run after 5s",
+		"task#4 run after 7s",
+		"task#5 run after 9s",
+		"task#6 run after 11s",
+		"task#7 run after 13s",
+		"task#8 run after 15s",
+		"task#9 run after 17s",
+		"task#10 run after 19s",
 	}, ret)
 }

@@ -2,34 +2,46 @@ package yiigo
 
 import (
 	"context"
-	"fmt"
-	"strconv"
 	"sync"
 	"time"
 )
 
-type ctxTWKey int
+type ctxKey int
 
-// CtxTaskAddedAt Context存储任务入队时间的Key
-const CtxTaskAddedAt ctxTWKey = 0
+// ctxTaskAddedAt Context存储任务入队时间的Key
+const ctxTaskAddedAt ctxKey = 0
 
-// TWTask 时间轮任务
-type TWTask struct {
+// TaskAddedAt 返回任务的添加时间
+func TaskAddedAt(ctx context.Context) time.Time {
+	v := ctx.Value(ctxTaskAddedAt)
+	if v == nil {
+		return time.Time{}
+	}
+
+	t, ok := v.(time.Time)
+	if !ok {
+		return time.Time{}
+	}
+
+	return t
+}
+
+// Task 时间轮任务
+type Task struct {
 	ctx         context.Context
 	uniqID      string                                         // 任务唯一标识
 	round       int                                            // 延迟执行的轮数
 	attempts    uint16                                         // 当前尝试的次数
 	maxAttempts uint16                                         // 最大尝试次数
 	remainder   time.Duration                                  // 任务执行前的剩余延迟（小于时间轮精度）
-	cumulative  int64                                          // 多次重试的累计时长（单位：ns）
 	deferFn     func(attempts uint16) time.Duration            // 返回任务下一次延迟执行的时间
 	callback    func(ctx context.Context, taskID string) error // 任务回调函数
 }
 
 // TimeWheel 单时间轮
 type TimeWheel interface {
-	// AddTask 添加一个任务，到期被执行，默认仅执行一次；若指定了重试次数，则在发生错误后重试
-	// 注意：任务是异步执行的，故Context应该是一个克隆的且不带超时时间的
+	// AddTask 添加一个任务，到期被执行，默认仅执行一次；若指定了重试次数，则在发生错误后重试；
+	// 注意：任务是异步执行的，`ctx`一旦被取消，则任务也随之取消，故需考虑是否应该克隆一个不带「取消」的`ctx`
 	AddTask(ctx context.Context, taskID string, handler func(ctx context.Context, taskID string) error, options ...TaskOption)
 	// Run 运行时间轮
 	Run()
@@ -43,12 +55,11 @@ type timewheel struct {
 	size   int
 	bucket []sync.Map
 	stop   chan struct{}
-	log    func(ctx context.Context, v ...any)
 }
 
 func (tw *timewheel) AddTask(ctx context.Context, taskID string, handler func(ctx context.Context, taskID string) error, options ...TaskOption) {
-	task := &TWTask{
-		ctx:         context.WithValue(ctx, CtxTaskAddedAt, time.Now()),
+	task := &Task{
+		ctx:         ctx,
 		uniqID:      taskID,
 		callback:    handler,
 		maxAttempts: 1,
@@ -70,53 +81,49 @@ func (tw *timewheel) Run() {
 
 func (tw *timewheel) Stop() {
 	select {
-	case <-tw.stop:
-		tw.log(context.Background(), "timingwheel stopped")
+	case <-tw.stop: // 时间轮已停止
 		return
 	default:
 	}
 
 	close(tw.stop)
-
-	tw.log(context.Background(), "timewheel stopped", "at="+time.Now().String())
 }
 
-func (tw *timewheel) requeue(task *TWTask) {
-	if task.attempts >= task.maxAttempts {
-		return
-	}
-
+func (tw *timewheel) requeue(task *Task) {
 	select {
-	case <-tw.stop:
-		tw.log(task.ctx, "task requeue failed because of timewheel has stopped", "task_id="+task.uniqID, "attempts="+strconv.Itoa(int(task.attempts+1)))
+	case <-tw.stop: // 时间轮已停止
 		return
 	default:
 	}
 
-	task.ctx = context.WithValue(task.ctx, CtxTaskAddedAt, time.Now())
+	// 任务已达到最大尝试次数
+	if task.attempts >= task.maxAttempts {
+		return
+	}
 
 	task.attempts++
+	task.ctx = context.WithValue(task.ctx, ctxTaskAddedAt, time.Now())
 
 	tick := tw.tick.Nanoseconds()
 	delay := task.deferFn(task.attempts)
 	duration := delay.Nanoseconds()
-
-	task.cumulative += duration
+	// 圈数
 	task.round = int(duration / (tick * int64(tw.size)))
 
-	slot := int(task.cumulative/tick) % tw.size
+	// 槽位
+	slot := (int(duration/tick)%tw.size + tw.slot) % tw.size
 	if slot == tw.slot {
 		if task.round == 0 {
 			task.remainder = delay
-			go tw.run(task)
+			go tw.do(task)
 
 			return
 		}
 
 		task.round--
 	}
-
-	task.remainder = time.Duration(task.cumulative % tick)
+	// 剩余延迟
+	task.remainder = time.Duration(duration % tick)
 
 	tw.bucket[slot].Store(task.uniqID, task)
 }
@@ -127,7 +134,7 @@ func (tw *timewheel) scheduler() {
 
 	for {
 		select {
-		case <-tw.stop:
+		case <-tw.stop: // 时间轮已停止
 			return
 		case <-ticker.C:
 			tw.slot = (tw.slot + 1) % tw.size
@@ -139,19 +146,22 @@ func (tw *timewheel) scheduler() {
 func (tw *timewheel) process(slot int) {
 	tw.bucket[slot].Range(func(key, value any) bool {
 		select {
-		case <-tw.stop:
+		case <-tw.stop: // 时间轮已停止
 			return false
 		default:
 		}
 
-		task := value.(*TWTask)
-
+		task := value.(*Task)
 		if task.round > 0 {
 			task.round--
 			return true
 		}
 
-		go tw.run(task)
+		select {
+		case <-task.ctx.Done(): // 任务被取消
+		default:
+			go tw.do(task)
+		}
 
 		tw.bucket[slot].Delete(key)
 
@@ -159,10 +169,10 @@ func (tw *timewheel) process(slot int) {
 	})
 }
 
-func (tw *timewheel) run(task *TWTask) {
+func (tw *timewheel) do(task *Task) {
 	defer func() {
-		if v := recover(); v != nil {
-			tw.log(task.ctx, "task do panic", "task_id="+task.uniqID, fmt.Sprintf("error=%v", v))
+		if recover() != nil {
+			tw.requeue(task)
 		}
 	}()
 
@@ -171,31 +181,16 @@ func (tw *timewheel) run(task *TWTask) {
 	}
 
 	if err := task.callback(task.ctx, task.uniqID); err != nil {
-		tw.log(task.ctx, "task do error", "task_id="+task.uniqID, "error="+err.Error())
 		tw.requeue(task)
-
-		return
-	}
-}
-
-// TWOption 时间轮选项
-type TWOption func(tw *timewheel)
-
-// WithTWErrLog 设置时间轮错误日志
-func WithTWErrLog(fn func(ctx context.Context, v ...any)) TWOption {
-	return func(tw *timewheel) {
-		if fn != nil {
-			tw.log = fn
-		}
 	}
 }
 
 // TaskOption 时间轮任务选项
-type TaskOption func(t *TWTask)
+type TaskOption func(t *Task)
 
 // WithTaskAttempts 指定任务重试次数；默认：1
 func WithTaskAttempts(attempts uint16) TaskOption {
-	return func(t *TWTask) {
+	return func(t *Task) {
 		if attempts > 0 {
 			t.maxAttempts = attempts
 		}
@@ -204,7 +199,7 @@ func WithTaskAttempts(attempts uint16) TaskOption {
 
 // WithTaskDefer 指定任务延迟执行时间；默认：立即执行
 func WithTaskDefer(fn func(attempts uint16) time.Duration) TaskOption {
-	return func(t *TWTask) {
+	return func(t *Task) {
 		if fn != nil {
 			t.deferFn = fn
 		}
@@ -212,18 +207,11 @@ func WithTaskDefer(fn func(attempts uint16) time.Duration) TaskOption {
 }
 
 // NewTimeWheel 返回一个时间轮实例
-func NewTimeWheel(tick time.Duration, size int, options ...TWOption) TimeWheel {
-	tw := &timewheel{
+func NewTimeWheel(tick time.Duration, size int) TimeWheel {
+	return &timewheel{
 		tick:   tick,
 		size:   size,
 		bucket: make([]sync.Map, size),
 		stop:   make(chan struct{}),
-		log:    func(ctx context.Context, v ...any) {},
 	}
-
-	for _, f := range options {
-		f(tw)
-	}
-
-	return tw
 }
