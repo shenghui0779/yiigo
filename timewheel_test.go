@@ -3,6 +3,7 @@ package yiigo
 import (
 	"context"
 	"fmt"
+	"math"
 	"strconv"
 	"testing"
 	"time"
@@ -21,7 +22,7 @@ func TestTimeWheel_1(t *testing.T) {
 		n := i + 1
 
 		tw.AddTask(context.Background(), "task#"+strconv.Itoa(n), func(ctx context.Context, taskID string) error {
-			ch <- fmt.Sprintf("%s run after %ds", taskID, int64(time.Since(TaskAddedAt(ctx)).Seconds()))
+			ch <- fmt.Sprintf("%s run after %ds", taskID, int64(math.Round(time.Since(TaskAddedAt(ctx)).Seconds())))
 			return nil
 		}, WithTaskDefer(func(attempts uint16) time.Duration {
 			return time.Second * time.Duration(n+i)
@@ -58,14 +59,16 @@ func TestTimeWheel_2(t *testing.T) {
 	ch := make(chan string)
 	defer close(ch)
 
-	tw := NewTimeWheel(time.Second, 60)
+	tw := NewTimeWheel(time.Second, 7)
 	tw.Run()
 
 	for i := 0; i < 10; i++ {
+		time.Sleep(time.Second)
+
 		n := i + 1
 
 		tw.AddTask(context.Background(), "task#"+strconv.Itoa(n), func(ctx context.Context, taskID string) error {
-			ch <- fmt.Sprintf("%s run after %ds", taskID, int64(time.Since(TaskAddedAt(ctx)).Seconds()))
+			ch <- fmt.Sprintf("%s run after %ds", taskID, int64(math.Round(time.Since(TaskAddedAt(ctx)).Seconds())))
 			return nil
 		}, WithTaskDefer(func(attempts uint16) time.Duration {
 			return time.Second * time.Duration(n+i)
