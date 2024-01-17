@@ -211,6 +211,7 @@ func (c *DialConn) Write(reconnectTimeout time.Duration, msg *WSMessage) error {
 	}
 }
 
+// Close 关闭连接
 func (c *DialConn) Close() error {
 	return c.conn.Close()
 }
@@ -246,6 +247,7 @@ func SetUpgrader(up *websocket.Upgrader) {
 	upgrader = up
 }
 
+// UpgradeConn websocket协议连接
 type UpgradeConn struct {
 	conn   *websocket.Conn
 	authOK bool
@@ -313,6 +315,7 @@ func (c *UpgradeConn) Write(ctx context.Context, msg *WSMessage) error {
 	return c.conn.WriteMessage(msg.T(), msg.V())
 }
 
+// Close 关闭连接
 func (c *UpgradeConn) Close() error {
 	return c.conn.Close()
 }
