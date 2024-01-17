@@ -128,7 +128,7 @@ func (c *DialConn) reconnect() error {
 	return err
 }
 
-// Read 读取消息，若失败会尝试重连 (reconnectTimeout<=0 表示重连不超时)
+// Read 读消息，若失败会尝试重连 (reconnectTimeout<=0 表示重连不超时)
 func (c *DialConn) Read(reconnectTimeout time.Duration, handler func(msg *WSMessage)) error {
 	defer func() {
 		if err := recover(); err != nil {
