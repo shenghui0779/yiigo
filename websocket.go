@@ -252,6 +252,7 @@ type UpgradeConn struct {
 	authFn func(ctx context.Context, msg *WSMessage) (*WSMessage, error)
 }
 
+// Read 读消息
 func (c *UpgradeConn) Read(ctx context.Context, handler func(ctx context.Context, msg *WSMessage) (*WSMessage, error)) error {
 	defer func() {
 		if err := recover(); err != nil {
@@ -296,6 +297,7 @@ func (c *UpgradeConn) Read(ctx context.Context, handler func(ctx context.Context
 	}
 }
 
+// Write 写消息
 func (c *UpgradeConn) Write(ctx context.Context, msg *WSMessage) error {
 	select {
 	case <-ctx.Done():
