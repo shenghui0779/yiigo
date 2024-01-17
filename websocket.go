@@ -122,8 +122,8 @@ func (c *wsconn) Close(ctx context.Context) error {
 	return c.conn.Close()
 }
 
-// NewWSConn 生成一个websocket连接
-func NewWSConn(w http.ResponseWriter, r *http.Request, authFn func(ctx context.Context, msg *WSMessage) (*WSMessage, error)) (WSConn, error) {
+// WSUpgrade upgrades the HTTP server connection to the WebSocket protocol.
+func WSUpgrade(w http.ResponseWriter, r *http.Request, authFn func(ctx context.Context, msg *WSMessage) (*WSMessage, error)) (WSConn, error) {
 	if upgrader == nil {
 		return nil, errors.New("upgrader is nil (forgotten configure?)")
 	}
