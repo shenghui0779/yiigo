@@ -35,8 +35,8 @@ func (ct *CipherText) Tag() []byte {
 
 // ------------------------------------ AES-CBC ------------------------------------
 
-// EncryptCBC AES-CBC 加密(pkcs#7, 默认填充BlockSize)
-func EncryptCBC(key, iv, data []byte, paddingSize ...uint8) (*CipherText, error) {
+// AESEncryptCBC AES-CBC 加密(pkcs#7, 默认填充BlockSize)
+func AESEncryptCBC(key, iv, data []byte, paddingSize ...uint8) (*CipherText, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		return nil, err
@@ -65,8 +65,8 @@ func EncryptCBC(key, iv, data []byte, paddingSize ...uint8) (*CipherText, error)
 	}, nil
 }
 
-// DecryptCBC AES-CBC 解密(pkcs#7)
-func DecryptCBC(key, iv, data []byte) ([]byte, error) {
+// AESDecryptCBC AES-CBC 解密(pkcs#7)
+func AESDecryptCBC(key, iv, data []byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		return nil, err
@@ -89,8 +89,8 @@ func DecryptCBC(key, iv, data []byte) ([]byte, error) {
 
 // ------------------------------------ AES-ECB ------------------------------------
 
-// EncryptECB AES-ECB 加密(pkcs#7, 默认填充BlockSize)
-func EncryptECB(key, data []byte, paddingSize ...uint8) (*CipherText, error) {
+// AESEncryptECB AES-ECB 加密(pkcs#7, 默认填充BlockSize)
+func AESEncryptECB(key, data []byte, paddingSize ...uint8) (*CipherText, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		return nil, err
@@ -115,8 +115,8 @@ func EncryptECB(key, data []byte, paddingSize ...uint8) (*CipherText, error) {
 	}, nil
 }
 
-// DecryptECB AES-ECB 解密(pkcs#7)
-func DecryptECB(key, data []byte) ([]byte, error) {
+// AESDecryptECB AES-ECB 解密(pkcs#7)
+func AESDecryptECB(key, data []byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		return nil, err
@@ -135,8 +135,8 @@ func DecryptECB(key, data []byte) ([]byte, error) {
 
 // ------------------------------------ AES-CFB ------------------------------------
 
-// EncryptCFB AES-CFB 加密
-func EncryptCFB(key, iv, data []byte) (*CipherText, error) {
+// AESEncryptCFB AES-CFB 加密
+func AESEncryptCFB(key, iv, data []byte) (*CipherText, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		return nil, err
@@ -156,8 +156,8 @@ func EncryptCFB(key, iv, data []byte) (*CipherText, error) {
 	}, nil
 }
 
-// DecryptCFB AES-CFB 解密
-func DecryptCFB(key, iv, data []byte) ([]byte, error) {
+// AESDecryptCFB AES-CFB 解密
+func AESDecryptCFB(key, iv, data []byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		return nil, err
@@ -177,8 +177,8 @@ func DecryptCFB(key, iv, data []byte) ([]byte, error) {
 
 // ------------------------------------ AES-OFB ------------------------------------
 
-// EncryptOFB AES-OFB 加密
-func EncryptOFB(key, iv, data []byte) (*CipherText, error) {
+// AESEncryptOFB AES-OFB 加密
+func AESEncryptOFB(key, iv, data []byte) (*CipherText, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		return nil, err
@@ -198,8 +198,8 @@ func EncryptOFB(key, iv, data []byte) (*CipherText, error) {
 	}, nil
 }
 
-// DecryptOFB AES-OFB 解密
-func DecryptOFB(key, iv, data []byte) ([]byte, error) {
+// AESDecryptOFB AES-OFB 解密
+func AESDecryptOFB(key, iv, data []byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		return nil, err
@@ -219,8 +219,8 @@ func DecryptOFB(key, iv, data []byte) ([]byte, error) {
 
 // ------------------------------------ AES-CTR ------------------------------------
 
-// EncryptCTR AES-CTR 加密
-func EncryptCTR(key, iv, data []byte) (*CipherText, error) {
+// AESEncryptCTR AES-CTR 加密
+func AESEncryptCTR(key, iv, data []byte) (*CipherText, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		return nil, err
@@ -240,8 +240,8 @@ func EncryptCTR(key, iv, data []byte) (*CipherText, error) {
 	}, nil
 }
 
-// DecryptCTR AES-CTR 解密
-func DecryptCTR(key, iv, data []byte) ([]byte, error) {
+// AESDecryptCTR AES-CTR 解密
+func AESDecryptCTR(key, iv, data []byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		return nil, err
@@ -267,8 +267,8 @@ type GCMOption struct {
 	NonceSize int
 }
 
-// EncryptGCM AES-GCM 加密 (默认：NonceSize = 12 & TagSize = 16)
-func EncryptGCM(key, nonce, data, aad []byte, opt *GCMOption) (*CipherText, error) {
+// AESEncryptGCM AES-GCM 加密 (默认：NonceSize = 12 & TagSize = 16)
+func AESEncryptGCM(key, nonce, data, aad []byte, opt *GCMOption) (*CipherText, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		return nil, err
@@ -302,8 +302,8 @@ func EncryptGCM(key, nonce, data, aad []byte, opt *GCMOption) (*CipherText, erro
 	}, nil
 }
 
-// DecryptGCM AES-GCM 解密 (默认：NonceSize = 12 & TagSize = 16)
-func DecryptGCM(key, nonce []byte, data, aad []byte, opt *GCMOption) ([]byte, error) {
+// AESDecryptGCM AES-GCM 解密 (默认：NonceSize = 12 & TagSize = 16)
+func AESDecryptGCM(key, nonce []byte, data, aad []byte, opt *GCMOption) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		return nil, err
