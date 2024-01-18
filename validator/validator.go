@@ -1,8 +1,6 @@
 package validator
 
 import (
-	"api/lib/log"
-
 	"context"
 	"errors"
 	"reflect"
@@ -12,7 +10,6 @@ import (
 	ut "github.com/go-playground/universal-translator"
 	"github.com/go-playground/validator/v10"
 	zhcn "github.com/go-playground/validator/v10/translations/zh"
-	"go.uber.org/zap"
 )
 
 // Validator 可被用于Gin框架的验证器
@@ -83,10 +80,7 @@ func New(opts ...Option) *Validator {
 
 	zhTrans := zh.New()
 	trans, _ := ut.New(zhTrans, zhTrans).GetTranslator("zh")
-
-	if err := zhcn.RegisterDefaultTranslations(validate, trans); err != nil {
-		log.Error(context.Background(), "err validator translation", zap.Error(err))
-	}
+	zhcn.RegisterDefaultTranslations(validate, trans)
 
 	for _, f := range opts {
 		f(validate, trans)

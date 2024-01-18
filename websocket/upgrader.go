@@ -1,14 +1,13 @@
 package websocket
 
 import (
-	"api/lib/log"
 	"context"
 	"errors"
+	"log"
 	"net/http"
 	"runtime/debug"
 
 	"github.com/gorilla/websocket"
-	"go.uber.org/zap"
 )
 
 var upgrader = &websocket.Upgrader{
@@ -36,7 +35,7 @@ type UpgradeConn struct {
 func (c *UpgradeConn) Read(ctx context.Context, handler func(ctx context.Context, msg *Message) (*Message, error)) error {
 	defer func() {
 		if err := recover(); err != nil {
-			log.Error(ctx, "websocket read panic", zap.Any("error", err), zap.ByteString("stack", debug.Stack()))
+			log.Printf("websocket read panic, error: %v, stack: %s\n", err, string(debug.Stack()))
 		}
 	}()
 

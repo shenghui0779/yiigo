@@ -1,16 +1,13 @@
 package validator
 
 import (
-	"api/lib/log"
-
-	"context"
 	"database/sql"
+	"log"
 	"strconv"
 	"testing"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
 )
 
 func NullStringRequired(fl validator.FieldLevel) bool {
@@ -47,7 +44,7 @@ func TestValidator(t *testing.T) {
 	}
 	err := v.ValidateStruct(params1)
 	assert.NotNil(t, err)
-	log.Info(context.Background(), "err validate params", zap.Error(err))
+	log.Println("err validate params:", err.Error())
 
 	params2 := &ParamsValidate{
 		ID: sql.NullInt64{
