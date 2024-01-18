@@ -10,19 +10,6 @@ import (
 	"time"
 )
 
-const MaxFormMemory = 32 << 20
-
-const (
-	HeaderAuthorization = "Authorization"
-	HeaderContentType   = "Content-Type"
-)
-
-const (
-	ContentJSON   = "application/json; charset=utf-8"
-	ContentForm   = "application/x-www-form-urlencoded"
-	MultipartForm = "multipart/form-data"
-)
-
 // HTTPClient HTTP客户端
 type HTTPClient interface {
 	// Do 发送HTTP请求

@@ -6,6 +6,22 @@ import (
 	"net/url"
 )
 
+const MaxFormMemory = 32 << 20
+
+const (
+	HeaderAccept        = "Accept"
+	HeaderAuthorization = "Authorization"
+	HeaderContentType   = "Content-Type"
+)
+
+const (
+	ContentText     = "text/plain;charset=utf-8"
+	ContentJSON     = "application/json;charset=utf-8"
+	ContentForm     = "application/x-www-form-urlencoded"
+	ContentStream   = "application/octet-stream"
+	ContentFormData = "multipart/form-data"
+)
+
 var defaultCli = NewDefaultClient()
 
 // HTTPGet 发送GET请求
