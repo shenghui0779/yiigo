@@ -42,9 +42,9 @@ func (c *DialConn) reconnect() error {
 		c.conn.Close()
 		// 设置新连接
 		c.conn = conn
-		// 5秒后清除缓存
+		// 2秒后清除缓存
 		go func() {
-			time.Sleep(5 * time.Second)
+			time.Sleep(2 * time.Second)
 			c.mutex.Forget(c.key)
 		}()
 
@@ -103,8 +103,8 @@ func (c *DialConn) Read(reconnectTimeout time.Duration, handler func(msg *Messag
 			default:
 			}
 
-			// 1秒后尝试重连
-			time.Sleep(time.Second)
+			// 500毫秒后尝试重连
+			time.Sleep(500 * time.Millisecond)
 			if err = c.reconnect(); err == nil {
 				if cancel != nil {
 					cancel()
@@ -141,8 +141,8 @@ func (c *DialConn) Write(reconnectTimeout time.Duration, msg *Message) error {
 			default:
 			}
 
-			// 1秒后尝试重连
-			time.Sleep(time.Second)
+			// 500毫秒后尝试重连
+			time.Sleep(500 * time.Millisecond)
 			if err = c.reconnect(); err == nil {
 				if cancel != nil {
 					cancel()
