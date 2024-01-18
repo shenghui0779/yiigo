@@ -265,10 +265,4 @@ builder.Wrap(Table("user")).ToTruncate(ctx)
 // TRUNCATE user
 ```
 
-## Documentation
-
-- [API Reference](https://pkg.go.dev/github.com/shenghui0779/yiigo)
-- [api-tpl-go](https://github.com/shenghui0779/api-tpl-go)
-- [api-tpl-rs](https://github.com/shenghui0779/api-tpl-rs)
-
 **Enjoy 😊**
