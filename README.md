@@ -20,7 +20,8 @@ go get -u github.com/shenghui0779/yiigo
 - Websocket 简单使用封装
   - Dialer - 读写失败支持重连
   - Upgrader - 支持授权校验
-- 简单实用的单时间轮（支持一次性和多次重试任务）
+- 经纬度与平面直角坐标系的相互转化
+- 简单实用的单时间轮(支持一次性和多次重试任务)
 - 用于处理 `k-v` 需要格式化的场景(如：生成签名串)的value包
 - 实用的辅助方法，包含：IP、file、time、slice、string、version compare 等
 
