@@ -2,196 +2,27 @@
 
 [![golang](https://img.shields.io/badge/Language-Go-green.svg?style=flat)](https://golang.org) [![GitHub release](https://img.shields.io/github/release/shenghui0779/yiigo.svg)](https://github.com/shenghui0779/yiigo/releases/latest) [![pkg.go.dev](https://img.shields.io/badge/dev-reference-007d9c?logo=go&logoColor=white&style=flat)](https://pkg.go.dev/github.com/shenghui0779/yiigo) [![Apache 2.0 license](http://img.shields.io/badge/license-Apache%202.0-brightgreen.svg)](http://opensource.org/licenses/apache2.0)
 
-一个好用的轻量级 Go 开发通用库。如果你不喜欢过度封装的重量级框架，这个库可能是个不错的选择 😊
-
-## Features
-
-- 支持 [MySQL](https://github.com/go-sql-driver/mysql)
-- 支持 [PostgreSQL](https://github.com/jackc/pgx)
-- 支持 [SQLite3](https://github.com/mattn/go-sqlite3)
-- 支持 [Redis](https://github.com/redis/go-redis)
-- 支持 [NSQ](https://github.com/nsqio/go-nsq)
-- SQL使用 [sqlx](https://github.com/jmoiron/sqlx)
-- ORM推荐 [ent](https://github.com/ent/ent)
-- 日志使用 [zap](https://github.com/uber-go/zap)
-- 配置使用 [dotenv](https://github.com/joho/godotenv)，支持（包括 k8s configmap）热加载
-- 其他
-  - 轻量的 SQL Builder
-  - 基于 Redis 的简单分布式锁
-  - Websocket 简单使用封装（支持授权校验）
-  - 简单实用的单时间轮（支持一次性和多次重试任务）
-  - 实用的辅助方法，包含：http、cypto、date、IP、validator、version compare 等
-
-## Installation
+一个好用的 Go 开发工具库
 
 ```sh
 go get -u github.com/shenghui0779/yiigo
 ```
 
-## Usage
+## Features
 
-#### ENV
-
-- load
-
-```go
-// 默认加载当前目录下的`.env`文件
-yiigo.LoadEnv()
-
-// 加载指定配置文件
-yiigo.LoadEnv(yiigo.WithEnvFile("mycfg.env"))
-
-// 热加载
-yiigo.LoadEnv(yiigo.WithEnvWatcher(func(e fsnotify.Event) {
-    fmt.Println(e.String())
-}))
-```
-
-- `.env`
-
-```sh
-ENV=dev
-```
-
-- usage
-
-```go
-fmt.Println(os.Getenv("ENV"))
-// output: dev
-```
-
-#### DB
-
-- register
-
-```go
-yiigo.Init(
-    yiigo.WithMySQL(yiigo.Default, &yiigo.DBConfig{
-        DSN: "dsn",
-        Options: &yiigo.DBOptions{
-            MaxOpenConns:    20,
-            MaxIdleConns:    10,
-            ConnMaxLifetime: 10 * time.Minute,
-            ConnMaxIdleTime: 5 * time.Minute,
-        },
-    }),
-    yiigo.WithMySQL("other", &yiigo.DBConfig{
-        DSN: "dsn",
-        Options: &yiigo.DBOptions{
-            MaxOpenConns:    20,
-            MaxIdleConns:    10,
-            ConnMaxLifetime: 10 * time.Minute,
-            ConnMaxIdleTime: 5 * time.Minute,
-        },
-    }),
-)
-```
-
-- sqlx
-
-```go
-// default db
-yiigo.MustDB().Get(&User{}, "SELECT * FROM user WHERE id = ?", 1)
-
-// other db
-yiigo.MustDB("other").Get(&User{}, "SELECT * FROM user WHERE id = ?", 1)
-```
-
-- ent
-
-```go
-import (
-    "<your_project>/ent"
-    entsql "entgo.io/ent/dialect/sql"
-)
-
-// default driver
-db := yiigo.MustDB()
-cli := ent.NewClient(ent.Driver(entsql.OpenDB(db.DriverName(), db.DB)))
-
-// other driver
-db := yiigo.MustDB("other")
-cli := ent.NewClient(ent.Driver(entsql.OpenDB(db.DriverName(), db.DB)))
-```
-
-#### Redis
-
-```go
-// register
-yiigo.Init(
-    yiigo.WithRedis(yiigo.Default, &redis.UniversalOptions{
-        Addrs: []string{":6379"}
-    }),
-    yiigo.WithRedis("other", &redis.UniversalOptions{
-        Addrs: []string{":6379"}
-    }),
-)
-
-// default redis
-yiigo.MustRedis().Set(context.Background(), "key", "value", 0)
-
-// other redis
-yiigo.MustRedis("other").Set(context.Background(), "key", "value", 0)
-```
-
-#### Logger
-
-```go
-// register
-yiigo.Init(
-    yiigo.WithLogger(yiigo.Default, yiigo.LoggerConfig{
-        Filename: "filename",
-        Options: &yiigo.LoggerOptions{
-            Stderr: true,
-        },
-    }),
-
-    yiigo.WithLogger("other", yiigo.LoggerConfig{
-        Filename: "filename",
-        Options: &yiigo.LoggerOptions{
-            Stderr: true,
-        },
-    }),
-)
-
-// default logger
-yiigo.Logger().Info("hello world")
-
-// other logger
-yiigo.Logger("other").Info("hello world")
-```
-
-#### HTTP
-
-```go
-// default client
-yiigo.HTTPGet(context.Background(), "URL")
-
-// new client
-client := yiigo.NewHTTPClient(*http.Client)
-client.Do(context.Background(), http.MethodGet, "URL", nil)
-
-// upload
-form := yiigo.NewUploadForm(
-    yiigo.WithFormField("title", "TITLE"),
-    yiigo.WithFormField("description", "DESCRIPTION"),
-    yiigo.WithFormFile("media", "demo.mp4", func(w io.Writer) error {
-        f, err := os.Open("demo.mp4")
-        if err != nil {
-            return err
-        }
-        defer f.Close()
-
-        if _, err = io.Copy(w, f); err != nil {
-            return err
-        }
-
-        return nil
-    }),
-)
-
-yiigo.HTTPUpload(context.Background(), "URL", form)
-```
+- NSQ
+- Hash
+- HTTP
+- Crypto
+- Validator
+- 轻量的用于 `sqlx` 的 SQL Builder
+- 基于 Redis 的简单分布式锁
+- Websocket 简单使用封装
+  - Dialer - 读写失败支持重连
+  - Upgrader - 支持授权校验
+- 简单实用的单时间轮（支持一次性和多次重试任务）
+- 用于处理 `k-v` 需要格式化的场景(如：生成签名串)的value包
+- 实用的辅助方法，包含：IP、file、time、slice、string、version compare 等
 
 #### SQL Builder
 
