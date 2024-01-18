@@ -7,6 +7,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestHMacSHA1(t *testing.T) {
+	assert.Equal(t, "30c0c496355c2bb9308c63159cc4b726f1205dfc", HMacSHA1("iiinsomnia", "ILoveYiigo"))
+}
+
 func TestHMacSHA256(t *testing.T) {
 	assert.Equal(t, "a458409cd884140c1ca36ef3013a5c7289c3e057049e3563401094d3f929b93b", HMacSHA256("iiinsomnia", "ILoveYiigo"))
 }

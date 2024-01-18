@@ -3,10 +3,19 @@ package hash
 import (
 	"crypto"
 	"crypto/hmac"
+	"crypto/sha1"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
 )
+
+// HMacSHA1 计算hmac-sha1值
+func HMacSHA1(key, str string) string {
+	h := hmac.New(sha1.New, []byte(key))
+	h.Write([]byte(str))
+
+	return hex.EncodeToString(h.Sum(nil))
+}
 
 // HMacSHA256 计算hmac-sha256值
 func HMacSHA256(key, str string) string {
