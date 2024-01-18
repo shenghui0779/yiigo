@@ -33,7 +33,7 @@ type Options struct {
 	ZapOpts []zap.Option
 }
 
-func debug(options ...zap.Option) *zap.Logger {
+func Debug(options ...zap.Option) *zap.Logger {
 	cfg := zap.NewDevelopmentConfig()
 
 	cfg.DisableCaller = true
@@ -48,7 +48,7 @@ func debug(options ...zap.Option) *zap.Logger {
 
 func New(cfg *Config) *zap.Logger {
 	if len(cfg.Filename) == 0 {
-		return debug()
+		return Debug()
 	}
 
 	ec := zap.NewProductionEncoderConfig()
