@@ -10,6 +10,7 @@ require (
 	github.com/gorilla/websocket v1.5.1
 	github.com/hashicorp/go-version v1.6.0
 	github.com/jackc/pgx/v5 v5.5.2
+	github.com/jmoiron/sqlx v1.3.5
 	github.com/mattn/go-sqlite3 v1.14.19
 	github.com/nsqio/go-nsq v1.1.0
 	github.com/redis/go-redis/v9 v9.4.0

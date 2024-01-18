@@ -6,6 +6,7 @@ import (
 
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -52,4 +53,13 @@ func New(cfg *Config) (*sql.DB, error) {
 	}
 
 	return db, nil
+}
+
+func NewX(cfg *Config) (*sqlx.DB, error) {
+	db, err := New(cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	return sqlx.NewDb(db, cfg.Driver), nil
 }
