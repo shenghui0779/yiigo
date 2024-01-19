@@ -1,8 +1,6 @@
 package util
 
-import (
-	"math/rand"
-)
+import "math/rand"
 
 // SliceUniq 切片去重
 func SliceUniq[T ~int | ~int64 | ~float64 | ~string](a []T) []T {
