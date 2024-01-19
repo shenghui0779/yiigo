@@ -86,10 +86,8 @@ func mapping(value reflect.Value, field reflect.StructField, setter setter, tag 
 	var vKind = value.Kind()
 
 	if vKind == reflect.Ptr {
-		var isNew bool
-
+		isNew := false
 		vPtr := value
-
 		if value.IsNil() {
 			isNew = true
 			vPtr = reflect.New(value.Type().Elem())
@@ -119,13 +117,11 @@ func mapping(value reflect.Value, field reflect.StructField, setter setter, tag 
 	}
 
 	if vKind == reflect.Struct {
+		isSetted := false
 		tValue := value.Type()
-
-		var isSetted bool
 
 		for i := 0; i < value.NumField(); i++ {
 			sf := tValue.Field(i)
-
 			if sf.PkgPath != "" && !sf.Anonymous { // unexported
 				continue
 			}
@@ -207,7 +203,6 @@ func setByForm(value reflect.Value, field reflect.StructField, form map[string][
 		if !ok {
 			val = opt.defaultValue
 		}
-
 		if len(vs) > 0 {
 			val = vs[0]
 		}
@@ -309,7 +304,6 @@ func setFloatField(val string, bitSize int, field reflect.Value) error {
 	}
 
 	floatVal, err := strconv.ParseFloat(val, bitSize)
-
 	if err == nil {
 		field.SetFloat(floatVal)
 	}
@@ -319,7 +313,6 @@ func setFloatField(val string, bitSize int, field reflect.Value) error {
 
 func setTimeField(val string, structField reflect.StructField, value reflect.Value) error {
 	timeFormat := structField.Tag.Get("time_format")
-
 	if timeFormat == "" {
 		timeFormat = time.RFC3339
 	}
@@ -382,11 +375,9 @@ func setArray(vals []string, value reflect.Value, field reflect.StructField) err
 
 func setSlice(vals []string, value reflect.Value, field reflect.StructField) error {
 	slice := reflect.MakeSlice(value.Type(), len(vals), len(vals))
-
 	if err := setArray(vals, slice, field); err != nil {
 		return err
 	}
-
 	value.Set(slice)
 
 	return nil
@@ -397,7 +388,6 @@ func setTimeDuration(val string, value reflect.Value, field reflect.StructField)
 	if err != nil {
 		return err
 	}
-
 	value.Set(reflect.ValueOf(d))
 
 	return nil
