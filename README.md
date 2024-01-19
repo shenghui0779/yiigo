@@ -2,7 +2,7 @@
 
 [![golang](https://img.shields.io/badge/Language-Go-green.svg?style=flat)](https://golang.org) [![GitHub release](https://img.shields.io/github/release/shenghui0779/yiigo.svg)](https://github.com/shenghui0779/yiigo/releases/latest) [![pkg.go.dev](https://img.shields.io/badge/dev-reference-007d9c?logo=go&logoColor=white&style=flat)](https://pkg.go.dev/github.com/shenghui0779/yiigo) [![Apache 2.0 license](http://img.shields.io/badge/license-Apache%202.0-brightgreen.svg)](http://opensource.org/licenses/apache2.0)
 
-一个好用的 Go 开发工具库
+Go 开发工具包
 
 ```sh
 go get -u github.com/shenghui0779/yiigo
@@ -10,25 +10,24 @@ go get -u github.com/shenghui0779/yiigo
 
 ## Features
 
-- NSQ
+- Nsq
 - Hash
-- HTTP
-- Crypto
-- Validator
+- Http - 封装支持文件上传
+- Crypto - 封装支持 AES & RSA
+- Validator - 支持汉化 & 自定义规则
 - 轻量的用于 `sqlx` 的 SQL Builder
 - 基于 Redis 的简单分布式锁
-- Websocket 简单使用封装
+- Websocket 封装提高易用性
   - Dialer - 读写失败支持重连
   - Upgrader - 支持授权校验
-- 经纬度与平面直角坐标系的相互转化
-- 简单实用的单时间轮(支持一次性和多次重试任务)
-- 用于处理 `k-v` 需要格式化的场景(如：生成签名串)的value包
-- 实用的辅助方法，包含：IP、file、time、slice、string、version compare 等
+- Value - 用于处理 `k-v` 格式化的场景，如：生成签名串 等
+- Location - 距离、方位角、经纬度与平面直角坐标系的相互转化
+- TimeWheel - 简单实用的单时间轮(支持一次性和多次重试任务)
+- 实用的辅助方法：IP、file、time、slice、string、version compare 等
 
 #### SQL Builder
 
-> 😊 为不想手写SQL的你生成SQL语句，用于 `sqlx` 的相关方法；
->
+> 😊 为不想手写SQL的你生成SQL语句，用于 `sqlx` 的相关方法；<br/>
 > ⚠️ 作为辅助方法，目前支持的特性有限，复杂的SQL（如：子查询等）还需自己手写
 
 ```go
