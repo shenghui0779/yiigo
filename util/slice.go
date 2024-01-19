@@ -2,7 +2,6 @@ package util
 
 import (
 	"math/rand"
-	"time"
 )
 
 // SliceUniq 切片去重
@@ -36,8 +35,7 @@ func SliceRand[T any](a []T, n int) []T {
 
 	copy(ret, a)
 
-	rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
-	rnd.Shuffle(count, func(i, j int) {
+	rand.Shuffle(count, func(i, j int) {
 		ret[i], ret[j] = ret[j], ret[i]
 	})
 
