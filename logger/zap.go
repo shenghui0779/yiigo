@@ -77,7 +77,7 @@ func New(cfg *Config) *zap.Logger {
 	}
 	ws = append(ws, zapcore.AddSync(w))
 
-	return zap.New(zapcore.NewCore(zapcore.NewJSONEncoder(ec), zapcore.NewMultiWriteSyncer(ws...), zap.DebugLevel), zapOpts...)
+	return zap.New(zapcore.NewCore(zapcore.NewJSONEncoder(ec), zapcore.NewMultiWriteSyncer(ws...), zap.InfoLevel), zapOpts...)
 }
 
 // MyTimeEncoder 自定义时间格式化

@@ -10,8 +10,8 @@ import (
 	"time"
 )
 
-// HTTPClient HTTP客户端
-type HTTPClient interface {
+// Client HTTP客户端
+type Client interface {
 	// Do 发送HTTP请求
 	// 注意：应该使用Context设置请求超时时间
 	Do(ctx context.Context, method, reqURL string, body []byte, opts ...Option) (*http.Response, error)
@@ -20,11 +20,11 @@ type HTTPClient interface {
 	Upload(ctx context.Context, reqURL string, form UploadForm, opts ...Option) (*http.Response, error)
 }
 
-type httpCli struct {
-	client *http.Client
+type client struct {
+	cli *http.Client
 }
 
-func (c *httpCli) Do(ctx context.Context, method, reqURL string, body []byte, opts ...Option) (*http.Response, error) {
+func (c *client) Do(ctx context.Context, method, reqURL string, body []byte, opts ...Option) (*http.Response, error) {
 	req, err := http.NewRequestWithContext(ctx, method, reqURL, bytes.NewReader(body))
 	if err != nil {
 		return nil, err
@@ -53,7 +53,7 @@ func (c *httpCli) Do(ctx context.Context, method, reqURL string, body []byte, op
 		req.Close = true
 	}
 
-	resp, err := c.client.Do(req)
+	resp, err := c.cli.Do(req)
 	if err != nil {
 		// If the context has been canceled, the context's error is probably more useful.
 		select {
@@ -68,7 +68,7 @@ func (c *httpCli) Do(ctx context.Context, method, reqURL string, body []byte, op
 	return resp, nil
 }
 
-func (c *httpCli) Upload(ctx context.Context, reqURL string, form UploadForm, options ...Option) (*http.Response, error) {
+func (c *client) Upload(ctx context.Context, reqURL string, form UploadForm, options ...Option) (*http.Response, error) {
 	buf := bytes.NewBuffer(make([]byte, 0, 20<<10)) // 20kb
 	w := multipart.NewWriter(buf)
 	if err := form.Write(w); err != nil {
@@ -87,9 +87,9 @@ func (c *httpCli) Upload(ctx context.Context, reqURL string, form UploadForm, op
 }
 
 // NewDefaultClient 生成一个默认的HTTP客户端
-func NewDefaultClient() HTTPClient {
-	return &httpCli{
-		client: &http.Client{
+func NewDefaultClient() Client {
+	return &client{
+		cli: &http.Client{
 			Transport: &http.Transport{
 				Proxy: http.ProxyFromEnvironment,
 				DialContext: (&net.Dialer{
@@ -110,9 +110,9 @@ func NewDefaultClient() HTTPClient {
 	}
 }
 
-// NewHTTPClient 通过官方 `http.Client` 生成一个HTTP客户端
-func NewHTTPClient(client *http.Client) HTTPClient {
-	return &httpCli{
-		client: client,
+// NewClient 通过官方 `http.Client` 生成一个HTTP客户端
+func NewClient(c *http.Client) Client {
+	return &client{
+		cli: c,
 	}
 }
