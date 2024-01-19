@@ -9,12 +9,12 @@ type Point struct {
 	ml int
 }
 
-// X 返回 X 坐标
+// X 返回x坐标
 func (p *Point) X() float64 {
 	return p.x
 }
 
-// Y 返回 Y 坐标
+// Y 返回y坐标
 func (p *Point) Y() float64 {
 	return p.y
 }
