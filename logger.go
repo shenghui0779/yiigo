@@ -1,4 +1,4 @@
-package logger
+package yiigo
 
 import (
 	"os"
@@ -9,16 +9,10 @@ import (
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
-// Config 日志初始化配置
-type Config struct {
+// LogConfig 日志初始化配置
+type LogConfig struct {
 	// Filename 日志名称
 	Filename string
-	// Options 日志选项
-	Options *Options
-}
-
-// Options 日志配置选项
-type Options struct {
 	// MaxSize 当前文件多大时轮替；默认：100MB
 	MaxSize int
 	// MaxAge 轮替的旧文件最大保留时长；默认：不限
@@ -29,11 +23,11 @@ type Options struct {
 	Compress bool
 	// Stderr 是否输出到控制台
 	Stderr bool
-	// ZapOpts Zap日志选项
-	ZapOpts []zap.Option
+	// Options Zap日志选项
+	Options []zap.Option
 }
 
-func Debug(options ...zap.Option) *zap.Logger {
+func DebugLogger(options ...zap.Option) *zap.Logger {
 	cfg := zap.NewDevelopmentConfig()
 
 	cfg.DisableCaller = true
@@ -46,9 +40,9 @@ func Debug(options ...zap.Option) *zap.Logger {
 	return logger
 }
 
-func New(cfg *Config) *zap.Logger {
+func NewLogger(cfg *LogConfig) *zap.Logger {
 	if len(cfg.Filename) == 0 {
-		return Debug()
+		return DebugLogger(cfg.Options...)
 	}
 
 	ec := zap.NewProductionEncoderConfig()
@@ -56,28 +50,21 @@ func New(cfg *Config) *zap.Logger {
 	ec.EncodeTime = MyTimeEncoder
 	ec.EncodeCaller = zapcore.FullCallerEncoder
 
-	var zapOpts []zap.Option
-
-	w := &lumberjack.Logger{
-		Filename:  cfg.Filename,
-		LocalTime: true,
+	ws := []zapcore.WriteSyncer{
+		zapcore.AddSync(&lumberjack.Logger{
+			Filename:   cfg.Filename,
+			MaxSize:    cfg.MaxSize,
+			MaxAge:     cfg.MaxAge,
+			MaxBackups: cfg.MaxBackups,
+			LocalTime:  true,
+			Compress:   cfg.Compress,
+		}),
 	}
-	ws := make([]zapcore.WriteSyncer, 0, 2)
-	if cfg.Options != nil {
-		zapOpts = cfg.Options.ZapOpts
-
-		w.MaxSize = cfg.Options.MaxSize
-		w.MaxAge = cfg.Options.MaxAge
-		w.MaxBackups = cfg.Options.MaxBackups
-		w.Compress = cfg.Options.Compress
-
-		if cfg.Options.Stderr {
-			ws = append(ws, zapcore.Lock(os.Stderr))
-		}
+	if cfg.Stderr {
+		ws = append(ws, zapcore.Lock(os.Stderr))
 	}
-	ws = append(ws, zapcore.AddSync(w))
 
-	return zap.New(zapcore.NewCore(zapcore.NewJSONEncoder(ec), zapcore.NewMultiWriteSyncer(ws...), zap.InfoLevel), zapOpts...)
+	return zap.New(zapcore.NewCore(zapcore.NewJSONEncoder(ec), zapcore.NewMultiWriteSyncer(ws...), zap.InfoLevel), cfg.Options...)
 }
 
 // MyTimeEncoder 自定义时间格式化

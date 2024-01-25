@@ -3,9 +3,7 @@ package websocket
 import (
 	"context"
 	"errors"
-	"log"
 	"net/http"
-	"runtime/debug"
 
 	"github.com/gorilla/websocket"
 )
@@ -33,12 +31,6 @@ type UpgradeConn struct {
 
 // Read 读消息
 func (c *UpgradeConn) Read(ctx context.Context, handler func(ctx context.Context, msg *Message) (*Message, error)) error {
-	defer func() {
-		if err := recover(); err != nil {
-			log.Printf("websocket read panic, error: %v, stack: %s\n", err, string(debug.Stack()))
-		}
-	}()
-
 	for {
 		select {
 		case <-ctx.Done():

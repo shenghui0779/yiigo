@@ -77,21 +77,17 @@ func (l *Location) Azimuth(t *Location) float64 {
 	sinc := math.Sqrt(1 - cosc*cosc)
 
 	sinA := math.Sin(a) * math.Sin(AOC_BOC) / sinc
-
 	if sinA > 1 {
 		sinA = 1
 	}
-
 	if sinA < -1 {
 		sinA = -1
 	}
 
 	angle := math.Asin(sinA) / math.Pi * 180
-
 	if t.lat < l.lat {
 		return 180 - angle
 	}
-
 	if t.lng < l.lng {
 		return 360 + angle
 	}

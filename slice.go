@@ -1,15 +1,18 @@
-package util
+package yiigo
 
-import "math/rand"
+import (
+	"cmp"
+	"math/rand"
+)
 
 // SliceUniq 切片去重
-func SliceUniq[T ~int | ~int64 | ~float64 | ~string](a []T) []T {
-	ret := make([]T, 0)
+func SliceUniq[T ~[]E, E cmp.Ordered](a T) T {
+	ret := make(T, 0)
 	if len(a) == 0 {
 		return ret
 	}
 
-	m := make(map[T]struct{}, 0)
+	m := make(map[E]struct{}, 0)
 
 	for _, v := range a {
 		if _, ok := m[v]; !ok {

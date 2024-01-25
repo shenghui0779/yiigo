@@ -1,4 +1,4 @@
-package util
+package yiigo
 
 import (
 	"testing"

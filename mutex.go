@@ -1,4 +1,4 @@
-package redis
+package yiigo
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-// Mutex 基于Redis实现的分布式锁
+// Mutex 分布式锁
 type Mutex interface {
 	// Lock 尝试获取锁；interval - 每隔指定时间尝试获取一次锁；timeout - 获取锁的超时时间
 	Lock(ctx context.Context, interval, timeout time.Duration) error
@@ -15,6 +15,7 @@ type Mutex interface {
 	UnLock(ctx context.Context) error
 }
 
+// distributed 基于「Redis」实现的分布式锁
 type distributed struct {
 	cli    *redis.Client
 	key    string
@@ -58,8 +59,8 @@ func (d *distributed) UnLock(ctx context.Context) error {
 	return d.cli.Del(ctx, d.key).Err()
 }
 
-// DistributedMutex 返回一个分布式锁实例
-// uniqueID - 建议使用RequestID
+// DistributedMutex 返回一个分布式锁实例；
+// uniqueID - 建议使用「RequestID」
 func DistributedMutex(cli *redis.Client, key, uniqueID string, expire time.Duration) Mutex {
 	mutex := &distributed{
 		cli:    cli,

@@ -1,7 +1,9 @@
-package db
+package yiigo
 
 import (
+	"context"
 	"database/sql"
+	"fmt"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -10,8 +12,8 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-// Config 数据库初始化配置
-type Config struct {
+// DBConfig 数据库初始化配置
+type DBConfig struct {
 	// Driver 驱动名称
 	Driver string
 	// DSN 数据源名称
@@ -19,12 +21,6 @@ type Config struct {
 	// [Postgres] host=localhost port=5432 user=root password=secret dbname=test connect_timeout=10 sslmode=disable
 	// [- SQLite] file::memory:?cache=shared
 	DSN string
-	// Options 配置选项
-	Options *Options
-}
-
-// Options 数据库配置选项
-type Options struct {
 	// MaxOpenConns 设置最大可打开的连接数
 	MaxOpenConns int
 	// MaxIdleConns 连接池最大闲置连接数
@@ -35,7 +31,7 @@ type Options struct {
 	ConnMaxIdleTime time.Duration
 }
 
-func New(cfg *Config) (*sql.DB, error) {
+func NewDB(cfg *DBConfig) (*sql.DB, error) {
 	db, err := sql.Open(cfg.Driver, cfg.DSN)
 	if err != nil {
 		return nil, err
@@ -45,21 +41,48 @@ func New(cfg *Config) (*sql.DB, error) {
 		return nil, err
 	}
 
-	if cfg.Options != nil {
-		db.SetMaxOpenConns(cfg.Options.MaxOpenConns)
-		db.SetMaxIdleConns(cfg.Options.MaxIdleConns)
-		db.SetConnMaxLifetime(cfg.Options.ConnMaxLifetime)
-		db.SetConnMaxIdleTime(cfg.Options.ConnMaxIdleTime)
-	}
+	db.SetMaxOpenConns(cfg.MaxOpenConns)
+	db.SetMaxIdleConns(cfg.MaxIdleConns)
+	db.SetConnMaxLifetime(cfg.ConnMaxLifetime)
+	db.SetConnMaxIdleTime(cfg.ConnMaxIdleTime)
 
 	return db, nil
 }
 
-func NewX(cfg *Config) (*sqlx.DB, error) {
-	db, err := New(cfg)
+func NewDBX(cfg *DBConfig) (*sqlx.DB, error) {
+	db, err := NewDB(cfg)
 	if err != nil {
 		return nil, err
 	}
 
 	return sqlx.NewDb(db, cfg.Driver), nil
+}
+
+// Transaction 执行数据库事物
+func Transaction(ctx context.Context, db *sqlx.DB, f func(ctx context.Context, tx *sqlx.Tx) error) error {
+	tx, err := db.BeginTxx(ctx, nil)
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		if v := recover(); v != nil {
+			tx.Rollback()
+			panic(v)
+		}
+	}()
+
+	if err = f(ctx, tx); err != nil {
+		if rerr := tx.Rollback(); rerr != nil {
+			err = fmt.Errorf("%w: rolling back transaction: %v", err, rerr)
+		}
+
+		return err
+	}
+
+	if err = tx.Commit(); err != nil {
+		return fmt.Errorf("committing transaction: %w", err)
+	}
+
+	return nil
 }

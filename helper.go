@@ -1,4 +1,4 @@
-package util
+package yiigo
 
 import (
 	"bytes"
@@ -10,9 +10,6 @@ import (
 
 	"github.com/hashicorp/go-version"
 )
-
-// X 类型别名
-type X map[string]any
 
 // Nonce 生成随机串(size应为偶数)
 func Nonce(size uint8) string {

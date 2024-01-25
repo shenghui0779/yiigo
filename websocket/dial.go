@@ -3,9 +3,7 @@ package websocket
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
-	"runtime/debug"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -72,12 +70,6 @@ func (c *DialConn) reconnect() error {
 
 // Read 读消息，若失败会尝试重连 (reconnectTimeout<=0 表示重连不超时)
 func (c *DialConn) Read(reconnectTimeout time.Duration, handler func(msg *Message)) error {
-	defer func() {
-		if err := recover(); err != nil {
-			log.Printf("websocket read panic, error: %v, stack: %s\n", err, string(debug.Stack()))
-		}
-	}()
-
 	for {
 		t, b, err := c.conn.ReadMessage()
 		if err == nil {
