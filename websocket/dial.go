@@ -40,11 +40,6 @@ func (c *DialConn) reconnect() error {
 		c.conn.Close()
 		// 设置新连接
 		c.conn = conn
-		// 2秒后清除缓存
-		go func() {
-			time.Sleep(2 * time.Second)
-			c.mutex.Forget(c.key)
-		}()
 
 		return true, nil
 	})
@@ -53,19 +48,26 @@ func (c *DialConn) reconnect() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	var err error
 	select {
 	case <-ctx.Done(): // 超时
-		err = ctx.Err()
-	case r := <-ch:
-		err = r.Err
-	}
-	if err != nil {
-		// 重连失败，清除缓存
 		c.mutex.Forget(c.key)
+		return ctx.Err()
+	case r := <-ch:
+		if r.Err != nil {
+			c.mutex.Forget(c.key)
+			return r.Err
+		}
+
+		if !r.Shared {
+			// 2秒后清除缓存
+			go func() {
+				time.Sleep(2 * time.Second)
+				c.mutex.Forget(c.key)
+			}()
+		}
 	}
 
-	return err
+	return nil
 }
 
 // Read 读消息，若失败会尝试重连 (reconnectTimeout<=0 表示重连不超时)
