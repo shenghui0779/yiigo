@@ -39,12 +39,14 @@ func (q Quantity) String() string {
 }
 
 const (
-	// TiB - TebiByte size
-	TiB Quantity = 1024 * 1024 * 1024 * 1024
-	// GiB - GibiByte size
-	GiB Quantity = 1024 * 1024 * 1024
-	// MiB - MebiByte size
-	MiB Quantity = 1024 * 1024
+	// B - Byte size
+	B Quantity = 1
 	// KiB - KibiByte size
-	KiB Quantity = 1024
+	KiB Quantity = 1024 * B
+	// MiB - MebiByte size
+	MiB Quantity = 1024 * KiB
+	// GiB - GibiByte size
+	GiB Quantity = 1024 * MiB
+	// TiB - TebiByte size
+	TiB Quantity = 1024 * GiB
 )
