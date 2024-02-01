@@ -14,8 +14,10 @@ const (
 	SQLite   DBDriver = "sqlite3"
 )
 
+// Quantity 字节大小
 type Quantity int64
 
+// String 实现 Stringer 接口
 func (q Quantity) String() string {
 	if q >= TiB {
 		return fmt.Sprintf("%.2fTB", float64(q)/float64(TiB))
