@@ -13,6 +13,8 @@ import (
 type LogConfig struct {
 	// Filename 日志名称
 	Filename string
+	// Level 日志级别
+	Level zapcore.Level
 	// MaxSize 当前文件多大时轮替；默认：100MB
 	MaxSize int
 	// MaxAge 轮替的旧文件最大保留时长；默认：不限
@@ -64,7 +66,7 @@ func NewLogger(cfg *LogConfig) *zap.Logger {
 		ws = append(ws, zapcore.Lock(os.Stderr))
 	}
 
-	return zap.New(zapcore.NewCore(zapcore.NewJSONEncoder(ec), zapcore.NewMultiWriteSyncer(ws...), zap.InfoLevel), cfg.Options...)
+	return zap.New(zapcore.NewCore(zapcore.NewJSONEncoder(ec), zapcore.NewMultiWriteSyncer(ws...), cfg.Level), cfg.Options...)
 }
 
 // MyTimeEncoder 自定义时间格式化
