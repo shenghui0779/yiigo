@@ -277,12 +277,18 @@ builder.Wrap(Table("user")).Truncate(ctx)
 
 ```go
 builder.Transaction(context.Background(), func(ctx context.Context, tx yiigo.TXBuilder) error {
-    _, err := tx.Wrap(yiigo.Table("address"), yiigo.Where("user_id = ?", 1)).Update(ctx, yiigo.X{"default": 0})
+    _, err := tx.Wrap(
+        yiigo.Table("address"),
+        yiigo.Where("user_id = ?", 1),
+    ).Update(ctx, yiigo.X{"default": 0})
     if err != nil {
         return err
     }
 
-    _, err = tx.Wrap(yiigo.Table("address"), yiigo.Where("id = ?", 1)).Update(ctx, yiigo.X{"default": 1})
+    _, err = tx.Wrap(
+        yiigo.Table("address"),
+        yiigo.Where("id = ?", 1),
+    ).Update(ctx, yiigo.X{"default": 1})
     return err
 })
 ```
