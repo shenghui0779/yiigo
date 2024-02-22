@@ -289,6 +289,7 @@ builder.Transaction(context.Background(), func(ctx context.Context, tx yiigo.TXB
         yiigo.Table("address"),
         yiigo.Where("id = ?", 1),
     ).Update(ctx, yiigo.X{"default": 1})
+
     return err
 })
 ```
