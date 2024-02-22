@@ -14,17 +14,17 @@ func TestSliceUniq(t *testing.T) {
 }
 
 func TestSliceRand(t *testing.T) {
-	a1 := []int{1, 2, 3, 4, 5, 6}
+	a1 := []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
 	ret1 := SliceRand(a1, 2)
 	assert.Equal(t, 2, len(ret1))
 	assert.NotEqual(t, a1[:2], ret1)
 
-	a2 := []float64{1.01, 2.02, 3.03, 4.04, 5.05, 6.06}
+	a2 := []float64{1.01, 2.02, 3.03, 4.04, 5.05, 6.06, 7.07, 8.08, 9.09, 10.10}
 	ret2 := SliceRand(a2, 2)
 	assert.Equal(t, 2, len(ret2))
 	assert.NotEqual(t, a2[:2], ret2)
 
-	a3 := []string{"h", "e", "l", "l", "o"}
+	a3 := []string{"h", "e", "l", "l", "o", "w", "o", "r", "l", "d"}
 	ret3 := SliceRand(a3, 2)
 	assert.Equal(t, 2, len(ret3))
 	assert.NotEqual(t, a3[:2], ret3)
@@ -54,6 +54,26 @@ func TestSliceRand(t *testing.T) {
 		{
 			ID:   5,
 			Name: "o",
+		},
+		{
+			ID:   6,
+			Name: "w",
+		},
+		{
+			ID:   7,
+			Name: "o",
+		},
+		{
+			ID:   8,
+			Name: "r",
+		},
+		{
+			ID:   9,
+			Name: "l",
+		},
+		{
+			ID:   10,
+			Name: "d",
 		},
 	}
 
