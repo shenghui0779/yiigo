@@ -1,200 +1,187 @@
 package yiigo
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
+func warpper(opts ...SQLOption) *sqlWrapper {
+	wrapper := &sqlWrapper{
+		driver:  string(MySQL),
+		columns: []string{"*"},
+	}
+
+	for _, f := range opts {
+		f(wrapper)
+	}
+
+	return wrapper
+}
+
 func TestToQuery(t *testing.T) {
-	ctx := context.TODO()
-
-	builder := NewMySQLBuilder()
-
-	sql, args, err := builder.Wrap(
+	sql, args, err := warpper(
 		Table("user"),
 		Where("id = ?", 1),
-	).ToQuery(ctx)
-
+	).querySQL()
 	assert.Nil(t, err)
 	assert.Equal(t, "SELECT * FROM user WHERE id = ?", sql)
 	assert.Equal(t, []any{1}, args)
 
-	sql, args, err = builder.Wrap(
+	sql, args, err = warpper(
 		Table("user"),
 		Where("name = ? AND age > ?", "yiigo", 20),
-	).ToQuery(ctx)
-
+	).querySQL()
 	assert.Nil(t, err)
 	assert.Equal(t, "SELECT * FROM user WHERE name = ? AND age > ?", sql)
 	assert.Equal(t, []any{"yiigo", 20}, args)
 
-	sql, args, err = builder.Wrap(
+	sql, args, err = warpper(
 		Table("user"),
 		WhereIn("age IN (?)", []int{20, 30}),
-	).ToQuery(ctx)
-
+	).querySQL()
 	assert.Nil(t, err)
 	assert.Equal(t, "SELECT * FROM user WHERE age IN (?, ?)", sql)
 	assert.Equal(t, []any{20, 30}, args)
 
-	sql, args, err = builder.Wrap(
+	sql, args, err = warpper(
 		Table("user"),
 		Select("id", "name", "age"),
 		Where("id = ?", 1),
-	).ToQuery(ctx)
-
+	).querySQL()
 	assert.Nil(t, err)
 	assert.Equal(t, "SELECT id, name, age FROM user WHERE id = ?", sql)
 	assert.Equal(t, []any{1}, args)
 
-	sql, args, err = builder.Wrap(
+	sql, args, err = warpper(
 		Table("user"),
 		Distinct("name"),
 		Where("id = ?", 1),
-	).ToQuery(ctx)
-
+	).querySQL()
 	assert.Nil(t, err)
 	assert.Equal(t, "SELECT DISTINCT name FROM user WHERE id = ?", sql)
 	assert.Equal(t, []any{1}, args)
 
-	sql, args, err = builder.Wrap(
+	sql, args, err = warpper(
 		Table("user"),
 		Join("address", "user.id = address.user_id"),
 		Where("user.id = ?", 1),
-	).ToQuery(ctx)
-
+	).querySQL()
 	assert.Nil(t, err)
 	assert.Equal(t, "SELECT * FROM user INNER JOIN address ON user.id = address.user_id WHERE user.id = ?", sql)
 	assert.Equal(t, []any{1}, args)
 
-	sql, args, err = builder.Wrap(
+	sql, args, err = warpper(
 		Table("user"),
 		LeftJoin("address", "user.id = address.user_id"),
 		Where("user.id = ?", 1),
-	).ToQuery(ctx)
-
+	).querySQL()
 	assert.Nil(t, err)
 	assert.Equal(t, "SELECT * FROM user LEFT JOIN address ON user.id = address.user_id WHERE user.id = ?", sql)
 	assert.Equal(t, []any{1}, args)
 
-	sql, args, err = builder.Wrap(
+	sql, args, err = warpper(
 		Table("user"),
 		RightJoin("address", "user.id = address.user_id"),
 		Where("user.id = ?", 1),
-	).ToQuery(ctx)
-
+	).querySQL()
 	assert.Nil(t, err)
 	assert.Equal(t, "SELECT * FROM user RIGHT JOIN address ON user.id = address.user_id WHERE user.id = ?", sql)
 	assert.Equal(t, []any{1}, args)
 
-	sql, args, err = builder.Wrap(
+	sql, args, err = warpper(
 		Table("user"),
 		FullJoin("address", "user.id = address.user_id"),
 		Where("user.id = ?", 1),
-	).ToQuery(ctx)
-
+	).querySQL()
 	assert.Nil(t, err)
 	assert.Equal(t, "SELECT * FROM user FULL JOIN address ON user.id = address.user_id WHERE user.id = ?", sql)
 	assert.Equal(t, []any{1}, args)
 
-	sql, _, err = builder.Wrap(
+	sql, _, err = warpper(
 		Table("sizes"),
 		CrossJoin("colors"),
-	).ToQuery(ctx)
-
+	).querySQL()
 	assert.Nil(t, err)
 	assert.Equal(t, "SELECT * FROM sizes CROSS JOIN colors", sql)
 
-	sql, args, err = builder.Wrap(
+	sql, args, err = warpper(
 		Table("user"),
 		LeftJoin("address", "user.id = address.user_id"),
 		RightJoin("company", "user.id = company.user_id"),
 		Where("user.id = ?", 1),
-	).ToQuery(ctx)
-
+	).querySQL()
 	assert.Nil(t, err)
 	assert.Equal(t, "SELECT * FROM user LEFT JOIN address ON user.id = address.user_id RIGHT JOIN company ON user.id = company.user_id WHERE user.id = ?", sql)
 	assert.Equal(t, []any{1}, args)
 
-	sql, args, err = builder.Wrap(
+	sql, args, err = warpper(
 		Table("address"),
 		Select("user_id", "COUNT(*) AS total"),
 		GroupBy("user_id"),
 		Having("user_id = ?", 1),
-	).ToQuery(ctx)
-
+	).querySQL()
 	assert.Nil(t, err)
 	assert.Equal(t, "SELECT user_id, COUNT(*) AS total FROM address GROUP BY user_id HAVING user_id = ?", sql)
 	assert.Equal(t, []any{1}, args)
 
-	sql, args, err = builder.Wrap(
+	sql, args, err = warpper(
 		Table("user"),
 		Where("age > ?", 20),
 		OrderBy("age ASC", "id DESC"),
 		Offset(5),
 		Limit(10),
-	).ToQuery(ctx)
-
+	).querySQL()
 	assert.Nil(t, err)
 	assert.Equal(t, "SELECT * FROM user WHERE age > ? ORDER BY age ASC, id DESC LIMIT ? OFFSET ?", sql)
 	assert.Equal(t, []any{20, 10, 5}, args)
 
-	sql, args, err = builder.Wrap(
+	sql, args, err = warpper(
 		Table("user_0"),
 		Where("id = ?", 1),
-		Union(builder.Wrap(Table("user_1"), Where("id = ?", 2))),
-	).ToQuery(ctx)
-
+		Union(warpper(Table("user_1"), Where("id = ?", 2))),
+	).querySQL()
 	assert.Nil(t, err)
 	assert.Equal(t, "(SELECT * FROM user_0 WHERE id = ?) UNION (SELECT * FROM user_1 WHERE id = ?)", sql)
 	assert.Equal(t, []any{1, 2}, args)
 
-	sql, args, err = builder.Wrap(
+	sql, args, err = warpper(
 		Table("user_0"),
 		Where("id = ?", 1),
-		UnionAll(builder.Wrap(Table("user_1"), Where("id = ?", 2))),
-	).ToQuery(ctx)
-
+		UnionAll(warpper(Table("user_1"), Where("id = ?", 2))),
+	).querySQL()
 	assert.Nil(t, err)
 	assert.Equal(t, "(SELECT * FROM user_0 WHERE id = ?) UNION ALL (SELECT * FROM user_1 WHERE id = ?)", sql)
 	assert.Equal(t, []any{1, 2}, args)
 
-	sql, args, err = builder.Wrap(
+	sql, args, err = warpper(
 		Table("user_0"),
 		WhereIn("age IN (?)", []int{10, 20}),
 		Limit(5),
 		Union(
-			builder.Wrap(
+			warpper(
 				Table("user_1"),
 				WhereIn("age IN (?)", []int{30, 40}),
 				Limit(5),
 			),
 		),
-	).ToQuery(ctx)
-
+	).querySQL()
 	assert.Nil(t, err)
 	assert.Equal(t, "(SELECT * FROM user_0 WHERE age IN (?, ?) LIMIT ?) UNION (SELECT * FROM user_1 WHERE age IN (?, ?) LIMIT ?)", sql)
 	assert.Equal(t, []any{10, 20, 5, 30, 40, 5}, args)
 
-	sql, args, err = builder.Wrap(
+	sql, args, err = warpper(
 		Table("user_0"),
 		Where("id = ?", 1),
-		Union(builder.Wrap(Table("user_1"), Where("id = ?", 2))),
-		UnionAll(builder.Wrap(Table("user_2"), Where("id = ?", 3))),
-	).ToQuery(ctx)
-
+		Union(warpper(Table("user_1"), Where("id = ?", 2))),
+		UnionAll(warpper(Table("user_2"), Where("id = ?", 3))),
+	).querySQL()
 	assert.Nil(t, err)
 	assert.Equal(t, "(SELECT * FROM user_0 WHERE id = ?) UNION (SELECT * FROM user_1 WHERE id = ?) UNION ALL (SELECT * FROM user_2 WHERE id = ?)", sql)
 	assert.Equal(t, []any{1, 2, 3}, args)
 }
 
 func TestToInsert(t *testing.T) {
-	ctx := context.TODO()
-
-	builder := NewMySQLBuilder()
-
 	type User struct {
 		ID     int    `db:"-"`
 		Name   string `db:"name"`
@@ -203,7 +190,7 @@ func TestToInsert(t *testing.T) {
 		Phone  string `db:"phone,omitempty"`
 	}
 
-	sql, args, err := builder.Wrap(Table("user")).ToInsert(ctx, &User{
+	sql, args, err := warpper(Table("user")).insertSQL(&User{
 		Name:   "yiigo",
 		Gender: "M",
 		Age:    29,
@@ -213,7 +200,7 @@ func TestToInsert(t *testing.T) {
 	assert.Equal(t, "INSERT INTO user (name, gender, age) VALUES (?, ?, ?)", sql)
 	assert.Equal(t, []any{"yiigo", "M", 29}, args)
 
-	sql, args, err = builder.Wrap(Table("user")).ToInsert(ctx, &User{
+	sql, args, err = warpper(Table("user")).insertSQL(&User{
 		Name:   "yiigo",
 		Gender: "M",
 		Age:    29,
@@ -225,7 +212,7 @@ func TestToInsert(t *testing.T) {
 	assert.Equal(t, []any{"yiigo", "M", 29, "13605109425"}, args)
 
 	// map 字段顺序不一定
-	// sql, args, err = builder.Wrap(Table("user")).ToInsert(ctx, X{
+	// sql, args, err = warpper(Table("user")).insertSQL(X{
 	// 	"age":    29,
 	// 	"gender": "M",
 	// 	"name":   "yiigo",
@@ -236,10 +223,6 @@ func TestToInsert(t *testing.T) {
 }
 
 func TestToBatchInsert(t *testing.T) {
-	ctx := context.TODO()
-
-	builder := NewMySQLBuilder()
-
 	type User struct {
 		ID     int    `db:"-"`
 		Name   string `db:"name"`
@@ -248,7 +231,7 @@ func TestToBatchInsert(t *testing.T) {
 		Phone  string `db:"phone,omitempty"`
 	}
 
-	sql, args, err := builder.Wrap(Table("user")).ToBatchInsert(ctx, []*User{
+	sql, args, err := warpper(Table("user")).batchInsertSQL([]*User{
 		{
 			Name:   "yiigo",
 			Gender: "M",
@@ -265,7 +248,7 @@ func TestToBatchInsert(t *testing.T) {
 	assert.Equal(t, "INSERT INTO user (name, gender, age) VALUES (?, ?, ?), (?, ?, ?)", sql)
 	assert.Equal(t, []any{"yiigo", "M", 29, "test", "W", 20}, args)
 
-	sql, args, err = builder.Wrap(Table("user")).ToBatchInsert(ctx, []*User{
+	sql, args, err = warpper(Table("user")).batchInsertSQL([]*User{
 		{
 			Name:   "yiigo",
 			Gender: "M",
@@ -285,7 +268,7 @@ func TestToBatchInsert(t *testing.T) {
 	assert.Equal(t, []any{"yiigo", "M", 29, "13605109425", "test", "W", 20, "13605105471"}, args)
 
 	// map 字段顺序不一定
-	// sql, args, err = builder.Wrap(Table("user")).ToBatchInsert(ctx, []X{
+	// sql, args, err = warpper(Table("user")).batchInsertSQL([]X{
 	// 	{
 	// 		"age":    29,
 	// 		"gender": "M",
@@ -303,10 +286,6 @@ func TestToBatchInsert(t *testing.T) {
 }
 
 func TestToUpdate(t *testing.T) {
-	ctx := context.TODO()
-
-	builder := NewMySQLBuilder()
-
 	type User struct {
 		Name   string `db:"name"`
 		Gender string `db:"gender"`
@@ -314,10 +293,10 @@ func TestToUpdate(t *testing.T) {
 		Phone  string `db:"phone,omitempty"`
 	}
 
-	sql, args, err := builder.Wrap(
+	sql, args, err := warpper(
 		Table("user"),
 		Where("id = ?", 1),
-	).ToUpdate(ctx, &User{
+	).updateSQL(&User{
 		Name:   "yiigo",
 		Gender: "M",
 		Age:    29,
@@ -327,10 +306,10 @@ func TestToUpdate(t *testing.T) {
 	assert.Equal(t, "UPDATE user SET name = ?, gender = ?, age = ? WHERE id = ?", sql)
 	assert.Equal(t, []any{"yiigo", "M", 29, 1}, args)
 
-	sql, args, err = builder.Wrap(
+	sql, args, err = warpper(
 		Table("user"),
 		Where("id = ?", 1),
-	).ToUpdate(ctx, &User{
+	).updateSQL(&User{
 		Name:   "yiigo",
 		Gender: "M",
 		Age:    29,
@@ -342,10 +321,10 @@ func TestToUpdate(t *testing.T) {
 	assert.Equal(t, []any{"yiigo", "M", 29, "13605109425", 1}, args)
 
 	// map 字段顺序不一定
-	// sql, args, err = builder.Wrap(
+	// sql, args, err = warpper(
 	// 	Table("user"),
 	// 	Where("id = ?", 1),
-	// ).ToUpdate(ctx, X{
+	// ).updateSQL(X{
 	// 	"age":    29,
 	// 	"gender": "M",
 	// 	"name":   "yiigo",
@@ -354,10 +333,10 @@ func TestToUpdate(t *testing.T) {
 	// assert.Equal(t, "UPDATE user SET age = ?, gender = ?, name = ? WHERE id = ?", sql)
 	// assert.Equal(t, []any{29, "M", "yiigo", 1}, args)
 
-	sql, args, err = builder.Wrap(
+	sql, args, err = warpper(
 		Table("user"),
 		WhereIn("id IN (?)", []int{1, 2}),
-	).ToUpdate(ctx, &User{
+	).updateSQL(&User{
 		Name:   "yiigo",
 		Gender: "M",
 		Age:    29,
@@ -367,10 +346,10 @@ func TestToUpdate(t *testing.T) {
 	assert.Equal(t, "UPDATE user SET name = ?, gender = ?, age = ? WHERE id IN (?, ?)", sql)
 	assert.Equal(t, []any{"yiigo", "M", 29, 1, 2}, args)
 
-	sql, args, err = builder.Wrap(
+	sql, args, err = warpper(
 		Table("product"),
 		Where("id = ?", 1),
-	).ToUpdate(ctx, X{"price": SQLExpr("price * ? + ?", 2, 100)})
+	).updateSQL(X{"price": SQLExpr("price * ? + ?", 2, 100)})
 
 	assert.Nil(t, err)
 	assert.Equal(t, "UPDATE product SET price = price * ? + ? WHERE id = ?", sql)
@@ -378,23 +357,19 @@ func TestToUpdate(t *testing.T) {
 }
 
 func TestToDelete(t *testing.T) {
-	ctx := context.TODO()
-
-	builder := NewMySQLBuilder()
-
-	sql, args, err := builder.Wrap(
+	sql, args, err := warpper(
 		Table("user"),
 		Where("id = ?", 1),
-	).ToDelete(ctx)
+	).deleteSQL()
 
 	assert.Nil(t, err)
 	assert.Equal(t, "DELETE FROM user WHERE id = ?", sql)
 	assert.Equal(t, []any{1}, args)
 
-	sql, args, err = builder.Wrap(
+	sql, args, err = warpper(
 		Table("user"),
 		WhereIn("id IN (?)", []int{1, 2}),
-	).ToDelete(ctx)
+	).deleteSQL()
 
 	assert.Nil(t, err)
 	assert.Equal(t, "DELETE FROM user WHERE id IN (?, ?)", sql)
@@ -402,7 +377,5 @@ func TestToDelete(t *testing.T) {
 }
 
 func TestToTruncate(t *testing.T) {
-	builder := NewMySQLBuilder()
-
-	assert.Equal(t, "TRUNCATE user", builder.Wrap(Table("user")).ToTruncate(context.TODO()))
+	assert.Equal(t, "TRUNCATE user", warpper(Table("user")).truncateSQL())
 }

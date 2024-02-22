@@ -27,12 +27,12 @@ go get -u github.com/shenghui0779/yiigo
 
 #### SQL Builder
 
-> 😊 为不想手写SQL的你生成SQL语句，用于 `sqlx` 的相关方法；<br/>
-> ⚠️ 作为辅助方法，目前支持的特性有限，复杂的SQL（如：子查询等）还需自己手写
+> ⚠️ 目前支持的特性有限，复杂的SQL（如：子查询等）还需自己手写
 
 ```go
-builder := yiigo.NewMySQLBuilder()
-// builder := yiigo.NewSQLBuilder(yiigo.MySQL)
+builder := yiigo.NewSQLBuilder(*sqlx.DB, func(ctx context.Context, query string, args ...any) {
+    fmt.Println(query, args)
+})
 ```
 
 - Query
@@ -40,24 +40,33 @@ builder := yiigo.NewMySQLBuilder()
 ```go
 ctx := context.Background()
 
+type User struct {
+    ID     int    `db:"id"`
+    Name   string `db:"name"`
+    Age    int    `db:"age"`
+    Phone  string `db:"phone,omitempty"`
+}
+
+var record User
 builder.Wrap(
     yiigo.Table("user"),
     yiigo.Where("id = ?", 1),
-).ToQuery(ctx)
+).One(ctx, &record)
 // SELECT * FROM user WHERE id = ?
 // [1]
 
+var records []User
 builder.Wrap(
     yiigo.Table("user"),
     yiigo.Where("name = ? AND age > ?", "shenghui0779", 20),
-).ToQuery(ctx)
+).All(ctx, &records)
 // SELECT * FROM user WHERE name = ? AND age > ?
 // [shenghui0779 20]
 
 builder.Wrap(
     yiigo.Table("user"),
     yiigo.WhereIn("age IN (?)", []int{20, 30}),
-).ToQuery(ctx)
+).All(...)
 // SELECT * FROM user WHERE age IN (?, ?)
 // [20 30]
 
@@ -65,7 +74,7 @@ builder.Wrap(
     yiigo.Table("user"),
     yiigo.Select("id", "name", "age"),
     yiigo.Where("id = ?", 1),
-).ToQuery(ctx)
+).One(...)
 // SELECT id, name, age FROM user WHERE id = ?
 // [1]
 
@@ -73,7 +82,7 @@ builder.Wrap(
     yiigo.Table("user"),
     yiigo.Distinct("name"),
     yiigo.Where("id = ?", 1),
-).ToQuery(ctx)
+).One(...)
 // SELECT DISTINCT name FROM user WHERE id = ?
 // [1]
 
@@ -81,7 +90,7 @@ builder.Wrap(
     yiigo.Table("user"),
     yiigo.LeftJoin("address", "user.id = address.user_id"),
     yiigo.Where("user.id = ?", 1),
-).ToQuery(ctx)
+).One(...)
 // SELECT * FROM user LEFT JOIN address ON user.id = address.user_id WHERE user.id = ?
 // [1]
 
@@ -90,7 +99,7 @@ builder.Wrap(
     yiigo.Select("user_id", "COUNT(*) AS total"),
     yiigo.GroupBy("user_id"),
     yiigo.Having("user_id = ?", 1),
-).ToQuery(ctx)
+).All(...)
 // SELECT user_id, COUNT(*) AS total FROM address GROUP BY user_id HAVING user_id = ?
 // [1]
 
@@ -100,7 +109,7 @@ builder.Wrap(
     yiigo.OrderBy("age ASC", "id DESC"),
     yiigo.Offset(5),
     yiigo.Limit(10),
-).ToQuery(ctx)
+).All(...)
 // SELECT * FROM user WHERE age > ? ORDER BY age ASC, id DESC LIMIT ? OFFSET ?
 // [20, 10, 5]
 
@@ -113,7 +122,7 @@ builder.Wrap(
     Table("user_0"),
     Where("id = ?", 1),
     Union(wrap1),
-).ToQuery(ctx)
+).All(...)
 // (SELECT * FROM user_0 WHERE id = ?) UNION (SELECT * FROM user_1 WHERE id = ?)
 // [1, 2]
 
@@ -121,7 +130,7 @@ builder.Wrap(
     Table("user_0"),
     Where("id = ?", 1),
     UnionAll(wrap1),
-).ToQuery(ctx)
+).All(...)
 // (SELECT * FROM user_0 WHERE id = ?) UNION ALL (SELECT * FROM user_1 WHERE id = ?)
 // [1, 2]
 
@@ -136,7 +145,7 @@ builder.Wrap(
             Limit(5),
         ),
     ),
-).ToQuery(ctx)
+).All(...)
 // (SELECT * FROM user_0 WHERE age IN (?, ?) LIMIT ?) UNION (SELECT * FROM user_1 WHERE age IN (?, ?) LIMIT ?)
 // [10, 20, 5, 30, 40, 5]
 ```
@@ -147,20 +156,20 @@ builder.Wrap(
 ctx := context.Background()
 
 type User struct {
-    ID     int    `db:"-"`
+    ID     int64  `db:"-"`
     Name   string `db:"name"`
     Age    int    `db:"age"`
     Phone  string `db:"phone,omitempty"`
 }
 
-builder.Wrap(Table("user")).ToInsert(ctx, &User{
+builder.Wrap(Table("user")).Insert(ctx, &User{
     Name: "yiigo",
     Age:  29,
 })
 // INSERT INTO user (name, age) VALUES (?, ?)
 // [yiigo 29]
 
-builder.Wrap(yiigo.Table("user")).ToInsert(ctx, yiigo.X{
+builder.Wrap(yiigo.Table("user")).Insert(ctx, yiigo.X{
     "name": "yiigo",
     "age":  29,
 })
@@ -174,13 +183,13 @@ builder.Wrap(yiigo.Table("user")).ToInsert(ctx, yiigo.X{
 ctx := context.Background()
 
 type User struct {
-    ID     int    `db:"-"`
+    ID     int64  `db:"-"`
     Name   string `db:"name"`
     Age    int    `db:"age"`
     Phone  string `db:"phone,omitempty"`
 }
 
-builder.Wrap(Table("user")).ToBatchInsert(ctx, []*User{
+builder.Wrap(Table("user")).BatchInsert(ctx, []*User{
     {
         Name: "shenghui0779",
         Age:  20,
@@ -193,7 +202,7 @@ builder.Wrap(Table("user")).ToBatchInsert(ctx, []*User{
 // INSERT INTO user (name, age) VALUES (?, ?), (?, ?)
 // [shenghui0779 20 yiigo 29]
 
-builder.Wrap(yiigo.Table("user")).ToBatchInsert(ctx, []yiigo.X{
+builder.Wrap(yiigo.Table("user")).BatchInsert(ctx, []yiigo.X{
     {
         "name": "shenghui0779",
         "age":  20,
@@ -221,7 +230,7 @@ type User struct {
 builder.Wrap(
     Table("user"),
     Where("id = ?", 1),
-).ToUpdate(ctx, &User{
+).Update(ctx, &User{
     Name: "yiigo",
     Age:  29,
 })
@@ -231,7 +240,7 @@ builder.Wrap(
 builder.Wrap(
     yiigo.Table("user"),
     yiigo.Where("id = ?", 1),
-).ToUpdate(ctx, yiigo.X{
+).Update(ctx, yiigo.X{
     "name": "yiigo",
     "age":  29,
 })
@@ -241,7 +250,7 @@ builder.Wrap(
 builder.Wrap(
     yiigo.Table("product"),
     yiigo.Where("id = ?", 1),
-).ToUpdate(ctx, yiigo.X{
+).Update(ctx, yiigo.X{
     "price": yiigo.SQLExpr("price * ? + ?", 2, 100),
 })
 // UPDATE product SET price = price * ? + ? WHERE id = ?
@@ -256,12 +265,26 @@ ctx := context.Background()
 builder.Wrap(
     yiigo.Table("user"),
     yiigo.Where("id = ?", 1),
-).ToDelete(ctx)
+).Delete(ctx)
 // DELETE FROM user WHERE id = ?
 // [1]
 
-builder.Wrap(Table("user")).ToTruncate(ctx)
+builder.Wrap(Table("user")).Truncate(ctx)
 // TRUNCATE user
+```
+
+- Transaction
+
+```go
+builder.Transaction(context.Background(), func(ctx context.Context, tx yiigo.TXBuilder) error {
+    _, err := tx.Wrap(yiigo.Table("address"), yiigo.Where("user_id = ?", 1)).Update(ctx, yiigo.X{"default": 0})
+    if err != nil {
+        return err
+    }
+
+    _, err = tx.Wrap(yiigo.Table("address"), yiigo.Where("id = ?", 1)).Update(ctx, yiigo.X{"default": 1})
+    return err
+})
 ```
 
 **Enjoy 😊**

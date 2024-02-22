@@ -2,7 +2,9 @@ package yiigo
 
 import (
 	"context"
+	"database/sql"
 	"errors"
+	"fmt"
 	"reflect"
 	"strings"
 
@@ -17,68 +19,175 @@ var (
 	ErrBatchInsertData = errors.New("invaild data, expects []struct, []*struct, []yiigo.X")
 )
 
-// SQLBuilder SQL构造器
-type SQLBuilder interface {
+// ------------------------------------ TXBuilder ------------------------------------
+
+// TXBuilder 事务构造器
+type TXBuilder interface {
 	// Wrap 包装查询选项
-	Wrap(options ...QueryOption) SQLWrapper
+	Wrap(opts ...SQLOption) SQLWrapper
+	// 私有方法
+	one(ctx context.Context, dest any, query string, args ...any) error
+	all(ctx context.Context, dest any, query string, args ...any) error
+	exec(ctx context.Context, query string, args ...any) (sql.Result, error)
 }
 
-// SQLWrapper SQL包装器
-type SQLWrapper interface {
-	// ToQuery 生成SELECT语句
-	ToQuery(ctx context.Context) (sql string, args []any, err error)
-	// ToInsert 生成INSERT语句
-	// 数据类型：`struct`, `*struct`, `yiigo.X`.
-	ToInsert(ctx context.Context, data any) (sql string, args []any, err error)
-	// ToBatchInsert 生成批量INSERT语句
-	// 数据类型：`[]struct`, `[]*struct`, `[]yiigo.X`.
-	ToBatchInsert(ctx context.Context, data any) (sql string, args []any, err error)
-	// ToUpdate 生成UPDATE语句
-	// 数据类型：`struct`, `*struct`, `yiigo.X`.
-	ToUpdate(ctx context.Context, data any) (sql string, args []any, err error)
-	// ToDelete 生成DELETE语句
-	ToDelete(ctx context.Context) (sql string, args []any, err error)
-	// ToTruncate 生成TRUNCATE语句
-	ToTruncate(ctx context.Context) string
+type txBuilder struct {
+	tx  *sqlx.Tx
+	log func(ctx context.Context, query string, args ...any)
 }
 
-type queryBuilder struct {
-	driver DBDriver
-}
-
-func (b *queryBuilder) Wrap(options ...QueryOption) SQLWrapper {
-	wrapper := &queryWrapper{
-		builder: b,
+func (b *txBuilder) Wrap(opts ...SQLOption) SQLWrapper {
+	wrapper := &sqlWrapper{
+		tx:      b,
+		driver:  b.tx.DriverName(),
 		columns: []string{"*"},
 	}
 
-	for _, f := range options {
+	for _, f := range opts {
 		f(wrapper)
 	}
 
 	return wrapper
 }
 
-// NewSQLBuilder 生成一个指定驱动类型的SQL构造器
-func NewSQLBuilder(driver DBDriver) SQLBuilder {
-	return &queryBuilder{
-		driver: driver,
+func (b *txBuilder) one(ctx context.Context, dest any, query string, args ...any) error {
+	query = sqlx.Rebind(sqlx.BindType(b.tx.DriverName()), query)
+	if b.log != nil {
+		b.log(ctx, query, args...)
+	}
+
+	return b.tx.GetContext(ctx, dest, query, args...)
+}
+
+func (b *txBuilder) all(ctx context.Context, dest any, query string, args ...any) error {
+	query = sqlx.Rebind(sqlx.BindType(b.tx.DriverName()), query)
+	if b.log != nil {
+		b.log(ctx, query, args...)
+	}
+
+	return b.tx.SelectContext(ctx, dest, query, args...)
+}
+
+func (b *txBuilder) exec(ctx context.Context, query string, args ...any) (sql.Result, error) {
+	query = sqlx.Rebind(sqlx.BindType(b.tx.DriverName()), query)
+	if b.log != nil {
+		b.log(ctx, query, args...)
+	}
+
+	return b.tx.ExecContext(ctx, query, args...)
+}
+
+// ------------------------------------ SQLBuilder ------------------------------------
+
+// SQLBuilder SQL构造器
+type SQLBuilder interface {
+	TXBuilder
+	Transaction(ctx context.Context, f func(ctx context.Context, tx TXBuilder) error) error
+}
+
+type sqlBuilder struct {
+	db  *sqlx.DB
+	log func(ctx context.Context, query string, args ...any)
+}
+
+func (b *sqlBuilder) Wrap(opts ...SQLOption) SQLWrapper {
+	wrapper := &sqlWrapper{
+		tx:      b,
+		driver:  b.db.DriverName(),
+		columns: []string{"*"},
+	}
+
+	for _, f := range opts {
+		f(wrapper)
+	}
+
+	return wrapper
+}
+
+func (b *sqlBuilder) Transaction(ctx context.Context, f func(ctx context.Context, tx TXBuilder) error) error {
+	tx, err := b.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		if v := recover(); v != nil {
+			tx.Rollback()
+			panic(v)
+		}
+	}()
+
+	if err = f(ctx, &txBuilder{
+		tx:  tx,
+		log: b.log,
+	}); err != nil {
+		if rerr := tx.Rollback(); rerr != nil {
+			err = fmt.Errorf("%w: rolling back transaction: %v", err, rerr)
+		}
+
+		return err
+	}
+
+	if err = tx.Commit(); err != nil {
+		return fmt.Errorf("committing transaction: %w", err)
+	}
+
+	return nil
+}
+
+func (b *sqlBuilder) one(ctx context.Context, dest any, query string, args ...any) error {
+	query = sqlx.Rebind(sqlx.BindType(b.db.DriverName()), query)
+	if b.log != nil {
+		b.log(ctx, query, args...)
+	}
+
+	return b.db.GetContext(ctx, dest, query, args...)
+}
+
+func (b *sqlBuilder) all(ctx context.Context, dest any, query string, args ...any) error {
+	query = sqlx.Rebind(sqlx.BindType(b.db.DriverName()), query)
+	if b.log != nil {
+		b.log(ctx, query, args...)
+	}
+
+	return b.db.SelectContext(ctx, dest, query, args...)
+}
+
+func (b *sqlBuilder) exec(ctx context.Context, query string, args ...any) (sql.Result, error) {
+	query = sqlx.Rebind(sqlx.BindType(b.db.DriverName()), query)
+	if b.log != nil {
+		b.log(ctx, query, args...)
+	}
+
+	return b.db.ExecContext(ctx, query, args...)
+}
+
+// NewSQLBuilder 生成SQL构造器
+func NewSQLBuilder(db *sqlx.DB, logFn func(ctx context.Context, query string, args ...any)) SQLBuilder {
+	return &sqlBuilder{
+		db:  db,
+		log: logFn,
 	}
 }
 
-// NewMySQLBuilder 生成一个MySQL构造器
-func NewMySQLBuilder() SQLBuilder {
-	return NewSQLBuilder(MySQL)
-}
+// ------------------------------------ SQLWrapper ------------------------------------
 
-// NewPGSQLBuilder 生成一个Postgres构造器
-func NewPGSQLBuilder() SQLBuilder {
-	return NewSQLBuilder(Postgres)
-}
-
-// NewSQLiteBuilder 生成一个SQLite构造器
-func NewSQLiteBuilder() SQLBuilder {
-	return NewSQLBuilder(SQLite)
+// SQLWrapper SQL包装器
+type SQLWrapper interface {
+	// One 查询一条数据
+	One(ctx context.Context, data any) error
+	// All 查询多条数据
+	All(ctx context.Context, data any) error
+	// Insert 插入一条数据 (数据类型：`struct`, `*struct`, `yiigo.X`)
+	Insert(ctx context.Context, data any) (sql.Result, error)
+	// BatchInsert 插入多条数据 (数据类型：`[]struct`, `[]*struct`, `[]yiigo.X`)
+	BatchInsert(ctx context.Context, data any) (sql.Result, error)
+	// Update 更新数据 (数据类型：`struct`, `*struct`, `yiigo.X`)
+	Update(ctx context.Context, data any) (sql.Result, error)
+	// Delete 删除数据
+	Delete(ctx context.Context) (sql.Result, error)
+	// Truncate 清空表
+	Truncate(ctx context.Context) (sql.Result, error)
 }
 
 // SQLClause SQL语句
@@ -97,8 +206,9 @@ func SQLExpr(query string, binds ...any) *SQLClause {
 	}
 }
 
-type queryWrapper struct {
-	builder  *queryBuilder
+type sqlWrapper struct {
+	tx       TXBuilder
+	driver   string
 	table    string
 	columns  []string
 	where    *SQLClause
@@ -113,7 +223,65 @@ type queryWrapper struct {
 	whereIn  bool
 }
 
-func (w *queryWrapper) ToQuery(ctx context.Context) (sql string, args []any, err error) {
+func (w *sqlWrapper) One(ctx context.Context, dest any) error {
+	query, args, err := w.querySQL()
+	if err != nil {
+		return err
+	}
+
+	return w.tx.one(ctx, dest, query, args...)
+}
+
+func (w *sqlWrapper) All(ctx context.Context, dest any) error {
+	query, args, err := w.querySQL()
+	if err != nil {
+		return err
+	}
+
+	return w.tx.all(ctx, dest, query, args...)
+}
+
+func (w *sqlWrapper) Insert(ctx context.Context, data any) (sql.Result, error) {
+	query, args, err := w.insertSQL(data)
+	if err != nil {
+		return nil, err
+	}
+
+	return w.tx.exec(ctx, query, args...)
+}
+
+func (w *sqlWrapper) BatchInsert(ctx context.Context, data any) (sql.Result, error) {
+	query, args, err := w.batchInsertSQL(data)
+	if err != nil {
+		return nil, err
+	}
+
+	return w.tx.exec(ctx, query, args...)
+}
+
+func (w *sqlWrapper) Update(ctx context.Context, data any) (sql.Result, error) {
+	query, args, err := w.updateSQL(data)
+	if err != nil {
+		return nil, err
+	}
+
+	return w.tx.exec(ctx, query, args...)
+}
+
+func (w *sqlWrapper) Delete(ctx context.Context) (sql.Result, error) {
+	query, args, err := w.deleteSQL()
+	if err != nil {
+		return nil, err
+	}
+
+	return w.tx.exec(ctx, query, args...)
+}
+
+func (w *sqlWrapper) Truncate(ctx context.Context) (sql.Result, error) {
+	return w.tx.exec(ctx, w.truncateSQL())
+}
+
+func (w *sqlWrapper) querySQL() (sql string, args []any, err error) {
 	sql, args = w.subquery()
 
 	// unions
@@ -145,12 +313,10 @@ func (w *queryWrapper) ToQuery(ctx context.Context) (sql string, args []any, err
 		}
 	}
 
-	sql = sqlx.Rebind(sqlx.BindType(string(w.builder.driver)), sql)
-
 	return
 }
 
-func (w *queryWrapper) subquery() (string, []any) {
+func (w *sqlWrapper) subquery() (string, []any) {
 	binds := make([]any, 0)
 
 	var builder strings.Builder
@@ -231,7 +397,7 @@ func (w *queryWrapper) subquery() (string, []any) {
 	return builder.String(), binds
 }
 
-func (w *queryWrapper) ToInsert(ctx context.Context, data any) (sql string, args []any, err error) {
+func (w *sqlWrapper) insertSQL(data any) (sql string, args []any, err error) {
 	var columns []string
 
 	v := reflect.Indirect(reflect.ValueOf(data))
@@ -273,16 +439,16 @@ func (w *queryWrapper) ToInsert(ctx context.Context, data any) (sql string, args
 		builder.WriteString(")")
 	}
 
-	if w.builder.driver == Postgres {
+	if DBDriver(w.driver) == Postgres {
 		builder.WriteString(" RETURNING id")
 	}
 
-	sql = sqlx.Rebind(sqlx.BindType(string(w.builder.driver)), builder.String())
+	sql = builder.String()
 
 	return
 }
 
-func (w *queryWrapper) insertWithMap(data X) (columns []string, binds []any) {
+func (w *sqlWrapper) insertWithMap(data X) (columns []string, binds []any) {
 	fieldNum := len(data)
 
 	columns = make([]string, 0, fieldNum)
@@ -296,7 +462,7 @@ func (w *queryWrapper) insertWithMap(data X) (columns []string, binds []any) {
 	return
 }
 
-func (w *queryWrapper) insertWithStruct(v reflect.Value) (columns []string, binds []any) {
+func (w *sqlWrapper) insertWithStruct(v reflect.Value) (columns []string, binds []any) {
 	fieldNum := v.NumField()
 
 	columns = make([]string, 0, fieldNum)
@@ -331,7 +497,7 @@ func (w *queryWrapper) insertWithStruct(v reflect.Value) (columns []string, bind
 	return
 }
 
-func (w *queryWrapper) ToBatchInsert(ctx context.Context, data any) (sql string, args []any, err error) {
+func (w *sqlWrapper) batchInsertSQL(data any) (sql string, args []any, err error) {
 	v := reflect.Indirect(reflect.ValueOf(data))
 
 	if v.Kind() != reflect.Slice {
@@ -404,12 +570,12 @@ func (w *queryWrapper) ToBatchInsert(ctx context.Context, data any) (sql string,
 		}
 	}
 
-	sql = sqlx.Rebind(sqlx.BindType(string(w.builder.driver)), builder.String())
+	sql = builder.String()
 
 	return
 }
 
-func (w *queryWrapper) batchInsertWithMap(data []X) (columns []string, binds []any) {
+func (w *sqlWrapper) batchInsertWithMap(data []X) (columns []string, binds []any) {
 	dataLen := len(data)
 	fieldNum := len(data[0])
 
@@ -429,7 +595,7 @@ func (w *queryWrapper) batchInsertWithMap(data []X) (columns []string, binds []a
 	return
 }
 
-func (w *queryWrapper) batchInsertWithStruct(v reflect.Value) (columns []string, binds []any) {
+func (w *sqlWrapper) batchInsertWithStruct(v reflect.Value) (columns []string, binds []any) {
 	first := reflect.Indirect(v.Index(0))
 
 	dataLen := v.Len()
@@ -472,7 +638,7 @@ func (w *queryWrapper) batchInsertWithStruct(v reflect.Value) (columns []string,
 	return
 }
 
-func (w *queryWrapper) ToUpdate(ctx context.Context, data any) (sql string, args []any, err error) {
+func (w *sqlWrapper) updateSQL(data any) (sql string, args []any, err error) {
 	var (
 		columns []string
 		exprs   map[string]string
@@ -541,12 +707,10 @@ func (w *queryWrapper) ToUpdate(ctx context.Context, data any) (sql string, args
 		}
 	}
 
-	sql = sqlx.Rebind(sqlx.BindType(string(w.builder.driver)), sql)
-
 	return
 }
 
-func (w *queryWrapper) updateWithMap(data X) (columns []string, exprs map[string]string, binds []any) {
+func (w *sqlWrapper) updateWithMap(data X) (columns []string, exprs map[string]string, binds []any) {
 	fieldNum := len(data)
 
 	columns = make([]string, 0, fieldNum)
@@ -569,7 +733,7 @@ func (w *queryWrapper) updateWithMap(data X) (columns []string, exprs map[string
 	return
 }
 
-func (w *queryWrapper) updateWithStruct(v reflect.Value) (columns []string, binds []any) {
+func (w *sqlWrapper) updateWithStruct(v reflect.Value) (columns []string, binds []any) {
 	fieldNum := v.NumField()
 
 	columns = make([]string, 0, fieldNum)
@@ -604,7 +768,7 @@ func (w *queryWrapper) updateWithStruct(v reflect.Value) (columns []string, bind
 	return
 }
 
-func (w *queryWrapper) ToDelete(ctx context.Context) (sql string, args []any, err error) {
+func (w *sqlWrapper) deleteSQL() (sql string, args []any, err error) {
 	var builder strings.Builder
 
 	builder.WriteString("DELETE FROM ")
@@ -626,12 +790,10 @@ func (w *queryWrapper) ToDelete(ctx context.Context) (sql string, args []any, er
 		}
 	}
 
-	sql = sqlx.Rebind(sqlx.BindType(string(w.builder.driver)), sql)
-
 	return
 }
 
-func (w *queryWrapper) ToTruncate(ctx context.Context) string {
+func (w *sqlWrapper) truncateSQL() string {
 	var builder strings.Builder
 
 	builder.WriteString("TRUNCATE ")
@@ -640,34 +802,34 @@ func (w *queryWrapper) ToTruncate(ctx context.Context) string {
 	return builder.String()
 }
 
-// QueryOption SQL查询选项
-type QueryOption func(w *queryWrapper)
+// SQLOption SQL查询选项
+type SQLOption func(w *sqlWrapper)
 
 // Table 指定查询表名称
-func Table(name string) QueryOption {
-	return func(w *queryWrapper) {
+func Table(name string) SQLOption {
+	return func(w *sqlWrapper) {
 		w.table = name
 	}
 }
 
 // Select 指定查询字段名
-func Select(columns ...string) QueryOption {
-	return func(w *queryWrapper) {
+func Select(columns ...string) SQLOption {
+	return func(w *sqlWrapper) {
 		w.columns = columns
 	}
 }
 
 // Distinct 指定 `DISTINCT` 语句
-func Distinct(columns ...string) QueryOption {
-	return func(w *queryWrapper) {
+func Distinct(columns ...string) SQLOption {
+	return func(w *sqlWrapper) {
 		w.columns = columns
 		w.distinct = true
 	}
 }
 
 // Join 指定 `INNER JOIN` 语句
-func Join(table, on string) QueryOption {
-	return func(w *queryWrapper) {
+func Join(table, on string) SQLOption {
+	return func(w *sqlWrapper) {
 		w.joins = append(w.joins, &SQLClause{
 			table:   table,
 			keyword: "INNER",
@@ -677,8 +839,8 @@ func Join(table, on string) QueryOption {
 }
 
 // LeftJoin 指定 `LEFT JOIN` 语句
-func LeftJoin(table, on string) QueryOption {
-	return func(w *queryWrapper) {
+func LeftJoin(table, on string) SQLOption {
+	return func(w *sqlWrapper) {
 		w.joins = append(w.joins, &SQLClause{
 			table:   table,
 			keyword: "LEFT",
@@ -688,8 +850,8 @@ func LeftJoin(table, on string) QueryOption {
 }
 
 // RightJoin 指定 `RIGHT JOIN` 语句
-func RightJoin(table, on string) QueryOption {
-	return func(w *queryWrapper) {
+func RightJoin(table, on string) SQLOption {
+	return func(w *sqlWrapper) {
 		w.joins = append(w.joins, &SQLClause{
 			table:   table,
 			keyword: "RIGHT",
@@ -699,8 +861,8 @@ func RightJoin(table, on string) QueryOption {
 }
 
 // FullJoin 指定 `FULL JOIN` 语句
-func FullJoin(table, on string) QueryOption {
-	return func(w *queryWrapper) {
+func FullJoin(table, on string) SQLOption {
+	return func(w *sqlWrapper) {
 		w.joins = append(w.joins, &SQLClause{
 			table:   table,
 			keyword: "FULL",
@@ -710,8 +872,8 @@ func FullJoin(table, on string) QueryOption {
 }
 
 // CrossJoin 指定 `CROSS JOIN` 语句
-func CrossJoin(table string) QueryOption {
-	return func(w *queryWrapper) {
+func CrossJoin(table string) SQLOption {
+	return func(w *sqlWrapper) {
 		w.joins = append(w.joins, &SQLClause{
 			table:   table,
 			keyword: "CROSS",
@@ -720,8 +882,8 @@ func CrossJoin(table string) QueryOption {
 }
 
 // Where 指定 `WHERE` 语句
-func Where(query string, binds ...any) QueryOption {
-	return func(w *queryWrapper) {
+func Where(query string, binds ...any) SQLOption {
+	return func(w *sqlWrapper) {
 		w.where = &SQLClause{
 			query: query,
 			binds: binds,
@@ -730,8 +892,8 @@ func Where(query string, binds ...any) QueryOption {
 }
 
 // WhereIn 指定 `WHERE IN` 语句
-func WhereIn(query string, binds ...any) QueryOption {
-	return func(w *queryWrapper) {
+func WhereIn(query string, binds ...any) SQLOption {
+	return func(w *sqlWrapper) {
 		w.where = &SQLClause{
 			query: query,
 			binds: binds,
@@ -742,15 +904,15 @@ func WhereIn(query string, binds ...any) QueryOption {
 }
 
 // GroupBy 指定 `GROUP BY` 语句
-func GroupBy(columns ...string) QueryOption {
-	return func(w *queryWrapper) {
+func GroupBy(columns ...string) SQLOption {
+	return func(w *sqlWrapper) {
 		w.groups = columns
 	}
 }
 
 // Having 指定 `HAVING` 语句
-func Having(query string, binds ...any) QueryOption {
-	return func(w *queryWrapper) {
+func Having(query string, binds ...any) SQLOption {
+	return func(w *sqlWrapper) {
 		w.having = &SQLClause{
 			query: query,
 			binds: binds,
@@ -759,31 +921,31 @@ func Having(query string, binds ...any) QueryOption {
 }
 
 // OrderBy 指定 `ORDER BY` 语句
-func OrderBy(columns ...string) QueryOption {
-	return func(w *queryWrapper) {
+func OrderBy(columns ...string) SQLOption {
+	return func(w *sqlWrapper) {
 		w.orders = columns
 	}
 }
 
 // Offset 指定 `OFFSET` 语句
-func Offset(n int) QueryOption {
-	return func(w *queryWrapper) {
+func Offset(n int) SQLOption {
+	return func(w *sqlWrapper) {
 		w.offset = n
 	}
 }
 
 // Limit 指定 `LIMIT` 语句
-func Limit(n int) QueryOption {
-	return func(w *queryWrapper) {
+func Limit(n int) SQLOption {
+	return func(w *sqlWrapper) {
 		w.limit = n
 	}
 }
 
 // Union 指定 `UNION` 语句
-func Union(wrappers ...SQLWrapper) QueryOption {
-	return func(w *queryWrapper) {
+func Union(wrappers ...SQLWrapper) SQLOption {
+	return func(w *sqlWrapper) {
 		for _, wrapper := range wrappers {
-			v, ok := wrapper.(*queryWrapper)
+			v, ok := wrapper.(*sqlWrapper)
 			if !ok {
 				continue
 			}
@@ -804,10 +966,10 @@ func Union(wrappers ...SQLWrapper) QueryOption {
 }
 
 // UnionAll 指定 `UNION ALL` 语句
-func UnionAll(wrappers ...SQLWrapper) QueryOption {
-	return func(w *queryWrapper) {
+func UnionAll(wrappers ...SQLWrapper) SQLOption {
+	return func(w *sqlWrapper) {
 		for _, wrapper := range wrappers {
-			v, ok := wrapper.(*queryWrapper)
+			v, ok := wrapper.(*sqlWrapper)
 			if !ok {
 				continue
 			}
@@ -831,7 +993,7 @@ func UnionAll(wrappers ...SQLWrapper) QueryOption {
 // tag, or the empty string. It does not include the leading comma.
 type tagOptions string
 
-// Contains reports whether a comma-separated list of options
+// Contains reports whether a comma-separated list of opts
 // contains a particular substr flag. substr must be surrounded by a
 // string boundary or commas.
 func (o tagOptions) Contains(optionName string) bool {
@@ -860,7 +1022,7 @@ func (o tagOptions) Contains(optionName string) bool {
 }
 
 // parseTag splits a struct field's json tag into its name and
-// comma-separated options.
+// comma-separated opts.
 func parseTag(tag string) (string, tagOptions) {
 	if idx := strings.Index(tag, ","); idx != -1 {
 		return tag[:idx], tagOptions(tag[idx+1:])
