@@ -82,6 +82,7 @@ func (b *txBuilder) exec(ctx context.Context, query string, args ...any) (sql.Re
 // SQLBuilder SQL构造器
 type SQLBuilder interface {
 	TXBuilder
+	// Transaction 启用事务
 	Transaction(ctx context.Context, f func(ctx context.Context, tx TXBuilder) error) error
 }
 
@@ -178,9 +179,9 @@ type SQLWrapper interface {
 	One(ctx context.Context, data any) error
 	// All 查询多条数据
 	All(ctx context.Context, data any) error
-	// Insert 插入一条数据 (数据类型：`struct`, `*struct`, `yiigo.X`)
+	// Insert 插入数据 (数据类型：`struct`, `*struct`, `yiigo.X`)
 	Insert(ctx context.Context, data any) (sql.Result, error)
-	// BatchInsert 插入多条数据 (数据类型：`[]struct`, `[]*struct`, `[]yiigo.X`)
+	// BatchInsert 批量插入数据 (数据类型：`[]struct`, `[]*struct`, `[]yiigo.X`)
 	BatchInsert(ctx context.Context, data any) (sql.Result, error)
 	// Update 更新数据 (数据类型：`struct`, `*struct`, `yiigo.X`)
 	Update(ctx context.Context, data any) (sql.Result, error)
