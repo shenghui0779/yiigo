@@ -15,7 +15,7 @@ go get -u github.com/shenghui0779/yiigo
 - Http - 封装便于使用(支持文件上传)
 - Crypto - 封装便于使用(支持 AES & RSA)
 - Validator - 支持汉化 & 自定义规则
-- 轻量的 SQL Builder (可用于`sqlx`)
+- 基于 `sqlx` 的轻量 `SQLBuilder`
 - 基于 Redis 的简单分布式锁
 - Websocket 封装提高易用性
   - Dialer - 读写失败支持重连
