@@ -12,11 +12,11 @@ import (
 )
 
 var (
-	// ErrUpsertData 不合法的插入或更新数据类型错误
-	ErrUpsertData = errors.New("invaild data type, expects: struct, *struct, yiigo.X")
+	// ErrSQLDataType 不合法的插入或更新数据类型错误
+	ErrSQLDataType = errors.New("invaild data type, expects: struct, *struct, yiigo.X")
 
-	// ErrBatchInsertData 不合法的批量插入数据类型错误
-	ErrBatchInsertData = errors.New("invaild data type, expects: []struct, []*struct, []yiigo.X")
+	// ErrSQLBatchDataType 不合法的批量插入数据类型错误
+	ErrSQLBatchDataType = errors.New("invaild data type, expects: []struct, []*struct, []yiigo.X")
 )
 
 // ------------------------------------ TXBuilder ------------------------------------
@@ -407,7 +407,7 @@ func (w *sqlWrapper) insertSQL(data any) (sql string, args []any, err error) {
 	case reflect.Map:
 		x, ok := data.(X)
 		if !ok {
-			err = ErrUpsertData
+			err = ErrSQLDataType
 			return
 		}
 
@@ -415,7 +415,7 @@ func (w *sqlWrapper) insertSQL(data any) (sql string, args []any, err error) {
 	case reflect.Struct:
 		columns, args = w.insertWithStruct(v)
 	default:
-		err = ErrUpsertData
+		err = ErrSQLDataType
 		return
 	}
 
@@ -502,7 +502,7 @@ func (w *sqlWrapper) batchInsertSQL(data any) (sql string, args []any, err error
 	v := reflect.Indirect(reflect.ValueOf(data))
 
 	if v.Kind() != reflect.Slice {
-		err = ErrBatchInsertData
+		err = ErrSQLBatchDataType
 		return
 	}
 
@@ -519,7 +519,7 @@ func (w *sqlWrapper) batchInsertSQL(data any) (sql string, args []any, err error
 	case reflect.Map:
 		x, ok := data.([]X)
 		if !ok {
-			err = ErrBatchInsertData
+			err = ErrSQLBatchDataType
 			return
 		}
 
@@ -528,13 +528,13 @@ func (w *sqlWrapper) batchInsertSQL(data any) (sql string, args []any, err error
 		columns, args = w.batchInsertWithStruct(v)
 	case reflect.Ptr:
 		if e.Elem().Kind() != reflect.Struct {
-			err = ErrBatchInsertData
+			err = ErrSQLBatchDataType
 			return
 		}
 
 		columns, args = w.batchInsertWithStruct(v)
 	default:
-		err = ErrBatchInsertData
+		err = ErrSQLBatchDataType
 		return
 	}
 
@@ -651,7 +651,7 @@ func (w *sqlWrapper) updateSQL(data any) (sql string, args []any, err error) {
 	case reflect.Map:
 		x, ok := data.(X)
 		if !ok {
-			err = ErrUpsertData
+			err = ErrSQLDataType
 			return
 		}
 
@@ -659,7 +659,7 @@ func (w *sqlWrapper) updateSQL(data any) (sql string, args []any, err error) {
 	case reflect.Struct:
 		columns, args = w.updateWithStruct(v)
 	default:
-		err = ErrUpsertData
+		err = ErrSQLDataType
 		return
 	}
 
