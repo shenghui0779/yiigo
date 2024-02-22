@@ -13,10 +13,10 @@ import (
 
 var (
 	// ErrUpsertData 不合法的插入或更新数据类型错误
-	ErrUpsertData = errors.New("invaild data, expects struct, *struct, yiigo.X")
+	ErrUpsertData = errors.New("invaild data type, expects: struct, *struct, yiigo.X")
 
 	// ErrBatchInsertData 不合法的批量插入数据类型错误
-	ErrBatchInsertData = errors.New("invaild data, expects []struct, []*struct, []yiigo.X")
+	ErrBatchInsertData = errors.New("invaild data type, expects: []struct, []*struct, []yiigo.X")
 )
 
 // ------------------------------------ TXBuilder ------------------------------------
