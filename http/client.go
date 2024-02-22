@@ -33,8 +33,8 @@ func (c *client) Do(ctx context.Context, method, reqURL string, body []byte, opt
 	o := new(options)
 	if len(opts) != 0 {
 		o.header = http.Header{}
-		for _, f := range opts {
-			f(o)
+		for _, fn := range opts {
+			fn(o)
 		}
 	}
 

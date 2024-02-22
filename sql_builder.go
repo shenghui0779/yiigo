@@ -43,8 +43,8 @@ func (b *txBuilder) Wrap(opts ...SQLOption) SQLWrapper {
 		columns: []string{"*"},
 	}
 
-	for _, f := range opts {
-		f(wrapper)
+	for _, fn := range opts {
+		fn(wrapper)
 	}
 
 	return wrapper
@@ -98,14 +98,14 @@ func (b *sqlBuilder) Wrap(opts ...SQLOption) SQLWrapper {
 		columns: []string{"*"},
 	}
 
-	for _, f := range opts {
-		f(wrapper)
+	for _, fn := range opts {
+		fn(wrapper)
 	}
 
 	return wrapper
 }
 
-func (b *sqlBuilder) Transaction(ctx context.Context, f func(ctx context.Context, tx TXBuilder) error) error {
+func (b *sqlBuilder) Transaction(ctx context.Context, fn func(ctx context.Context, tx TXBuilder) error) error {
 	tx, err := b.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return err
@@ -118,7 +118,7 @@ func (b *sqlBuilder) Transaction(ctx context.Context, f func(ctx context.Context
 		}
 	}()
 
-	if err = f(ctx, &txBuilder{
+	if err = fn(ctx, &txBuilder{
 		tx:  tx,
 		log: b.log,
 	}); err != nil {

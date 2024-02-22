@@ -12,8 +12,8 @@ func warpper(opts ...SQLOption) *sqlWrapper {
 		columns: []string{"*"},
 	}
 
-	for _, f := range opts {
-		f(wrapper)
+	for _, fn := range opts {
+		fn(wrapper)
 	}
 
 	return wrapper

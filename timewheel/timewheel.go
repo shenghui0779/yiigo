@@ -42,7 +42,7 @@ type Task struct {
 type TimeWheel interface {
 	// AddTask 添加一个任务，到期被执行，默认仅执行一次；若指定了重试次数，则在发生错误后重试；
 	// 注意：任务是异步执行的，`ctx`一旦被取消，则任务也随之取消，故需考虑是否应该克隆一个不带「取消」的`ctx`
-	AddTask(ctx context.Context, taskID string, handler func(ctx context.Context, taskID string) error, options ...Option)
+	AddTask(ctx context.Context, taskID string, fn func(ctx context.Context, taskID string) error, options ...Option)
 	// Run 运行时间轮
 	Run()
 	// Stop 终止时间轮
@@ -57,19 +57,19 @@ type timewheel struct {
 	stop   chan struct{}
 }
 
-func (tw *timewheel) AddTask(ctx context.Context, taskID string, handler func(ctx context.Context, taskID string) error, options ...Option) {
+func (tw *timewheel) AddTask(ctx context.Context, taskID string, fn func(ctx context.Context, taskID string) error, options ...Option) {
 	task := &Task{
 		ctx:         ctx,
 		uniqID:      taskID,
-		callback:    handler,
+		callback:    fn,
 		maxAttempts: 1,
 		deferFn: func(attempts uint16) time.Duration {
 			return 0
 		},
 	}
 
-	for _, f := range options {
-		f(task)
+	for _, fn := range options {
+		fn(task)
 	}
 
 	tw.requeue(task)

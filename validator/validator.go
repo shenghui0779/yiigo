@@ -82,8 +82,8 @@ func New(opts ...Option) *Validator {
 	trans, _ := ut.New(zhTrans, zhTrans).GetTranslator("zh")
 	zhcn.RegisterDefaultTranslations(validate, trans)
 
-	for _, f := range opts {
-		f(validate, trans)
+	for _, fn := range opts {
+		fn(validate, trans)
 	}
 
 	return &Validator{

@@ -59,7 +59,7 @@ func NewDBX(cfg *DBConfig) (*sqlx.DB, error) {
 }
 
 // Transaction 执行数据库事物
-func Transaction(ctx context.Context, db *sqlx.DB, f func(ctx context.Context, tx *sqlx.Tx) error) error {
+func Transaction(ctx context.Context, db *sqlx.DB, fn func(ctx context.Context, tx *sqlx.Tx) error) error {
 	tx, err := db.BeginTxx(ctx, nil)
 	if err != nil {
 		return err
@@ -72,7 +72,7 @@ func Transaction(ctx context.Context, db *sqlx.DB, f func(ctx context.Context, t
 		}
 	}()
 
-	if err = f(ctx, tx); err != nil {
+	if err = fn(ctx, tx); err != nil {
 		if rerr := tx.Rollback(); rerr != nil {
 			err = fmt.Errorf("%w: rolling back transaction: %v", err, rerr)
 		}

@@ -125,8 +125,8 @@ func NewUploadForm(fields ...UploadField) UploadForm {
 		fields: make(value.V),
 	}
 
-	for _, f := range fields {
-		f(form)
+	for _, fn := range fields {
+		fn(form)
 	}
 
 	return form
