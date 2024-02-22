@@ -114,35 +114,35 @@ builder.Wrap(
 // [20, 10, 5]
 
 wrap1 := builder.Wrap(
-    Table("user_1"),
-    Where("id = ?", 2),
+    yiigo.Table("user_1"),
+    yiigo.Where("id = ?", 2),
 )
 
 builder.Wrap(
-    Table("user_0"),
-    Where("id = ?", 1),
-    Union(wrap1),
+    yiigo.Table("user_0"),
+    yiigo.Where("id = ?", 1),
+    yiigo.Union(wrap1),
 ).All(...)
 // (SELECT * FROM user_0 WHERE id = ?) UNION (SELECT * FROM user_1 WHERE id = ?)
 // [1, 2]
 
 builder.Wrap(
-    Table("user_0"),
-    Where("id = ?", 1),
-    UnionAll(wrap1),
+    yiigo.Table("user_0"),
+    yiigo.Where("id = ?", 1),
+    yiigo.UnionAll(wrap1),
 ).All(...)
 // (SELECT * FROM user_0 WHERE id = ?) UNION ALL (SELECT * FROM user_1 WHERE id = ?)
 // [1, 2]
 
 builder.Wrap(
-    Table("user_0"),
-    WhereIn("age IN (?)", []int{10, 20}),
-    Limit(5),
-    Union(
+    yiigo.Table("user_0"),
+    yiigo.WhereIn("age IN (?)", []int{10, 20}),
+    yiigo.Limit(5),
+    yiigo.Union(
         builder.Wrap(
-            Table("user_1"),
-            Where("age IN (?)", []int{30, 40}),
-            Limit(5),
+            yiigo.Table("user_1"),
+            yiigo.Where("age IN (?)", []int{30, 40}),
+            yiigo.Limit(5),
         ),
     ),
 ).All(...)
@@ -228,8 +228,8 @@ type User struct {
 }
 
 builder.Wrap(
-    Table("user"),
-    Where("id = ?", 1),
+    yiigo.Table("user"),
+    yiigo.Where("id = ?", 1),
 ).Update(ctx, &User{
     Name: "yiigo",
     Age:  29,
@@ -269,7 +269,7 @@ builder.Wrap(
 // DELETE FROM user WHERE id = ?
 // [1]
 
-builder.Wrap(Table("user")).Truncate(ctx)
+builder.Wrap(yiigo.Table("user")).Truncate(ctx)
 // TRUNCATE user
 ```
 
