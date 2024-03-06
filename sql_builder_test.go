@@ -8,7 +8,6 @@ import (
 
 func warpper(opts ...SQLOption) *sqlWrapper {
 	wrapper := &sqlWrapper{
-		driver:  string(MySQL),
 		columns: []string{"*"},
 	}
 
@@ -198,6 +197,16 @@ func TestToInsert(t *testing.T) {
 
 	assert.Nil(t, err)
 	assert.Equal(t, "INSERT INTO user (name, gender, age) VALUES (?, ?, ?)", sql)
+	assert.Equal(t, []any{"yiigo", "M", 29}, args)
+
+	sql, args, err = warpper(Table("user"), Returning("id")).insertSQL(&User{
+		Name:   "yiigo",
+		Gender: "M",
+		Age:    29,
+	})
+
+	assert.Nil(t, err)
+	assert.Equal(t, "INSERT INTO user (name, gender, age) VALUES (?, ?, ?) RETURNING id", sql)
 	assert.Equal(t, []any{"yiigo", "M", 29}, args)
 
 	sql, args, err = warpper(Table("user")).insertSQL(&User{

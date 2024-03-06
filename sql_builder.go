@@ -39,7 +39,6 @@ type txBuilder struct {
 func (b *txBuilder) Wrap(opts ...SQLOption) SQLWrapper {
 	wrapper := &sqlWrapper{
 		tx:      b,
-		driver:  b.tx.DriverName(),
 		columns: []string{"*"},
 	}
 
@@ -94,7 +93,6 @@ type sqlBuilder struct {
 func (b *sqlBuilder) Wrap(opts ...SQLOption) SQLWrapper {
 	wrapper := &sqlWrapper{
 		tx:      b,
-		driver:  b.db.DriverName(),
 		columns: []string{"*"},
 	}
 
@@ -208,20 +206,20 @@ func SQLExpr(query string, binds ...any) *SQLClause {
 }
 
 type sqlWrapper struct {
-	tx       TXBuilder
-	driver   string
-	table    string
-	columns  []string
-	where    *SQLClause
-	joins    []*SQLClause
-	groups   []string
-	having   *SQLClause
-	orders   []string
-	offset   int
-	limit    int
-	unions   []*SQLClause
-	distinct bool
-	whereIn  bool
+	tx        TXBuilder
+	table     string
+	columns   []string
+	where     *SQLClause
+	joins     []*SQLClause
+	groups    []string
+	having    *SQLClause
+	orders    []string
+	offset    int
+	limit     int
+	returning string
+	unions    []*SQLClause
+	distinct  bool
+	whereIn   bool
 }
 
 func (w *sqlWrapper) One(ctx context.Context, dest any) error {
@@ -440,8 +438,9 @@ func (w *sqlWrapper) insertSQL(data any) (sql string, args []any, err error) {
 		builder.WriteString(")")
 	}
 
-	if DBDriver(w.driver) == Postgres {
-		builder.WriteString(" RETURNING id")
+	if len(w.returning) != 0 {
+		builder.WriteString(" RETURNING ")
+		builder.WriteString(w.returning)
 	}
 
 	sql = builder.String()
@@ -820,7 +819,7 @@ func Select(columns ...string) SQLOption {
 	}
 }
 
-// Distinct 指定 `DISTINCT` 语句
+// Distinct 指定 `DISTINCT` 子句
 func Distinct(columns ...string) SQLOption {
 	return func(w *sqlWrapper) {
 		w.columns = columns
@@ -828,7 +827,7 @@ func Distinct(columns ...string) SQLOption {
 	}
 }
 
-// Join 指定 `INNER JOIN` 语句
+// Join 指定 `INNER JOIN` 子句
 func Join(table, on string) SQLOption {
 	return func(w *sqlWrapper) {
 		w.joins = append(w.joins, &SQLClause{
@@ -839,7 +838,7 @@ func Join(table, on string) SQLOption {
 	}
 }
 
-// LeftJoin 指定 `LEFT JOIN` 语句
+// LeftJoin 指定 `LEFT JOIN` 子句
 func LeftJoin(table, on string) SQLOption {
 	return func(w *sqlWrapper) {
 		w.joins = append(w.joins, &SQLClause{
@@ -850,7 +849,7 @@ func LeftJoin(table, on string) SQLOption {
 	}
 }
 
-// RightJoin 指定 `RIGHT JOIN` 语句
+// RightJoin 指定 `RIGHT JOIN` 子句
 func RightJoin(table, on string) SQLOption {
 	return func(w *sqlWrapper) {
 		w.joins = append(w.joins, &SQLClause{
@@ -861,7 +860,7 @@ func RightJoin(table, on string) SQLOption {
 	}
 }
 
-// FullJoin 指定 `FULL JOIN` 语句
+// FullJoin 指定 `FULL JOIN` 子句
 func FullJoin(table, on string) SQLOption {
 	return func(w *sqlWrapper) {
 		w.joins = append(w.joins, &SQLClause{
@@ -882,7 +881,7 @@ func CrossJoin(table string) SQLOption {
 	}
 }
 
-// Where 指定 `WHERE` 语句
+// Where 指定 `WHERE` 子句
 func Where(query string, binds ...any) SQLOption {
 	return func(w *sqlWrapper) {
 		w.where = &SQLClause{
@@ -892,7 +891,7 @@ func Where(query string, binds ...any) SQLOption {
 	}
 }
 
-// WhereIn 指定 `WHERE IN` 语句
+// WhereIn 指定 `WHERE IN` 子句
 func WhereIn(query string, binds ...any) SQLOption {
 	return func(w *sqlWrapper) {
 		w.where = &SQLClause{
@@ -904,14 +903,14 @@ func WhereIn(query string, binds ...any) SQLOption {
 	}
 }
 
-// GroupBy 指定 `GROUP BY` 语句
+// GroupBy 指定 `GROUP BY` 子句
 func GroupBy(columns ...string) SQLOption {
 	return func(w *sqlWrapper) {
 		w.groups = columns
 	}
 }
 
-// Having 指定 `HAVING` 语句
+// Having 指定 `HAVING` 子句
 func Having(query string, binds ...any) SQLOption {
 	return func(w *sqlWrapper) {
 		w.having = &SQLClause{
@@ -921,28 +920,36 @@ func Having(query string, binds ...any) SQLOption {
 	}
 }
 
-// OrderBy 指定 `ORDER BY` 语句
+// OrderBy 指定 `ORDER BY` 子句
 func OrderBy(columns ...string) SQLOption {
 	return func(w *sqlWrapper) {
 		w.orders = columns
 	}
 }
 
-// Offset 指定 `OFFSET` 语句
+// Offset 指定 `OFFSET` 子句
 func Offset(n int) SQLOption {
 	return func(w *sqlWrapper) {
 		w.offset = n
 	}
 }
 
-// Limit 指定 `LIMIT` 语句
+// Limit 指定 `LIMIT` 子句
 func Limit(n int) SQLOption {
 	return func(w *sqlWrapper) {
 		w.limit = n
 	}
 }
 
-// Union 指定 `UNION` 语句
+// Returning 指定 `RETURNING` 子句；
+// 用于 PostgresSQL 和 SQLite(3.35.0) `INSERT` 语句
+func Returning(column string) SQLOption {
+	return func(w *sqlWrapper) {
+		w.returning = column
+	}
+}
+
+// Union 指定 `UNION` 子句
 func Union(wrappers ...SQLWrapper) SQLOption {
 	return func(w *sqlWrapper) {
 		for _, wrapper := range wrappers {
@@ -966,7 +973,7 @@ func Union(wrappers ...SQLWrapper) SQLOption {
 	}
 }
 
-// UnionAll 指定 `UNION ALL` 语句
+// UnionAll 指定 `UNION ALL` 子句
 func UnionAll(wrappers ...SQLWrapper) SQLOption {
 	return func(w *sqlWrapper) {
 		for _, wrapper := range wrappers {
