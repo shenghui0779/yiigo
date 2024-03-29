@@ -2,11 +2,13 @@ package yiigo
 
 import (
 	"bytes"
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
 	"io"
 	"strings"
+	"time"
 
 	"github.com/hashicorp/go-version"
 )
@@ -64,4 +66,36 @@ func VersionCompare(rangeVer, curVer string) (bool, error) {
 	}
 
 	return false, nil
+}
+
+// DetachContext returns a copy of parent that is not canceled when parent is canceled.
+// The returned context returns no Deadline or Err, and its Done channel is nil.
+// Calling [Cause] on the returned context returns nil.
+// Use `context.WithoutCancel` if go version >= 1.21.0
+func DetachContext(ctx context.Context) context.Context {
+	if ctx == nil {
+		panic("cannot create context from nil parent")
+	}
+
+	return detachedContext{ctx}
+}
+
+type detachedContext struct {
+	ctx context.Context
+}
+
+func (detachedContext) Deadline() (deadline time.Time, ok bool) {
+	return
+}
+
+func (detachedContext) Done() <-chan struct{} {
+	return nil
+}
+
+func (detachedContext) Err() error {
+	return nil
+}
+
+func (c detachedContext) Value(key any) any {
+	return c.ctx.Value(key)
 }
