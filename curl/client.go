@@ -1,4 +1,4 @@
-package http
+package curl
 
 import (
 	"bytes"
