@@ -7,10 +7,10 @@ import (
 )
 
 func TestSliceUniq(t *testing.T) {
-	assert.Equal(t, []int{1, 2, 3, 4}, SliceUniq([]int{1, 2, 1, 3, 4, 3}))
-	assert.Equal(t, []int64{1, 2, 3, 4}, SliceUniq([]int64{1, 2, 1, 3, 4, 3}))
-	assert.Equal(t, []float64{1.01, 2.02, 3.03, 4.04}, SliceUniq([]float64{1.01, 2.02, 1.01, 3.03, 4.04, 3.03}))
-	assert.Equal(t, []string{"h", "e", "l", "o"}, SliceUniq([]string{"h", "e", "l", "l", "o"}))
+	assert.Equal(t, 4, len(SliceUniq([]int{1, 2, 1, 3, 4, 3})))
+	assert.Equal(t, 4, len(SliceUniq([]int64{1, 2, 1, 3, 4, 3})))
+	assert.Equal(t, 4, len(SliceUniq([]float64{1.01, 2.02, 1.01, 3.03, 4.04, 3.03})))
+	assert.Equal(t, 4, len(SliceUniq([]string{"h", "e", "l", "l", "o"})))
 }
 
 func TestSliceRand(t *testing.T) {

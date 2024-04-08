@@ -7,18 +7,18 @@ import (
 
 // SliceUniq 切片去重
 func SliceUniq[T ~[]E, E cmp.Ordered](a T) T {
-	ret := make(T, 0)
 	if len(a) == 0 {
-		return ret
+		return a
 	}
 
-	m := make(map[E]struct{}, 0)
-
+	m := make(map[E]struct{})
 	for _, v := range a {
-		if _, ok := m[v]; !ok {
-			ret = append(ret, v)
-			m[v] = struct{}{}
-		}
+		m[v] = struct{}{}
+	}
+
+	ret := make(T, 0, len(m))
+	for k := range m {
+		ret = append(ret, k)
 	}
 
 	return ret
@@ -28,7 +28,7 @@ func SliceUniq[T ~[]E, E cmp.Ordered](a T) T {
 // 若 n == -1 or n >= len(a)，则返回打乱的切片
 func SliceRand[T any](a []T, n int) []T {
 	if n == 0 || n < -1 {
-		return make([]T, 0)
+		return nil
 	}
 
 	count := len(a)
