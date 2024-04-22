@@ -35,7 +35,7 @@ builder := yiigo.NewSQLBuilder(*sqlx.DB, func(ctx context.Context, query string,
 })
 ```
 
-- Query
+##### Query
 
 ```go
 ctx := context.Background()
@@ -150,7 +150,7 @@ builder.Wrap(
 // [10, 20, 5, 30, 40, 5]
 ```
 
-- Insert
+##### Insert
 
 ```go
 ctx := context.Background()
@@ -177,7 +177,7 @@ builder.Wrap(yiigo.Table("user")).Insert(ctx, yiigo.X{
 // [yiigo 29]
 ```
 
-- Batch Insert
+##### Batch Insert
 
 ```go
 ctx := context.Background()
@@ -216,7 +216,7 @@ builder.Wrap(yiigo.Table("user")).BatchInsert(ctx, []yiigo.X{
 // [shenghui0779 20 yiigo 29]
 ```
 
-- Update
+##### Update
 
 ```go
 ctx := context.Background()
@@ -257,7 +257,7 @@ builder.Wrap(
 // [2 100 1]
 ```
 
-- Delete
+##### Delete
 
 ```go
 ctx := context.Background()
@@ -273,7 +273,7 @@ builder.Wrap(yiigo.Table("user")).Truncate(ctx)
 // TRUNCATE user
 ```
 
-- Transaction
+##### Transaction
 
 ```go
 builder.Transaction(context.Background(), func(ctx context.Context, tx yiigo.TXBuilder) error {
