@@ -60,12 +60,12 @@ func (d *distributed) UnLock(ctx context.Context) error {
 }
 
 // DistributedMutex 返回一个分布式锁实例；
-// uniqueID - 建议使用「RequestID」
-func DistributedMutex(cli *redis.Client, key, uniqueID string, expire time.Duration) Mutex {
+// uniqID - 建议使用「RequestID」
+func DistributedMutex(cli *redis.Client, key, uniqID string, expire time.Duration) Mutex {
 	mutex := &distributed{
 		cli:    cli,
 		key:    key,
-		uniqID: uniqueID,
+		uniqID: uniqID,
 		expire: expire,
 	}
 
