@@ -1,12 +1,11 @@
 package yiigo
 
 import (
-	"cmp"
 	"math/rand"
 )
 
 // SliceUniq 切片去重
-func SliceUniq[T ~[]E, E cmp.Ordered](a T) T {
+func SliceUniq[T ~[]E, E comparable](a T) T {
 	if len(a) == 0 {
 		return a
 	}

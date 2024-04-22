@@ -2,6 +2,7 @@ package yiigo
 
 import (
 	"context"
+	"errors"
 	"math/rand"
 	"time"
 
@@ -88,7 +89,7 @@ func (d *distributed) lock(ctx context.Context) error {
 		// 尝试GET一次：避免因redis网络错误导致误加锁
 		v, _err := d.cli.Get(ctx, d.key).Result()
 		if _err != nil {
-			if _err == redis.Nil {
+			if errors.Is(_err, redis.Nil) {
 				return err
 			}
 			return _err
