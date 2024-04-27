@@ -22,7 +22,7 @@ go get -u github.com/shenghui0779/yiigo
   - Upgrader - 支持授权校验
 - Value - 用于处理 `k-v` 格式化的场景，如：生成签名串 等
 - Location - 距离、方位角、经纬度与平面直角坐标系的相互转化
-- TimeWheel - 简单实用的单时间轮(支持一次性和多次重试任务)
+- TimeWheel - 简单实用的单层时间轮(支持一次性和多次重试任务)
 - 实用的辅助方法：IP、file、time、slice、string、version compare 等
 
 #### SQL Builder
