@@ -61,7 +61,6 @@ func (c *client) Do(ctx context.Context, method, reqURL string, body []byte, opt
 			err = ctx.Err()
 		default:
 		}
-
 		return nil, err
 	}
 
@@ -76,13 +75,11 @@ func (c *client) Upload(ctx context.Context, reqURL string, form UploadForm, opt
 	}
 
 	options = append(options, WithHeader("Content-Type", w.FormDataContentType()))
-
 	// Don't forget to close the multipart writer.
 	// If you don't close it, your request will be missing the terminating boundary.
 	if err := w.Close(); err != nil {
 		return nil, err
 	}
-
 	return c.Do(ctx, http.MethodPost, reqURL, buf.Bytes(), options...)
 }
 

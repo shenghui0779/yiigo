@@ -8,7 +8,6 @@ func IP2Long(ip string) uint32 {
 	if ipv4 == nil {
 		return 0
 	}
-
 	return uint32(ipv4[0])<<24 | uint32(ipv4[1])<<16 | uint32(ipv4[2])<<8 | uint32(ipv4[3])
 }
 

@@ -1,8 +1,6 @@
 package yiigo
 
-import (
-	"math/rand"
-)
+import "math/rand"
 
 // SliceUniq 切片去重
 func SliceUniq[T ~[]E, E comparable](a T) T {
@@ -30,18 +28,14 @@ func SliceRand[T any](a []T, n int) []T {
 		return nil
 	}
 
-	count := len(a)
-	ret := make([]T, count)
-
+	l := len(a)
+	ret := make([]T, l)
 	copy(ret, a)
-
-	rand.Shuffle(count, func(i, j int) {
+	rand.Shuffle(l, func(i, j int) {
 		ret[i], ret[j] = ret[j], ret[i]
 	})
-
-	if n == -1 || n >= count {
+	if n == -1 || n >= l {
 		return ret
 	}
-
 	return ret[:n]
 }

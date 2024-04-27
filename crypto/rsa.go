@@ -36,7 +36,6 @@ func GenerateRSAKey(bitSize int, padding RSAPadding) (privateKey, publicKey []by
 			Type:  "RSA PRIVATE KEY",
 			Bytes: x509.MarshalPKCS1PrivateKey(prvKey),
 		})
-
 		publicKey = pem.EncodeToMemory(&pem.Block{
 			Type:  "RSA PUBLIC KEY",
 			Bytes: x509.MarshalPKCS1PublicKey(&prvKey.PublicKey),
@@ -45,7 +44,6 @@ func GenerateRSAKey(bitSize int, padding RSAPadding) (privateKey, publicKey []by
 		prvBlock := &pem.Block{
 			Type: "PRIVATE KEY",
 		}
-
 		prvBlock.Bytes, err = x509.MarshalPKCS8PrivateKey(prvKey)
 		if err != nil {
 			return
@@ -54,7 +52,6 @@ func GenerateRSAKey(bitSize int, padding RSAPadding) (privateKey, publicKey []by
 		pubBlock := &pem.Block{
 			Type: "PUBLIC KEY",
 		}
-
 		pubBlock.Bytes, err = x509.MarshalPKIXPublicKey(&prvKey.PublicKey)
 		if err != nil {
 			return
@@ -84,7 +81,6 @@ func (pk *PrivateKey) DecryptOAEP(hash crypto.Hash, data []byte) ([]byte, error)
 	if !hash.Available() {
 		return nil, fmt.Errorf("crypto: requested hash function (%s) is unavailable", hash.String())
 	}
-
 	return rsa.DecryptOAEP(hash.New(), rand.Reader, pk.key, data, nil)
 }
 
@@ -96,7 +92,6 @@ func (pk *PrivateKey) Sign(hash crypto.Hash, data []byte) ([]byte, error) {
 
 	h := hash.New()
 	h.Write(data)
-
 	return rsa.SignPKCS1v15(rand.Reader, pk.key, hash, h.Sum(nil))
 }
 
@@ -118,7 +113,6 @@ func NewPrivateKeyFromPemBlock(padding RSAPadding, pemBlock []byte) (*PrivateKey
 	case RSA_PKCS8:
 		pk, err = x509.ParsePKCS8PrivateKey(block.Bytes)
 	}
-
 	if err != nil {
 		return nil, err
 	}
@@ -148,7 +142,6 @@ func NewPrivateKeyFromPfxFile(pfxFile, password string) (*PrivateKey, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	return &PrivateKey{key: cert.PrivateKey.(*rsa.PrivateKey)}, nil
 }
 
@@ -169,7 +162,6 @@ func (pk *PublicKey) EncryptOAEP(hash crypto.Hash, data []byte) ([]byte, error) 
 	if !hash.Available() {
 		return nil, fmt.Errorf("crypto: requested hash function (%s) is unavailable", hash.String())
 	}
-
 	return rsa.EncryptOAEP(hash.New(), rand.Reader, pk.key, data, nil)
 }
 
@@ -181,7 +173,6 @@ func (pk *PublicKey) Verify(hash crypto.Hash, data, signature []byte) error {
 
 	h := hash.New()
 	h.Write(data)
-
 	return rsa.VerifyPKCS1v15(pk.key, hash, h.Sum(nil), signature)
 }
 
@@ -203,7 +194,6 @@ func NewPublicKeyFromPemBlock(padding RSAPadding, pemBlock []byte) (*PublicKey, 
 	case RSA_PKCS8:
 		pk, err = x509.ParsePKIXPublicKey(block.Bytes)
 	}
-
 	if err != nil {
 		return nil, err
 	}

@@ -41,10 +41,8 @@ func consumerSet(lookupd []string, consumers ...Consumer) error {
 		if err != nil {
 			return err
 		}
-
 		nc.SetLogger(&Logger{}, nsq.LogLevelError)
 		nc.AddHandler(c)
-
 		if err := nc.ConnectToNSQLookupds(lookupd); err != nil {
 			return err
 		}

@@ -41,7 +41,6 @@ func AESEncryptCBC(key, iv, data []byte, paddingSize ...uint8) (*CipherText, err
 	if err != nil {
 		return nil, err
 	}
-
 	if len(iv) != block.BlockSize() {
 		return nil, errors.New("IV length must equal block size")
 	}
@@ -59,7 +58,6 @@ func AESEncryptCBC(key, iv, data []byte, paddingSize ...uint8) (*CipherText, err
 
 	out := make([]byte, len(data))
 	bm.CryptBlocks(out, data)
-
 	return &CipherText{
 		bytes: out,
 	}, nil
@@ -71,7 +69,6 @@ func AESDecryptCBC(key, iv, data []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	if len(iv) != block.BlockSize() {
 		return nil, errors.New("IV length must equal block size")
 	}
@@ -83,7 +80,6 @@ func AESDecryptCBC(key, iv, data []byte) ([]byte, error) {
 
 	out := make([]byte, len(data))
 	bm.CryptBlocks(out, data)
-
 	return pkcs7unpadding(out), nil
 }
 
@@ -109,7 +105,6 @@ func AESEncryptECB(key, data []byte, paddingSize ...uint8) (*CipherText, error) 
 
 	out := make([]byte, len(data))
 	bm.CryptBlocks(out, data)
-
 	return &CipherText{
 		bytes: out,
 	}, nil
@@ -129,7 +124,6 @@ func AESDecryptECB(key, data []byte) ([]byte, error) {
 
 	out := make([]byte, len(data))
 	bm.CryptBlocks(out, data)
-
 	return pkcs7unpadding(out), nil
 }
 
@@ -141,16 +135,13 @@ func AESEncryptCFB(key, iv, data []byte) (*CipherText, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	if len(iv) != block.BlockSize() {
 		return nil, errors.New("IV length must equal block size")
 	}
 
 	out := make([]byte, len(data))
-
 	stream := cipher.NewCFBEncrypter(block, iv)
 	stream.XORKeyStream(out, data)
-
 	return &CipherText{
 		bytes: out,
 	}, nil
@@ -162,16 +153,13 @@ func AESDecryptCFB(key, iv, data []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	if len(iv) != block.BlockSize() {
 		return nil, errors.New("IV length must equal block size")
 	}
 
 	out := make([]byte, len(data))
-
 	stream := cipher.NewCFBDecrypter(block, iv)
 	stream.XORKeyStream(out, data)
-
 	return out, nil
 }
 
@@ -183,16 +171,13 @@ func AESEncryptOFB(key, iv, data []byte) (*CipherText, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	if len(iv) != block.BlockSize() {
 		return nil, errors.New("IV length must equal block size")
 	}
 
 	out := make([]byte, len(data))
-
 	stream := cipher.NewOFB(block, iv)
 	stream.XORKeyStream(out, data)
-
 	return &CipherText{
 		bytes: out,
 	}, nil
@@ -204,16 +189,13 @@ func AESDecryptOFB(key, iv, data []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	if len(iv) != block.BlockSize() {
 		return nil, errors.New("IV length must equal block size")
 	}
 
 	out := make([]byte, len(data))
-
 	stream := cipher.NewOFB(block, iv)
 	stream.XORKeyStream(out, data)
-
 	return out, nil
 }
 
@@ -225,16 +207,13 @@ func AESEncryptCTR(key, iv, data []byte) (*CipherText, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	if len(iv) != block.BlockSize() {
 		return nil, errors.New("IV length must equal block size")
 	}
 
 	out := make([]byte, len(data))
-
 	stream := cipher.NewCTR(block, iv)
 	stream.XORKeyStream(out, data)
-
 	return &CipherText{
 		bytes: out,
 	}, nil
@@ -246,16 +225,13 @@ func AESDecryptCTR(key, iv, data []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	if len(iv) != block.BlockSize() {
 		return nil, errors.New("IV length must equal block size")
 	}
 
 	out := make([]byte, len(data))
-
 	stream := cipher.NewCTR(block, iv)
 	stream.XORKeyStream(out, data)
-
 	return out, nil
 }
 
@@ -291,7 +267,6 @@ func AESEncryptGCM(key, nonce, data, aad []byte, opt *GCMOption) (*CipherText, e
 	if len(nonce) != aead.NonceSize() {
 		return nil, errors.New("incorrect nonce length given to GCM")
 	}
-
 	if uint64(len(data)) > ((1<<32)-2)*uint64(block.BlockSize()) {
 		return nil, errors.New("message too large for GCM")
 	}

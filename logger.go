@@ -38,7 +38,6 @@ func DebugLogger(options ...zap.Option) *zap.Logger {
 	cfg.EncoderConfig.EncodeCaller = zapcore.FullCallerEncoder
 
 	logger, _ := cfg.Build(options...)
-
 	return logger
 }
 
@@ -65,7 +64,6 @@ func NewLogger(cfg *LogConfig) *zap.Logger {
 	if cfg.Stderr {
 		ws = append(ws, zapcore.Lock(os.Stderr))
 	}
-
 	return zap.New(zapcore.NewCore(zapcore.NewJSONEncoder(ec), zapcore.NewMultiWriteSyncer(ws...), cfg.Level), cfg.Options...)
 }
 

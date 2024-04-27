@@ -44,7 +44,6 @@ func (c *UpgradeConn) Read(ctx context.Context, handler func(ctx context.Context
 		}
 
 		var msg *Message
-
 		// if `authFunc` is not nil and unauthorized, need to authorize first.
 		if c.authFn != nil && !c.authOK {
 			msg, err = c.authFn(ctx, NewMessage(t, b))
@@ -61,7 +60,6 @@ func (c *UpgradeConn) Read(ctx context.Context, handler func(ctx context.Context
 				}
 			}
 		}
-
 		if msg != nil {
 			c.conn.WriteMessage(msg.T(), msg.V())
 		}
@@ -95,11 +93,9 @@ func Upgrade(w http.ResponseWriter, r *http.Request, authFn func(ctx context.Con
 	if err != nil {
 		return nil, err
 	}
-
 	conn := &UpgradeConn{
 		conn:   c,
 		authFn: authFn,
 	}
-
 	return conn, nil
 }

@@ -54,7 +54,6 @@ func NewDBX(cfg *DBConfig) (*sqlx.DB, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	return sqlx.NewDb(db, cfg.Driver), nil
 }
 
@@ -76,13 +75,10 @@ func Transaction(ctx context.Context, db *sqlx.DB, fn func(ctx context.Context, 
 		if rerr := tx.Rollback(); rerr != nil {
 			err = fmt.Errorf("%w: rolling back transaction: %v", err, rerr)
 		}
-
 		return err
 	}
-
 	if err = tx.Commit(); err != nil {
 		return fmt.Errorf("committing transaction: %w", err)
 	}
-
 	return nil
 }

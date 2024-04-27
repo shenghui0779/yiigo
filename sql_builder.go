@@ -41,11 +41,9 @@ func (b *txBuilder) Wrap(opts ...SQLOption) SQLWrapper {
 		tx:      b,
 		columns: []string{"*"},
 	}
-
 	for _, fn := range opts {
 		fn(wrapper)
 	}
-
 	return wrapper
 }
 
@@ -95,11 +93,9 @@ func (b *sqlBuilder) Wrap(opts ...SQLOption) SQLWrapper {
 		tx:      b,
 		columns: []string{"*"},
 	}
-
 	for _, fn := range opts {
 		fn(wrapper)
 	}
-
 	return wrapper
 }
 
@@ -123,14 +119,11 @@ func (b *sqlBuilder) Transaction(ctx context.Context, fn func(ctx context.Contex
 		if rerr := tx.Rollback(); rerr != nil {
 			err = fmt.Errorf("%w: rolling back transaction: %v", err, rerr)
 		}
-
 		return err
 	}
-
 	if err = tx.Commit(); err != nil {
 		return fmt.Errorf("committing transaction: %w", err)
 	}
-
 	return nil
 }
 
@@ -400,7 +393,6 @@ func (w *sqlWrapper) insertSQL(data any) (sql string, args []any, err error) {
 	var columns []string
 
 	v := reflect.Indirect(reflect.ValueOf(data))
-
 	switch v.Kind() {
 	case reflect.Map:
 		x, ok := data.(X)
@@ -408,7 +400,6 @@ func (w *sqlWrapper) insertSQL(data any) (sql string, args []any, err error) {
 			err = ErrSQLDataType
 			return
 		}
-
 		columns, args = w.insertWithMap(x)
 	case reflect.Struct:
 		columns, args = w.insertWithStruct(v)
@@ -472,7 +463,6 @@ func (w *sqlWrapper) insertWithStruct(v reflect.Value) (columns []string, binds 
 
 	for i := 0; i < fieldNum; i++ {
 		fieldT := t.Field(i)
-
 		tag := fieldT.Tag.Get("db")
 		if tag == "-" {
 			continue
@@ -480,16 +470,13 @@ func (w *sqlWrapper) insertWithStruct(v reflect.Value) (columns []string, binds 
 
 		fieldV := v.Field(i)
 		column := fieldT.Name
-
 		if len(tag) != 0 {
 			name, opts := parseTag(tag)
 			if opts.Contains("omitempty") && isEmptyValue(fieldV) {
 				continue
 			}
-
 			column = name
 		}
-
 		columns = append(columns, column)
 		binds = append(binds, fieldV.Interface())
 	}
@@ -499,12 +486,10 @@ func (w *sqlWrapper) insertWithStruct(v reflect.Value) (columns []string, binds 
 
 func (w *sqlWrapper) batchInsertSQL(data any) (sql string, args []any, err error) {
 	v := reflect.Indirect(reflect.ValueOf(data))
-
 	if v.Kind() != reflect.Slice {
 		err = ErrSQLBatchDataType
 		return
 	}
-
 	if v.Len() == 0 {
 		err = errors.New("err empty data")
 		return
@@ -513,7 +498,6 @@ func (w *sqlWrapper) batchInsertSQL(data any) (sql string, args []any, err error
 	var columns []string
 
 	e := v.Type().Elem()
-
 	switch e.Kind() {
 	case reflect.Map:
 		x, ok := data.([]X)
@@ -521,7 +505,6 @@ func (w *sqlWrapper) batchInsertSQL(data any) (sql string, args []any, err error
 			err = ErrSQLBatchDataType
 			return
 		}
-
 		columns, args = w.batchInsertWithMap(x)
 	case reflect.Struct:
 		columns, args = w.batchInsertWithStruct(v)
@@ -530,7 +513,6 @@ func (w *sqlWrapper) batchInsertSQL(data any) (sql string, args []any, err error
 			err = ErrSQLBatchDataType
 			return
 		}
-
 		columns, args = w.batchInsertWithStruct(v)
 	default:
 		err = ErrSQLBatchDataType

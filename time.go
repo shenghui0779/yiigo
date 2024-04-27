@@ -11,7 +11,6 @@ func TimeToStr(timestamp int64, layout string) string {
 	if timestamp < 0 {
 		return time.Now().In(GMT8).Format(layout)
 	}
-
 	return time.Unix(timestamp, 0).In(GMT8).Format(layout)
 }
 

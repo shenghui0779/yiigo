@@ -14,8 +14,8 @@ func WithAttempts(attempts uint16) Option {
 	}
 }
 
-// WithDefer 指定任务延迟执行时间；默认：立即执行
-func WithDefer(fn func(attempts uint16) time.Duration) Option {
+// WithDelay 指定任务延迟执行时间；默认：立即执行
+func WithDelay(fn func(attempts uint16) time.Duration) Option {
 	return func(t *Task) {
 		if fn != nil {
 			t.deferFn = fn

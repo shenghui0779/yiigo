@@ -51,7 +51,6 @@ func SetErrLogger(l *zap.Logger) {
 	if producer == nil {
 		return
 	}
-
 	producer.SetLogger(&Logger{zl: l}, nsq.LogLevelError)
 }
 
@@ -60,17 +59,16 @@ func Publish(topic string, msg []byte) error {
 	if producer == nil {
 		return errors.New("nsq producer is nil (forgotten init?)")
 	}
-
 	return producer.Publish(topic, msg)
 }
 
-// DeferredPublish 同步推送延迟消息到指定Topic
-func DeferredPublish(topic string, msg []byte, duration time.Duration) error {
+// PublishDelay 同步推送延迟消息到指定Topic
+func PublishDelay(topic string, msg []byte, delay time.Duration) error {
 	if producer == nil {
 		return errors.New("nsq producer is nil (forgotten init?)")
 	}
 
-	return producer.DeferredPublish(topic, duration, msg)
+	return producer.DeferredPublish(topic, delay, msg)
 }
 
 // NextAttemptDelay 一个帮助方法，用于返回下一次尝试的等待时间

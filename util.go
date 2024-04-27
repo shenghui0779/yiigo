@@ -17,7 +17,6 @@ import (
 func Nonce(size uint8) string {
 	nonce := make([]byte, size/2)
 	io.ReadFull(rand.Reader, nonce)
-
 	return hex.EncodeToString(nonce)
 }
 
@@ -31,14 +30,12 @@ func MarshalNoEscapeHTML(v any) ([]byte, error) {
 		return nil, err
 	}
 
-	b := buf.Bytes()
-
 	// 去掉 go std 给末尾加的 '\n'
 	// @see https://github.com/golang/go/issues/7767
+	b := buf.Bytes()
 	if l := len(b); l != 0 && b[l-1] == '\n' {
 		b = b[:l-1]
 	}
-
 	return b, nil
 }
 
@@ -51,20 +48,16 @@ func VersionCompare(rangeVer, curVer string) (bool, error) {
 	}
 
 	orVers := strings.Split(rangeVer, "|")
-
 	for _, ver := range orVers {
 		andVers := strings.Split(ver, "&")
-
 		constraints, err := version.NewConstraint(strings.Join(andVers, ","))
 		if err != nil {
 			return false, err
 		}
-
 		if constraints.Check(semVer) {
 			return true, nil
 		}
 	}
-
 	return false, nil
 }
 
@@ -76,7 +69,6 @@ func DetachContext(ctx context.Context) context.Context {
 	if ctx == nil {
 		panic("cannot create context from nil parent")
 	}
-
 	return detachedContext{ctx}
 }
 

@@ -25,7 +25,6 @@ func WithHeader(key string, vals ...string) Option {
 			o.header.Set(key, vals[0])
 			return
 		}
-
 		for _, v := range vals {
 			o.header.Add(key, v)
 		}
@@ -82,18 +81,15 @@ func (form *uploadform) Write(w *multipart.Writer) error {
 		if err != nil {
 			return err
 		}
-
 		if err = v.filefunc(part); err != nil {
 			return err
 		}
 	}
-
 	for name, value := range form.fields {
 		if err := w.WriteField(name, value); err != nil {
 			return err
 		}
 	}
-
 	return nil
 }
 

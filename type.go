@@ -26,18 +26,14 @@ func (q Quantity) String() string {
 	if q >= TiB {
 		return fmt.Sprintf("%.2fTB", float64(q)/float64(TiB))
 	}
-
 	if q >= GiB {
 		return fmt.Sprintf("%.2fGB", float64(q)/float64(GiB))
 	}
-
 	if q >= MiB {
 		return fmt.Sprintf("%.2fMB", float64(q)/float64(MiB))
 	}
-
 	if q >= KiB {
 		return fmt.Sprintf("%.2fKB", float64(q)/float64(KiB))
 	}
-
 	return fmt.Sprintf("%dB", q)
 }

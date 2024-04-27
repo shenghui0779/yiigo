@@ -13,12 +13,10 @@ func CreateFile(filename string) (*os.File, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	if err = os.MkdirAll(path.Dir(abspath), 0775); err != nil {
+	if err = os.MkdirAll(path.Dir(abspath), 0o775); err != nil {
 		return nil, err
 	}
-
-	return os.OpenFile(abspath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0775)
+	return os.OpenFile(abspath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o775)
 }
 
 // OpenFile 打开指定的文件
@@ -28,10 +26,8 @@ func OpenFile(filename string) (*os.File, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	if err = os.MkdirAll(path.Dir(abspath), 0775); err != nil {
+	if err = os.MkdirAll(path.Dir(abspath), 0o775); err != nil {
 		return nil, err
 	}
-
-	return os.OpenFile(abspath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0775)
+	return os.OpenFile(abspath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0o775)
 }

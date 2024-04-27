@@ -41,7 +41,6 @@ func (v V) Encode(sym, sep string, opts ...Option) string {
 	o := &options{
 		ignoreKeys: make(map[string]struct{}),
 	}
-
 	for _, fn := range opts {
 		fn(o)
 	}
@@ -58,7 +57,6 @@ func (v V) Encode(sym, sep string, opts ...Option) string {
 
 	for _, k := range keys {
 		val := v[k]
-
 		if len(val) == 0 && o.emptyMode == EmptyIgnore {
 			continue
 		}
@@ -66,25 +64,20 @@ func (v V) Encode(sym, sep string, opts ...Option) string {
 		if buf.Len() > 0 {
 			buf.WriteString(sep)
 		}
-
 		if o.escape {
 			buf.WriteString(url.QueryEscape(k))
 		} else {
 			buf.WriteString(k)
 		}
-
 		if len(val) != 0 {
 			buf.WriteString(sym)
-
 			if o.escape {
 				buf.WriteString(url.QueryEscape(val))
 			} else {
 				buf.WriteString(val)
 			}
-
 			continue
 		}
-
 		// 保留符号
 		if o.emptyMode != EmptyOnlyKey {
 			buf.WriteString(sym)
