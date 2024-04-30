@@ -35,14 +35,12 @@ func InitWithCfg(nsqd string, lookupd []string, cfg *nsq.Config, consumers ...Co
 	if err = producer.Ping(); err != nil {
 		return
 	}
-
 	// 设置消费者
 	if len(consumers) != 0 {
 		if err = consumerSet(lookupd, consumers...); err != nil {
 			return
 		}
 	}
-
 	return
 }
 
@@ -67,38 +65,34 @@ func PublishDelay(topic string, msg []byte, delay time.Duration) error {
 	if producer == nil {
 		return errors.New("nsq producer is nil (forgotten init?)")
 	}
-
 	return producer.DeferredPublish(topic, delay, msg)
 }
 
 // NextAttemptDelay 一个帮助方法，用于返回下一次尝试的等待时间
-func NextAttemptDelay(attempts uint16) time.Duration {
-	var d time.Duration
-
+func NextAttemptDelay(attempts uint16) (delay time.Duration) {
 	switch attempts {
 	case 0, 1:
-		d = 5 * time.Second
+		delay = 5 * time.Second
 	case 2:
-		d = 10 * time.Second
+		delay = 10 * time.Second
 	case 3:
-		d = 15 * time.Second
+		delay = 15 * time.Second
 	case 4:
-		d = 30 * time.Second
+		delay = 30 * time.Second
 	case 5:
-		d = time.Minute
+		delay = time.Minute
 	case 6:
-		d = 2 * time.Minute
+		delay = 2 * time.Minute
 	case 7:
-		d = 5 * time.Minute
+		delay = 5 * time.Minute
 	case 8:
-		d = 10 * time.Minute
+		delay = 10 * time.Minute
 	case 9:
-		d = 15 * time.Minute
+		delay = 15 * time.Minute
 	case 10:
-		d = 30 * time.Minute
+		delay = 30 * time.Minute
 	default:
-		d = time.Hour
+		delay = time.Hour
 	}
-
-	return d
+	return
 }
