@@ -95,6 +95,18 @@ func (pk *PrivateKey) Sign(hash crypto.Hash, data []byte) ([]byte, error) {
 	return rsa.SignPKCS1v15(rand.Reader, pk.key, hash, h.Sum(nil))
 }
 
+// SignPSS RSA私钥签名(PSS填充)
+func (pk *PrivateKey) SignPSS(hash crypto.Hash, data []byte, opts *rsa.PSSOptions) ([]byte, error) {
+	if !hash.Available() {
+		return nil, fmt.Errorf("crypto: requested hash function (%s) is unavailable", hash.String())
+	}
+
+	h := hash.New()
+	h.Write(data)
+
+	return rsa.SignPSS(rand.Reader, pk.key, hash, h.Sum(nil), opts)
+}
+
 // NewPrivateKeyFromPemBlock 通过PEM字节生成RSA私钥
 func NewPrivateKeyFromPemBlock(padding RSAPadding, pemBlock []byte) (*PrivateKey, error) {
 	block, _ := pem.Decode(pemBlock)
@@ -174,6 +186,18 @@ func (pk *PublicKey) Verify(hash crypto.Hash, data, signature []byte) error {
 	h := hash.New()
 	h.Write(data)
 	return rsa.VerifyPKCS1v15(pk.key, hash, h.Sum(nil), signature)
+}
+
+// VerifyPSS RSA公钥验签(PSS填充)
+func (pk *PublicKey) VerifyPSS(hash crypto.Hash, data, signature []byte, opts *rsa.PSSOptions) error {
+	if !hash.Available() {
+		return fmt.Errorf("crypto: requested hash function (%s) is unavailable", hash.String())
+	}
+
+	h := hash.New()
+	h.Write(data)
+
+	return rsa.VerifyPSS(pk.key, hash, h.Sum(nil), signature, opts)
 }
 
 // NewPublicKeyFromPemBlock 通过PEM字节生成RSA公钥

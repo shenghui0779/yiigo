@@ -2,6 +2,7 @@ package crypto
 
 import (
 	"crypto"
+	"crypto/rsa"
 	"encoding/base64"
 	"testing"
 
@@ -90,4 +91,12 @@ Vv8zI7kt+uZxD5mBGglKs2wzaHqADBXa5kSznIvkcZSg07UQQYU6
 	assert.Nil(t, err)
 	assert.Equal(t, "er5a6N6dQMkCKxIKLUrIcQYNsUAEhy+e0YIFbFF4lG2+IwgXBwe3StZOUvh1vPXbSu/dr/lGCDXTrqzRoWQyeyEZ5T8qmDHENXNMySCq9FJrrGLORnJlmKgg48UEJfGvgCLqdZudPZUHbmDgxm7bkqtDZEV4gHgr5zdRVoJJdDqsH1CfFQMFdoCLXybTmUHuQSZ20Qpdd79GXScMITdqTccYGHINTWtXTSPvBmWLxY7C7YaMQ6HJbshstHbGXOP0uSio6+a4pVoZmMd1F2knZL63Ew5/y5A8vjXYeC5W+1F3KY9Pd6ne3SdCvDzSpYFTsks4lrwCERd2MwxS8uXqfg==", base64.StdEncoding.EncodeToString(sign2))
 	assert.Nil(t, pubKey.Verify(crypto.SHA256, []byte(data), sign2))
+
+	signPSS, err := pvtKey.SignPSS(crypto.SHA1, []byte(data), &rsa.PSSOptions{SaltLength: rsa.PSSSaltLengthEqualsHash})
+	assert.Nil(t, err)
+	assert.Nil(t, pubKey.VerifyPSS(crypto.SHA1, []byte(data), signPSS, &rsa.PSSOptions{SaltLength: rsa.PSSSaltLengthEqualsHash}))
+
+	signPSS2, err := pvtKey.SignPSS(crypto.SHA256, []byte(data), &rsa.PSSOptions{SaltLength: rsa.PSSSaltLengthEqualsHash})
+	assert.Nil(t, err)
+	assert.Nil(t, pubKey.VerifyPSS(crypto.SHA256, []byte(data), signPSS2, &rsa.PSSOptions{SaltLength: rsa.PSSSaltLengthEqualsHash}))
 }
