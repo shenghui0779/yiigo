@@ -880,7 +880,6 @@ func WhereIn(query string, binds ...any) SQLOption {
 			query: query,
 			binds: binds,
 		}
-
 		w.whereIn = true
 	}
 }
@@ -939,13 +938,10 @@ func Union(wrappers ...SQLWrapper) SQLOption {
 			if !ok {
 				continue
 			}
-
 			if v.whereIn {
 				w.whereIn = true
 			}
-
 			query, binds := v.subquery()
-
 			w.unions = append(w.unions, &SQLClause{
 				keyword: "UNION",
 				query:   query,
@@ -963,13 +959,10 @@ func UnionAll(wrappers ...SQLWrapper) SQLOption {
 			if !ok {
 				continue
 			}
-
 			if v.whereIn {
 				w.whereIn = true
 			}
-
 			query, binds := v.subquery()
-
 			w.unions = append(w.unions, &SQLClause{
 				keyword: "UNION ALL",
 				query:   query,
@@ -992,22 +985,17 @@ func (o tagOptions) Contains(optionName string) bool {
 	}
 
 	s := string(o)
-
 	for len(s) != 0 {
 		var next string
-
 		i := strings.Index(s, ",")
 		if i >= 0 {
 			s, next = s[:i], s[i+1:]
 		}
-
 		if s == optionName {
 			return true
 		}
-
 		s = next
 	}
-
 	return false
 }
 
@@ -1017,7 +1005,6 @@ func parseTag(tag string) (string, tagOptions) {
 	if idx := strings.Index(tag, ","); idx != -1 {
 		return tag[:idx], tagOptions(tag[idx+1:])
 	}
-
 	return tag, tagOptions("")
 }
 
@@ -1036,6 +1023,5 @@ func isEmptyValue(v reflect.Value) bool {
 	case reflect.Interface, reflect.Ptr:
 		return v.IsNil()
 	}
-
 	return false
 }

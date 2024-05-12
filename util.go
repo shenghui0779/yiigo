@@ -91,3 +91,33 @@ func (detachedContext) Err() error {
 func (c detachedContext) Value(key any) any {
 	return c.ctx.Value(key)
 }
+
+// Retry 重试
+func Retry(ctx context.Context, fn func(ctx context.Context) error, attempts int, duration time.Duration) (err error) {
+	for i := 0; i < attempts; i++ {
+		err = fn(ctx)
+		if err == nil || i >= attempts-1 {
+			return
+		}
+		time.Sleep(duration)
+	}
+	return
+}
+
+// IsUniqueDuplicateError reports if the error resulted from a DB uniqueness constraint violation.
+// e.g. duplicate value in unique index.
+func IsUniqueDuplicateError(err error) bool {
+	if err == nil {
+		return false
+	}
+	for _, s := range []string{
+		"Duplicate entry",            // MySQL
+		"violates unique constraint", // Postgres
+		"UNIQUE constraint failed",   // SQLite
+	} {
+		if strings.Contains(err.Error(), s) {
+			return true
+		}
+	}
+	return false
+}

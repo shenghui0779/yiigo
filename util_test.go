@@ -3,6 +3,7 @@ package yiigo
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -95,4 +96,25 @@ func TestDetachContext(t *testing.T) {
 	if err := dctx.Err(); err != nil {
 		t.Errorf("detached context Err: got %v, want nil", err)
 	}
+}
+
+func TestRetry(t *testing.T) {
+	now := time.Now()
+	err := Retry(context.Background(), func(ctx context.Context) error {
+		fmt.Println("Retry...")
+		return errors.New("something wrong")
+	}, 3, time.Second)
+	assert.NotNil(t, err)
+	assert.Equal(t, 2, int(time.Since(now).Seconds()))
+}
+
+func TestIsUniqueDuplicateError(t *testing.T) {
+	errMySQL := errors.New("Duplicate entry 'value' for key 'key_name'")
+	assert.True(t, IsUniqueDuplicateError(errMySQL))
+
+	errPgSQL := errors.New(`duplicate key value violates unique constraint "constraint_name"`)
+	assert.True(t, IsUniqueDuplicateError(errPgSQL))
+
+	errSQLite := errors.New("UNIQUE constraint failed: table_name.column_name")
+	assert.True(t, IsUniqueDuplicateError(errSQLite))
 }
