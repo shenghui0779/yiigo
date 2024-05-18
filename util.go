@@ -104,8 +104,7 @@ func Retry(ctx context.Context, fn func(ctx context.Context) error, attempts int
 	return
 }
 
-// IsUniqueDuplicateError reports if the error resulted from a DB uniqueness constraint violation.
-// e.g. duplicate value in unique index.
+// IsUniqueDuplicateError 判断是否「唯一索引冲突」错误
 func IsUniqueDuplicateError(err error) bool {
 	if err == nil {
 		return false
