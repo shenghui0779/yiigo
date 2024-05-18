@@ -112,13 +112,13 @@ func SliceUnion[T ~[]E, E comparable](lists ...T) T {
 
 // SliceRand 返回一个指定随机挑选个数的切片
 // 若 n == -1 or n >= len(list)，则返回打乱的切片
-func SliceRand[T any](list []T, n int) []T {
+func SliceRand[T ~[]E, E any](list T, n int) T {
 	if n == 0 || n < -1 {
 		return nil
 	}
 
 	l := len(list)
-	ret := make([]T, l)
+	ret := make(T, l)
 	copy(ret, list)
 	rand.Shuffle(l, func(i, j int) {
 		ret[i], ret[j] = ret[j], ret[i]
