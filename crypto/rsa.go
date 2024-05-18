@@ -60,7 +60,6 @@ func GenerateRSAKey(bitSize int, padding RSAPadding) (privateKey, publicKey []by
 		privateKey = pem.EncodeToMemory(prvBlock)
 		publicKey = pem.EncodeToMemory(pubBlock)
 	}
-
 	return
 }
 
@@ -103,7 +102,6 @@ func (pk *PrivateKey) SignPSS(hash crypto.Hash, data []byte, opts *rsa.PSSOption
 
 	h := hash.New()
 	h.Write(data)
-
 	return rsa.SignPSS(rand.Reader, pk.key, hash, h.Sum(nil), opts)
 }
 
@@ -128,7 +126,6 @@ func NewPrivateKeyFromPemBlock(padding RSAPadding, pemBlock []byte) (*PrivateKey
 	if err != nil {
 		return nil, err
 	}
-
 	return &PrivateKey{key: pk.(*rsa.PrivateKey)}, nil
 }
 
@@ -143,7 +140,6 @@ func NewPrivateKeyFromPemFile(padding RSAPadding, pemFile string) (*PrivateKey, 
 	if err != nil {
 		return nil, err
 	}
-
 	return NewPrivateKeyFromPemBlock(padding, b)
 }
 
@@ -196,7 +192,6 @@ func (pk *PublicKey) VerifyPSS(hash crypto.Hash, data, signature []byte, opts *r
 
 	h := hash.New()
 	h.Write(data)
-
 	return rsa.VerifyPSS(pk.key, hash, h.Sum(nil), signature, opts)
 }
 
@@ -221,7 +216,6 @@ func NewPublicKeyFromPemBlock(padding RSAPadding, pemBlock []byte) (*PublicKey, 
 	if err != nil {
 		return nil, err
 	}
-
 	return &PublicKey{key: pk.(*rsa.PublicKey)}, nil
 }
 
@@ -236,7 +230,6 @@ func NewPublicKeyFromPemFile(padding RSAPadding, pemFile string) (*PublicKey, er
 	if err != nil {
 		return nil, err
 	}
-
 	return NewPublicKeyFromPemBlock(padding, b)
 }
 
@@ -253,7 +246,6 @@ func NewPublicKeyFromDerBlock(pemBlock []byte) (*PublicKey, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	return &PublicKey{key: cert.PublicKey.(*rsa.PublicKey)}, nil
 }
 
@@ -270,7 +262,6 @@ func NewPublicKeyFromDerFile(pemFile string) (*PublicKey, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	return NewPublicKeyFromDerBlock(b)
 }
 
