@@ -93,13 +93,13 @@ func (c detachedContext) Value(key any) any {
 }
 
 // Retry 重试
-func Retry(ctx context.Context, fn func(ctx context.Context) error, attempts int, duration time.Duration) (err error) {
+func Retry(ctx context.Context, fn func(ctx context.Context) error, attempts int, sleep time.Duration) (err error) {
 	for i := 0; i < attempts; i++ {
 		err = fn(ctx)
 		if err == nil || i >= attempts-1 {
 			return
 		}
-		time.Sleep(duration)
+		time.Sleep(sleep)
 	}
 	return
 }

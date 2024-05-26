@@ -69,5 +69,5 @@ func NewLogger(cfg *LogConfig) *zap.Logger {
 
 // MyTimeEncoder 自定义时间格式化
 func MyTimeEncoder(t time.Time, e zapcore.PrimitiveArrayEncoder) {
-	e.AppendString(t.In(time.FixedZone("CST", 8*3600)).Format(time.DateTime))
+	e.AppendString(t.In(time.Local).Format(time.DateTime))
 }
