@@ -37,7 +37,6 @@ func (d *distributed) Lock(ctx context.Context) (bool, error) {
 	if err := d.lock(ctx); err != nil {
 		return false, err
 	}
-
 	return len(d.token) != 0, nil
 }
 
@@ -58,7 +57,6 @@ func (d *distributed) TryLock(ctx context.Context, attempts int, sleep time.Dura
 		}
 		time.Sleep(sleep)
 	}
-
 	return false, nil
 }
 
@@ -67,17 +65,14 @@ func (d *distributed) UnLock(ctx context.Context) error {
 		return nil
 	}
 
-	ctx = DetachContext(ctx)
-
-	v, err := d.cli.Get(ctx, d.key).Result()
-	if err != nil {
-		return err
-	}
-	if v != d.token {
-		return nil
-	}
-
-	return d.cli.Del(ctx, d.key).Err()
+	script := `
+if redis.call('get', KEYS[1]) == ARGV[1] then
+	return redis.call('del', KEYS[1])
+else
+	return 0
+end
+`
+	return d.cli.Eval(DetachContext(ctx), script, []string{d.key}, d.token).Err()
 }
 
 func (d *distributed) lock(ctx context.Context) error {
@@ -111,10 +106,8 @@ func RedisMutex(cli *redis.Client, key string, ttl time.Duration) DistributedMut
 		key:    key,
 		expire: ttl,
 	}
-
 	if mutex.expire == 0 {
 		mutex.expire = time.Second * 10
 	}
-
 	return mutex
 }
