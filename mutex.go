@@ -14,7 +14,7 @@ type DistributedMutex interface {
 	// Lock 获取锁
 	Lock(ctx context.Context) (bool, error)
 	// TryLock 尝试获取锁
-	TryLock(ctx context.Context, attempts int, sleep time.Duration) (bool, error)
+	TryLock(ctx context.Context, attempts int, delay time.Duration) (bool, error)
 	// UnLock 释放锁
 	UnLock(ctx context.Context) error
 }
@@ -40,7 +40,7 @@ func (d *distributed) Lock(ctx context.Context) (bool, error) {
 	return len(d.token) != 0, nil
 }
 
-func (d *distributed) TryLock(ctx context.Context, attempts int, sleep time.Duration) (bool, error) {
+func (d *distributed) TryLock(ctx context.Context, attempts int, delay time.Duration) (bool, error) {
 	for i := 0; i < attempts; i++ {
 		select {
 		case <-ctx.Done(): // timeout or canceled
@@ -55,7 +55,7 @@ func (d *distributed) TryLock(ctx context.Context, attempts int, sleep time.Dura
 		if len(d.token) != 0 {
 			return true, nil
 		}
-		time.Sleep(sleep)
+		time.Sleep(delay)
 	}
 	return false, nil
 }

@@ -1,4 +1,4 @@
-package xvalidator
+package validator
 
 import (
 	"database/sql/driver"

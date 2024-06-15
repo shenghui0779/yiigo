@@ -8,11 +8,11 @@ import (
 )
 
 func TestDate(t *testing.T) {
-	assert.Equal(t, "2016-03-19 15:03:19", TimeToStr(time.DateTime, 1458370999))
+	assert.Equal(t, "2016-03-19 15:03:19", TimeToStr(time.DateTime, 1458370999, time.Local))
 }
 
 func TestStrToTime(t *testing.T) {
-	assert.Equal(t, int64(1562910319), StrToTime(time.DateTime, "2019-07-12 13:45:19").Unix())
+	assert.Equal(t, int64(1562910319), StrToTime(time.DateTime, "2019-07-12 13:45:19", time.Local).Unix())
 }
 
 func TestWeekAround(t *testing.T) {

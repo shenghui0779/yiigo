@@ -6,7 +6,7 @@ import (
 	"mime/multipart"
 	"net/http"
 
-	"github.com/shenghui0779/yiigo/xvalue"
+	"github.com/shenghui0779/yiigo/value"
 )
 
 type options struct {
@@ -64,7 +64,7 @@ type formfile struct {
 
 type uploadform struct {
 	files  []*formfile
-	fields xvalue.V
+	fields value.V
 }
 
 func (form *uploadform) Field(name string) string {
@@ -118,12 +118,10 @@ func WithFormField(name, value string) UploadField {
 func NewUploadForm(fields ...UploadField) UploadForm {
 	form := &uploadform{
 		files:  make([]*formfile, 0),
-		fields: make(xvalue.V),
+		fields: make(value.V),
 	}
-
 	for _, fn := range fields {
 		fn(form)
 	}
-
 	return form
 }

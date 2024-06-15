@@ -1,4 +1,4 @@
-package xvalue
+package value
 
 import (
 	"testing"

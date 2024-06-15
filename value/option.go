@@ -1,4 +1,4 @@
-package xvalue
+package value
 
 // EmptyMode 值为空时的Encode模式
 type EmptyMode int
