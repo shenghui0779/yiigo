@@ -10,16 +10,12 @@ go get -u github.com/shenghui0779/yiigo
 
 ## Features
 
-- Nsq - 封装便于使用
 - Hash - 封装便于使用
 - Http - 封装便于使用(支持文件上传)
 - Crypto - 封装便于使用(支持 AES & RSA)
-- Validator - 支持汉化 & 自定义规则
-- 基于 `sqlx` 的轻量 `SQLBuilder`
-- 基于 Redis 的简单分布式锁
-- Websocket 封装提高易用性
-  - Dialer - 读写失败支持重连
-  - Upgrader - 支持授权校验
+- Validator - 支持汉化和自定义规则
+- 基于 Redis 的分布式锁
+- 基于 sqlx 的轻量级 SQLBuilder
 - Value - 用于处理 `k-v` 格式化的场景，如：生成签名串 等
 - Location - 距离、方位角、经纬度与平面直角坐标系的相互转化
 - TimeWheel - 简单实用的单层时间轮(支持一次性和多次重试任务)
