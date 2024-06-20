@@ -7,7 +7,6 @@ func SliceIn[T ~[]E, E comparable](list T, elem E) bool {
 	if len(list) == 0 {
 		return false
 	}
-
 	for _, v := range list {
 		if v == elem {
 			return true
@@ -117,14 +116,38 @@ func SliceRand[T ~[]E, E any](list T, n int) T {
 		return nil
 	}
 
-	l := len(list)
-	ret := make(T, l)
+	count := len(list)
+	ret := make(T, count)
 	copy(ret, list)
-	rand.Shuffle(l, func(i, j int) {
+	rand.Shuffle(count, func(i, j int) {
 		ret[i], ret[j] = ret[j], ret[i]
 	})
-	if n == -1 || n >= l {
+	if n == -1 || n >= count {
 		return ret
 	}
 	return ret[:n]
+}
+
+// SlicePinTop 置顶集合中的一个元素
+func SlicePinTop[T any](list []T, index int) {
+	if index <= 0 || index >= len(list) {
+		return
+	}
+	for i := index; i > 0; i-- {
+		list[i], list[i-1] = list[i-1], list[i]
+	}
+}
+
+// SlicePinTopF 置顶集合中满足条件的一个元素
+func SlicePinTopF[T any](list []T, fn func(v T) bool) {
+	index := 0
+	for i, v := range list {
+		if fn(v) {
+			index = i
+			break
+		}
+	}
+	for i := index; i > 0; i-- {
+		list[i], list[i-1] = list[i-1], list[i]
+	}
 }

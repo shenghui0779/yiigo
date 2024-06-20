@@ -157,3 +157,75 @@ func TestSliceRand(t *testing.T) {
 	assert.Equal(t, len(a4), len(ret5))
 	assert.NotEqual(t, a4, ret5)
 }
+
+func TestSlicePinTop(t *testing.T) {
+	a1 := []int{1, 2, 3, 4, 5}
+	SlicePinTop(a1, 3)
+	assert.Equal(t, []int{4, 1, 2, 3, 5}, a1)
+
+	a2 := []int{1, 2, 3, 4, 5}
+	SlicePinTop(a1, 0)
+	assert.Equal(t, []int{1, 2, 3, 4, 5}, a2)
+
+	a3 := []int{1, 2, 3, 4, 5}
+	SlicePinTop(a1, -1)
+	assert.Equal(t, []int{1, 2, 3, 4, 5}, a3)
+
+	a4 := []int{1, 2, 3, 4, 5}
+	SlicePinTop(a1, 5)
+	assert.Equal(t, []int{1, 2, 3, 4, 5}, a4)
+}
+
+func TestSlicePinTopF(t *testing.T) {
+	type Demo struct {
+		ID   int
+		Name string
+	}
+	arr := []Demo{
+		{
+			ID:   1,
+			Name: "h",
+		},
+		{
+			ID:   2,
+			Name: "e",
+		},
+		{
+			ID:   3,
+			Name: "l",
+		},
+		{
+			ID:   4,
+			Name: "o",
+		},
+		{
+			ID:   5,
+			Name: "w",
+		},
+	}
+	SlicePinTopF(arr, func(v Demo) bool {
+		return v.Name == "o"
+	})
+	assert.Equal(t, []Demo{
+		{
+			ID:   4,
+			Name: "o",
+		},
+		{
+			ID:   1,
+			Name: "h",
+		},
+		{
+			ID:   2,
+			Name: "e",
+		},
+		{
+			ID:   3,
+			Name: "l",
+		},
+		{
+			ID:   5,
+			Name: "w",
+		},
+	}, arr)
+}
