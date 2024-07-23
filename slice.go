@@ -1,6 +1,9 @@
 package yiigo
 
-import "math/rand"
+import (
+	"math"
+	"math/rand"
+)
 
 // SliceIn 返回指定元素是否在集合中
 func SliceIn[T ~[]E, E comparable](list T, elem E) bool {
@@ -129,7 +132,7 @@ func SliceRand[T ~[]E, E any](list T, n int) T {
 }
 
 // SlicePinTop 置顶集合中的一个元素
-func SlicePinTop[T any](list []T, index int) {
+func SlicePinTop[T ~[]E, E any](list T, index int) {
 	if index <= 0 || index >= len(list) {
 		return
 	}
@@ -139,7 +142,7 @@ func SlicePinTop[T any](list []T, index int) {
 }
 
 // SlicePinTopF 置顶集合中满足条件的一个元素
-func SlicePinTopF[T any](list []T, fn func(v T) bool) {
+func SlicePinTopF[T ~[]E, E any](list T, fn func(v E) bool) {
 	index := 0
 	for i, v := range list {
 		if fn(v) {
@@ -150,4 +153,23 @@ func SlicePinTopF[T any](list []T, fn func(v T) bool) {
 	for i := index; i > 0; i-- {
 		list[i], list[i-1] = list[i-1], list[i]
 	}
+}
+
+// SliceChunk 集合分片
+func SliceChunk[T ~[]E, E any](list T, size int) []T {
+	if size <= 0 {
+		return []T{}
+	}
+	length := len(list)
+	count := int(math.Ceil(float64(length) / float64(size)))
+	ret := make([]T, 0, count)
+	for i := 0; i < count; i++ {
+		start := i * size
+		end := (i + 1) * size
+		if end > length {
+			end = length
+		}
+		ret = append(ret, list[start:end])
+	}
+	return ret
 }

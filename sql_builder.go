@@ -52,7 +52,6 @@ func (b *txBuilder) one(ctx context.Context, dest any, query string, args ...any
 	if b.log != nil {
 		b.log(ctx, query, args...)
 	}
-
 	return b.tx.GetContext(ctx, dest, query, args...)
 }
 
@@ -61,7 +60,6 @@ func (b *txBuilder) all(ctx context.Context, dest any, query string, args ...any
 	if b.log != nil {
 		b.log(ctx, query, args...)
 	}
-
 	return b.tx.SelectContext(ctx, dest, query, args...)
 }
 
@@ -70,7 +68,6 @@ func (b *txBuilder) exec(ctx context.Context, query string, args ...any) (sql.Re
 	if b.log != nil {
 		b.log(ctx, query, args...)
 	}
-
 	return b.tx.ExecContext(ctx, query, args...)
 }
 
@@ -141,7 +138,6 @@ func (b *sqlBuilder) all(ctx context.Context, dest any, query string, args ...an
 	if b.log != nil {
 		b.log(ctx, query, args...)
 	}
-
 	return b.db.SelectContext(ctx, dest, query, args...)
 }
 
@@ -150,7 +146,6 @@ func (b *sqlBuilder) exec(ctx context.Context, query string, args ...any) (sql.R
 	if b.log != nil {
 		b.log(ctx, query, args...)
 	}
-
 	return b.db.ExecContext(ctx, query, args...)
 }
 
@@ -220,7 +215,6 @@ func (w *sqlWrapper) One(ctx context.Context, dest any) error {
 	if err != nil {
 		return err
 	}
-
 	return w.tx.one(ctx, dest, query, args...)
 }
 
@@ -229,7 +223,6 @@ func (w *sqlWrapper) All(ctx context.Context, dest any) error {
 	if err != nil {
 		return err
 	}
-
 	return w.tx.all(ctx, dest, query, args...)
 }
 
@@ -238,7 +231,6 @@ func (w *sqlWrapper) Insert(ctx context.Context, data any) (sql.Result, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	return w.tx.exec(ctx, query, args...)
 }
 
@@ -247,7 +239,6 @@ func (w *sqlWrapper) BatchInsert(ctx context.Context, data any) (sql.Result, err
 	if err != nil {
 		return nil, err
 	}
-
 	return w.tx.exec(ctx, query, args...)
 }
 
@@ -256,7 +247,6 @@ func (w *sqlWrapper) Update(ctx context.Context, data any) (sql.Result, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	return w.tx.exec(ctx, query, args...)
 }
 
@@ -265,7 +255,6 @@ func (w *sqlWrapper) Delete(ctx context.Context) (sql.Result, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	return w.tx.exec(ctx, query, args...)
 }
 

@@ -10,11 +10,9 @@ func warpper(opts ...SQLOption) *sqlWrapper {
 	wrapper := &sqlWrapper{
 		columns: []string{"*"},
 	}
-
 	for _, fn := range opts {
 		fn(wrapper)
 	}
-
 	return wrapper
 }
 

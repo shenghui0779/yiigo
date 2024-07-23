@@ -229,3 +229,16 @@ func TestSlicePinTopF(t *testing.T) {
 		},
 	}, arr)
 }
+
+func TestSliceChunk(t *testing.T) {
+	a := []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
+
+	ret1 := SliceChunk(a, 2)
+	assert.Equal(t, [][]int{{1, 2}, {3, 4}, {5, 6}, {7, 8}, {9, 10}}, ret1)
+
+	ret2 := SliceChunk(a, 3)
+	assert.Equal(t, [][]int{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}, {10}}, ret2)
+
+	ret3 := SliceChunk(a, 4)
+	assert.Equal(t, [][]int{{1, 2, 3, 4}, {5, 6, 7, 8}, {9, 10}}, ret3)
+}
