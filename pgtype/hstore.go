@@ -105,12 +105,12 @@ func (h *Hstore) Scan(value interface{}) error {
 
 // Value implements the driver Valuer interface. Note if h.Map is nil, the
 // database column value will be set to NULL.
-func (h Hstore) Value() (driver.Value, error) {
+func (h *Hstore) Value() (driver.Value, error) {
 	if h.Map == nil {
 		return nil, nil
 	}
 
-	parts := []string{}
+	var parts []string
 	for key, val := range h.Map {
 		thispart := hQuote(key) + "=>" + hQuote(val)
 		parts = append(parts, thispart)

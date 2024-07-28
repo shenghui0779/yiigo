@@ -18,7 +18,7 @@ func TestMappingBaseTypes(t *testing.T) {
 		form   string
 		expect any
 	}{
-		{"base type", struct{ F int }{}, "9", int(9)},
+		{"base type", struct{ F int }{}, "9", 9},
 		{"base type", struct{ F int8 }{}, "9", int8(9)},
 		{"base type", struct{ F int16 }{}, "9", int16(9)},
 		{"base type", struct{ F int32 }{}, "9", int32(9)},
@@ -30,12 +30,12 @@ func TestMappingBaseTypes(t *testing.T) {
 		{"base type", struct{ F uint64 }{}, "9", uint64(9)},
 		{"base type", struct{ F bool }{}, "True", true},
 		{"base type", struct{ F float32 }{}, "9.1", float32(9.1)},
-		{"base type", struct{ F float64 }{}, "9.1", float64(9.1)},
-		{"base type", struct{ F string }{}, "test", string("test")},
+		{"base type", struct{ F float64 }{}, "9.1", 9.1},
+		{"base type", struct{ F string }{}, "test", "test"},
 		{"base type", struct{ F *int }{}, "9", intPtr(9)},
 
 		// zero values
-		{"zero value", struct{ F int }{}, "", int(0)},
+		{"zero value", struct{ F int }{}, "", 0},
 		{"zero value", struct{ F uint }{}, "", uint(0)},
 		{"zero value", struct{ F bool }{}, "", false},
 		{"zero value", struct{ F float32 }{}, "", float32(0)},
@@ -110,7 +110,7 @@ func TestMappingPrivateField(t *testing.T) {
 	}
 	err := MappingByPtr(&s, formSource{"field": {"6"}}, "form")
 	assert.NoError(t, err)
-	assert.Equal(t, int(0), s.f)
+	assert.Equal(t, 0, s.f)
 }
 
 func TestMappingUnknownFieldType(t *testing.T) {
@@ -129,7 +129,7 @@ func TestMappingURI(t *testing.T) {
 	}
 	err := MapQuery(&s, map[string][]string{"field": {"6"}})
 	assert.NoError(t, err)
-	assert.Equal(t, int(6), s.F)
+	assert.Equal(t, 6, s.F)
 }
 
 func TestMappingForm(t *testing.T) {
@@ -138,7 +138,7 @@ func TestMappingForm(t *testing.T) {
 	}
 	err := MapForm(&s, map[string][]string{"field": {"6"}})
 	assert.NoError(t, err)
-	assert.Equal(t, int(6), s.F)
+	assert.Equal(t, 6, s.F)
 }
 
 func TestMappingTime(t *testing.T) {

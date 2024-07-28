@@ -34,36 +34,36 @@ func Array(a interface{}) interface {
 	driver.Valuer
 	sql.Scanner
 } {
-	switch a := a.(type) {
+	switch v := a.(type) {
 	case []bool:
-		return (*BoolArray)(&a)
+		return (*BoolArray)(&v)
 	case []float64:
-		return (*Float64Array)(&a)
+		return (*Float64Array)(&v)
 	case []float32:
-		return (*Float32Array)(&a)
+		return (*Float32Array)(&v)
 	case []int64:
-		return (*Int64Array)(&a)
+		return (*Int64Array)(&v)
 	case []int32:
-		return (*Int32Array)(&a)
+		return (*Int32Array)(&v)
 	case []string:
-		return (*StringArray)(&a)
+		return (*StringArray)(&v)
 	case [][]byte:
-		return (*ByteaArray)(&a)
+		return (*ByteaArray)(&v)
 
 	case *[]bool:
-		return (*BoolArray)(a)
+		return (*BoolArray)(v)
 	case *[]float64:
-		return (*Float64Array)(a)
+		return (*Float64Array)(v)
 	case *[]float32:
-		return (*Float32Array)(a)
+		return (*Float32Array)(v)
 	case *[]int64:
-		return (*Int64Array)(a)
+		return (*Int64Array)(v)
 	case *[]int32:
-		return (*Int32Array)(a)
+		return (*Int32Array)(v)
 	case *[]string:
-		return (*StringArray)(a)
+		return (*StringArray)(v)
 	case *[][]byte:
-		return (*ByteaArray)(a)
+		return (*ByteaArray)(v)
 	}
 
 	return GenericArray{a}
@@ -81,16 +81,15 @@ type BoolArray []bool
 
 // Scan implements the sql.Scanner interface.
 func (a *BoolArray) Scan(src interface{}) error {
-	switch src := src.(type) {
+	switch v := src.(type) {
 	case []byte:
-		return a.scanBytes(src)
+		return a.scanBytes(v)
 	case string:
-		return a.scanBytes([]byte(src))
+		return a.scanBytes([]byte(v))
 	case nil:
 		*a = nil
 		return nil
 	}
-
 	return fmt.Errorf("pgtype: cannot convert %T to BoolArray", src)
 }
 
@@ -155,11 +154,11 @@ type ByteaArray [][]byte
 
 // Scan implements the sql.Scanner interface.
 func (a *ByteaArray) Scan(src interface{}) error {
-	switch src := src.(type) {
+	switch v := src.(type) {
 	case []byte:
-		return a.scanBytes(src)
+		return a.scanBytes(v)
 	case string:
-		return a.scanBytes([]byte(src))
+		return a.scanBytes([]byte(v))
 	case nil:
 		*a = nil
 		return nil
@@ -227,11 +226,11 @@ type Float64Array []float64
 
 // Scan implements the sql.Scanner interface.
 func (a *Float64Array) Scan(src interface{}) error {
-	switch src := src.(type) {
+	switch v := src.(type) {
 	case []byte:
-		return a.scanBytes(src)
+		return a.scanBytes(v)
 	case string:
-		return a.scanBytes([]byte(src))
+		return a.scanBytes([]byte(v))
 	case nil:
 		*a = nil
 		return nil
@@ -289,11 +288,11 @@ type Float32Array []float32
 
 // Scan implements the sql.Scanner interface.
 func (a *Float32Array) Scan(src interface{}) error {
-	switch src := src.(type) {
+	switch v := src.(type) {
 	case []byte:
-		return a.scanBytes(src)
+		return a.scanBytes(v)
 	case string:
-		return a.scanBytes([]byte(src))
+		return a.scanBytes([]byte(v))
 	case nil:
 		*a = nil
 		return nil
@@ -358,7 +357,7 @@ func (GenericArray) evaluateDestination(rt reflect.Type) (reflect.Type, func([]b
 	// TODO calculate the assign function for other types
 	// TODO repeat this section on the element type of arrays or slices (multidimensional)
 	{
-		if reflect.PtrTo(rt).Implements(typeSQLScanner) {
+		if reflect.PointerTo(rt).Implements(typeSQLScanner) {
 			// dest is always addressable because it is an element of a slice.
 			assign = func(src []byte, dest reflect.Value) (err error) {
 				ss := dest.Addr().Interface().(sql.Scanner)
@@ -404,11 +403,11 @@ func (a GenericArray) Scan(src interface{}) error {
 		return fmt.Errorf("pgtype: destination %T is not a pointer to array or slice", a.A)
 	}
 
-	switch src := src.(type) {
+	switch v := src.(type) {
 	case []byte:
-		return a.scanBytes(src, dv)
+		return a.scanBytes(v, dv)
 	case string:
-		return a.scanBytes([]byte(src), dv)
+		return a.scanBytes([]byte(v), dv)
 	case nil:
 		if dv.Kind() == reflect.Slice {
 			dv.Set(reflect.Zero(dv.Type()))
@@ -507,11 +506,11 @@ type Int64Array []int64
 
 // Scan implements the sql.Scanner interface.
 func (a *Int64Array) Scan(src interface{}) error {
-	switch src := src.(type) {
+	switch v := src.(type) {
 	case []byte:
-		return a.scanBytes(src)
+		return a.scanBytes(v)
 	case string:
-		return a.scanBytes([]byte(src))
+		return a.scanBytes([]byte(v))
 	case nil:
 		*a = nil
 		return nil
@@ -568,11 +567,11 @@ type Int32Array []int32
 
 // Scan implements the sql.Scanner interface.
 func (a *Int32Array) Scan(src interface{}) error {
-	switch src := src.(type) {
+	switch v := src.(type) {
 	case []byte:
-		return a.scanBytes(src)
+		return a.scanBytes(v)
 	case string:
-		return a.scanBytes([]byte(src))
+		return a.scanBytes([]byte(v))
 	case nil:
 		*a = nil
 		return nil
@@ -631,11 +630,11 @@ type StringArray []string
 
 // Scan implements the sql.Scanner interface.
 func (a *StringArray) Scan(src interface{}) error {
-	switch src := src.(type) {
+	switch v := src.(type) {
 	case []byte:
-		return a.scanBytes(src)
+		return a.scanBytes(v)
 	case string:
-		return a.scanBytes([]byte(src))
+		return a.scanBytes([]byte(v))
 	case nil:
 		*a = nil
 		return nil

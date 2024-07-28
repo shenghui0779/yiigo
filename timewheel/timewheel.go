@@ -47,8 +47,8 @@ func (tw *timewheel) AddTask(ctx context.Context, taskID string, fn func(ctx con
 			return 0
 		},
 	}
-	for _, fn := range options {
-		fn(task)
+	for _, f := range options {
+		f(task)
 	}
 	tw.requeue(task)
 }

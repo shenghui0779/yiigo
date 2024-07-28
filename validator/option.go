@@ -40,14 +40,14 @@ func WithValuerType(types ...driver.Valuer) Option {
 // WithValidation 注册自定义验证器
 func WithValidation(tag string, fn validator.Func, callValidationEvenIfNull ...bool) Option {
 	return func(validate *validator.Validate, trans ut.Translator) {
-		validate.RegisterValidation(tag, fn, callValidationEvenIfNull...)
+		_ = validate.RegisterValidation(tag, fn, callValidationEvenIfNull...)
 	}
 }
 
 // WithValidationCtx 注册带Context的自定义验证器
 func WithValidationCtx(tag string, fn validator.FuncCtx, callValidationEvenIfNull ...bool) Option {
 	return func(validate *validator.Validate, trans ut.Translator) {
-		validate.RegisterValidationCtx(tag, fn, callValidationEvenIfNull...)
+		_ = validate.RegisterValidationCtx(tag, fn, callValidationEvenIfNull...)
 	}
 }
 
@@ -55,7 +55,7 @@ func WithValidationCtx(tag string, fn validator.FuncCtx, callValidationEvenIfNul
 // 参数 `text` 示例：{0}为必填字段 或 {0}必须大于{1}
 func WithTranslation(tag, text string, override bool) Option {
 	return func(validate *validator.Validate, trans ut.Translator) {
-		validate.RegisterTranslation(tag, trans, func(ut ut.Translator) error {
+		_ = validate.RegisterTranslation(tag, trans, func(ut ut.Translator) error {
 			return ut.Add(tag, text, override)
 		}, func(ut ut.Translator, fe validator.FieldError) string {
 			t, _ := ut.T(tag, fe.Field(), fe.Param())

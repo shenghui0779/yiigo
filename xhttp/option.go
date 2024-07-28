@@ -85,8 +85,8 @@ func (form *uploadform) Write(w *multipart.Writer) error {
 			return err
 		}
 	}
-	for name, value := range form.fields {
-		if err := w.WriteField(name, value); err != nil {
+	for k, v := range form.fields {
+		if err := w.WriteField(k, v); err != nil {
 			return err
 		}
 	}
@@ -120,8 +120,8 @@ func NewUploadForm(fields ...UploadField) UploadForm {
 		files:  make([]*formfile, 0),
 		fields: make(value.V),
 	}
-	for _, fn := range fields {
-		fn(form)
+	for _, f := range fields {
+		f(form)
 	}
 	return form
 }

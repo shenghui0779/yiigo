@@ -37,7 +37,7 @@ func NewDB(cfg *DBConfig) (*sql.DB, error) {
 		return nil, err
 	}
 	if err = db.Ping(); err != nil {
-		db.Close()
+		_ = db.Close()
 		return nil, err
 	}
 
@@ -66,7 +66,7 @@ func Transaction(ctx context.Context, db *sqlx.DB, fn func(ctx context.Context, 
 
 	defer func() {
 		if v := recover(); v != nil {
-			tx.Rollback()
+			_ = tx.Rollback()
 			panic(v)
 		}
 	}()

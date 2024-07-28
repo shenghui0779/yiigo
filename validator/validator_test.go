@@ -29,7 +29,7 @@ type ParamsValidate struct {
 }
 
 func TestValidator(t *testing.T) {
-	v := New(
+	testV := New(
 		WithValuerType(sql.NullString{}, sql.NullInt64{}),
 		WithValidation("nullint_gte", NullIntGTE),
 		WithTranslation("nullint_gte", "{0}必须大于或等于{1}", true),
@@ -42,7 +42,7 @@ func TestValidator(t *testing.T) {
 		Int64: 9,
 		Valid: true,
 	}
-	err := v.ValidateStruct(params1)
+	err := testV.ValidateStruct(params1)
 	assert.NotNil(t, err)
 	log.Println("err validate params:", err.Error())
 
@@ -56,6 +56,6 @@ func TestValidator(t *testing.T) {
 			Valid:  true,
 		},
 	}
-	err = v.ValidateStruct(params2)
+	err = testV.ValidateStruct(params2)
 	assert.Nil(t, err)
 }

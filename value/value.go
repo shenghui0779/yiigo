@@ -41,8 +41,8 @@ func (v V) Encode(sym, sep string, opts ...Option) string {
 	o := &options{
 		ignoreKeys: make(map[string]struct{}),
 	}
-	for _, fn := range opts {
-		fn(o)
+	for _, f := range opts {
+		f(o)
 	}
 
 	keys := make([]string, 0, len(v))

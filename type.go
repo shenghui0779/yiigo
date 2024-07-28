@@ -12,13 +12,13 @@ const (
 	// B - Byte size
 	B Quantity = 1
 	// KiB - KibiByte size
-	KiB Quantity = 1024 * B
+	KiB = 1024 * B
 	// MiB - MebiByte size
-	MiB Quantity = 1024 * KiB
+	MiB = 1024 * KiB
 	// GiB - GibiByte size
-	GiB Quantity = 1024 * MiB
+	GiB = 1024 * MiB
 	// TiB - TebiByte size
-	TiB Quantity = 1024 * GiB
+	TiB = 1024 * GiB
 )
 
 // String 实现 Stringer 接口

@@ -16,7 +16,7 @@ import (
 // Nonce 生成随机串(size应为偶数)
 func Nonce(size uint8) string {
 	nonce := make([]byte, size/2)
-	io.ReadFull(rand.Reader, nonce)
+	_, _ = io.ReadFull(rand.Reader, nonce)
 	return hex.EncodeToString(nonce)
 }
 

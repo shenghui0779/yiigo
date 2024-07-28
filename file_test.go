@@ -13,7 +13,7 @@ func TestCreateFile(t *testing.T) {
 		assert.Fail(t, fmt.Sprintf("Expected nil, but got: %#v", err))
 		return
 	}
-	f.Close()
+	_ = f.Close()
 }
 
 func TestOpenFile(t *testing.T) {
@@ -22,5 +22,5 @@ func TestOpenFile(t *testing.T) {
 		assert.Fail(t, fmt.Sprintf("Expected nil, but got: %#v", err))
 		return
 	}
-	f.Close()
+	_ = f.Close()
 }

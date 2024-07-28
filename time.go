@@ -9,7 +9,7 @@ var GMT8 = time.FixedZone("CST", 8*3600)
 // 若 timestamp < 0，则使用 `time.Now()`
 func TimeToStr(layout string, timestamp int64, loc *time.Location) string {
 	if timestamp < 0 {
-		return time.Now().In(time.Local).Format(layout)
+		return time.Now().In(loc).Format(layout)
 	}
 	return time.Unix(timestamp, 0).In(loc).Format(layout)
 }

@@ -26,20 +26,18 @@ func (v *Validator) ValidateStruct(obj any) error {
 	}
 
 	if err := v.validator.Struct(obj); err != nil {
-		e, ok := err.(validator.ValidationErrors)
-		if !ok {
+		var _err validator.ValidationErrors
+		if ok := errors.As(err, &_err); !ok {
 			return err
 		}
 
-		errM := e.Translate(v.translator)
+		errM := _err.Translate(v.translator)
 		msgs := make([]string, 0, len(errM))
-		for _, v := range errM {
-			msgs = append(msgs, v)
+		for _, e := range errM {
+			msgs = append(msgs, e)
 		}
-
 		return errors.New(strings.Join(msgs, ";"))
 	}
-
 	return nil
 }
 
@@ -50,20 +48,18 @@ func (v *Validator) ValidateStructCtx(ctx context.Context, obj any) error {
 	}
 
 	if err := v.validator.StructCtx(ctx, obj); err != nil {
-		e, ok := err.(validator.ValidationErrors)
-		if !ok {
+		var _err validator.ValidationErrors
+		if ok := errors.As(err, &_err); !ok {
 			return err
 		}
 
-		errM := e.Translate(v.translator)
+		errM := _err.Translate(v.translator)
 		msgs := make([]string, 0, len(errM))
-		for _, v := range errM {
-			msgs = append(msgs, v)
+		for _, e := range errM {
+			msgs = append(msgs, e)
 		}
-
 		return errors.New(strings.Join(msgs, ";"))
 	}
-
 	return nil
 }
 
@@ -80,10 +76,10 @@ func New(opts ...Option) *Validator {
 
 	zhTrans := zh.New()
 	trans, _ := ut.New(zhTrans, zhTrans).GetTranslator("zh")
-	zhcn.RegisterDefaultTranslations(validate, trans)
+	_ = zhcn.RegisterDefaultTranslations(validate, trans)
 
-	for _, fn := range opts {
-		fn(validate, trans)
+	for _, f := range opts {
+		f(validate, trans)
 	}
 
 	return &Validator{

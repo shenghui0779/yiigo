@@ -36,10 +36,8 @@ func NewPoint(x, y float64, ml ...int) *Point {
 		x: x,
 		y: y,
 	}
-
 	if len(ml) != 0 {
 		p.ml = ml[0]
 	}
-
 	return p
 }
