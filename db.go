@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"runtime/debug"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -49,7 +50,7 @@ func NewDB(cfg *DBConfig) (*sql.DB, error) {
 	return db, nil
 }
 
-func NewDBX(cfg *DBConfig) (*sqlx.DB, error) {
+func NewDBx(cfg *DBConfig) (*sqlx.DB, error) {
 	db, err := NewDB(cfg)
 	if err != nil {
 		return nil, err
@@ -58,27 +59,30 @@ func NewDBX(cfg *DBConfig) (*sqlx.DB, error) {
 }
 
 // Transaction 执行数据库事物
-func Transaction(ctx context.Context, db *sqlx.DB, fn func(ctx context.Context, tx *sqlx.Tx) error) error {
-	tx, err := db.BeginTxx(ctx, nil)
-	if err != nil {
-		return err
+func Transaction(ctx context.Context, db *sqlx.DB, fn func(ctx context.Context, tx *sqlx.Tx) error) (err error) {
+	tx, _err := db.BeginTxx(ctx, nil)
+	if _err != nil {
+		err = fmt.Errorf("db.BeginTxx: %w", _err)
+		return
 	}
 
 	defer func() {
-		if v := recover(); v != nil {
+		if r := recover(); r != nil {
 			_ = tx.Rollback()
-			panic(v)
+			err = fmt.Errorf("transaction: panic recovered: %+v\n%s", r, string(debug.Stack()))
 		}
 	}()
 
-	if err = fn(ctx, tx); err != nil {
-		if rerr := tx.Rollback(); rerr != nil {
-			err = fmt.Errorf("%w: rolling back transaction: %v", err, rerr)
+	err = fn(ctx, tx)
+	if err != nil {
+		if err_ := tx.Rollback(); err_ != nil {
+			err = fmt.Errorf("%w: tx.Rollback: %w", err, err_)
 		}
-		return err
+		return
 	}
-	if err = tx.Commit(); err != nil {
-		return fmt.Errorf("committing transaction: %w", err)
+	if err_ := tx.Commit(); err_ != nil {
+		err = fmt.Errorf("tx.Commit: %w", err_)
+		return
 	}
-	return nil
+	return
 }

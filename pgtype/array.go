@@ -339,10 +339,8 @@ func (a Float32Array) Value() (driver.Value, error) {
 			b = append(b, ',')
 			b = strconv.AppendFloat(b, float64(a[i]), 'f', -1, 32)
 		}
-
 		return string(append(b, '}')), nil
 	}
-
 	return "{}", nil
 }
 
@@ -497,7 +495,6 @@ func (a GenericArray) Value() (driver.Value, error) {
 		b, _, err := appendArray(b, rv, n)
 		return string(b), err
 	}
-
 	return "{}", nil
 }
 
@@ -515,7 +512,6 @@ func (a *Int64Array) Scan(src interface{}) error {
 		*a = nil
 		return nil
 	}
-
 	return fmt.Errorf("pgtype: cannot convert %T to Int64Array", src)
 }
 
@@ -555,10 +551,8 @@ func (a Int64Array) Value() (driver.Value, error) {
 			b = append(b, ',')
 			b = strconv.AppendInt(b, a[i], 10)
 		}
-
 		return string(append(b, '}')), nil
 	}
-
 	return "{}", nil
 }
 
@@ -576,7 +570,6 @@ func (a *Int32Array) Scan(src interface{}) error {
 		*a = nil
 		return nil
 	}
-
 	return fmt.Errorf("pgtype: cannot convert %T to Int32Array", src)
 }
 
@@ -590,9 +583,9 @@ func (a *Int32Array) scanBytes(src []byte) error {
 	} else {
 		b := make(Int32Array, len(elems))
 		for i, v := range elems {
-			x, err := strconv.ParseInt(string(v), 10, 32)
-			if err != nil {
-				return fmt.Errorf("pgtype: parsing array element index %d: %v", i, err)
+			x, _err := strconv.ParseInt(string(v), 10, 32)
+			if _err != nil {
+				return fmt.Errorf("pgtype: parsing array element index %d: %v", i, _err)
 			}
 			b[i] = int32(x)
 		}
@@ -618,10 +611,8 @@ func (a Int32Array) Value() (driver.Value, error) {
 			b = append(b, ',')
 			b = strconv.AppendInt(b, int64(a[i]), 10)
 		}
-
 		return string(append(b, '}')), nil
 	}
-
 	return "{}", nil
 }
 
@@ -679,10 +670,8 @@ func (a StringArray) Value() (driver.Value, error) {
 			b = append(b, ',')
 			b = appendArrayQuotedBytes(b, []byte(a[i]))
 		}
-
 		return string(append(b, '}')), nil
 	}
-
 	return "{}", nil
 }
 
@@ -706,7 +695,6 @@ func appendArray(b []byte, rv reflect.Value, n int) ([]byte, string, error) {
 			return b, del, err
 		}
 	}
-
 	return append(b, '}'), del, nil
 }
 
@@ -724,7 +712,6 @@ func appendArrayElement(b []byte, rv reflect.Value) ([]byte, string, error) {
 			if n := rv.Len(); n > 0 {
 				return appendArray(b, rv, n)
 			}
-
 			return b, "", nil
 		}
 	}
@@ -814,7 +801,7 @@ Element:
 			dims[depth-1] = 0
 			i++
 		case '"':
-			elem := []byte{}
+			var elem []byte
 			var escape bool
 			for i++; i < len(src); i++ {
 				if escape {

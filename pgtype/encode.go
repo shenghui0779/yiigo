@@ -559,13 +559,13 @@ func FormatTimestamp(t time.Time) []byte {
 
 // Parse a bytea value received from the server.  Both "hex" and the legacy
 // "escape" format are supported.
-func parseBytea(s []byte) (result []byte, err error) {
+func parseBytea(s []byte) ([]byte, error) {
+	var result []byte
 	if len(s) >= 2 && bytes.Equal(s[:2], []byte("\\x")) {
 		// bytea_output = hex
 		s = s[2:] // trim off leading "\\x"
 		result = make([]byte, hex.DecodedLen(len(s)))
-		_, err := hex.Decode(result, s)
-		if err != nil {
+		if _, err := hex.Decode(result, s); err != nil {
 			return nil, err
 		}
 	} else {
@@ -602,7 +602,6 @@ func parseBytea(s []byte) (result []byte, err error) {
 			}
 		}
 	}
-
 	return result, nil
 }
 
@@ -625,6 +624,5 @@ func encodeBytea(serverVersion int, v []byte) (result []byte) {
 			}
 		}
 	}
-
 	return result
 }
