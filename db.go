@@ -32,6 +32,7 @@ type DBConfig struct {
 	ConnMaxIdleTime time.Duration
 }
 
+// NewDB sql.DB
 func NewDB(cfg *DBConfig) (*sql.DB, error) {
 	db, err := sql.Open(cfg.Driver, cfg.DSN)
 	if err != nil {
@@ -50,6 +51,7 @@ func NewDB(cfg *DBConfig) (*sql.DB, error) {
 	return db, nil
 }
 
+// NewDBx sqlx.DB
 func NewDBx(cfg *DBConfig) (*sqlx.DB, error) {
 	db, err := NewDB(cfg)
 	if err != nil {
@@ -68,7 +70,7 @@ func Transaction(ctx context.Context, db *sqlx.DB, fn func(ctx context.Context, 
 
 	defer func() {
 		if r := recover(); r != nil {
-			_ = tx.Rollback()
+			_ = tx.Rollback() // if panic, should rollback
 			err = fmt.Errorf("transaction: panic recovered: %+v\n%s", r, string(debug.Stack()))
 		}
 	}()

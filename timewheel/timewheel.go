@@ -2,6 +2,9 @@ package timewheel
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"runtime/debug"
 	"sync"
 	"time"
 )
@@ -27,6 +30,8 @@ type TimeWheel interface {
 	Run()
 	// Stop 终止时间轮
 	Stop()
+	// Err 监听异常错误
+	Err() chan error
 }
 
 type timewheel struct {
@@ -35,6 +40,7 @@ type timewheel struct {
 	size   int
 	bucket []sync.Map
 	stop   chan struct{}
+	err    chan error
 }
 
 func (tw *timewheel) AddTask(ctx context.Context, taskID string, fn func(ctx context.Context, taskID string) error, options ...Option) {
@@ -65,6 +71,15 @@ func (tw *timewheel) Stop() {
 	}
 
 	close(tw.stop)
+	select {
+	case tw.err <- errors.New("timewheel stopped"):
+	default:
+	}
+	close(tw.err)
+}
+
+func (tw *timewheel) Err() chan error {
+	return tw.err
 }
 
 func (tw *timewheel) requeue(task *Task) {
@@ -80,7 +95,6 @@ func (tw *timewheel) requeue(task *Task) {
 	if task.attempts >= task.maxAttempts {
 		return
 	}
-
 	task.attempts++
 
 	tick := tw.tick.Nanoseconds()
@@ -100,7 +114,7 @@ func (tw *timewheel) requeue(task *Task) {
 	}
 	// 剩余延迟
 	task.remainder = time.Duration(duration % tick)
-
+	// 存储任务
 	tw.bucket[slot].Store(task.uniqID, task)
 }
 
@@ -127,23 +141,28 @@ func (tw *timewheel) process(slot int) {
 		default:
 		}
 
-		task := value.(*Task)
+		task, ok := value.(*Task)
+		if !ok {
+			return true
+		}
 		if task.round > 0 {
 			task.round--
 			return true
 		}
-
 		go tw.do(task)
 		tw.bucket[slot].Delete(key)
-
 		return true
 	})
 }
 
 func (tw *timewheel) do(task *Task) {
 	defer func() {
-		if recover() != nil {
-			tw.requeue(task)
+		if r := recover(); r != nil {
+			err := fmt.Errorf("task(%s) panic recovered: %+v\n%s", task.uniqID, r, string(debug.Stack()))
+			select {
+			case tw.err <- err:
+			default:
+			}
 		}
 	}()
 
@@ -153,6 +172,11 @@ func (tw *timewheel) do(task *Task) {
 
 	select {
 	case <-task.ctx.Done(): // 任务被取消
+		err := fmt.Errorf("task(%s) canceled: %w", task.uniqID, context.Cause(task.ctx))
+		select {
+		case tw.err <- err:
+		default:
+		}
 		return
 	default:
 	}
