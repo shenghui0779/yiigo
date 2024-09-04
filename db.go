@@ -71,7 +71,7 @@ func Transaction(ctx context.Context, db *sqlx.DB, fn func(ctx context.Context, 
 	defer func() {
 		if r := recover(); r != nil {
 			_ = tx.Rollback() // if panic, should rollback
-			err = fmt.Errorf("transaction: panic recovered: %+v\n%s", r, string(debug.Stack()))
+			err = fmt.Errorf("transaction panic recovered: %+v\n%s", r, string(debug.Stack()))
 		}
 	}()
 

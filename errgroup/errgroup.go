@@ -42,7 +42,7 @@ func (g *Group) do(fn func(ctx context.Context) error) {
 	var err error
 	defer func() {
 		if r := recover(); r != nil {
-			err = fmt.Errorf("errgroup: panic recovered: %+v\n%s", r, string(debug.Stack()))
+			err = fmt.Errorf("errgroup panic recovered: %+v\n%s", r, string(debug.Stack()))
 		}
 		if err != nil {
 			g.errOnce.Do(func() {
