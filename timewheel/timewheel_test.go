@@ -18,12 +18,14 @@ func TestTimeWheel_1(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		n := i + 1
 		addedAt := time.Now()
-		tw.AddTask(context.Background(), "task#"+strconv.Itoa(n), func(ctx context.Context, taskID string) error {
-			ch <- fmt.Sprintf("%s run after %ds", taskID, int64(math.Round(time.Since(addedAt).Seconds())))
-			return nil
-		}, WithDelay(func(attempts uint16) time.Duration {
-			return time.Second * time.Duration(n+i)
-		}))
+		go func() {
+			tw.AddTask(context.Background(), "task#"+strconv.Itoa(n), func(ctx context.Context, taskID string) error {
+				ch <- fmt.Sprintf("%s run after %ds", taskID, int64(math.Round(time.Since(addedAt).Seconds())))
+				return nil
+			}, WithDelay(func(attempts uint16) time.Duration {
+				return time.Second * time.Duration(n)
+			}))
+		}()
 	}
 	tw.Run()
 
@@ -41,16 +43,16 @@ func TestTimeWheel_2(t *testing.T) {
 	tw.Run()
 
 	for i := 0; i < 10; i++ {
-		time.Sleep(time.Second)
-
 		n := i + 1
 		addedAt := time.Now()
-		tw.AddTask(context.Background(), "task#"+strconv.Itoa(n), func(ctx context.Context, taskID string) error {
-			ch <- fmt.Sprintf("%s run after %ds", taskID, int64(math.Round(time.Since(addedAt).Seconds())))
-			return nil
-		}, WithDelay(func(attempts uint16) time.Duration {
-			return time.Second * time.Duration(n+i)
-		}))
+		go func() {
+			tw.AddTask(context.Background(), "task#"+strconv.Itoa(n), func(ctx context.Context, taskID string) error {
+				ch <- fmt.Sprintf("%s run after %ds", taskID, int64(math.Round(time.Since(addedAt).Seconds())))
+				return nil
+			}, WithDelay(func(attempts uint16) time.Duration {
+				return time.Second * time.Duration(n)
+			}))
+		}()
 	}
 
 	for i := 0; i < 10; i++ {

@@ -193,5 +193,6 @@ func New(tick time.Duration, size int) TimeWheel {
 		size:   size,
 		bucket: make([]sync.Map, size),
 		stop:   make(chan struct{}),
+		err:    make(chan error),
 	}
 }
