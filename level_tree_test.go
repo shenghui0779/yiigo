@@ -84,6 +84,6 @@ func TestTree(t *testing.T) {
 	}
 
 	tree := BuildLevelTree(data, 0)
-	b, _ := json.MarshalIndent(tree, "", "  ")
+	b, _ := json.Marshal(tree)
 	t.Log(string(b))
 }
