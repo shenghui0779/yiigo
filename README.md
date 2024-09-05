@@ -16,6 +16,7 @@ go get -u github.com/shenghui0779/yiigo
 - Validator - 支持汉化和自定义规则
 - 基于 Redis 的分布式锁
 - 基于 sqlx 的轻量SQLBuilder
+- 基于泛型的无限菜单分类层级树
 - errgroup - 基于官方版本改良，支持并发协程数量控制
 - Value - 用于处理 `k-v` 格式化的场景，如：生成签名串 等
 - Location - 距离、方位角、经纬度与平面直角坐标系的相互转化
