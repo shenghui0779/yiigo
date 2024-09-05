@@ -130,7 +130,6 @@ func (a BoolArray) Value() (driver.Value, error) {
 		// There will be exactly two curly brackets, N bytes of values,
 		// and N-1 bytes of delimiters.
 		b := make([]byte, 1+2*n)
-
 		for i := 0; i < n; i++ {
 			b[2*i] = ','
 			if a[i] {
@@ -139,13 +138,10 @@ func (a BoolArray) Value() (driver.Value, error) {
 				b[1+2*i] = 'f'
 			}
 		}
-
 		b[0] = '{'
 		b[2*n] = '}'
-
 		return string(b), nil
 	}
-
 	return "{}", nil
 }
 
@@ -163,7 +159,6 @@ func (a *ByteaArray) Scan(src interface{}) error {
 		*a = nil
 		return nil
 	}
-
 	return fmt.Errorf("pgtype: cannot convert %T to ByteaArray", src)
 }
 
@@ -203,17 +198,14 @@ func (a ByteaArray) Value() (driver.Value, error) {
 		}
 
 		b := make([]byte, size)
-
 		for i, s := 0, b; i < n; i++ {
 			o := copy(s, `,"\\x`)
 			o += hex.Encode(s[o:], a[i])
 			s[o] = '"'
 			s = s[o+1:]
 		}
-
 		b[0] = '{'
 		b[size-1] = '}'
-
 		return string(b), nil
 	}
 
@@ -250,7 +242,7 @@ func (a *Float64Array) scanBytes(src []byte) error {
 		b := make(Float64Array, len(elems))
 		for i, v := range elems {
 			if b[i], err = strconv.ParseFloat(string(v), 64); err != nil {
-				return fmt.Errorf("pgtype: parsing array element index %d: %v", i, err)
+				return fmt.Errorf("pgtype: parsing array element index %d: %w", i, err)
 			}
 		}
 		*a = b
@@ -269,16 +261,13 @@ func (a Float64Array) Value() (driver.Value, error) {
 		// and N-1 bytes of delimiters.
 		b := make([]byte, 1, 1+2*n)
 		b[0] = '{'
-
 		b = strconv.AppendFloat(b, a[0], 'f', -1, 64)
 		for i := 1; i < n; i++ {
 			b = append(b, ',')
 			b = strconv.AppendFloat(b, a[i], 'f', -1, 64)
 		}
-
 		return string(append(b, '}')), nil
 	}
-
 	return "{}", nil
 }
 
@@ -313,7 +302,7 @@ func (a *Float32Array) scanBytes(src []byte) error {
 		for i, v := range elems {
 			var x float64
 			if x, err = strconv.ParseFloat(string(v), 32); err != nil {
-				return fmt.Errorf("pgtype: parsing array element index %d: %v", i, err)
+				return fmt.Errorf("pgtype: parsing array element index %d: %w", i, err)
 			}
 			b[i] = float32(x)
 		}
@@ -333,7 +322,6 @@ func (a Float32Array) Value() (driver.Value, error) {
 		// and N-1 bytes of delimiters.
 		b := make([]byte, 1, 1+2*n)
 		b[0] = '{'
-
 		b = strconv.AppendFloat(b, float64(a[0]), 'f', -1, 32)
 		for i := 1; i < n; i++ {
 			b = append(b, ',')
@@ -450,8 +438,8 @@ func (a GenericArray) scanBytes(src []byte, dv reflect.Value) error {
 
 	values := reflect.MakeSlice(reflect.SliceOf(dtype), len(elems), len(elems))
 	for i, e := range elems {
-		if err := assign(e, values.Index(i)); err != nil {
-			return fmt.Errorf("pgtype: parsing array element index %d: %v", i, err)
+		if _err := assign(e, values.Index(i)); _err != nil {
+			return fmt.Errorf("pgtype: parsing array element index %d: %w", i, _err)
 		}
 	}
 
@@ -526,7 +514,7 @@ func (a *Int64Array) scanBytes(src []byte) error {
 		b := make(Int64Array, len(elems))
 		for i, v := range elems {
 			if b[i], err = strconv.ParseInt(string(v), 10, 64); err != nil {
-				return fmt.Errorf("pgtype: parsing array element index %d: %v", i, err)
+				return fmt.Errorf("pgtype: parsing array element index %d: %w", i, err)
 			}
 		}
 		*a = b
@@ -585,7 +573,7 @@ func (a *Int32Array) scanBytes(src []byte) error {
 		for i, v := range elems {
 			x, _err := strconv.ParseInt(string(v), 10, 32)
 			if _err != nil {
-				return fmt.Errorf("pgtype: parsing array element index %d: %v", i, _err)
+				return fmt.Errorf("pgtype: parsing array element index %d: %w", i, _err)
 			}
 			b[i] = int32(x)
 		}

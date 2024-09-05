@@ -3,6 +3,11 @@ package pgtype
 // Oid is a Postgres Object ID.
 type Oid uint32
 
+// String 实现 Stringer 接口
+func (o Oid) String() string {
+	return TypeName[o]
+}
+
 const (
 	T_bool             Oid = 16
 	T_bytea            Oid = 17

@@ -56,23 +56,19 @@ func encode(parameterStatus *parameterStatus, x interface{}, pgtypOid Oid) []byt
 		if pgtypOid == T_bytea {
 			return encodeBytea(parameterStatus.serverVersion, v)
 		}
-
 		return v
 	case string:
 		if pgtypOid == T_bytea {
 			return encodeBytea(parameterStatus.serverVersion, []byte(v))
 		}
-
 		return []byte(v)
 	case bool:
 		return strconv.AppendBool(nil, v)
 	case time.Time:
 		return formatTs(v)
-
 	default:
 		errorf("encode: unknown type for %T", v)
 	}
-
 	panic("not reached")
 }
 
@@ -103,11 +99,9 @@ func binaryDecode(ps *parameterStatus, s []byte, typ Oid) interface{} {
 			panic(err)
 		}
 		return b
-
 	default:
 		errorf("don't know how to decode binary parameter of type %d", uint32(typ))
 	}
-
 	panic("not reached")
 }
 
@@ -173,7 +167,6 @@ func appendEncodedText(ps *parameterStatus, buf []byte, x interface{}) []byte {
 	default:
 		errorf("encode: unknown type for %T", v)
 	}
-
 	panic("not reached")
 }
 

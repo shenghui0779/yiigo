@@ -18,6 +18,5 @@ func decodeUUIDBinary(src []byte) ([]byte, error) {
 	hex.Encode(dst[14:], src[6:8])
 	hex.Encode(dst[19:], src[8:10])
 	hex.Encode(dst[24:], src[10:16])
-
 	return dst, nil
 }
