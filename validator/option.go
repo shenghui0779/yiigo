@@ -28,8 +28,8 @@ func WithValuerType(types ...driver.Valuer) Option {
 	return func(validate *validator.Validate, trans ut.Translator) {
 		validate.RegisterCustomTypeFunc(func(field reflect.Value) any {
 			if valuer, ok := field.Interface().(driver.Valuer); ok {
-				v, _ := valuer.Value()
-				return v
+				val, _ := valuer.Value()
+				return val
 			}
 
 			return nil

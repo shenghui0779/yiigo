@@ -2,7 +2,6 @@ package validator
 
 import (
 	"database/sql"
-	"log"
 	"strconv"
 	"testing"
 
@@ -19,7 +18,6 @@ func NullIntGTE(fl validator.FieldLevel) bool {
 	if err != nil {
 		return false
 	}
-
 	return fl.Field().Int() >= i
 }
 
@@ -44,7 +42,7 @@ func TestValidator(t *testing.T) {
 	}
 	err := testV.ValidateStruct(params1)
 	assert.NotNil(t, err)
-	log.Println("err validate params:", err.Error())
+	t.Log("err validate params:", err.Error())
 
 	params2 := &ParamsValidate{
 		ID: sql.NullInt64{
