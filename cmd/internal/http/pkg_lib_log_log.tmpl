@@ -1,0 +1,28 @@
+package log
+
+import (
+	"context"
+
+	"github.com/go-chi/chi/v5/middleware"
+	"go.uber.org/zap"
+)
+
+func Info(ctx context.Context, msg string, fields ...zap.Field) {
+	logger.Info(msg, append(fields, zap.String("req_id", middleware.GetReqID(ctx)))...)
+}
+
+func Warn(ctx context.Context, msg string, fields ...zap.Field) {
+	logger.Warn(msg, append(fields, zap.String("req_id", middleware.GetReqID(ctx)))...)
+}
+
+func Error(ctx context.Context, msg string, fields ...zap.Field) {
+	logger.Error(msg, append(fields, zap.String("req_id", middleware.GetReqID(ctx)))...)
+}
+
+func Panic(ctx context.Context, msg string, fields ...zap.Field) {
+	logger.Panic(msg, append(fields, zap.String("req_id", middleware.GetReqID(ctx)))...)
+}
+
+func Fatal(ctx context.Context, msg string, fields ...zap.Field) {
+	logger.Fatal(msg, append(fields, zap.String("req_id", middleware.GetReqID(ctx)))...)
+}

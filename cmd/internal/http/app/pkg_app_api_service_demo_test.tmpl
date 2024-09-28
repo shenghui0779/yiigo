@@ -1,0 +1,38 @@
+package demo
+
+import (
+	"context"
+	"fmt"
+	"testing"
+
+	"github.com/spf13/viper"
+
+	"{{.Module}}/pkg/{{.AppPkg}}/ent"
+	"{{.Module}}/pkg/lib/log"
+)
+
+func TestMain(m *testing.M) {
+	// 加载配置(注意：替换成自己的配置文件路径)
+	viper.SetConfigFile("config.toml")
+	if err := viper.ReadInConfig(); err != nil {
+		panic(err)
+	}
+	// 初始化日志
+	log.Init()
+	// 初始化数据库
+	if err := ent.Init(); err != nil {
+		panic(err)
+	}
+	// 执行测试
+	m.Run()
+	// 关闭资源
+	_ = ent.DB.Close()
+}
+
+func TestAuth(t *testing.T) {
+	req := &ReqCreate{
+		Title: "demo",
+	}
+	ret := Create(context.Background(), req)
+	fmt.Println("[Result] ---", ret)
+}

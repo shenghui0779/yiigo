@@ -1,0 +1,23 @@
+package cmd
+
+import (
+	"fmt"
+
+	"github.com/spf13/cobra"
+)
+
+func helloCmd() *cobra.Command {
+	var name string
+	cmd := &cobra.Command{
+		Use:     "hello",
+		Short:   "命令示例",
+		Long:    "命令示例",
+		Version: "v1.0.0",
+		Run: func(cmd *cobra.Command, args []string) {
+			fmt.Println("hello", name)
+		},
+	}
+	// 注册参数
+	cmd.Flags().StringVar(&name, "name", "", "打个招呼")
+	return cmd
+}

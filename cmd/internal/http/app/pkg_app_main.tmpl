@@ -1,0 +1,19 @@
+package main
+
+import (
+	"{{.Module}}/pkg/{{.AppPkg}}/cmd"
+	"{{.Module}}/pkg/{{.AppPkg}}/ent"
+)
+
+func main() {
+	defer clean()
+	cmd.Init()
+}
+
+// clean 清理资源
+func clean() {
+	// 关闭数据库连接
+	if ent.DB != nil {
+		_ = ent.DB.Close()
+	}
+}

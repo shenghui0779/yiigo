@@ -1,0 +1,11 @@
+package middleware
+
+import "net/http"
+
+// Auth App授权中间件
+func Auth(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// TODO ...
+		next.ServeHTTP(w, r)
+	})
+}

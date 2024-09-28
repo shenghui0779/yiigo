@@ -1,0 +1,25 @@
+package controller
+
+import (
+	"net/http"
+
+	"github.com/pkg/errors"
+	"go.uber.org/zap"
+
+	"{{.Module}}/pkg/{{.AppPkg}}/api/service/demo"
+	"{{.Module}}/pkg/lib"
+	"{{.Module}}/pkg/lib/log"
+	"{{.Module}}/pkg/lib/result"
+)
+
+func DemoCreate(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	req := new(demo.ReqCreate)
+	if err := lib.BindJSON(r, req); err != nil {
+		log.Error(ctx, "Error params", zap.Error(err))
+		result.ErrParams(result.E(errors.WithMessage(err, "参数错误"))).JSON(w, r)
+		return
+	}
+	demo.Create(ctx, req).JSON(w, r)
+}

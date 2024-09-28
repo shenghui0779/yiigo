@@ -1,0 +1,17 @@
+package web
+
+import (
+	"embed"
+	"io/fs"
+)
+
+//go:embed all:dist
+var asserts embed.FS
+
+func Asserts() fs.FS {
+	f, err := fs.Sub(asserts, "dist")
+	if err != nil {
+		panic(err)
+	}
+	return f
+}

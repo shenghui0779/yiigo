@@ -1,0 +1,33 @@
+package cmd
+
+import (
+	"context"
+
+	"github.com/spf13/cobra"
+	"go.uber.org/zap"
+
+	"{{.Module}}/pkg/{{.AppPkg}}/ent"
+	"{{.Module}}/pkg/{{.AppPkg}}/ent/migrate"
+	"{{.Module}}/pkg/lib/log"
+)
+
+func migrateCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "migrate",
+		Short:   "迁移",
+		Long:    "数据库迁移",
+		Version: "v1.0.0",
+		Run: func(cmd *cobra.Command, args []string) {
+			ctx := context.Background()
+			err := ent.DB.Schema.Create(ctx,
+				migrate.WithForeignKeys(false),
+				// migrate.WithDropIndex(true),
+				// migrate.WithDropColumn(true),
+			)
+			if err != nil {
+				log.Error(ctx, "数据库表迁移失败", zap.Error(err))
+			}
+		},
+	}
+	return cmd
+}

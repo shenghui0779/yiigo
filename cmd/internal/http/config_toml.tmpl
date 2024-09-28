@@ -1,0 +1,21 @@
+[app]
+env = "dev"
+port = 8000
+debug = true
+secret = "9c7695a0635e89a9ed1e8c13428fffd7"
+
+[db]
+dsn = "username:password@tcp(localhost:3306)/dbname?timeout=10s&charset=utf8mb4&collation=utf8mb4_general_ci&parseTime=True&loc=Local"
+options = { max_open_conns = 20, max_idle_conns = 10, conn_max_lifetime = 600, conn_max_idle_time = 300 }
+
+[redis]
+addrs = ["localhost:6379"]
+options = { dial_timeout = 10, read_timeout = 10, write_timeout = 10, pool_size = 20, pool_timeout = 10, min_idle_conns = 0, max_idle_conns = 10, max_active_conns = 20, conn_max_lifetime = 600, conn_max_idle_time = 300 }
+
+[redis-cluster]
+addrs = ["localhost:6379"]
+options = { dial_timeout = 10, read_timeout = 10, write_timeout = 10, pool_size = 20, pool_timeout = 10, min_idle_conns = 0, max_idle_conns = 10, max_active_conns = 20, conn_max_lifetime = 600, conn_max_idle_time = 300 }
+
+[log]
+path = "logs/app.log"
+options = { max_size = 100, max_age = 7, max_backups = 10, compress = true, stderr = true }
