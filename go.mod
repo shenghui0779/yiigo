@@ -2,6 +2,8 @@ module github.com/shenghui0779/yiigo
 
 go 1.22.0
 
+toolchain go1.23.1
+
 require (
 	git.sr.ht/~sbinet/gg v0.5.0
 	github.com/disintegration/imaging v1.6.2

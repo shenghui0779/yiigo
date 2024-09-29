@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"io"
+	"regexp"
 	"strings"
 	"time"
 
@@ -61,37 +62,6 @@ func VersionCompare(rangeVer, curVer string) (bool, error) {
 	return false, nil
 }
 
-// DetachContext returns a copy of parent that is not canceled when parent is canceled.
-// The returned context returns no Deadline or Err, and its Done channel is nil.
-// Calling [Cause] on the returned context returns nil.
-// Use `context.WithoutCancel` if go version >= 1.21.0
-func DetachContext(ctx context.Context) context.Context {
-	if ctx == nil {
-		panic("cannot create context from nil parent")
-	}
-	return detachedContext{ctx}
-}
-
-type detachedContext struct {
-	ctx context.Context
-}
-
-func (detachedContext) Deadline() (deadline time.Time, ok bool) {
-	return
-}
-
-func (detachedContext) Done() <-chan struct{} {
-	return nil
-}
-
-func (detachedContext) Err() error {
-	return nil
-}
-
-func (c detachedContext) Value(key any) any {
-	return c.ctx.Value(key)
-}
-
 // Retry 重试
 func Retry(ctx context.Context, fn func(ctx context.Context) error, attempts int, sleep time.Duration) (err error) {
 	for i := 0; i < attempts; i++ {
@@ -119,4 +89,29 @@ func IsUniqueDuplicateError(err error) bool {
 		}
 	}
 	return false
+}
+
+// ExcelColumnIndex 返回Excel列名对应的序号，如：A=0，B=1，AA=26，AB=27
+func ExcelColumnIndex(name string) int {
+	name = strings.ToUpper(name)
+	if ok, err := regexp.MatchString(`^[A-Z]{1,2}$`, name); err != nil || !ok {
+		return -1
+	}
+
+	index := 0
+	for i, v := range name {
+		if i != 0 {
+			index = (index + 1) * 26
+		}
+		index += int(v - 'A')
+	}
+	return index
+}
+
+// CmdExamples formats the given examples to the cli.
+func CmdExamples(ex ...string) string {
+	for i := range ex {
+		ex[i] = "  " + ex[i] // indent each row with 2 spaces.
+	}
+	return strings.Join(ex, "\n")
 }

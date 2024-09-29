@@ -72,7 +72,7 @@ else
 	return 0
 end
 `
-	return d.cli.Eval(DetachContext(ctx), script, []string{d.key}, d.token).Err()
+	return d.cli.Eval(context.WithoutCancel(ctx), script, []string{d.key}, d.token).Err()
 }
 
 func (d *distributed) lock(ctx context.Context) error {

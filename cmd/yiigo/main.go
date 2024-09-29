@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"strings"
 
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 	"golang.org/x/mod/modfile"
 
+	"github.com/shenghui0779/yiigo"
 	"github.com/shenghui0779/yiigo/cmd/internal"
 )
 
@@ -45,7 +45,7 @@ func project() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "new",
 		Short: "创建项目",
-		Example: examples(
+		Example: yiigo.CmdExamples(
 			"yiigo new demo",
 			"yiigo new demo --mod=xxx.yyy.com",
 			"yiigo new demo --apps=foo,bar",
@@ -82,7 +82,7 @@ func app() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "app",
 		Short: "新增应用",
-		Example: examples(
+		Example: yiigo.CmdExamples(
 			"yiigo app foo",
 		),
 		Args: func(cmd *cobra.Command, args []string) error {
@@ -113,12 +113,4 @@ func app() *cobra.Command {
 	// 注册参数
 	cmd.Flags().BoolVar(&grpc, "grpc", false, "新增gRPC应用（暂不支持）")
 	return cmd
-}
-
-// examples formats the given examples to the cli.
-func examples(ex ...string) string {
-	for i := range ex {
-		ex[i] = "  " + ex[i] // indent each row with 2 spaces.
-	}
-	return strings.Join(ex, "\n")
 }
