@@ -1,0 +1,15 @@
+# {{.AppName}}
+
+### 前提条件
+
+```sh
+go install entgo.io/ent/cmd/ent@latest
+```
+
+### 配置运行
+
+1. 配置文件： `config.toml`
+2. 表 `t_demo` 对应 `ent/schema/demo.go`
+3. 执行 `ent/generate.go` 生成ORM代码 (只要 `ent/schema` 目录下有变动都需要执行)
+4. 执行 `go run main.go` 运行
+5. 执行 `go run main.go -h` 查看命令

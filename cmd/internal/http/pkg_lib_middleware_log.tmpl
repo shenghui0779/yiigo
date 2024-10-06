@@ -56,16 +56,16 @@ func Log(next http.Handler) http.Handler {
 				r.Body = io.NopCloser(bytes.NewReader(b)) // 重新赋值Body
 			}
 		}
-
+		defer func() {
+			log.Info(r.Context(), "Request info",
+				zap.String("method", r.Method),
+				zap.String("url", r.URL.String()),
+				zap.String("ip", r.RemoteAddr),
+				zap.String("body", body),
+				zap.String("identity", identity.FromContext(r.Context()).String()),
+				zap.String("duration", time.Since(now).String()),
+			)
+		}()
 		next.ServeHTTP(w, r)
-
-		log.Info(r.Context(), "request info",
-			zap.String("method", r.Method),
-			zap.String("uri", r.URL.String()),
-			zap.String("ip", r.RemoteAddr),
-			zap.String("body", body),
-			zap.String("identity", identity.FromContext(r.Context()).String()),
-			zap.String("duration", time.Since(now).String()),
-		)
 	})
 }

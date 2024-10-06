@@ -1,0 +1,58 @@
+package cmd
+
+import (
+	"context"
+	"os"
+
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+	"go.uber.org/zap"
+
+	"{{.Module}}/pkg/{{.AppPkg}}/ent"
+	"{{.Module}}/pkg/{{.AppPkg}}/server"
+	"{{.Module}}/pkg/lib/log"
+	"{{.Module}}/pkg/lib/util"
+)
+
+var cfgFile string
+
+var cmd = &cobra.Command{
+	Use:         "{{.AppName}}",
+	Short:       "Go App",
+	Long:        "Go App (build with cobra | viper | zap | ent | grpc)",
+	Annotations: map[string]string{},
+	Version:     "v1.0.0",
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		viper.SetConfigFile(cfgFile)
+		if err := viper.ReadInConfig(); err != nil {
+			log.Panic(context.Background(), "配置读取失败", zap.Error(err))
+		}
+		viper.WatchConfig()
+		// 初始化
+		preInit(context.Background())
+	},
+	Run: func(cmd *cobra.Command, args []string) {
+		// make sure we have a working tempdir in minimal containers, because:
+		// os.TempDir(): The directory is neither guaranteed to exist nor have accessible permissions.
+		if err := os.MkdirAll(os.TempDir(), 0o775); err != nil {
+			log.Error(context.Background(), "Error create temp dir", zap.Error(err))
+		}
+		serving(context.Background())
+	},
+}
+
+func preInit(ctx context.Context) {
+	// 初始化日志
+	log.Init()
+	// 初始化Util
+	util.Init(ctx)
+	// 初始化数据库
+	ent.Init(ctx)
+}
+
+func serving(ctx context.Context) {
+	// serve grpc
+	go server.ServeGrpc(ctx)
+	// serve http
+	server.ServeHttp(ctx)
+}

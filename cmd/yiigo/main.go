@@ -46,11 +46,18 @@ func project() *cobra.Command {
 		Use:   "new",
 		Short: "创建项目",
 		Example: yiigo.CmdExamples(
+			"-- HTTP项目",
 			"yiigo new demo",
 			"yiigo new demo --mod=xxx.yyy.com",
 			"yiigo new demo --apps=foo,bar",
 			"yiigo new demo --apps=foo --apps=bar",
 			"yiigo new demo --mod=xxx.yyy.com --apps=foo --apps=bar",
+			"-- gRPC项目",
+			"yiigo new demo --grpc",
+			"yiigo new demo --mod=xxx.yyy.com --grpc",
+			"yiigo new demo --apps=foo,bar --grpc",
+			"yiigo new demo --apps=foo --apps=bar --grpc",
+			"yiigo new demo --mod=xxx.yyy.com --apps=foo --apps=bar --grpc",
 		),
 		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args) == 0 {
@@ -63,15 +70,15 @@ func project() *cobra.Command {
 				mod = args[0]
 			}
 			if grpc {
-				fmt.Println("暂不支持gRPC项目")
-				return
+				internal.InitGrpcProject(args[0], mod, apps...)
+			} else {
+				internal.InitHttpProject(args[0], mod, apps...)
 			}
-			internal.InitHttpProject(args[0], mod, apps...)
-			fmt.Println("项目创建完成！不要忘记执行<ent/generate.go>")
+			fmt.Println("项目创建完成！请阅读README")
 		},
 	}
 	// 注册参数
-	cmd.Flags().BoolVar(&grpc, "grpc", false, "创建gRPC项目（暂不支持）")
+	cmd.Flags().BoolVar(&grpc, "grpc", false, "创建gRPC项目")
 	cmd.Flags().StringVar(&mod, "mod", "", "设置Module名称（默认为项目名称）")
 	cmd.Flags().StringSliceVar(&apps, "apps", []string{}, "创建多应用项目")
 	return cmd
@@ -83,7 +90,8 @@ func app() *cobra.Command {
 		Use:   "app",
 		Short: "新增应用",
 		Example: yiigo.CmdExamples(
-			"yiigo app foo",
+			"yiigo app hello",
+			"yiigo app hello --grpc",
 		),
 		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args) == 0 {
@@ -103,14 +111,14 @@ func app() *cobra.Command {
 				log.Fatalln("解析go.mod文件失败:", err)
 			}
 			if grpc {
-				fmt.Println("暂不支持gRPC应用")
-				return
+				internal.InitGrpcApp(".", f.Module.Mod.Path, args[0])
+			} else {
+				internal.InitHttpApp(".", f.Module.Mod.Path, args[0])
 			}
-			internal.InitHttpApp(".", f.Module.Mod.Path, args[0])
-			fmt.Println("应用创建完成！不要忘记执行<ent/generate.go>")
+			fmt.Println("应用创建完成！请阅读README")
 		},
 	}
 	// 注册参数
-	cmd.Flags().BoolVar(&grpc, "grpc", false, "新增gRPC应用（暂不支持）")
+	cmd.Flags().BoolVar(&grpc, "grpc", false, "新增gRPC应用")
 	return cmd
 }

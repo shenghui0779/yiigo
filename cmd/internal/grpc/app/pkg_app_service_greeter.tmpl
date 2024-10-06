@@ -1,0 +1,15 @@
+package service
+
+import (
+	"context"
+
+	"{{.Module}}/pkg/{{.AppPkg}}/api"
+)
+
+type GreeterService struct {
+	api.UnimplementedGreeterServer
+}
+
+func (s *GreeterService) SayHello(ctx context.Context, in *api.HelloRequest) (*api.HelloReply, error) {
+	return &api.HelloReply{Message: "Hello " + in.Name}, nil
+}

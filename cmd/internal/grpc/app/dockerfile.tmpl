@@ -18,6 +18,7 @@ WORKDIR /bin
 COPY --from=builder /project/bin/main .
 
 EXPOSE 8000
+EXPOSE 50051
 
 ENTRYPOINT ["./main"]
 

@@ -9,6 +9,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	chi_middleware "github.com/go-chi/chi/v5/middleware"
+	"github.com/rs/cors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
@@ -50,15 +51,24 @@ func preInit(ctx context.Context) {
 	// 初始化日志
 	log.Init()
 	// 初始化数据库
-	if err := ent.Init(); err != nil {
-		log.Panic(ctx, "数据库初始化失败", zap.Error(err))
-	}
+	ent.Init(ctx)
 }
 
 func serving() {
 	r := chi.NewRouter()
 
-	r.Use(chi_middleware.RequestID, middleware.Cors, middleware.Recovery)
+	withCors := cors.New(cors.Options{
+		// AllowedOrigins:   []string{"*"},
+		AllowOriginFunc: func(origin string) bool {
+			return true
+		},
+		AllowedMethods:   []string{http.MethodGet, http.MethodPost, http.MethodPatch, http.MethodPut, http.MethodDelete, http.MethodOptions},
+		AllowedHeaders:   []string{"Authorization", "Content-Type", "withCredentials"},
+		ExposedHeaders:   []string{}, // 服务器暴露一些自定义的头信息，允许客户端访问
+		AllowCredentials: true,
+	})
+
+	r.Use(withCors.Handler, chi_middleware.RequestID, middleware.Recovery)
 	r.Mount("/debug", chi_middleware.Profiler())
 
 	router.App(r)

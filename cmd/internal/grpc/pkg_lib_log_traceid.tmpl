@@ -1,0 +1,88 @@
+package log
+
+import (
+	"context"
+	"crypto/rand"
+	"encoding/base64"
+	"fmt"
+	"os"
+	"strings"
+	"sync/atomic"
+)
+
+// Key to use when setting the trace ID.
+type CtxKeyTraceId int
+
+// TraceIdKey is the key that holds the unique trace ID in a trace context.
+const (
+	TraceIdKey  CtxKeyTraceId = 0
+	FullMethodKey CtxKeyTraceId = 1
+)
+
+var (
+	traceId     uint64
+	TracePrefix string
+)
+
+// A quick note on the statistics here: we're trying to calculate the chance that
+// two randomly generated base62 prefixes will collide. We use the formula from
+// http://en.wikipedia.org/wiki/Birthday_problem
+//
+// P[m, n] \approx 1 - e^{-m^2/2n}
+//
+// We ballpark an upper bound for $m$ by imagining (for whatever reason) a server
+// that restarts every second over 10 years, for $m = 86400 * 365 * 10 = 315360000$
+//
+// For a $k$ character base-62 identifier, we have $n(k) = 62^k$
+//
+// Plugging this in, we find $P[m, n(10)] \approx 5.75%$, which is good enough for
+// our purposes, and is surely more than anyone would ever need in practice -- a
+// process that is rebooted a handful of times a day for a hundred years has less
+// than a millionth of a percent chance of generating two colliding IDs.
+
+func init() {
+	hostname, err := os.Hostname()
+	if hostname == "" || err != nil {
+		hostname = "localhost"
+	}
+
+	var (
+		buf [12]byte
+		b64 string
+	)
+	for len(b64) < 10 {
+		rand.Read(buf[:])
+		b64 = base64.StdEncoding.EncodeToString(buf[:])
+		b64 = strings.NewReplacer("+", "", "/", "").Replace(b64)
+	}
+	TracePrefix = fmt.Sprintf("%s/%s", hostname, b64[0:10])
+}
+
+// GetTraceId returns a trace ID from the given context if one is present.
+// Returns the empty string if a trace ID cannot be found.
+func GetTraceId(ctx context.Context) string {
+	if ctx == nil {
+		return "-"
+	}
+	if v, ok := ctx.Value(TraceIdKey).(string); ok {
+		return v
+	}
+	return "-"
+}
+
+// GetFullMethod returns a full method from the given context if one is present.
+// Returns the empty string if a full method cannot be found.
+func GetFullMethod(ctx context.Context) string {
+	if ctx == nil {
+		return "-"
+	}
+	if method, ok := ctx.Value(FullMethodKey).(string); ok {
+		return method
+	}
+	return "-"
+}
+
+// NextTraceId generates the next trace ID in the sequence.
+func NextTraceId() uint64 {
+	return atomic.AddUint64(&traceId, 1)
+}

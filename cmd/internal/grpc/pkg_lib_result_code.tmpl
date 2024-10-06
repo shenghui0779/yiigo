@@ -1,0 +1,49 @@
+package result
+
+import (
+	"errors"
+
+	"google.golang.org/grpc/codes"
+)
+
+func ErrParams(err ...error) Status {
+	if len(err) != 0 {
+		return New(codes.InvalidArgument, err[0])
+	}
+	return New(codes.InvalidArgument, errors.New("params error"))
+}
+
+func ErrAuth(err ...error) Status {
+	if len(err) != 0 {
+		return New(codes.Unauthenticated, err[0])
+	}
+	return New(codes.Unauthenticated, errors.New("unauthenticated"))
+}
+
+func ErrPerm(err ...error) Status {
+	if len(err) != 0 {
+		return New(codes.PermissionDenied, err[0])
+	}
+	return New(codes.PermissionDenied, errors.New("permission denied"))
+}
+
+func ErrNotFound(err ...error) Status {
+	if len(err) != 0 {
+		return New(codes.NotFound, err[0])
+	}
+	return New(codes.NotFound, errors.New("entity not found"))
+}
+
+func ErrPrecondition(err ...error) Status {
+	if len(err) != 0 {
+		return New(codes.FailedPrecondition, err[0])
+	}
+	return New(codes.FailedPrecondition, errors.New("failed precondition"))
+}
+
+func ErrSystem(err ...error) Status {
+	if len(err) != 0 {
+		return New(codes.Internal, err[0])
+	}
+	return New(codes.Internal, errors.New("internal server error"))
+}

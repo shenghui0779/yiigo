@@ -1,0 +1,19 @@
+package middleware
+
+import (
+	"context"
+	"fmt"
+
+	"google.golang.org/grpc"
+
+	"{{.Module}}/pkg/lib/log"
+)
+
+// TraceId is a middleware that injects a trace ID into the context of each request.
+func TraceId(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+	if v, ok := ctx.Value(log.TraceIdKey).(string); !ok || len(v) == 0 {
+		ctx = context.WithValue(ctx, log.TraceIdKey, fmt.Sprintf("%s-%06d", log.TracePrefix, log.NextTraceId()))
+	}
+	ctx = context.WithValue(ctx, log.FullMethodKey, info.FullMethod)
+	return handler(ctx, req)
+}

@@ -7,6 +7,7 @@ import (
 	"text/template"
 
 	"github.com/shenghui0779/yiigo"
+	"github.com/shenghui0779/yiigo/cmd/internal/grpc"
 	"github.com/shenghui0779/yiigo/cmd/internal/http"
 )
 
@@ -34,6 +35,24 @@ func InitHttpApp(root, mod, name string) {
 	initApp(root, mod, name, http.App, http.FS)
 }
 
+func InitGrpcProject(root, mod string, apps ...string) {
+	// 创建项目
+	initProject(root, mod, apps, grpc.Project, grpc.FS)
+	// 创建App(单应用)
+	if len(apps) == 0 {
+		initApp(root, mod, "", grpc.App, grpc.FS)
+		return
+	}
+	// 创建App(多应用)
+	for _, name := range apps {
+		initApp(root, mod, name, grpc.App, grpc.FS)
+	}
+}
+
+func InitGrpcApp(root, mod, name string) {
+	initApp(root, mod, name, grpc.App, grpc.FS)
+}
+
 func initProject(root, mod string, apps []string, tmpls []map[string]string, fs embed.FS) {
 	params := &Params{Module: mod}
 	// 创建项目
@@ -48,7 +67,7 @@ func initApp(root, mod, name string, tmpls []map[string]string, fs embed.FS) {
 	params := &Params{
 		Module:  mod,
 		AppPkg:  "app",
-		AppName: "root",
+		AppName: root,
 	}
 	if len(name) != 0 {
 		prefix += "/" + name

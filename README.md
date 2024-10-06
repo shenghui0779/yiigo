@@ -2,13 +2,140 @@
 
 [![golang](https://img.shields.io/badge/Language-Go-green.svg?style=flat)](https://golang.org) [![GitHub release](https://img.shields.io/github/release/shenghui0779/yiigo.svg)](https://github.com/shenghui0779/yiigo/releases/latest) [![pkg.go.dev](https://img.shields.io/badge/dev-reference-007d9c?logo=go&logoColor=white&style=flat)](https://pkg.go.dev/github.com/shenghui0779/yiigo) [![Apache 2.0 license](http://img.shields.io/badge/license-Apache%202.0-brightgreen.svg)](http://opensource.org/licenses/apache2.0)
 
-Go 开发工具包 (**go1.20+**)
+一个好用的Go项目脚手架和工具包
 
-```sh
+## 脚手架
+
+```shell
+# go1.30+
+go install github.com/shenghui0779/yiigo/cmd/yiigo@latest
+```
+
+#### 创建项目
+
+分HTTP和gRPC两种，分别可创建单应用和多应用项目
+
+##### 👉 HTTP
+
+```shell
+# 单应用
+yiigo new demo
+yiigo new demo --mod=xxx.yyy.com # 指定module名称
+.
+├── go.mod
+├── go.sum
+└── pkg
+    ├── app
+    │   ├── Dockerfile
+    │   ├── api
+    │   │   ├── controller
+    │   │   ├── middleware
+    │   │   ├── router
+    │   │   └── service
+    │   ├── cmd
+    │   ├── config.toml
+    │   ├── ent
+    │   ├── main.go
+    │   └── web
+    └── lib
+
+# 多应用
+yiigo new demo --apps=foo,bar
+yiigo new demo --apps=foo --apps=bar
+yiigo new demo --mod=xxx.yyy.com --apps=foo --apps=bar
+yiigo app hello # 新增应用
+.
+├── go.mod
+├── go.sum
+└── pkg
+    ├── app
+    │   ├── foo
+    │   │   ├── api
+    │   │   │   ├── controller
+    │   │   │   ├── middleware
+    │   │   │   ├── router
+    │   │   │   └── service
+    │   │   ├── cmd
+    │   │   ├── config.toml
+    │   │   ├── ent
+    │   │   ├── main.go
+    │   │   └── web
+    │   ├── bar
+    │   └── hello
+    └── lib
+```
+
+##### 👉 gRPC
+
+```shell
+# 单应用
+yiigo new demo --grpc
+yiigo new demo --mod=xxx.yyy.com --grpc # 指定module名称
+.
+├── go.mod
+├── go.sum
+└── pkg
+    ├── app
+    │   ├── api
+    │   │   ├── buf
+    │   │   │   └── validate
+    │   │   │       └── validate.proto
+    │   │   ├── google
+    │   │   │   └── api
+    │   │   │       ├── annotations.proto
+    │   │   │       └── http.proto
+    │   │   └── greeter.proto
+    │   ├── buf.gen.yaml
+    │   ├── buf.yaml
+    │   ├── cmd
+    │   ├── config.toml
+    │   ├── ent
+    │   ├── main.go
+    │   ├── server
+    │   └── service
+    └── lib
+
+# 多应用
+yiigo new demo --apps=foo,bar --grpc
+yiigo new demo --apps=foo --apps=bar --grpc
+yiigo new demo --mod=xxx.yyy.com --apps=foo --apps=bar --grpc
+yiigo app hello --grpc # 新增应用
+.
+├── go.mod
+├── go.sum
+└── pkg
+    ├── app
+    │   ├── foo
+    │   │   ├── api
+    │   │   │   ├── buf
+    │   │   │   │   └── validate
+    │   │   │   │       └── validate.proto
+    │   │   │   ├── google
+    │   │   │   │   └── api
+    │   │   │   │       ├── annotations.proto
+    │   │   │   │       └── http.proto
+    │   │   │   └── greeter.proto
+    │   │   ├── buf.gen.yaml
+    │   │   ├── buf.yaml
+    │   │   ├── cmd
+    │   │   ├── config.toml
+    │   │   ├── ent
+    │   │   ├── main.go
+    │   │   ├── server
+    │   │   └── service
+    │   ├── bar
+    │   └── hello
+    └── lib
+```
+
+## 工具包
+
+```shell
+# go1.20+
 go get -u github.com/shenghui0779/yiigo
 ```
 
-## Features
+### Features
 
 - Hash - 封装便于使用
 - Http - 封装便于使用(支持文件上传)

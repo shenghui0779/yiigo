@@ -1,0 +1,25 @@
+package middleware
+
+import (
+	"context"
+	"time"
+
+	"go.uber.org/zap"
+	"google.golang.org/grpc"
+
+	"{{.Module}}/pkg/lib/log"
+)
+
+func Log(ctx context.Context, req interface{}, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
+	now := time.Now().Local()
+	defer func() {
+		log.Info(ctx, "Request info",
+			zap.Any("request", req),
+			zap.Any("response", resp),
+			zap.Error(err),
+			zap.String("duration", time.Since(now).String()),
+		)
+	}()
+	resp, err = handler(ctx, req)
+	return
+}

@@ -1,0 +1,21 @@
+package middleware
+
+import (
+	"context"
+	"runtime/debug"
+
+	"go.uber.org/zap"
+	"google.golang.org/grpc"
+
+	"{{.Module}}/pkg/lib/log"
+)
+
+func Recovery(ctx context.Context, req interface{}, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+	defer func() {
+		if err := recover(); err != nil {
+			log.Error(ctx, "Server panic recovered", zap.Any("request", req), zap.Any("err", err), zap.String("stack", string(debug.Stack())))
+			return
+		}
+	}()
+	return handler(ctx, req)
+}

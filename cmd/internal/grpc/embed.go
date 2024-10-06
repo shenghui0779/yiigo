@@ -1,4 +1,4 @@
-package http
+package grpc
 
 import "embed"
 
@@ -32,21 +32,6 @@ var Project = []map[string]string{
 		"output": "go.sum",
 	},
 	{
-		"name":   "pkg_lib_binding.tmpl",
-		"path":   "pkg_lib_binding.tmpl",
-		"output": "pkg/lib/binding.go",
-	},
-	{
-		"name":   "pkg_lib_embed.tmpl",
-		"path":   "pkg_lib_embed.tmpl",
-		"output": "pkg/lib/embed.go",
-	},
-	{
-		"name":   "pkg_lib_util.tmpl",
-		"path":   "pkg_lib_util.tmpl",
-		"output": "pkg/lib/util.go",
-	},
-	{
 		"name":   "pkg_lib_db_db.tmpl",
 		"path":   "pkg_lib_db_db.tmpl",
 		"output": "pkg/lib/db/db.go",
@@ -77,6 +62,11 @@ var Project = []map[string]string{
 		"output": "pkg/lib/log/log.go",
 	},
 	{
+		"name":   "pkg_lib_log_traceid.tmpl",
+		"path":   "pkg_lib_log_traceid.tmpl",
+		"output": "pkg/lib/log/trace_id.go",
+	},
+	{
 		"name":   "pkg_lib_middleware_log.tmpl",
 		"path":   "pkg_lib_middleware_log.tmpl",
 		"output": "pkg/lib/middleware/log.go",
@@ -92,14 +82,29 @@ var Project = []map[string]string{
 		"output": "pkg/lib/middleware/recovery.go",
 	},
 	{
+		"name":   "pkg_lib_middleware_traceid.tmpl",
+		"path":   "pkg_lib_middleware_traceid.tmpl",
+		"output": "pkg/lib/middleware/trace_id.go",
+	},
+	{
+		"name":   "pkg_lib_middleware_validator.tmpl",
+		"path":   "pkg_lib_middleware_validator.tmpl",
+		"output": "pkg/lib/middleware/validator.go",
+	},
+	{
 		"name":   "pkg_lib_result_code.tmpl",
 		"path":   "pkg_lib_result_code.tmpl",
 		"output": "pkg/lib/result/code.go",
 	},
 	{
-		"name":   "pkg_lib_result_result.tmpl",
-		"path":   "pkg_lib_result_result.tmpl",
-		"output": "pkg/lib/result/result.go",
+		"name":   "pkg_lib_result_status.tmpl",
+		"path":   "pkg_lib_result_status.tmpl",
+		"output": "pkg/lib/result/status.go",
+	},
+	{
+		"name":   "pkg_lib_util_validator.tmpl",
+		"path":   "pkg_lib_util_validator.tmpl",
+		"output": "pkg/lib/util/validator.go",
 	},
 	{
 		"name":   "README.tmpl",
@@ -110,29 +115,34 @@ var Project = []map[string]string{
 
 var App = []map[string]string{
 	{
-		"name":   "pkg_app_api_controller_demo.tmpl",
-		"path":   "app/pkg_app_api_controller_demo.tmpl",
-		"output": "api/controller/demo.go",
+		"name":   "buf.tmpl",
+		"path":   "app/buf.tmpl",
+		"output": "buf.yaml",
 	},
 	{
-		"name":   "pkg_app_api_middleware_auth.tmpl",
-		"path":   "app/pkg_app_api_middleware_auth.tmpl",
-		"output": "api/middleware/auth.go",
+		"name":   "buf_gen.tmpl",
+		"path":   "app/buf_gen.tmpl",
+		"output": "buf.gen.yaml",
 	},
 	{
-		"name":   "pkg_app_api_router_app.tmpl",
-		"path":   "app/pkg_app_api_router_app.tmpl",
-		"output": "api/router/app.go",
+		"name":   "proto_buf_validate.tmpl",
+		"path":   "app/proto_buf_validate.tmpl",
+		"output": "api/buf/validate/validate.proto",
 	},
 	{
-		"name":   "pkg_app_api_service_demo_create.tmpl",
-		"path":   "app/pkg_app_api_service_demo_create.tmpl",
-		"output": "api/service/demo/create.go",
+		"name":   "proto_google_annotations.tmpl",
+		"path":   "app/proto_google_annotations.tmpl",
+		"output": "api/google/api/annotations.proto",
 	},
 	{
-		"name":   "pkg_app_api_service_demo_test.tmpl",
-		"path":   "app/pkg_app_api_service_demo_test.tmpl",
-		"output": "api/service/demo/demo_test.go",
+		"name":   "proto_google_http.tmpl",
+		"path":   "app/proto_google_http.tmpl",
+		"output": "api/google/api/http.proto",
+	},
+	{
+		"name":   "proto_greeter.tmpl",
+		"path":   "app/proto_greeter.tmpl",
+		"output": "api/greeter.proto",
 	},
 	{
 		"name":   "pkg_app_cmd_hello.tmpl",
@@ -175,6 +185,21 @@ var App = []map[string]string{
 		"output": "ent/schema/demo.go",
 	},
 	{
+		"name":   "pkg_app_server_grpc.tmpl",
+		"path":   "app/pkg_app_server_grpc.tmpl",
+		"output": "server/grpc.go",
+	},
+	{
+		"name":   "pkg_app_server_http.tmpl",
+		"path":   "app/pkg_app_server_http.tmpl",
+		"output": "server/http.go",
+	},
+	{
+		"name":   "pkg_app_service_greeter.tmpl",
+		"path":   "app/pkg_app_service_greeter.tmpl",
+		"output": "service/greeter.go",
+	},
+	{
 		"name":   "pkg_app_main.tmpl",
 		"path":   "app/pkg_app_main.tmpl",
 		"output": "main.go",
@@ -188,21 +213,6 @@ var App = []map[string]string{
 		"name":   "config_toml.tmpl",
 		"path":   "config_toml.tmpl",
 		"output": "config.toml",
-	},
-	{
-		"name":   "pkg_app_web_dist_index.tmpl",
-		"path":   "app/pkg_app_web_dist_index.tmpl",
-		"output": "web/dist/index.html",
-	},
-	{
-		"name":   "pkg_app_web_dist_style.tmpl",
-		"path":   "app/pkg_app_web_dist_style.tmpl",
-		"output": "web/dist/style.css",
-	},
-	{
-		"name":   "pkg_app_web_embed.tmpl",
-		"path":   "app/pkg_app_web_embed.tmpl",
-		"output": "web/embed.go",
 	},
 	{
 		"name":   "README.tmpl",

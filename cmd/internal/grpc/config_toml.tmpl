@@ -1,8 +1,11 @@
 [app]
 env = "dev"
-port = 8000
 debug = true
 secret = "9c7695a0635e89a9ed1e8c13428fffd7"
+
+[port]
+grpc = 50051
+http = 8000
 
 [db]
 dsn = "username:password@tcp(localhost:3306)/dbname?timeout=10s&charset=utf8mb4&collation=utf8mb4_general_ci&parseTime=True&loc=Local"

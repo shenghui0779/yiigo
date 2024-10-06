@@ -1,0 +1,27 @@
+package log
+
+import (
+	"context"
+
+	"go.uber.org/zap"
+)
+
+func Info(ctx context.Context, msg string, fields ...zap.Field) {
+	logger.Info(msg, append(fields, zap.String("trace_id", GetTraceId(ctx)), zap.String("method", GetFullMethod(ctx)))...)
+}
+
+func Warn(ctx context.Context, msg string, fields ...zap.Field) {
+	logger.Warn(msg, append(fields, zap.String("trace_id", GetTraceId(ctx)), zap.String("method", GetFullMethod(ctx)))...)
+}
+
+func Error(ctx context.Context, msg string, fields ...zap.Field) {
+	logger.Error(msg, append(fields, zap.String("trace_id", GetTraceId(ctx)), zap.String("method", GetFullMethod(ctx)))...)
+}
+
+func Panic(ctx context.Context, msg string, fields ...zap.Field) {
+	logger.Panic(msg, append(fields, zap.String("trace_id", GetTraceId(ctx)), zap.String("method", GetFullMethod(ctx)))...)
+}
+
+func Fatal(ctx context.Context, msg string, fields ...zap.Field) {
+	logger.Fatal(msg, append(fields, zap.String("trace_id", GetTraceId(ctx)), zap.String("method", GetFullMethod(ctx)))...)
+}
