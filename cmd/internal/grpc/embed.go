@@ -200,6 +200,11 @@ var App = []map[string]string{
 		"output": "service/greeter.go",
 	},
 	{
+		"name":   "pkg_app_service_test.tmpl",
+		"path":   "app/pkg_app_service_test.tmpl",
+		"output": "service/service_test.go",
+	},
+	{
 		"name":   "pkg_app_main.tmpl",
 		"path":   "app/pkg_app_main.tmpl",
 		"output": "main.go",
