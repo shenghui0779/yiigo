@@ -7,7 +7,7 @@
 ## 脚手架
 
 ```shell
-# go1.30+
+# go1.23+
 go install github.com/shenghui0779/yiigo/cmd/yiigo@latest
 ```
 
