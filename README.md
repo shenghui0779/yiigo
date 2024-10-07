@@ -131,7 +131,7 @@ yiigo app hello --grpc # 新增应用
 ## 工具包
 
 ```shell
-# go1.20+
+# go1.22+
 go get -u github.com/shenghui0779/yiigo
 ```
 
