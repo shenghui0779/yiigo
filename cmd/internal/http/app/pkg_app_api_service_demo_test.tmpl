@@ -20,7 +20,7 @@ func TestMain(m *testing.M) {
 	// 初始化日志
 	log.Init()
 	// 初始化数据库
-	ent.Init()
+	ent.Init(context.Background())
 	// 执行测试
 	m.Run()
 	// 关闭资源
