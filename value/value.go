@@ -6,10 +6,10 @@ import (
 	"strings"
 )
 
-// V 用于处理 k-v 需要格式化的场景，如：签名
+// V 用于处理 k/v 需要格式化的场景，如：签名
 type V map[string]string
 
-// Set 设置 k-v
+// Set 设置 k/v
 func (v V) Set(key, value string) {
 	v[key] = value
 }
@@ -54,7 +54,6 @@ func (v V) Encode(sym, sep string, opts ...Option) string {
 	sort.Strings(keys)
 
 	var buf strings.Builder
-
 	for _, k := range keys {
 		val := v[k]
 		if len(val) == 0 && o.emptyMode == EmptyIgnore {
@@ -83,6 +82,5 @@ func (v V) Encode(sym, sep string, opts ...Option) string {
 			buf.WriteString(sym)
 		}
 	}
-
 	return buf.String()
 }

@@ -8,6 +8,8 @@ import (
 	"net"
 	"net/http"
 	"time"
+
+	"github.com/shenghui0779/yiigo/metadata"
 )
 
 // Client HTTP客户端
@@ -30,6 +32,14 @@ func (c *client) Do(ctx context.Context, method, reqURL string, body []byte, opt
 		return nil, err
 	}
 
+	// context元数据注入header
+	md, ok := metadata.FromIncomingContext(ctx)
+	if ok && len(md) != 0 {
+		for k, v := range md {
+			opts = append(opts, WithHeader(k, v...))
+		}
+	}
+	// 处理options
 	o := new(options)
 	if len(opts) != 0 {
 		o.header = http.Header{}
@@ -37,7 +47,6 @@ func (c *client) Do(ctx context.Context, method, reqURL string, body []byte, opt
 			f(o)
 		}
 	}
-
 	// header
 	if len(o.header) != 0 {
 		req.Header = o.header
@@ -63,24 +72,29 @@ func (c *client) Do(ctx context.Context, method, reqURL string, body []byte, opt
 		}
 		return nil, err
 	}
-
 	return resp, nil
 }
 
-func (c *client) Upload(ctx context.Context, reqURL string, form UploadForm, options ...Option) (*http.Response, error) {
+func (c *client) Upload(ctx context.Context, reqURL string, form UploadForm, opts ...Option) (*http.Response, error) {
 	buf := bytes.NewBuffer(make([]byte, 0, 20<<10)) // 20kb
 	w := multipart.NewWriter(buf)
 	if err := form.Write(w); err != nil {
 		return nil, err
 	}
-
-	options = append(options, WithHeader("Content-Type", w.FormDataContentType()))
+	// context元数据注入header
+	md, ok := metadata.FromIncomingContext(ctx)
+	if ok && len(md) != 0 {
+		for k, v := range md {
+			opts = append(opts, WithHeader(k, v...))
+		}
+	}
+	opts = append(opts, WithHeader("Content-Type", w.FormDataContentType()))
 	// Don't forget to close the multipart writer.
 	// If you don't close it, your request will be missing the terminating boundary.
 	if err := w.Close(); err != nil {
 		return nil, err
 	}
-	return c.Do(ctx, http.MethodPost, reqURL, buf.Bytes(), options...)
+	return c.Do(ctx, http.MethodPost, reqURL, buf.Bytes(), opts...)
 }
 
 // NewDefaultClient 生成一个默认的HTTP客户端

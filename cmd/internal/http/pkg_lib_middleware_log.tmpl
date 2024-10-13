@@ -33,7 +33,6 @@ func Log(next http.Handler) http.Handler {
 					result.ErrSystem(result.E(errors.WithMessage(err, "表单解析失败"))).JSON(w, r)
 					return
 				}
-
 				body = r.Form.Encode()
 			case xhttp.ContentFormMultipart:
 				if err := r.ParseMultipartForm(xhttp.MaxFormMemory); err != nil {
@@ -42,7 +41,6 @@ func Log(next http.Handler) http.Handler {
 						return
 					}
 				}
-
 				body = r.Form.Encode()
 			case ContentJSON:
 				b, err := io.ReadAll(r.Body) // 取出Body
@@ -50,16 +48,15 @@ func Log(next http.Handler) http.Handler {
 					result.ErrSystem(result.E(errors.WithMessage(err, "请求Body读取失败"))).JSON(w, r)
 					return
 				}
-				r.Body.Close() // 关闭原Body
-
+				_ = r.Body.Close() // 关闭原Body
 				body = string(pretty.Ugly(b))
-				r.Body = io.NopCloser(bytes.NewReader(b)) // 重新赋值Body
+				// 重新赋值Body
+				r.Body = io.NopCloser(bytes.NewReader(b))
 			}
 		}
 		defer func() {
 			log.Info(r.Context(), "Request info",
 				zap.String("method", r.Method),
-				zap.String("url", r.URL.String()),
 				zap.String("ip", r.RemoteAddr),
 				zap.String("body", body),
 				zap.String("identity", identity.FromContext(r.Context()).String()),

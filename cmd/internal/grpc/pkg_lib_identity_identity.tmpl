@@ -14,10 +14,6 @@ import (
 	"{{.Module}}/pkg/lib/log"
 )
 
-type CtxKeyAuth int
-
-const IdentityKey CtxKeyAuth = 0
-
 // Identity 授权身份
 type Identity interface {
 	// ID 授权ID
@@ -77,17 +73,24 @@ func New(id int64, token string) Identity {
 	}
 }
 
+type identityKey struct{}
+
+// NewContext 将Identity注入context
+func NewContext(ctx context.Context, token string) context.Context {
+	return context.WithValue(ctx, identityKey{}, FromAuthToken(ctx, token))
+}
+
 // FromContext 获取授权信息
 func FromContext(ctx context.Context) Identity {
 	if ctx == nil {
 		return NewEmpty()
 	}
 
-	_identity, ok := ctx.Value(IdentityKey).(Identity)
+	id, ok := ctx.Value(identityKey{}).(Identity)
 	if !ok {
 		return NewEmpty()
 	}
-	return _identity
+	return id
 }
 
 // FromAuthToken 解析授权Token
@@ -105,10 +108,10 @@ func FromAuthToken(ctx context.Context, token string) Identity {
 		return NewEmpty()
 	}
 
-	_identity := NewEmpty()
-	if err = json.Unmarshal(plainText, _identity); err != nil {
+	id := NewEmpty()
+	if err = json.Unmarshal(plainText, id); err != nil {
 		log.Error(ctx, "Error json.Unmarshal AuthToken", zap.Error(err))
 		return NewEmpty()
 	}
-	return _identity
+	return id
 }

@@ -9,14 +9,12 @@ import (
 	"strings"
 	"sync/atomic"
 
+    "github.com/shenghui0779/yiigo/metadata"
 	"github.com/shenghui0779/yiigo/xhash"
-	"google.golang.org/grpc/metadata"
 )
 
-const (
-	TraceId     = "x-trace-id"
-	TraceMethod = "x-trace-method"
-)
+const TraceId = "x-trace-id"
+const TracePath = "x-trace-path"
 
 var (
 	hostname    string
@@ -48,9 +46,9 @@ func NewTraceId() string {
 	return xhash.MD5(fmt.Sprintf("%s-%d", tracePrefix, seq))
 }
 
-func GetTraceInfo(ctx context.Context) (traceId, fullMethod string) {
+func GetTraceInfo(ctx context.Context) (traceId, path string) {
 	traceId = "-"
-	fullMethod = "-"
+	path = "-"
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
 		return
@@ -58,8 +56,8 @@ func GetTraceInfo(ctx context.Context) (traceId, fullMethod string) {
 	if v := md.Get(TraceId); len(v) != 0 {
 		traceId = v[0]
 	}
-	if v := md.Get(TraceMethod); len(v) != 0 {
-		fullMethod = v[0]
+	if v := md.Get(TracePath); len(v) != 0 {
+		path = v[0]
 	}
 	return
 }

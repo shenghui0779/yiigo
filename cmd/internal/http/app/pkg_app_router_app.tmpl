@@ -5,8 +5,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"{{.Module}}/pkg/{{.AppPkg}}/api/controller"
-	"{{.Module}}/pkg/{{.AppPkg}}/api/middleware"
+	"{{.Module}}/pkg/{{.AppPkg}}/api"
+	"{{.Module}}/pkg/{{.AppPkg}}/middleware"
 	"{{.Module}}/pkg/{{.AppPkg}}/web"
 	"{{.Module}}/pkg/lib"
 	lib_middleware "{{.Module}}/pkg/lib/middleware"
@@ -29,7 +29,6 @@ func App(r chi.Router) {
 	// r.Method(http.MethodGet, "/metrics", promhttp.Handler())
 
 	r.With(lib_middleware.Log).Group(func(r chi.Router) {
-		// v1
 		r.Route("/v1", func(r chi.Router) {
 			v1(r)
 		})
@@ -39,7 +38,7 @@ func App(r chi.Router) {
 func v1(r chi.Router) {
 	r.With(middleware.Auth).Group(func(r chi.Router) {
 		{
-			r.Post("/user/create", controller.DemoCreate)
+			r.Post("/greeter", api.Hello)
 		}
 	})
 }

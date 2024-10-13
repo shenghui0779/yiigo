@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
@@ -27,7 +28,21 @@ func ServeHttp(ctx context.Context) {
 	}
 	defer conn.Close()
 	// Create http mux with health check
-	mux := runtime.NewServeMux(runtime.WithHealthzEndpoint(grpc_health_v1.NewHealthClient(conn)))
+	mux := runtime.NewServeMux(
+		runtime.WithHealthzEndpoint(grpc_health_v1.NewHealthClient(conn)),
+		runtime.WithIncomingHeaderMatcher(func(s string) (string, bool) {
+			if v, ok := runtime.DefaultHeaderMatcher(s); ok {
+				return v, true
+			}
+			return strings.ToLower(s), true
+		}),
+		runtime.WithOutgoingHeaderMatcher(func(s string) (string, bool) {
+			if s == log.TraceId {
+				return s, true
+			}
+			return runtime.MetadataHeaderPrefix + s, true
+		}),
+	)
 	// Register http handler
 	if err = registerHttp(ctx, mux, conn); err != nil {
 		log.Fatal(ctx, "Error register http", zap.Error(err))
@@ -40,7 +55,7 @@ func ServeHttp(ctx context.Context) {
 		},
 		AllowedMethods:   []string{http.MethodGet, http.MethodPost, http.MethodPatch, http.MethodPut, http.MethodDelete, http.MethodOptions},
 		AllowedHeaders:   []string{"Authorization", "Content-Type", "withCredentials"},
-		ExposedHeaders:   []string{}, // 服务器暴露一些自定义的头信息，允许客户端访问
+		ExposedHeaders:   []string{log.TraceId}, // 服务器暴露一些自定义的头信息，允许客户端访问
 		AllowCredentials: true,
 	}).Handler(mux)
 	// Serve HTTP server

@@ -20,12 +20,13 @@ type errstatus struct {
 }
 
 func (s *errstatus) Error(ctx context.Context) error {
-	return status.Error(s.code, fmt.Sprintf("[%s] %+v", log.GetTraceId(ctx), s.err))
+	traceId, _ := log.GetTraceInfo(ctx)
+	return status.Error(s.code, fmt.Sprintf("[%s] %+v", traceId, s.err))
 }
 
-func New(code codes.Code, err error) Status {
+func New(code int, err error) Status {
 	return &errstatus{
-		code: code,
+		code: codes.Code(code),
 		err:  err,
 	}
 }

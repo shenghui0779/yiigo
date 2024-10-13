@@ -3,6 +3,8 @@ package cmd
 import (
 	"context"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -50,9 +52,30 @@ func preInit(ctx context.Context) {
 	ent.Init(ctx)
 }
 
+// CleanUp 清理资源
+func CleanUp() {
+	// 关闭数据库连接
+	ent.Close()
+}
+
 func serving(ctx context.Context) {
+	go watchExit()
 	// serve grpc
 	go server.ServeGrpc(ctx)
 	// serve http
 	server.ServeHttp(ctx)
+}
+
+func watchExit() {
+	// 创建一个通道来监听信号
+	ch := make(chan os.Signal, 1)
+	// 监听特定的系统信号
+	signal.Notify(ch, syscall.SIGINT, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGTERM)
+	// 处理信号
+	sig := <-ch
+	log.Warn(context.TODO(), "Received Signal", zap.String("signal", sig.String()))
+	// 执行清理操作
+	CleanUp()
+	// 退出程序
+	os.Exit(0)
 }

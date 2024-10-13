@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"context"
 	"net/http"
 	"runtime/debug"
 
@@ -22,16 +21,12 @@ func Recovery(next http.Handler) http.Handler {
 				result.ErrSystem().JSON(w, r)
 			}
 		}()
-
+		// 注入Identity
 		if token := r.Header.Get("Authorization"); len(token) != 0 {
-			ctx := r.Context()
-			id := identity.FromAuthToken(ctx, token)
-
-			next.ServeHTTP(w, r.WithContext(context.WithValue(ctx, identity.IdentityKey, id)))
-
+			ctx := identity.NewContext(r.Context(), token)
+			next.ServeHTTP(w, r.WithContext(ctx))
 			return
 		}
-
 		next.ServeHTTP(w, r)
 	})
 }

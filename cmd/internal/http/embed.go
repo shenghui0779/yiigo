@@ -77,6 +77,11 @@ var Project = []map[string]string{
 		"output": "pkg/lib/log/log.go",
 	},
 	{
+		"name":   "pkg_lib_log_traceid.tmpl",
+		"path":   "pkg_lib_log_traceid.tmpl",
+		"output": "pkg/lib/log/trace_id.go",
+	},
+	{
 		"name":   "pkg_lib_middleware_log.tmpl",
 		"path":   "pkg_lib_middleware_log.tmpl",
 		"output": "pkg/lib/middleware/log.go",
@@ -90,6 +95,11 @@ var Project = []map[string]string{
 		"name":   "pkg_lib_middleware_recovery.tmpl",
 		"path":   "pkg_lib_middleware_recovery.tmpl",
 		"output": "pkg/lib/middleware/recovery.go",
+	},
+	{
+		"name":   "pkg_lib_middleware_traceid.tmpl",
+		"path":   "pkg_lib_middleware_traceid.tmpl",
+		"output": "pkg/lib/middleware/trace_id.go",
 	},
 	{
 		"name":   "pkg_lib_result_code.tmpl",
@@ -110,29 +120,29 @@ var Project = []map[string]string{
 
 var App = []map[string]string{
 	{
-		"name":   "pkg_app_api_controller_demo.tmpl",
-		"path":   "app/pkg_app_api_controller_demo.tmpl",
-		"output": "api/controller/demo.go",
+		"name":   "pkg_app_api_greeter.tmpl",
+		"path":   "app/pkg_app_api_greeter.tmpl",
+		"output": "api/greeter.go",
 	},
 	{
-		"name":   "pkg_app_api_middleware_auth.tmpl",
-		"path":   "app/pkg_app_api_middleware_auth.tmpl",
-		"output": "api/middleware/auth.go",
+		"name":   "pkg_app_middleware_auth.tmpl",
+		"path":   "app/pkg_app_middleware_auth.tmpl",
+		"output": "middleware/auth.go",
 	},
 	{
-		"name":   "pkg_app_api_router_app.tmpl",
-		"path":   "app/pkg_app_api_router_app.tmpl",
-		"output": "api/router/app.go",
+		"name":   "pkg_app_router_app.tmpl",
+		"path":   "app/pkg_app_router_app.tmpl",
+		"output": "router/app.go",
 	},
 	{
-		"name":   "pkg_app_api_service_demo_create.tmpl",
-		"path":   "app/pkg_app_api_service_demo_create.tmpl",
-		"output": "api/service/demo/create.go",
+		"name":   "pkg_app_service_greeter.tmpl",
+		"path":   "app/pkg_app_service_greeter.tmpl",
+		"output": "service/greeter/hello.go",
 	},
 	{
-		"name":   "pkg_app_api_service_demo_test.tmpl",
-		"path":   "app/pkg_app_api_service_demo_test.tmpl",
-		"output": "api/service/demo/demo_test.go",
+		"name":   "pkg_app_service_test.tmpl",
+		"path":   "app/pkg_app_service_test.tmpl",
+		"output": "service/greeter/greeter_test.go",
 	},
 	{
 		"name":   "pkg_app_cmd_hello.tmpl",

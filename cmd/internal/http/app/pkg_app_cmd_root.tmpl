@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -14,8 +16,8 @@ import (
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 
-	"{{.Module}}/pkg/{{.AppPkg}}/api/router"
 	"{{.Module}}/pkg/{{.AppPkg}}/ent"
+	"{{.Module}}/pkg/{{.AppPkg}}/router"
 	"{{.Module}}/pkg/lib/log"
 	"{{.Module}}/pkg/lib/middleware"
 )
@@ -54,8 +56,14 @@ func preInit(ctx context.Context) {
 	ent.Init(ctx)
 }
 
+// CleanUp 清理资源
+func CleanUp() {
+	// 关闭数据库连接
+	ent.Close()
+}
+
 func serving() {
-	r := chi.NewRouter()
+	go watchExit()
 
 	withCors := cors.New(cors.Options{
 		// AllowedOrigins:   []string{"*"},
@@ -64,13 +72,12 @@ func serving() {
 		},
 		AllowedMethods:   []string{http.MethodGet, http.MethodPost, http.MethodPatch, http.MethodPut, http.MethodDelete, http.MethodOptions},
 		AllowedHeaders:   []string{"Authorization", "Content-Type", "withCredentials"},
-		ExposedHeaders:   []string{}, // 服务器暴露一些自定义的头信息，允许客户端访问
+		ExposedHeaders:   []string{log.TraceId}, // 服务器暴露一些自定义的头信息，允许客户端访问
 		AllowCredentials: true,
 	})
-
-	r.Use(withCors.Handler, chi_middleware.RequestID, middleware.Recovery)
+	r := chi.NewRouter()
+	r.Use(withCors.Handler, middleware.TraceId, middleware.Recovery)
 	r.Mount("/debug", chi_middleware.Profiler())
-
 	router.App(r)
 
 	srv := &http.Server{
@@ -80,10 +87,22 @@ func serving() {
 		WriteTimeout: 10 * time.Second,
 		IdleTimeout:  10 * time.Second,
 	}
-
 	fmt.Println("listening on", srv.Addr)
-
 	if err := srv.ListenAndServe(); err != nil {
 		log.Fatal(context.Background(), "serving error", zap.Error(err))
 	}
+}
+
+func watchExit() {
+	// 创建一个通道来监听信号
+	ch := make(chan os.Signal, 1)
+	// 监听特定的系统信号
+	signal.Notify(ch, syscall.SIGINT, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGTERM)
+	// 处理信号
+	sig := <-ch
+	log.Warn(context.TODO(), "Received Signal", zap.String("signal", sig.String()))
+	// 执行清理操作
+	CleanUp()
+	// 退出程序
+	os.Exit(0)
 }

@@ -1,4 +1,4 @@
-package demo
+package greeter
 
 import (
 	"context"
@@ -27,10 +27,10 @@ func TestMain(m *testing.M) {
 	ent.Close()
 }
 
-func TestCreate(t *testing.T) {
-	req := &ReqCreate{
-		Title: "demo",
+func TestHello(t *testing.T) {
+	req := &ReqHello{
+		Name: "world",
 	}
-	ret := Create(context.Background(), req)
+	ret := Hello(context.Background(), req)
 	fmt.Println("[Result] ---", ret)
 }

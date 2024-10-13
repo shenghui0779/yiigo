@@ -1,49 +1,45 @@
 package result
 
-import (
-	"errors"
-
-	"google.golang.org/grpc/codes"
-)
+import "errors"
 
 func ErrParams(err ...error) Status {
 	if len(err) != 0 {
-		return New(codes.InvalidArgument, err[0])
+		return New(10000, err[0])
 	}
-	return New(codes.InvalidArgument, errors.New("params error"))
+	return New(10000, errors.New("params error"))
 }
 
 func ErrAuth(err ...error) Status {
 	if len(err) != 0 {
-		return New(codes.Unauthenticated, err[0])
+		return New(20000, err[0])
 	}
-	return New(codes.Unauthenticated, errors.New("unauthenticated"))
+	return New(20000, errors.New("unauthenticated"))
 }
 
 func ErrPerm(err ...error) Status {
 	if len(err) != 0 {
-		return New(codes.PermissionDenied, err[0])
+		return New(30000, err[0])
 	}
-	return New(codes.PermissionDenied, errors.New("permission denied"))
+	return New(30000, errors.New("permission denied"))
 }
 
 func ErrNotFound(err ...error) Status {
 	if len(err) != 0 {
-		return New(codes.NotFound, err[0])
+		return New(40000, err[0])
 	}
-	return New(codes.NotFound, errors.New("entity not found"))
+	return New(40000, errors.New("entity not found"))
 }
 
-func ErrPrecondition(err ...error) Status {
+func ErrService(err ...error) Status {
 	if len(err) != 0 {
-		return New(codes.FailedPrecondition, err[0])
+		return New(60000, err[0])
 	}
-	return New(codes.FailedPrecondition, errors.New("failed precondition"))
+	return New(60000, errors.New("service error"))
 }
 
 func ErrSystem(err ...error) Status {
 	if len(err) != 0 {
-		return New(codes.Internal, err[0])
+		return New(50000, err[0])
 	}
-	return New(codes.Internal, errors.New("internal server error"))
+	return New(50000, errors.New("internal server error"))
 }

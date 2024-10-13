@@ -4,24 +4,48 @@ import (
 	"context"
 
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 func Info(ctx context.Context, msg string, fields ...zap.Field) {
-	logger.Info(msg, append(fields, zap.String("trace_id", GetTraceId(ctx)), zap.String("method", GetFullMethod(ctx)))...)
+	Log(ctx, zapcore.InfoLevel, msg, fields...)
 }
 
 func Warn(ctx context.Context, msg string, fields ...zap.Field) {
-	logger.Warn(msg, append(fields, zap.String("trace_id", GetTraceId(ctx)), zap.String("method", GetFullMethod(ctx)))...)
+	Log(ctx, zapcore.WarnLevel, msg, fields...)
 }
 
 func Error(ctx context.Context, msg string, fields ...zap.Field) {
-	logger.Error(msg, append(fields, zap.String("trace_id", GetTraceId(ctx)), zap.String("method", GetFullMethod(ctx)))...)
+	Log(ctx, zapcore.ErrorLevel, msg, fields...)
 }
 
 func Panic(ctx context.Context, msg string, fields ...zap.Field) {
-	logger.Panic(msg, append(fields, zap.String("trace_id", GetTraceId(ctx)), zap.String("method", GetFullMethod(ctx)))...)
+	Log(ctx, zapcore.PanicLevel, msg, fields...)
 }
 
 func Fatal(ctx context.Context, msg string, fields ...zap.Field) {
-	logger.Fatal(msg, append(fields, zap.String("trace_id", GetTraceId(ctx)), zap.String("method", GetFullMethod(ctx)))...)
+	Log(ctx, zapcore.FatalLevel, msg, fields...)
+}
+
+func Log(ctx context.Context, level zapcore.Level, msg string, fields ...zap.Field) {
+	traceId, fullMethod := GetTraceInfo(ctx)
+	fields = append(fields,
+		zap.String("hostname", hostname),
+		zap.String("trace_id", traceId),
+		zap.String("method", fullMethod),
+	)
+	switch level {
+	case zapcore.InfoLevel:
+		logger.Info(msg, fields...)
+	case zapcore.WarnLevel:
+		logger.Warn(msg, fields...)
+	case zapcore.ErrorLevel:
+		logger.Error(msg, fields...)
+	case zapcore.PanicLevel:
+		logger.Panic(msg, fields...)
+	case zapcore.FatalLevel:
+		logger.Fatal(msg, fields...)
+	default:
+		logger.Debug(msg, fields...)
+	}
 }
