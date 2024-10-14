@@ -74,7 +74,7 @@ func project() *cobra.Command {
 			} else {
 				internal.InitHttpProject(args[0], mod, apps...)
 			}
-			fmt.Println("项目创建完成！请阅读README")
+			fmt.Println("🍺 项目创建完成！请阅读README")
 		},
 	}
 	// 注册参数
@@ -115,7 +115,7 @@ func app() *cobra.Command {
 			} else {
 				internal.InitHttpApp(".", f.Module.Mod.Path, args[0])
 			}
-			fmt.Println("应用创建完成！请阅读README")
+			fmt.Println("🍺 应用创建完成！请阅读README")
 		},
 	}
 	// 注册参数
