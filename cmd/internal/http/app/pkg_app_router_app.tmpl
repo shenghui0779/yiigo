@@ -6,7 +6,6 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"{{.Module}}/pkg/{{.AppPkg}}/api"
-	"{{.Module}}/pkg/{{.AppPkg}}/middleware"
 	"{{.Module}}/pkg/{{.AppPkg}}/web"
 	"{{.Module}}/pkg/lib"
 	lib_middleware "{{.Module}}/pkg/lib/middleware"
@@ -30,15 +29,7 @@ func App(r chi.Router) {
 
 	r.With(lib_middleware.Log).Group(func(r chi.Router) {
 		r.Route("/v1", func(r chi.Router) {
-			v1(r)
-		})
-	})
-}
-
-func v1(r chi.Router) {
-	r.With(middleware.Auth).Group(func(r chi.Router) {
-		{
 			r.Post("/greeter", api.Hello)
-		}
+		})
 	})
 }

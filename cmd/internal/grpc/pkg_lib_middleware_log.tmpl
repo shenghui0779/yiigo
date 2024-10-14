@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"context"
+	"encoding/json"
 	"time"
 
 	"go.uber.org/zap"
@@ -18,9 +19,11 @@ func Log(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handl
 		if info.FullMethod == HealthCheckMethod {
 			return
 		}
+		b1, _ := json.Marshal(req)
+		b2, _ := json.Marshal(resp)
 		log.Info(ctx, "Request info",
-			zap.Any("request", req),
-			zap.Any("response", resp),
+			zap.ByteString("request", b1),
+			zap.ByteString("response", b2),
 			zap.Error(err),
 			zap.String("duration", time.Since(now).String()),
 		)

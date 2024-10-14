@@ -11,11 +11,11 @@ go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
 go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@latest
 go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2@latest
 
-# build
-go install github.com/bufbuild/buf/cmd/buf@latest
-
 # orm
 go install entgo.io/ent/cmd/ent@latest
+
+# build
+go install github.com/bufbuild/buf/cmd/buf@latest
 
 # swagger
 go install github.com/go-swagger/go-swagger/cmd/swagger@latest
@@ -24,9 +24,9 @@ go install github.com/go-swagger/go-swagger/cmd/swagger@latest
 ### 配置运行
 
 1. 配置文件 `config.toml`
-2. 执行 `buf generate` 编译proto文件
-3. 执行 `go mod tidy` 下载依赖
-4. 执行 `ent/generate.go` 生成ORM代码 (只要 `ent/schema` 目录下有变动都需要执行)
+2. 执行 `ent/generate.go` 生成ORM代码 (只要 `ent/schema` 目录下有变动都需要执行)
+3. 执行 `buf generate` 编译proto文件
+4. 执行 `go mod tidy` 下载依赖
 5. 执行 `go run main.go` 运行
 6. 执行 `go run main.go -h` 查看命令
 7. 查看文档 `swagger serve api.swagger.json`

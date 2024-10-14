@@ -15,7 +15,7 @@ import (
 var DB *Client
 
 func Init(ctx context.Context) {
-	driver, err := db.InitDBDriver(dialect.Postgres, "db")
+	driver, err := db.InitDBDriver(dialect.MySQL, "db")
 	if err != nil {
 		log.Panic(ctx, "数据库初始化失败", zap.Error(err))
 	}

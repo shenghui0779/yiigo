@@ -34,16 +34,19 @@ func init() {
 // Monitor 监控请求次数，时长
 func Monitor(ctx context.Context, req interface{}, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
 	now := time.Now().Local()
+	_, fullMethod := log.GetTraceInfo(ctx)
+	// 请求次数
 	requestCounter.With(prometheus.Labels{
-		"method": log.GetFullMethod(ctx),
+		"method": fullMethod,
 	}).Inc()
+	// 请求时长
 	defer func() {
 		status := "OK"
 		if err != nil {
 			status = "ERR"
 		}
 		requestDuration.With(prometheus.Labels{
-			"method": log.GetFullMethod(ctx),
+			"method": fullMethod,
 			"status": status,
 		}).Observe(time.Since(now).Seconds())
 	}()
