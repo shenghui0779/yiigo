@@ -26,16 +26,14 @@ yiigo new demo --mod=xxx.yyy.com # 指定module名称
 ├── go.sum
 └── pkg
     ├── app
-    │   ├── Dockerfile
     │   ├── api
-    │   │   ├── controller
-    │   │   ├── middleware
-    │   │   ├── router
-    │   │   └── service
     │   ├── cmd
     │   ├── config.toml
     │   ├── ent
     │   ├── main.go
+    │   ├── middleware
+    │   ├── router
+    │   ├── service
     │   └── web
     └── lib
 
@@ -51,14 +49,13 @@ yiigo app hello # 新增应用
     ├── app
     │   ├── foo
     │   │   ├── api
-    │   │   │   ├── controller
-    │   │   │   ├── middleware
-    │   │   │   ├── router
-    │   │   │   └── service
     │   │   ├── cmd
     │   │   ├── config.toml
     │   │   ├── ent
     │   │   ├── main.go
+    │   │   ├── middleware
+    │   │   ├── router
+    │   │   ├── service
     │   │   └── web
     │   ├── bar
     │   └── hello
