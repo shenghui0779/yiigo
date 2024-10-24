@@ -59,21 +59,17 @@ func CleanUp() {
 }
 
 func serving(ctx context.Context) {
-	go watchExit()
-	// serve grpc
-	go server.ServeGrpc(ctx)
-	// serve http
-	server.ServeHttp(ctx)
-}
-
-func watchExit() {
 	// 创建一个通道来监听信号
 	ch := make(chan os.Signal, 1)
 	// 监听特定的系统信号
 	signal.Notify(ch, syscall.SIGINT, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGTERM)
+	// serve grpc
+	go server.ServeGrpc(ctx)
+	// serve http
+	go server.ServeHttp(ctx)
 	// 处理信号
 	sig := <-ch
-	log.Warn(context.TODO(), "Received Signal", zap.String("signal", sig.String()))
+	log.Warn(context.TODO(), "Received system signal", zap.String("signal", sig.String()))
 	// 执行清理操作
 	CleanUp()
 	// 退出程序

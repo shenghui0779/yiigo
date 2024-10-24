@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"fmt"
 	"net"
 
 	"github.com/spf13/viper"
@@ -34,7 +33,7 @@ func ServeGrpc(ctx context.Context) {
 	// Register gRPC service
 	registerGrpc(s)
 	// Serve gRPC server
-	fmt.Println("Serving gRPC on", addr)
+	log.Info(ctx, "Serving gRPC OK", zap.String("port", addr))
 	if err := s.Serve(lis); err != nil {
 		log.Fatal(ctx, "Error Serve", zap.Error(err))
 	}

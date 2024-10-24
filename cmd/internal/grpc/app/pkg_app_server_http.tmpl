@@ -66,7 +66,7 @@ func ServeHttp(ctx context.Context) {
 		WriteTimeout: 10 * time.Second,
 		IdleTimeout:  10 * time.Second,
 	}
-	fmt.Println("Serving http on", addr)
+	log.Info(ctx, "Serving HTTP OK", zap.String("port", addr))
 	if err = s.ListenAndServe(); err != nil {
 		log.Fatal(ctx, "Error ListenAndServe", zap.Error(err))
 	}
