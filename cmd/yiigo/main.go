@@ -81,14 +81,37 @@ func project() *cobra.Command {
 			modInit := exec.Command("go", "mod", "init", mod)
 			modInit.Dir = workDir
 			if err := modInit.Run(); err != nil {
-				log.Fatalln("👿 go mod init 执行失败:", err)
+				log.Fatalln("🐛 go mod init 执行失败:", err)
 			}
 			fmt.Println("🍺 执行 go mod tidy")
 			modTidy := exec.Command("go", "mod", "tidy")
 			modTidy.Dir = workDir
 			modTidy.Stderr = os.Stderr
 			if err := modTidy.Run(); err != nil {
-				log.Fatalln("👿 go mod tidy 执行失败:", err)
+				log.Fatalln("🐛 go mod tidy 执行失败:", err)
+			}
+			fmt.Println("🍺 执行 ent generate")
+			if len(apps) != 0 {
+				for _, dir := range apps {
+					entGen := exec.Command("go", "generate", "./ent")
+					entGen.Dir = workDir + "/pkg/app/" + dir
+					if err := entGen.Run(); err != nil {
+						log.Fatalln("🐛 ent generate 执行失败:", err)
+					}
+				}
+			} else {
+				entGen := exec.Command("go", "generate", "./ent")
+				entGen.Dir = workDir + "/pkg/app"
+				if err := entGen.Run(); err != nil {
+					log.Fatalln("🐛 ent generate 执行失败:", err)
+				}
+			}
+			fmt.Println("🍺 执行 go mod tidy")
+			modClean := exec.Command("go", "mod", "tidy")
+			modClean.Dir = workDir
+			modClean.Stderr = os.Stderr
+			if err := modClean.Run(); err != nil {
+				log.Fatalln("🐛 go mod tidy 执行失败:", err)
 			}
 			fmt.Println("🍺 项目创建完成！请阅读README")
 		},
@@ -116,20 +139,35 @@ func app() *cobra.Command {
 			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
+			appName := args[0]
+			fmt.Println("🍺 解析 go.mod")
 			// 读取 go.mod 文件
 			data, err := os.ReadFile("go.mod")
 			if err != nil {
-				log.Fatalln("👿 读取go.mod文件失败:", err)
+				log.Fatalln("🐛 读取go.mod文件失败:", err)
 			}
 			// 解析 go.mod 文件
 			f, err := modfile.Parse("go.mod", data, nil)
 			if err != nil {
-				log.Fatalln("👿 解析go.mod文件失败:", err)
+				log.Fatalln("🐛 解析go.mod文件失败:", err)
 			}
+			fmt.Println("🍺 创建应用文件")
 			if grpc {
-				internal.InitGrpcApp(".", f.Module.Mod.Path, args[0])
+				internal.InitGrpcApp(".", f.Module.Mod.Path, appName)
 			} else {
-				internal.InitHttpApp(".", f.Module.Mod.Path, args[0])
+				internal.InitHttpApp(".", f.Module.Mod.Path, appName)
+			}
+			fmt.Println("🍺 执行 ent generate")
+			entGen := exec.Command("go", "generate", "./ent")
+			entGen.Dir = "pkg/app/" + appName
+			if err := entGen.Run(); err != nil {
+				log.Fatalln("🐛 ent generate 执行失败:", err)
+			}
+			fmt.Println("🍺 执行 go mod tidy")
+			modTidy := exec.Command("go", "mod", "tidy")
+			modTidy.Stderr = os.Stderr
+			if err := modTidy.Run(); err != nil {
+				log.Fatalln("🐛 go mod tidy 执行失败:", err)
 			}
 			fmt.Println("🍺 应用创建完成！请阅读README")
 		},

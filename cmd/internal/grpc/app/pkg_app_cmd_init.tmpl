@@ -10,11 +10,11 @@ import (
 
 func Init() {
 	// 注册全局参数
-	cmd.PersistentFlags().StringVarP(&cfgFile, "config", "C", "config.toml", "设置配置文件")
+	root.PersistentFlags().StringVarP(&cfgFile, "config", "C", "config.toml", "设置配置文件")
 	// 注册子命令
-	cmd.AddCommand(cmdHello())
+	root.AddCommand(cmdHello())
 	// 执行命令
-	if err := cmd.Execute(); err != nil {
+	if err := root.Execute(); err != nil {
 		log.Error(context.Background(), "Error cmd execute", zap.Error(err))
 	}
 }

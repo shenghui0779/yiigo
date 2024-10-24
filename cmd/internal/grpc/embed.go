@@ -135,6 +135,26 @@ var App = []map[string]string{
 		"output": "api/greeter.proto",
 	},
 	{
+		"name":   "pb_greeter.tmpl",
+		"path":   "app/pb_greeter.tmpl",
+		"output": "api/greeter.pb.go",
+	},
+	{
+		"name":   "pb_greeter_grpc.tmpl",
+		"path":   "app/pb_greeter_grpc.tmpl",
+		"output": "api/greeter_grpc.pb.go",
+	},
+	{
+		"name":   "pb_greeter_gw.tmpl",
+		"path":   "app/pb_greeter_gw.tmpl",
+		"output": "api/greeter.pb.gw.go",
+	},
+	{
+		"name":   "swagger_api.tmpl",
+		"path":   "app/swagger_api.tmpl",
+		"output": "api/api.swagger.json",
+	},
+	{
 		"name":   "pkg_app_cmd_hello.tmpl",
 		"path":   "app/pkg_app_cmd_hello.tmpl",
 		"output": "cmd/hello.go",

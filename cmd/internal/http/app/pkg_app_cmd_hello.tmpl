@@ -8,7 +8,7 @@ import (
 
 func cmdHello() *cobra.Command {
 	var name string
-	cmd := &cobra.Command{
+	c := &cobra.Command{
 		Use:     "hello",
 		Short:   "命令示例",
 		Long:    "命令示例",
@@ -18,6 +18,6 @@ func cmdHello() *cobra.Command {
 		},
 	}
 	// 注册参数
-	cmd.Flags().StringVar(&name, "name", "", "打个招呼")
-	return cmd
+	c.Flags().StringVar(&name, "name", "", "打个招呼")
+	return c
 }
