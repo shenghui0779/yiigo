@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
 
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
@@ -66,13 +67,28 @@ func project() *cobra.Command {
 			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
+			workDir := args[0]
 			if len(mod) == 0 {
-				mod = args[0]
+				mod = workDir
 			}
+			fmt.Println("🍺 创建项目文件")
 			if grpc {
-				internal.InitGrpcProject(args[0], mod, apps...)
+				internal.InitGrpcProject(workDir, mod, apps...)
 			} else {
-				internal.InitHttpProject(args[0], mod, apps...)
+				internal.InitHttpProject(workDir, mod, apps...)
+			}
+			fmt.Println("🍺 执行 go mod init")
+			modInit := exec.Command("go", "mod", "init", mod)
+			modInit.Dir = workDir
+			if err := modInit.Run(); err != nil {
+				log.Fatalln("👿 go mod init 执行失败:", err)
+			}
+			fmt.Println("🍺 执行 go mod tidy")
+			modTidy := exec.Command("go", "mod", "tidy")
+			modTidy.Dir = workDir
+			modTidy.Stderr = os.Stderr
+			if err := modTidy.Run(); err != nil {
+				log.Fatalln("👿 go mod tidy 执行失败:", err)
 			}
 			fmt.Println("🍺 项目创建完成！请阅读README")
 		},
@@ -103,12 +119,12 @@ func app() *cobra.Command {
 			// 读取 go.mod 文件
 			data, err := os.ReadFile("go.mod")
 			if err != nil {
-				log.Fatalln("读取go.mod文件失败「", err, "」请在Go项目根目录下执行命令")
+				log.Fatalln("👿 读取go.mod文件失败:", err)
 			}
 			// 解析 go.mod 文件
 			f, err := modfile.Parse("go.mod", data, nil)
 			if err != nil {
-				log.Fatalln("解析go.mod文件失败:", err)
+				log.Fatalln("👿 解析go.mod文件失败:", err)
 			}
 			if grpc {
 				internal.InitGrpcApp(".", f.Module.Mod.Path, args[0])

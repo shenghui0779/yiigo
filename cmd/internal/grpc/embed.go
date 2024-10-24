@@ -22,16 +22,6 @@ var Project = []map[string]string{
 		"output": ".gitignore",
 	},
 	{
-		"name":   "gomod.tmpl",
-		"path":   "gomod.tmpl",
-		"output": "go.mod",
-	},
-	{
-		"name":   "gosum.tmpl",
-		"path":   "gosum.tmpl",
-		"output": "go.sum",
-	},
-	{
 		"name":   "pkg_lib_db_db.tmpl",
 		"path":   "pkg_lib_db_db.tmpl",
 		"output": "pkg/lib/db/db.go",
@@ -153,11 +143,6 @@ var App = []map[string]string{
 		"name":   "pkg_app_cmd_init.tmpl",
 		"path":   "app/pkg_app_cmd_init.tmpl",
 		"output": "cmd/init.go",
-	},
-	{
-		"name":   "pkg_app_cmd_migrate.tmpl",
-		"path":   "app/pkg_app_cmd_migrate.tmpl",
-		"output": "cmd/migrate.go",
 	},
 	{
 		"name":   "pkg_app_cmd_root.tmpl",

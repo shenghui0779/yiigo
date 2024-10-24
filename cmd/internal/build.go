@@ -19,7 +19,7 @@ type Params struct {
 
 func InitHttpProject(root, mod string, apps ...string) {
 	// 创建项目
-	initProject(root, mod, apps, http.Project, http.FS)
+	initProject(root, mod, http.Project, http.FS)
 	// 创建App(单应用)
 	if len(apps) == 0 {
 		initApp(root, mod, "", http.App, http.FS)
@@ -37,7 +37,7 @@ func InitHttpApp(root, mod, name string) {
 
 func InitGrpcProject(root, mod string, apps ...string) {
 	// 创建项目
-	initProject(root, mod, apps, grpc.Project, grpc.FS)
+	initProject(root, mod, grpc.Project, grpc.FS)
 	// 创建App(单应用)
 	if len(apps) == 0 {
 		initApp(root, mod, "", grpc.App, grpc.FS)
@@ -53,7 +53,7 @@ func InitGrpcApp(root, mod, name string) {
 	initApp(root, mod, name, grpc.App, grpc.FS)
 }
 
-func initProject(root, mod string, apps []string, tmpls []map[string]string, fs embed.FS) {
+func initProject(root, mod string, tmpls []map[string]string, fs embed.FS) {
 	params := &Params{Module: mod}
 	// 创建项目
 	for _, tmpl := range tmpls {

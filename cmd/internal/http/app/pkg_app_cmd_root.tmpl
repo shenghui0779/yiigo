@@ -44,7 +44,7 @@ var cmd = &cobra.Command{
 		if err := os.MkdirAll(os.TempDir(), 0o775); err != nil {
 			log.Error(context.Background(), "Error create temp dir", zap.Error(err))
 		}
-		serving()
+		serving(context.Background())
 	},
 }
 
@@ -61,13 +61,13 @@ func CleanUp() {
 	ent.Close()
 }
 
-func serving() {
+func serving(ctx context.Context) {
 	// 创建一个通道来监听信号
 	ch := make(chan os.Signal, 1)
 	// 监听特定的系统信号
 	signal.Notify(ch, syscall.SIGINT, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGTERM)
 	// serving
-	go serveHttp()
+	go serveHttp(ctx)
 	// 处理信号
 	sig := <-ch
 	log.Warn(context.TODO(), "Received Signal", zap.String("signal", sig.String()))
@@ -77,7 +77,7 @@ func serving() {
 	os.Exit(0)
 }
 
-func serveHttp() {
+func serveHttp(ctx context.Context) {
 	withCors := cors.New(cors.Options{
 		// AllowedOrigins:   []string{"*"},
 		AllowOriginFunc: func(origin string) bool {
