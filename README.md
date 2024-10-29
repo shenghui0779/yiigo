@@ -7,7 +7,6 @@
 ## 脚手架
 
 ```shell
-# go1.23+
 go install github.com/shenghui0779/yiigo/cmd/yiigo@latest
 ```
 
@@ -128,7 +127,6 @@ yiigo app hello --grpc # 新增应用
 ## 工具包
 
 ```shell
-# go1.22+
 go get -u github.com/shenghui0779/yiigo
 ```
 
