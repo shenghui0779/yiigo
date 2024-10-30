@@ -2,7 +2,7 @@ package yiigo
 
 import (
 	"math"
-	"math/rand"
+	"math/rand/v2"
 )
 
 // SliceIn 返回指定元素是否在集合中

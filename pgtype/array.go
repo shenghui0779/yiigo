@@ -789,8 +789,8 @@ Element:
 			dims[depth-1] = 0
 			i++
 		case '"':
-			var elem []byte
 			var escape bool
+			elem := make([]byte, 0)
 			for i++; i < len(src); i++ {
 				if escape {
 					elem = append(elem, src[i])
