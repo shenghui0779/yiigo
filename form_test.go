@@ -151,6 +151,11 @@ func TestMappingTime(t *testing.T) {
 	}
 
 	var err error
+	// restore the local timezone
+	oldTZ := time.Local
+	defer func() {
+		time.Local = oldTZ
+	}()
 	time.Local, err = time.LoadLocation("Europe/Berlin")
 	assert.NoError(t, err)
 
