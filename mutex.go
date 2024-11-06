@@ -5,7 +5,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/jaevor/go-nanoid"
+	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -40,7 +40,7 @@ func (d *distributed) Lock(ctx context.Context) (bool, error) {
 	return len(d.token) != 0, nil
 }
 
-func (d *distributed) TryLock(ctx context.Context, attempts int, delay time.Duration) (bool, error) {
+func (d *distributed) TryLock(ctx context.Context, attempts int, interval time.Duration) (bool, error) {
 	for i := 0; i < attempts; i++ {
 		select {
 		case <-ctx.Done(): // timeout or canceled
@@ -55,7 +55,7 @@ func (d *distributed) TryLock(ctx context.Context, attempts int, delay time.Dura
 		if len(d.token) != 0 {
 			return true, nil
 		}
-		time.Sleep(delay)
+		time.Sleep(interval)
 	}
 	return false, nil
 }
@@ -76,8 +76,7 @@ end
 }
 
 func (d *distributed) lock(ctx context.Context) error {
-	uniqID, _ := nanoid.Standard(32)
-	token := uniqID()
+	token := uuid.New().String()
 	ok, err := d.cli.SetNX(ctx, d.key, token, d.expire).Result()
 	if err != nil {
 		// 尝试GET一次：避免因redis网络错误导致误加锁

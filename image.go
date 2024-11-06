@@ -209,7 +209,6 @@ func ImageCrop(w io.Writer, filename string, rect *Rect, options ...imaging.Enco
 	crop := imaging.Crop(img, image.Rect(rect.X, rect.Y, rect.X+rect.W, rect.Y+rect.H))
 
 	format, _ := imaging.FormatFromFilename(filename)
-
 	return imaging.Encode(w, crop, format, options...)
 }
 
@@ -247,7 +246,6 @@ func ImageLabel(w io.Writer, filename string, rects []*Rect, options ...imaging.
 	dc.Stroke()
 
 	format, _ := imaging.FormatFromFilename(filename)
-
 	return imaging.Encode(w, dc.Image(), format, options...)
 }
 
