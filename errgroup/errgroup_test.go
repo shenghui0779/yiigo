@@ -13,25 +13,21 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type Demo struct {
-	Count int
-}
-
 func TestNormal(t *testing.T) {
 	var (
-		m   = make(map[int]*Demo)
+		m   = make(map[int]int)
 		g   Group
 		err error
 	)
-	for i := 0; i < 10; i++ {
-		m[i] = &Demo{Count: i}
+	for i := 0; i < 4; i++ {
+		m[i] = i
 	}
 	g.Go(func(context.Context) (err error) {
-		m[1].Count++
+		m[1]++
 		return
 	})
 	g.Go(func(context.Context) (err error) {
-		m[2].Count++
+		m[2]++
 		return
 	})
 	if err = g.Wait(); err != nil {
@@ -94,27 +90,6 @@ func TestGOMAXPROCS(t *testing.T) {
 }
 
 func TestRecover(t *testing.T) {
-	var (
-		m   = make(map[int]*Demo)
-		g   Group
-		err error
-	)
-	g.Go(func(context.Context) (err error) {
-		m[1].Count++
-		return
-	})
-	g.Go(func(context.Context) (err error) {
-		m[2].Count++
-		return
-	})
-	if err = g.Wait(); err != nil {
-		t.Log(err)
-		return
-	}
-	t.FailNow()
-}
-
-func TestRecover2(t *testing.T) {
 	var (
 		g   Group
 		err error

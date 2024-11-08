@@ -14,7 +14,7 @@ func TestTimeWheel_1(t *testing.T) {
 	ch := make(chan string)
 	defer close(ch)
 
-	tw := New(time.Second, 7)
+	tw := New(7, time.Second)
 	for i := 0; i < 10; i++ {
 		n := i + 1
 		addedAt := time.Now()
@@ -39,7 +39,7 @@ func TestTimeWheel_2(t *testing.T) {
 	ch := make(chan string)
 	defer close(ch)
 
-	tw := New(time.Second, 7)
+	tw := New(7, time.Second)
 	tw.Run()
 
 	for i := 0; i < 10; i++ {

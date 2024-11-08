@@ -2,7 +2,6 @@ package timewheel
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"runtime/debug"
 	"sync"
@@ -36,11 +35,14 @@ type TimeWheel interface {
 
 type timewheel struct {
 	slot   int
-	tick   time.Duration
 	size   int
+	tick   time.Duration
 	bucket []sync.Map
-	stop   chan struct{}
-	err    chan error
+
+	ctx    context.Context
+	cancel context.CancelFunc
+
+	err chan error
 }
 
 func (tw *timewheel) AddTask(ctx context.Context, taskID string, fn func(ctx context.Context, taskID string) error, options ...Option) {
@@ -65,16 +67,12 @@ func (tw *timewheel) Run() {
 
 func (tw *timewheel) Stop() {
 	select {
-	case <-tw.stop: // 时间轮已停止
+	case <-tw.ctx.Done(): // 时间轮已停止
 		return
 	default:
 	}
 
-	close(tw.stop)
-	select {
-	case tw.err <- errors.New("timewheel stopped"):
-	default:
-	}
+	tw.cancel()
 	close(tw.err)
 }
 
@@ -84,9 +82,9 @@ func (tw *timewheel) Err() chan error {
 
 func (tw *timewheel) requeue(task *Task) {
 	select {
-	case <-task.ctx.Done(): // 任务被取消
+	case <-tw.ctx.Done(): // 时间轮已停止
 		return
-	case <-tw.stop: // 时间轮已停止
+	case <-task.ctx.Done(): // 任务被取消
 		return
 	default:
 	}
@@ -124,7 +122,7 @@ func (tw *timewheel) scheduler() {
 
 	for {
 		select {
-		case <-tw.stop: // 时间轮已停止
+		case <-tw.ctx.Done(): // 时间轮已停止
 			return
 		case <-ticker.C:
 			tw.slot = (tw.slot + 1) % tw.size
@@ -136,7 +134,7 @@ func (tw *timewheel) scheduler() {
 func (tw *timewheel) process(slot int) {
 	tw.bucket[slot].Range(func(key, value any) bool {
 		select {
-		case <-tw.stop: // 时间轮已停止
+		case <-tw.ctx.Done(): // 时间轮已停止
 			return false
 		default:
 		}
@@ -171,6 +169,8 @@ func (tw *timewheel) do(task *Task) {
 	}
 
 	select {
+	case <-tw.ctx.Done():
+		return
 	case <-task.ctx.Done(): // 任务被取消
 		err := fmt.Errorf("task(%s) canceled: %w", task.uniqID, context.Cause(task.ctx))
 		select {
@@ -187,12 +187,17 @@ func (tw *timewheel) do(task *Task) {
 }
 
 // New 返回一个时间轮实例
-func New(tick time.Duration, size int) TimeWheel {
+func New(size int, tick time.Duration) TimeWheel {
+	ctx, cancel := context.WithCancel(context.Background())
+
 	return &timewheel{
-		tick:   tick,
 		size:   size,
+		tick:   tick,
 		bucket: make([]sync.Map, size),
-		stop:   make(chan struct{}),
-		err:    make(chan error),
+
+		ctx:    ctx,
+		cancel: cancel,
+
+		err: make(chan error),
 	}
 }
