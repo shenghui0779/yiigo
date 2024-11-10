@@ -5,13 +5,24 @@ import (
 	"context"
 	"runtime/debug"
 	"sync"
+	"sync/atomic"
 	"time"
+
+	"github.com/google/uuid"
 )
 
-const defaultSize = 1000
+const (
+	defaultCap         = 1000
+	defaultIdleTimeout = 60 * time.Second
+)
 
 // PanicFn 处理Panic方法
 type PanicFn func(ctx context.Context, err interface{}, stack []byte)
+
+type worker struct {
+	timeUsed time.Time
+	cancel   context.CancelFunc
+}
 
 // Job 异步执行的任务
 type Job struct {
@@ -19,190 +30,196 @@ type Job struct {
 	fn  func(ctx context.Context)
 }
 
-// Worker 控制并发协程数量
-type Worker struct {
-	input chan Job
-
+// Limiter 控制并发协程数量
+type Limiter struct {
+	input  chan Job
 	queue  chan Job
 	global *list.List
 
-	pool chan struct{}
+	capacity int64
+	active   int64
+	workers  sync.Map
+
+	idleTimeout time.Duration
+	panicFn     PanicFn
 
 	ctx    context.Context
 	cancel context.CancelFunc
-
-	panicFn PanicFn
 }
 
 // New 返回一个Worker实例
-func New(size int, panicFn PanicFn) *Worker {
-	if size <= 0 {
-		size = defaultSize
+func New(cap int64, idleTimeout time.Duration, panicFn PanicFn) *Limiter {
+	if cap <= 0 {
+		cap = defaultCap
 	}
-	ctx, cancel := context.WithCancel(context.Background())
-	w := &Worker{
-		input: make(chan Job),
-
-		queue:  make(chan Job, size),
+	ctx, cancel := context.WithCancel(context.TODO())
+	l := &Limiter{
+		input:  make(chan Job),
+		queue:  make(chan Job, cap),
 		global: list.New(),
 
-		pool: make(chan struct{}, size),
+		capacity: cap,
+
+		idleTimeout: idleTimeout,
+		panicFn:     panicFn,
 
 		ctx:    ctx,
 		cancel: cancel,
-
-		panicFn: panicFn,
 	}
-	go w.consumer()
-	go w.producer()
-	go w.keepalive()
-	for i := 0; i < size; i++ {
-		w.pool <- struct{}{}
-	}
-	return w
+	go l.run()
+	go l.idleCheck()
+	return l
 }
 
 // Go 异步执行任务
-func (w *Worker) Go(ctx context.Context, fn func(ctx context.Context)) {
+func (l *Limiter) Go(ctx context.Context, fn func(ctx context.Context)) {
 	select {
 	case <-ctx.Done():
 		return
-	default:
+	case l.input <- Job{ctx: ctx, fn: fn}:
 	}
-	w.input <- Job{ctx: ctx, fn: fn}
 }
 
-// Len 返回当前可用的协程数量
-func (w *Worker) Len() int {
-	return len(w.pool)
+// Active 返回当前活跃的协程数量
+func (l *Limiter) Active() int64 {
+	return l.active
 }
 
 // Close 关闭资源
-func (w *Worker) Close() {
-	w.cancel()
-	close(w.input)
-	close(w.queue)
-	close(w.pool)
+func (l *Limiter) Close() {
+	l.cancel()
+	close(l.input)
+	close(l.queue)
 }
 
-func (w *Worker) producer() {
-	for {
-		select {
-		case <-w.ctx.Done():
-			return
-		case job := <-w.input:
-			select {
-			case <-w.ctx.Done():
-				return
-			case w.queue <- job:
-			default:
-				w.global.PushBack(job)
-			}
-		}
+func (l *Limiter) setTimeUsed(uniqId string) {
+	v, ok := l.workers.Load(uniqId)
+	if !ok || v == nil {
+		return
 	}
+	v.(*worker).timeUsed = time.Now()
 }
 
-func (w *Worker) consumer() {
+func (l *Limiter) run() {
 	for {
 		select {
-		case <-w.ctx.Done():
+		case <-l.ctx.Done():
 			return
-		case <-w.pool:
+		case job := <-l.input:
 			select {
-			case <-w.ctx.Done():
-				return
-			case job := <-w.queue:
-				w.do(job)
+			case l.queue <- job:
 			default:
-				if e := w.global.Front(); e != nil {
-					if v := w.global.Remove(e); v != nil {
-						w.do(v.(Job))
-						break
-					}
+				if l.active < l.capacity {
+					atomic.AddInt64(&l.active, 1)
+					ctx, cancel := context.WithCancel(context.TODO())
+					uniqId := l.spawn(ctx)
+					l.workers.Store(uniqId, &worker{
+						timeUsed: time.Now(),
+						cancel:   cancel,
+					})
 				}
-				w.do(<-w.queue)
+				l.global.PushBack(job)
 			}
 		}
 	}
 }
 
-// keepalive 没有它，会报：fatal error: all goroutines are asleep - deadlock!
-func (w *Worker) keepalive() {
-	ticker := time.NewTicker(time.Minute)
+func (l *Limiter) idleCheck() {
+	ticker := time.NewTicker(l.idleTimeout)
 	defer ticker.Stop()
 
 	for {
 		select {
-		case <-w.ctx.Done():
+		case <-l.ctx.Done():
 			return
 		case <-ticker.C:
-			select {
-			case <-w.ctx.Done():
-				return
-			case w.input <- Job{}:
-			default:
-			}
+			l.workers.Range(func(k, v any) bool {
+				w := v.(*worker)
+				if l.idleTimeout > 0 && time.Since(w.timeUsed) > l.idleTimeout {
+					w.cancel()
+					l.workers.Delete(k)
+				}
+				return true
+			})
 		}
 	}
 }
 
-func (w *Worker) do(job Job) {
-	if job.fn == nil {
-		select {
-		case <-w.ctx.Done():
-			return
-		default:
-		}
-		w.pool <- struct{}{}
-		return
-	}
-	go func(job Job) {
+func (l *Limiter) spawn(ctx context.Context) string {
+	uniqId := uuid.New().String()
+
+	go func(ctx context.Context, uniqId string) {
+		var jobCtx context.Context
 		defer func() {
 			if e := recover(); e != nil {
-				if w.panicFn != nil {
-					w.panicFn(job.ctx, e, debug.Stack())
+				if l.panicFn != nil {
+					l.panicFn(jobCtx, e, debug.Stack())
 				}
 			}
-			select {
-			case <-w.ctx.Done():
-				return
-			default:
-			}
-			w.pool <- struct{}{}
 		}()
-		job.fn(job.ctx)
-	}(job)
+		for {
+			var job Job
+			select {
+			case <-l.ctx.Done():
+				return
+			case <-ctx.Done():
+				atomic.AddInt64(&l.active, -1)
+				return
+			case job = <-l.queue:
+			default:
+				if e := l.global.Front(); e != nil {
+					if v := l.global.Remove(e); v != nil {
+						job = v.(Job)
+						break
+					}
+				}
+				select {
+				case <-l.ctx.Done():
+					return
+				case <-ctx.Done():
+					atomic.AddInt64(&l.active, -1)
+					return
+				case job = <-l.queue:
+				}
+			}
+			l.setTimeUsed(uniqId)
+			jobCtx = job.ctx
+			job.fn(job.ctx)
+		}
+	}(ctx, uniqId)
+
+	return uniqId
 }
 
 var (
-	gw   *Worker
+	gw   *Limiter
 	once sync.Once
 )
 
-// Init 初始化一个默认的全局Worker
-func Init(size int, panicFn PanicFn) {
-	gw = New(size, panicFn)
+// Init 初始化默认的全局Limiter
+func Init(cap int64, idleTimeout time.Duration, panicFn PanicFn) {
+	gw = New(cap, idleTimeout, panicFn)
 }
 
-// Go 默认的全局Worker异步执行任务
+// Go 异步执行任务
 func Go(ctx context.Context, fn func(ctx context.Context)) {
 	if gw == nil {
 		once.Do(func() {
-			gw = New(defaultSize, nil)
+			gw = New(defaultCap, defaultIdleTimeout, nil)
 		})
 	}
 	gw.Go(ctx, fn)
 }
 
-// Close 返回默认的全局Worker当前可用的协程数量
-func Len() int {
+// Active 返回当前活跃的协程数量
+func Active() int64 {
 	if gw == nil {
 		return 0
 	}
-	return gw.Len()
+	return gw.Active()
 }
 
-// Close 关闭默认的全局Worker
+// Close 关闭默认的全局Limiter
 func Close() {
 	if gw != nil {
 		gw.Close()

@@ -60,7 +60,7 @@ func TestLimit(t *testing.T) {
 		t.FailNow()
 	}
 	// 限制并发数
-	w := New(2, nil)
+	w := New(2, defaultIdleTimeout, nil)
 	defer w.Close()
 	now = time.Now()
 	for i := 0; i < 4; i++ {
@@ -83,7 +83,7 @@ func TestLimit(t *testing.T) {
 func TestRecover(t *testing.T) {
 	ch := make(chan struct{})
 	defer close(ch)
-	w := New(2, func(ctx context.Context, err interface{}, stack []byte) {
+	w := New(2, defaultIdleTimeout, func(ctx context.Context, err interface{}, stack []byte) {
 		t.Log("[error] job panic:", err)
 		t.Log("[stack]", string(stack))
 		ch <- struct{}{}
