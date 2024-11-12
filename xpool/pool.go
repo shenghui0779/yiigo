@@ -84,16 +84,11 @@ func NewResourcePool(factory Factory, capacity, maxCap int, idleTimeout time.Dur
 	defer cancel()
 
 	if prefill != 0 {
-		sem := NewSemaphore(prefill, 0 /* timeout */)
-
 		var wg sync.WaitGroup
 		for i := 0; i < capacity; i++ {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-
-				_ = sem.Acquire()
-				defer sem.Release()
 
 				// If context has expired, give up.
 				select {

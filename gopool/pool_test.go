@@ -1,35 +1,33 @@
-package worker
+package gopool
 
 import (
 	"context"
 	"math"
+	"sync"
 	"testing"
 	"time"
 )
 
 func TestNormal(t *testing.T) {
 	ctx := context.Background()
+	p := New(2)
+	defer p.Close()
 	m := make(map[int]int)
 	for i := 0; i < 4; i++ {
 		m[i] = i
 	}
-	ch := make(chan struct{}, 2)
-	defer close(ch)
-	Go(ctx, func(context.Context) {
+	var wg sync.WaitGroup
+	wg.Add(1)
+	p.Go(ctx, func(context.Context) {
 		m[1]++
-		ch <- struct{}{}
-		return
+		wg.Done()
 	})
-	Go(ctx, func(context.Context) {
+	wg.Add(1)
+	p.Go(ctx, func(context.Context) {
 		m[2]++
-		ch <- struct{}{}
-		return
+		wg.Done()
 	})
-	count := 0
-	for count < 2 {
-		<-ch
-		count++
-	}
+	wg.Wait()
 	Close()
 	t.Log(m)
 }
@@ -40,40 +38,33 @@ func sleep1s(context.Context) {
 
 func TestLimit(t *testing.T) {
 	ctx := context.Background()
-	ch := make(chan struct{}, 4)
-	defer close(ch)
+	var wg sync.WaitGroup
 	// 没有并发数限制
 	now := time.Now()
 	for i := 0; i < 4; i++ {
+		wg.Add(1)
 		go func() {
 			sleep1s(ctx)
-			ch <- struct{}{}
+			wg.Done()
 		}()
 	}
-	count := 0
-	for count < 4 {
-		<-ch
-		count++
-	}
+	wg.Wait()
 	sec := math.Round(time.Since(now).Seconds())
 	if sec != 1 {
 		t.FailNow()
 	}
 	// 限制并发数
-	w := New(2, defaultIdleTimeout, nil)
-	defer w.Close()
+	p := New(2)
+	defer p.Close()
 	now = time.Now()
 	for i := 0; i < 4; i++ {
-		w.Go(ctx, func(ctx context.Context) {
+		wg.Add(1)
+		p.Go(ctx, func(ctx context.Context) {
 			sleep1s(ctx)
-			ch <- struct{}{}
+			wg.Done()
 		})
 	}
-	count = 0
-	for count < 4 {
-		<-ch
-		count++
-	}
+	wg.Wait()
 	sec = math.Round(time.Since(now).Seconds())
 	if sec != 2 {
 		t.FailNow()
@@ -83,13 +74,13 @@ func TestLimit(t *testing.T) {
 func TestRecover(t *testing.T) {
 	ch := make(chan struct{})
 	defer close(ch)
-	w := New(2, defaultIdleTimeout, func(ctx context.Context, err interface{}, stack []byte) {
+	p := New(2, WithPanicHandler(func(ctx context.Context, err interface{}, stack []byte) {
 		t.Log("[error] job panic:", err)
 		t.Log("[stack]", string(stack))
 		ch <- struct{}{}
-	})
-	defer w.Close()
-	w.Go(context.Background(), func(ctx context.Context) {
+	}))
+	defer p.Close()
+	p.Go(context.Background(), func(ctx context.Context) {
 		sleep1s(ctx)
 		panic("oh my god!")
 	})

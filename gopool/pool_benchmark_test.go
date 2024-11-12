@@ -1,4 +1,4 @@
-package worker
+package gopool
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	RunTimes   = 1e6
+	RunTimes   = 1e7
 	PoolCap    = 5e4
 	BenchParam = 10
 )
@@ -20,12 +20,8 @@ func demoFunc(ctx context.Context) {
 	time.Sleep(time.Duration(BenchParam) * time.Millisecond)
 }
 
-func Main(m testing.M) {
-	runtime.GOMAXPROCS(1)
-	m.Run()
-}
-
 func BenchmarkGoroutines(b *testing.B) {
+	runtime.GOMAXPROCS(1)
 	ctx := context.TODO()
 
 	var wg sync.WaitGroup
@@ -83,10 +79,10 @@ func BenchmarkErrGroup(b *testing.B) {
 	}
 }
 
-func BenchmarkWorkLimiter(b *testing.B) {
+func BenchmarkGoPool(b *testing.B) {
 	ctx := context.TODO()
 
-	p := New(PoolCap, defaultIdleTimeout, nil)
+	p := New(PoolCap)
 	defer p.Close()
 
 	b.ResetTimer()
@@ -129,10 +125,10 @@ func BenchmarkSemaphoreThroughput(b *testing.B) {
 	}
 }
 
-func BenchmarkWorkLimiterThroughput(b *testing.B) {
+func BenchmarkGoPoolThroughput(b *testing.B) {
 	ctx := context.TODO()
 
-	p := New(PoolCap, defaultIdleTimeout, nil)
+	p := New(PoolCap)
 	defer p.Close()
 
 	b.ResetTimer()
