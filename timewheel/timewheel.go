@@ -23,7 +23,7 @@ type Task struct {
 // TimeWheel 单时间轮
 type TimeWheel interface {
 	// AddTask 添加一个任务，到期被执行，默认仅执行一次；若指定了重试次数，则在返回`error`后重试；
-	// 注意：任务是异步执行的，`ctx`一旦被取消，则任务也随之取消；如要保证任务不被取消，可以使用`yiigo.DetachContext`(如果您的Go版本>=1.21.0，请使用 `context.WithoutCancel`)
+	// 注意：任务是异步执行的，`ctx`一旦被取消，则任务也随之取消；如要保证任务不被取消，可以使用`context.WithoutCancel`
 	AddTask(ctx context.Context, taskID string, fn func(ctx context.Context, taskID string) error, options ...Option)
 	// Run 运行时间轮
 	Run()
