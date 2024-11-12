@@ -4,14 +4,17 @@ import (
 	"context"
 	"fmt"
 	"runtime/debug"
+	"strings"
 	"sync"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // Task 时间轮任务
 type Task struct {
 	ctx         context.Context
-	uniqID      string                                         // 任务唯一标识
+	id          string                                         // 任务ID
 	attempts    uint16                                         // 当前尝试的次数
 	maxAttempts uint16                                         // 最大尝试次数
 	round       int                                            // 延迟执行的轮数
@@ -22,15 +25,13 @@ type Task struct {
 
 // TimeWheel 单时间轮
 type TimeWheel interface {
-	// AddTask 添加一个任务，到期被执行，默认仅执行一次；若指定了重试次数，则在返回`error`后重试；
-	// 注意：任务是异步执行的，`ctx`一旦被取消，则任务也随之取消；如要保证任务不被取消，可以使用`context.WithoutCancel`
-	AddTask(ctx context.Context, taskID string, fn func(ctx context.Context, taskID string) error, options ...Option)
-	// Run 运行时间轮
-	Run()
+	// Go 异步一个任务并返回任务ID，到期被执行，默认仅执行一次；若指定了重试次数，则在返回`error`后重试；
+	// 注意：任务是异步执行的，`ctx`一旦被取消，则任务也随之取消；如要保证任务不被取消，请使用`context.WithoutCancel`
+	Go(ctx context.Context, fn func(ctx context.Context, taskId string) error, options ...Option) string
 	// Stop 终止时间轮
 	Stop()
 	// Err 监听异常错误
-	Err() chan error
+	Err() <-chan error
 }
 
 type timewheel struct {
@@ -45,10 +46,11 @@ type timewheel struct {
 	err chan error
 }
 
-func (tw *timewheel) AddTask(ctx context.Context, taskID string, fn func(ctx context.Context, taskID string) error, options ...Option) {
+func (tw *timewheel) Go(ctx context.Context, fn func(ctx context.Context, taskId string) error, options ...Option) string {
+	taskId := strings.ReplaceAll(uuid.New().String(), "-", "")
 	task := &Task{
 		ctx:         ctx,
-		uniqID:      taskID,
+		id:          taskId,
 		callback:    fn,
 		maxAttempts: 1,
 		deferFn: func(attempts uint16) time.Duration {
@@ -59,10 +61,11 @@ func (tw *timewheel) AddTask(ctx context.Context, taskID string, fn func(ctx con
 		f(task)
 	}
 	tw.requeue(task)
+	return taskId
 }
 
-func (tw *timewheel) Run() {
-	go tw.scheduler()
+func (tw *timewheel) Err() <-chan error {
+	return tw.err
 }
 
 func (tw *timewheel) Stop() {
@@ -74,10 +77,6 @@ func (tw *timewheel) Stop() {
 
 	tw.cancel()
 	close(tw.err)
-}
-
-func (tw *timewheel) Err() chan error {
-	return tw.err
 }
 
 func (tw *timewheel) requeue(task *Task) {
@@ -113,7 +112,7 @@ func (tw *timewheel) requeue(task *Task) {
 	// 剩余延迟
 	task.remainder = time.Duration(duration % tick)
 	// 存储任务
-	tw.bucket[slot].Store(task.uniqID, task)
+	tw.bucket[slot].Store(task.id, task)
 }
 
 func (tw *timewheel) scheduler() {
@@ -147,50 +146,52 @@ func (tw *timewheel) process(slot int) {
 			task.round--
 			return true
 		}
-		go tw.do(task)
+		tw.do(task)
 		tw.bucket[slot].Delete(key)
 		return true
 	})
 }
 
 func (tw *timewheel) do(task *Task) {
-	defer func() {
-		if r := recover(); r != nil {
-			err := fmt.Errorf("task(%s) panic recovered: %+v\n%s", task.uniqID, r, string(debug.Stack()))
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				err := fmt.Errorf("task(%s) panic recovered: %+v\n%s", task.id, r, string(debug.Stack()))
+				select {
+				case tw.err <- err:
+				default:
+				}
+			}
+		}()
+
+		if task.remainder > 0 {
+			time.Sleep(task.remainder)
+		}
+
+		select {
+		case <-tw.ctx.Done():
+			return
+		case <-task.ctx.Done(): // 任务被取消
+			err := fmt.Errorf("task(%s) canceled: %w", task.id, context.Cause(task.ctx))
 			select {
 			case tw.err <- err:
 			default:
 			}
-		}
-	}()
-
-	if task.remainder > 0 {
-		time.Sleep(task.remainder)
-	}
-
-	select {
-	case <-tw.ctx.Done():
-		return
-	case <-task.ctx.Done(): // 任务被取消
-		err := fmt.Errorf("task(%s) canceled: %w", task.uniqID, context.Cause(task.ctx))
-		select {
-		case tw.err <- err:
+			return
 		default:
 		}
-		return
-	default:
-	}
 
-	if err := task.callback(task.ctx, task.uniqID); err != nil {
-		tw.requeue(task)
-	}
+		if err := task.callback(task.ctx, task.id); err != nil {
+			tw.requeue(task)
+		}
+	}()
 }
 
 // New 返回一个时间轮实例
 func New(size int, tick time.Duration) TimeWheel {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	return &timewheel{
+	tw := &timewheel{
 		size:   size,
 		tick:   tick,
 		bucket: make([]sync.Map, size),
@@ -200,4 +201,8 @@ func New(size int, tick time.Duration) TimeWheel {
 
 		err: make(chan error),
 	}
+
+	go tw.scheduler()
+
+	return tw
 }

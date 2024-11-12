@@ -4,13 +4,12 @@ import (
 	"context"
 	"fmt"
 	"math"
-	"strconv"
 	"testing"
 	"time"
 )
 
-// TestTimeWheel_1 测试时间轮 - 先添加任务再运行
-func TestTimeWheel_1(t *testing.T) {
+// TestTimeWheel 测试时间轮
+func TestTimeWheel(t *testing.T) {
 	ch := make(chan string)
 	defer close(ch)
 
@@ -19,35 +18,8 @@ func TestTimeWheel_1(t *testing.T) {
 		n := i + 1
 		addedAt := time.Now()
 		go func() {
-			tw.AddTask(context.Background(), "task#"+strconv.Itoa(n), func(ctx context.Context, taskID string) error {
-				ch <- fmt.Sprintf("%s run after %ds", taskID, int64(math.Round(time.Since(addedAt).Seconds())))
-				return nil
-			}, WithDelay(func(attempts uint16) time.Duration {
-				return time.Second * time.Duration(n)
-			}))
-		}()
-	}
-	tw.Run()
-
-	for i := 0; i < 10; i++ {
-		t.Log(<-ch)
-	}
-}
-
-// TestTimeWheel_2 测试时间轮 - 先运行再添加任务
-func TestTimeWheel_2(t *testing.T) {
-	ch := make(chan string)
-	defer close(ch)
-
-	tw := New(7, time.Second)
-	tw.Run()
-
-	for i := 0; i < 10; i++ {
-		n := i + 1
-		addedAt := time.Now()
-		go func() {
-			tw.AddTask(context.Background(), "task#"+strconv.Itoa(n), func(ctx context.Context, taskID string) error {
-				ch <- fmt.Sprintf("%s run after %ds", taskID, int64(math.Round(time.Since(addedAt).Seconds())))
+			tw.Go(context.Background(), func(ctx context.Context, taskId string) error {
+				ch <- fmt.Sprintf("%s[%d] run after %ds", taskId, n, int64(math.Round(time.Since(addedAt).Seconds())))
 				return nil
 			}, WithDelay(func(attempts uint16) time.Duration {
 				return time.Second * time.Duration(n)
