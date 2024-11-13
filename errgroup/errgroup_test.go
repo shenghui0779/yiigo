@@ -14,23 +14,20 @@ import (
 )
 
 func TestNormal(t *testing.T) {
-	var (
-		m   = make(map[int]int)
-		g   Group
-		err error
-	)
+	m := make(map[int]int)
 	for i := 0; i < 4; i++ {
 		m[i] = i
 	}
-	g.Go(func(context.Context) (err error) {
+	eg := WithContext(context.Background())
+	eg.Go(func(context.Context) (err error) {
 		m[1]++
 		return
 	})
-	g.Go(func(context.Context) (err error) {
+	eg.Go(func(context.Context) (err error) {
 		m[2]++
 		return
 	})
-	if err = g.Wait(); err != nil {
+	if err := eg.Wait(); err != nil {
 		t.Log(err)
 	}
 	t.Log(m)
@@ -42,40 +39,44 @@ func sleep1s(context.Context) error {
 }
 
 func TestGOMAXPROCS(t *testing.T) {
+	ctx := context.Background()
+
 	// 没有并发数限制
-	g := Group{}
+	eg := WithContext(ctx)
 	now := time.Now()
-	g.Go(sleep1s)
-	g.Go(sleep1s)
-	g.Go(sleep1s)
-	g.Go(sleep1s)
-	err := g.Wait()
+	eg.Go(sleep1s)
+	eg.Go(sleep1s)
+	eg.Go(sleep1s)
+	eg.Go(sleep1s)
+	err := eg.Wait()
 	assert.Nil(t, err)
 	sec := math.Round(time.Since(now).Seconds())
 	if sec != 1 {
 		t.FailNow()
 	}
+
 	// 限制并发数
-	g2 := Group{}
-	g2.GOMAXPROCS(2)
+	eg2 := WithContext(ctx)
+	eg2.GOMAXPROCS(2)
 	now = time.Now()
-	g2.Go(sleep1s)
-	g2.Go(sleep1s)
-	g2.Go(sleep1s)
-	g2.Go(sleep1s)
-	err = g2.Wait()
+	eg2.Go(sleep1s)
+	eg2.Go(sleep1s)
+	eg2.Go(sleep1s)
+	eg2.Go(sleep1s)
+	err = eg2.Wait()
 	assert.Nil(t, err)
 	sec = math.Round(time.Since(now).Seconds())
 	if sec != 2 {
 		t.FailNow()
 	}
+
 	// context canceled
-	g3 := WithContext(context.Background())
-	g3.GOMAXPROCS(2)
-	g3.Go(func(context.Context) error {
+	eg3 := WithContext(ctx)
+	eg3.GOMAXPROCS(2)
+	eg3.Go(func(context.Context) error {
 		return errors.New("error for testing errgroup context")
 	})
-	g3.Go(func(ctx context.Context) error {
+	eg3.Go(func(ctx context.Context) error {
 		time.Sleep(time.Second)
 		select {
 		case <-ctx.Done():
@@ -84,20 +85,17 @@ func TestGOMAXPROCS(t *testing.T) {
 		}
 		return nil
 	})
-	err = g3.Wait()
+	err = eg3.Wait()
 	assert.NotNil(t, err)
 	t.Log(err)
 }
 
 func TestRecover(t *testing.T) {
-	var (
-		g   Group
-		err error
-	)
-	g.Go(func(context.Context) (err error) {
+	eg := WithContext(context.Background())
+	eg.Go(func(context.Context) (err error) {
 		panic("oh my god!")
 	})
-	if err = g.Wait(); err != nil {
+	if err := eg.Wait(); err != nil {
 		t.Log(err)
 		return
 	}
@@ -123,7 +121,7 @@ func fakeSearch(kind string) Search {
 // simplify goroutine counting and error handling. This example is derived from
 // the sync.WaitGroup example at https://golang.org/pkg/sync/#example_WaitGroup.
 func ExampleGroup_justErrors() {
-	var g Group
+	eg := WithContext(context.Background())
 	var urls = []string{
 		"http://www.golang.org/",
 		"http://www.google.com/",
@@ -132,7 +130,7 @@ func ExampleGroup_justErrors() {
 	for _, _url := range urls {
 		// Launch a goroutine to fetch the URL.
 		url := _url // https://golang.org/doc/faq#closures_and_goroutines
-		g.Go(func(context.Context) error {
+		eg.Go(func(context.Context) error {
 			// Fetch the URL.
 			resp, err := http.Get(url)
 			if err == nil {
@@ -142,7 +140,7 @@ func ExampleGroup_justErrors() {
 		})
 	}
 	// Wait for all HTTP fetches to complete.
-	if err := g.Wait(); err == nil {
+	if err := eg.Wait(); err == nil {
 		fmt.Println("Successfully fetched all URLs.")
 	}
 }
@@ -153,13 +151,13 @@ func ExampleGroup_justErrors() {
 // and error-handling.
 func ExampleGroup_parallel() {
 	Google := func(ctx context.Context, query string) ([]Result, error) {
-		g := WithContext(ctx)
+		eg := WithContext(context.Background())
 
 		searches := []Search{Web, Image, Video}
 		results := make([]Result, len(searches))
 		for _i, _search := range searches {
 			i, search := _i, _search // https://golang.org/doc/faq#closures_and_goroutines
-			g.Go(func(context.Context) error {
+			eg.Go(func(context.Context) error {
 				result, err := search(ctx, query)
 				if err == nil {
 					results[i] = result
@@ -167,7 +165,7 @@ func ExampleGroup_parallel() {
 				return err
 			})
 		}
-		if err := g.Wait(); err != nil {
+		if err := eg.Wait(); err != nil {
 			return nil, err
 		}
 		return results, nil
@@ -203,18 +201,18 @@ func TestZeroGroup(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		var g Group
+		eg := WithContext(context.Background())
 
 		var firstErr error
 		for i, err := range tc.errs {
 			err := err
-			g.Go(func(context.Context) error { return err })
+			eg.Go(func(context.Context) error { return err })
 
 			if firstErr == nil && err != nil {
 				firstErr = err
 			}
 
-			if gErr := g.Wait(); gErr != firstErr {
+			if gErr := eg.Wait(); gErr != firstErr {
 				t.Errorf("after g.Go(func() error { return err }) for err in %v\n"+
 					"g.Wait() = %v; want %v", tc.errs[:i+1], err, firstErr)
 			}
@@ -223,20 +221,20 @@ func TestZeroGroup(t *testing.T) {
 }
 
 func TestWithCancel(t *testing.T) {
-	g := WithContext(context.Background())
-	g.Go(func(ctx context.Context) error {
+	eg := WithContext(context.Background())
+	eg.Go(func(ctx context.Context) error {
 		time.Sleep(100 * time.Millisecond)
 		return fmt.Errorf("boom")
 	})
 	var doneErr error
-	g.Go(func(ctx context.Context) error {
+	eg.Go(func(ctx context.Context) error {
 		select {
 		case <-ctx.Done():
 			doneErr = ctx.Err()
 		}
 		return doneErr
 	})
-	g.Wait()
+	eg.Wait()
 	if doneErr != context.Canceled {
 		t.Error("error should be Canceled")
 	}
