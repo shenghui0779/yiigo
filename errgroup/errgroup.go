@@ -86,11 +86,9 @@ func (g *group) Go(fn func(ctx context.Context) error) {
 
 func (g *group) Wait() error {
 	defer func() {
+		g.cancel(g.err)
 		if g.ch != nil {
 			close(g.ch) // let all receiver exit
-		}
-		if g.cancel != nil {
-			g.cancel(g.err)
 		}
 	}()
 
@@ -113,9 +111,7 @@ func (g *group) do(fn func(ctx context.Context) error) {
 		if err != nil {
 			g.errOnce.Do(func() {
 				g.err = err
-				if g.cancel != nil {
-					g.cancel(err)
-				}
+				g.cancel(err)
 			})
 		}
 		g.wg.Done()

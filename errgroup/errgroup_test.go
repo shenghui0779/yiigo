@@ -234,7 +234,7 @@ func TestWithCancel(t *testing.T) {
 		}
 		return doneErr
 	})
-	eg.Wait()
+	_ = eg.Wait()
 	if doneErr != context.Canceled {
 		t.Error("error should be Canceled")
 	}
