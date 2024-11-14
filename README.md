@@ -132,10 +132,10 @@ go get -u github.com/shenghui0779/yiigo
 
 ### Features
 
-- Hash - 封装便于使用
-- Http - 封装便于使用(支持文件上传)
-- Crypto - 封装便于使用(支持 AES & RSA)
-- Validator - 支持汉化和自定义规则
+- xhash - 封装便于使用
+- xhttp - 封装便于使用(支持文件上传)
+- xcrypto - 封装便于使用(支持 AES & RSA)
+- validator - 支持汉化和自定义规则
 - 基于 Redis 的分布式锁
 - 基于 sqlx 的轻量SQLBuilder
 - 基于泛型的无限菜单分类层级树
