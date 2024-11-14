@@ -45,11 +45,7 @@ type group struct {
 // The derived Context is canceled the first time a function passed to Go
 // returns a non-nil error or the first time Wait returns, whichever occurs first.
 func WithContext(ctx context.Context) Group {
-	if ctx == nil {
-		ctx = context.Background()
-	}
 	ctx, cancel := context.WithCancelCause(ctx)
-
 	return &group{ctx: ctx, cancel: cancel}
 }
 
