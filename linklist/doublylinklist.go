@@ -86,13 +86,13 @@ func (list *DoublyLinkList[T]) Remove(index int) (T, bool) {
 	list.mutex.Lock()
 	defer list.mutex.Unlock()
 
+	var value T
 	if !list.withinRange(index) {
-		var t T
-		return t, false
+		return value, false
 	}
 
 	e := list.getElement(index)
-	value := e.value
+	value = e.value
 	list.deleteElement(e)
 
 	return value, true

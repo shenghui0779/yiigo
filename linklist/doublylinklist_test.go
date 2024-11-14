@@ -72,25 +72,6 @@ func TestAppendAndPrepend(t *testing.T) {
 	}
 }
 
-func TestRemove(t *testing.T) {
-	list := New[string]()
-	list.Append("a")
-	list.Append("b", "c")
-	list.Remove(2)
-	if actualValue, ok := list.Get(2); actualValue != "" || ok {
-		t.Errorf("Got %v expected %v", actualValue, "")
-	}
-	list.Remove(1)
-	list.Remove(0)
-	list.Remove(0) // no effect
-	if actualValue := list.Empty(); actualValue != true {
-		t.Errorf("Got %v expected %v", actualValue, true)
-	}
-	if actualValue := list.Size(); actualValue != 0 {
-		t.Errorf("Got %v expected %v", actualValue, 0)
-	}
-}
-
 func TestGet(t *testing.T) {
 	list := New[string]()
 	list.Append("a")
@@ -110,6 +91,25 @@ func TestGet(t *testing.T) {
 	list.Remove(0)
 	if actualValue, ok := list.Get(0); actualValue != "b" || !ok {
 		t.Errorf("Got %v expected %v", actualValue, "b")
+	}
+}
+
+func TestRemove(t *testing.T) {
+	list := New[string]()
+	list.Append("a")
+	list.Append("b", "c")
+	list.Remove(2)
+	if actualValue, ok := list.Get(2); actualValue != "" || ok {
+		t.Errorf("Got %v expected %v", actualValue, "")
+	}
+	list.Remove(1)
+	list.Remove(0)
+	list.Remove(0) // no effect
+	if actualValue := list.Empty(); actualValue != true {
+		t.Errorf("Got %v expected %v", actualValue, true)
+	}
+	if actualValue := list.Size(); actualValue != 0 {
+		t.Errorf("Got %v expected %v", actualValue, 0)
 	}
 }
 
