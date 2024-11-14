@@ -132,17 +132,18 @@ go get -u github.com/shenghui0779/yiigo
 
 ### Features
 
-- Hash - 封装便于使用
-- Http - 封装便于使用(支持文件上传)
-- Crypto - 封装便于使用(支持 AES & RSA)
-- Validator - 支持汉化和自定义规则
+- xhash - 封装便于使用
+- xhttp - 封装便于使用(支持文件上传)
+- xcrypto - 封装便于使用(支持 AES & RSA)
+- validator - 支持汉化和自定义规则
 - 基于 Redis 的分布式锁
 - 基于 sqlx 的轻量SQLBuilder
 - 基于泛型的无限菜单分类层级树
+- linklist - 一个并发安全的双向列表
 - errgroup - 基于官方版本改良，支持并发协程数量控制
-- Value - 用于处理 `k-v` 格式化的场景，如：生成签名串 等
-- Location - 距离、方位角、经纬度与平面直角坐标系的相互转化
-- TimeWheel - 简单实用的单层时间轮(支持一次性和多次重试任务)
+- xvalue - 用于处理 `k-v` 格式化的场景，如：生成签名串 等
+- xcoord - 距离、方位角、经纬度与平面直角坐标系的相互转化
+- timeWheel - 简单实用的单层时间轮(支持一次性和多次重试任务)
 - 实用的辅助方法：IP、file、time、slice、string、version compare 等
 
 #### SQL Builder
