@@ -85,8 +85,6 @@ func (tw *timewheel) requeue(t *task) {
 	select {
 	case <-tw.ctx.Done(): // 时间轮已停止
 		return
-	case <-t.ctx.Done(): // 任务被取消
-		return
 	default:
 	}
 
@@ -106,7 +104,7 @@ func (tw *timewheel) requeue(t *task) {
 	if slot == tw.slot {
 		if t.round == 0 {
 			t.remainder = delay
-			go tw.do(t)
+			tw.do(t)
 			return
 		}
 		t.round--
@@ -146,7 +144,7 @@ func (tw *timewheel) process(slot int) {
 }
 
 func (tw *timewheel) do(t *task) {
-	go func() {
+	go func(t *task) {
 		defer func() {
 			if r := recover(); r != nil {
 				err := fmt.Errorf("t(%s) panic recovered: %+v\n%s", t.id, r, string(debug.Stack()))
@@ -177,7 +175,7 @@ func (tw *timewheel) do(t *task) {
 		if err := t.callback(t.ctx, t.id); err != nil {
 			tw.requeue(t)
 		}
-	}()
+	}(t)
 }
 
 // New 返回一个时间轮实例
