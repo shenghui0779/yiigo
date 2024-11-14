@@ -120,7 +120,7 @@ func (list *DoublyLinkList[T]) Map(fn func(index int, value T) T) *DoublyLinkLis
 	return newList
 }
 
-// Filter 过滤出指定条件的元素，移除它们并返回对应的值
+// Filter 过滤出指定条件的元素，移除并返回包含的值
 func (list *DoublyLinkList[T]) Filter(fn func(index int, value T) bool) []T {
 	list.mutex.Lock()
 	defer list.mutex.Unlock()
