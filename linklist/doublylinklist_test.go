@@ -300,7 +300,7 @@ func TestSet(t *testing.T) {
 func TestString(t *testing.T) {
 	c := New[int]()
 	c.Append(1)
-	if !strings.HasPrefix(c.String(), "DoublyLinkedList") {
+	if !strings.HasPrefix(c.String(), "DoublyLinkList") {
 		t.Errorf("String should start with container name")
 	}
 }

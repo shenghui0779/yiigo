@@ -25,7 +25,7 @@ type element[T comparable] struct {
 func New[T comparable](values ...T) *DoublyLinkList[T] {
 	list := &DoublyLinkList[T]{}
 	if len(values) > 0 {
-		list.Append(values...)
+		list.appendWithoutLock(values...)
 	}
 	return list
 }
@@ -35,6 +35,11 @@ func (list *DoublyLinkList[T]) Append(values ...T) {
 	list.mutex.Lock()
 	defer list.mutex.Unlock()
 
+	list.appendWithoutLock(values...)
+}
+
+// appendWithoutLock 向链表尾部追加值(不持有锁)
+func (list *DoublyLinkList[T]) appendWithoutLock(values ...T) {
 	for _, value := range values {
 		newElement := &element[T]{value: value, prev: list.last}
 		if list.size == 0 {
@@ -172,6 +177,11 @@ func (list *DoublyLinkList[T]) Values() []T {
 	list.mutex.RLock()
 	defer list.mutex.RUnlock()
 
+	return list.valuesWithoutLock()
+}
+
+// valuesWithoutLock 返回链表所有元素的值(不持有锁)
+func (list *DoublyLinkList[T]) valuesWithoutLock() []T {
 	values := make([]T, 0, list.size)
 	for e := list.first; e != nil; e = e.next {
 		values = append(values, e.value)
@@ -210,6 +220,11 @@ func (list *DoublyLinkList[T]) Clear() {
 	list.mutex.Lock()
 	defer list.mutex.Unlock()
 
+	list.clearWithoutLock()
+}
+
+// clearWithoutLock 清空链表(不持有锁)
+func (list *DoublyLinkList[T]) clearWithoutLock() {
 	list.size = 0
 	list.first = nil
 	list.last = nil
@@ -224,11 +239,11 @@ func (list *DoublyLinkList[T]) Sort(comparator func(x, y T) int) {
 		return
 	}
 
-	values := list.Values()
+	values := list.valuesWithoutLock()
 	slices.SortFunc(values, comparator)
 
-	list.Clear()
-	list.Append(values...)
+	list.clearWithoutLock()
+	list.appendWithoutLock(values...)
 }
 
 // Swap 交换链表中两个指定索引的元素
@@ -258,7 +273,7 @@ func (list *DoublyLinkList[T]) Insert(index int, values ...T) {
 	if !list.withinRange(index) {
 		// Append
 		if index == list.size {
-			list.Append(values...)
+			list.appendWithoutLock(values...)
 		}
 		return
 	}
@@ -316,7 +331,7 @@ func (list *DoublyLinkList[T]) Set(index int, value T) {
 	if !list.withinRange(index) {
 		// Append
 		if index == list.size {
-			list.Append(value)
+			list.appendWithoutLock(value)
 		}
 		return
 	}
