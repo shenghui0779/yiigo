@@ -336,22 +336,7 @@ func (list *DoublyLinkList[T]) Set(index int, value T) {
 		return
 	}
 
-	var foundElement *element[T]
-	// determine traversal direction, last to first or first to last
-	if list.size-index < index {
-		foundElement = list.last
-		for e := list.size - 1; e != index; {
-			fmt.Println("Set last", index, value, foundElement, foundElement.prev)
-			e, foundElement = e-1, foundElement.prev
-		}
-	} else {
-		foundElement = list.first
-		for e := 0; e != index; {
-			e, foundElement = e+1, foundElement.next
-		}
-	}
-
-	foundElement.value = value
+	list.getElement(index).value = value
 }
 
 // String 实现 Stringer Interface
@@ -360,7 +345,7 @@ func (list *DoublyLinkList[T]) String() string {
 	defer list.mutex.RUnlock()
 
 	str := "DoublyLinkList\n"
-	var values []string
+	values := make([]string, 0, list.size)
 	for e := list.first; e != nil; e = e.next {
 		values = append(values, fmt.Sprintf("%v", e.value))
 	}
