@@ -142,7 +142,6 @@ func (list *DoublyLinkList[T]) Filter(fn func(index int, value T) bool) []T {
 		values = append(values, e.value)
 		list.deleteElement(e)
 	}
-
 	return values
 }
 
