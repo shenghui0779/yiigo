@@ -21,7 +21,7 @@ func BuildLevelTree[T ILevelNode](data map[int64][]T, pid int64) []*LevelTree[T]
 		node := nodes[i]
 		root = append(root, &LevelTree[T]{
 			Data:     node,
-			Children: BuildLevelTree[T](data, node.GetID()),
+			Children: BuildLevelTree(data, node.GetID()),
 		})
 	}
 	return root
