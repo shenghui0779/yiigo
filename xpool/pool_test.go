@@ -40,7 +40,7 @@ func TestOpen(t *testing.T) {
 	lastID.Set(0)
 	count.Set(0)
 	p := NewResourcePool(PoolFactory, 6, 6, time.Second, 0)
-	p.SetCapacity(5)
+	_ = p.SetCapacity(5)
 	var resources [10]Resource
 
 	// Test Get
@@ -267,9 +267,9 @@ func TestShrinking(t *testing.T) {
 	}
 	// This will wait because pool is empty
 	go func() {
-		r, err := p.Get(ctx)
-		if err != nil {
-			t.Errorf("Unexpected error %v", err)
+		r, _err := p.Get(ctx)
+		if _err != nil {
+			t.Errorf("Unexpected error %v", _err)
 		}
 		p.Put(r)
 		done <- true
@@ -277,7 +277,7 @@ func TestShrinking(t *testing.T) {
 
 	// This will also wait
 	go func() {
-		p.SetCapacity(2)
+		_ = p.SetCapacity(2)
 		done <- true
 	}()
 	time.Sleep(10 * time.Millisecond)
@@ -302,7 +302,7 @@ func TestShrinking(t *testing.T) {
 	}
 
 	// Test race condition of SetCapacity with itself
-	p.SetCapacity(3)
+	_ = p.SetCapacity(3)
 	for i := 0; i < 3; i++ {
 		resources[i], err = p.Get(ctx)
 		if err != nil {
@@ -311,9 +311,9 @@ func TestShrinking(t *testing.T) {
 	}
 	// This will wait because pool is empty
 	go func() {
-		r, err := p.Get(ctx)
-		if err != nil {
-			t.Errorf("Unexpected error %v", err)
+		r, _err := p.Get(ctx)
+		if _err != nil {
+			t.Errorf("Unexpected error %v", _err)
 		}
 		p.Put(r)
 		done <- true
