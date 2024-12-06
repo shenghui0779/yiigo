@@ -7,12 +7,41 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"io"
+	"math"
 	"regexp"
 	"strings"
 	"time"
 
 	"github.com/hashicorp/go-version"
 )
+
+type Step struct {
+	Head int
+	Tail int
+}
+
+// Steps calculates the steps.
+// example:
+//
+//	arr := []int{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20}
+//	for _, step := range yiigo.Steps(len(arr), 6) {
+//		cur := arr[step.Head:step.Tail]
+//		// todo: do something
+//	}
+func Steps(total, step int) (steps []Step) {
+	steps = make([]Step, 0, int(math.Ceil(float64(total)/float64(step))))
+	for i := 0; i < total; i++ {
+		if i%step == 0 {
+			head := i
+			tail := head + step
+			if tail > total {
+				tail = total
+			}
+			steps = append(steps, Step{Head: head, Tail: tail})
+		}
+	}
+	return steps
+}
 
 // Nonce 生成随机串(size应为偶数)
 func Nonce(size uint8) string {
