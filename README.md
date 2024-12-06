@@ -145,6 +145,8 @@ go get -u github.com/shenghui0779/yiigo
 - timewheel - 简单实用的单层时间轮(支持一次性和多次重试任务)
 - 实用的辅助方法：IP、file、time、slice、string、version compare 等
 
+> ⚠️ 注意：`errgroup` 和 `timewheel` 如果需要协程并发复用，请使用 👉 [nightfall](https://github.com/shenghui0779/nightfall)
+
 #### SQL Builder
 
 > ⚠️ 目前支持的特性有限，复杂的SQL（如：子查询等）还需自己手写
