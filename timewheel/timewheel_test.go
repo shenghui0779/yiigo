@@ -43,6 +43,28 @@ func TestTimeWheel(t *testing.T) {
 	}
 }
 
+// TestCtxDone 测试任务context done
+func TestCtxDone(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+
+	tw := New(7, time.Second, WithCtxErrFn(func(ctx context.Context, taskId string, err error) {
+		fmt.Println("[task]", taskId)
+		fmt.Println("[error]", err)
+		cancel()
+	}))
+
+	addedAt := time.Now()
+
+	taskCtx, taskCancel := context.WithTimeout(context.Background(), time.Millisecond*200)
+	defer taskCancel()
+	tw.Go(taskCtx, func(ctx context.Context, taskId string, attempts int64) time.Duration {
+		fmt.Println("task run after", time.Since(addedAt).String())
+		return 0
+	}, time.Second)
+
+	<-ctx.Done()
+}
+
 // TestPanic 测试Panic
 func TestPanic(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())

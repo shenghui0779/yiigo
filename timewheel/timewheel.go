@@ -15,7 +15,10 @@ type (
 	// TaskFn 任务方法，返回下一次执行的延迟时间，若返回0，则表示不再执行
 	TaskFn func(ctx context.Context, taskId string, attempts int64) time.Duration
 
-	// PanicFn 处理Panic方法
+	// CtxErrFn 任务 context「取消/超时」的处理方法
+	CtxErrFn func(ctx context.Context, taskId string, err error)
+
+	// PanicFn 任务发生Panic的处理方法
 	PanicFn func(ctx context.Context, taskId string, err any, stack []byte)
 )
 
@@ -34,7 +37,7 @@ type task struct {
 // TimeWheel 单时间轮
 type TimeWheel interface {
 	// Go 异步一个任务并返回任务ID；
-	// 注意：任务是异步执行的，`ctx`一旦被取消，则任务也随之取消；
+	// 注意：任务是异步执行的，`ctx`一旦被取消/超时，则任务也随之取消；
 	// 如要保证任务不被取消，请使用`context.WithoutCancel`
 	Go(ctx context.Context, taskFn TaskFn, delay time.Duration) string
 
@@ -51,7 +54,8 @@ type timewheel struct {
 	ctx    context.Context
 	cancel context.CancelFunc
 
-	panicFn PanicFn // Panic处理函数
+	ctxErrFn CtxErrFn // Ctx Done 处理函数
+	panicFn  PanicFn  // Panic处理函数
 }
 
 func (tw *timewheel) Go(ctx context.Context, taskFn TaskFn, delay time.Duration) string {
@@ -149,12 +153,15 @@ func (tw *timewheel) do(t *task) {
 		case <-tw.ctx.Done(): // 时间轮停止
 			return
 		case <-t.ctx.Done(): // 任务被取消
+			if tw.ctxErrFn != nil {
+				tw.ctxErrFn(t.ctx, t.id, t.ctx.Err())
+			}
 			return
 		default:
 		}
 
 		delay := t.callback(t.ctx, t.id, t.attempts)
-		if delay != 0 {
+		if delay > 0 {
 			tw.requeue(t, delay)
 		}
 	}(t)
