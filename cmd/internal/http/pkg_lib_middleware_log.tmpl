@@ -16,8 +16,6 @@ import (
 	"{{.Module}}/pkg/lib/result"
 )
 
-const ContentJSON = "application/json"
-
 // Log 日志中间件
 func Log(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -41,7 +39,7 @@ func Log(next http.Handler) http.Handler {
 					}
 				}
 				body = r.Form.Encode()
-			case ContentJSON:
+			case yiigo.ContentJSON:
 				b, err := io.ReadAll(r.Body) // 取出Body
 				if err != nil {
 					result.ErrSystem(result.E(errors.WithMessage(err, "请求Body读取失败"))).JSON(w, r)
