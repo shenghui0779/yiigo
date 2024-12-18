@@ -22,6 +22,17 @@ type (
 	PanicFn func(ctx context.Context, taskId string, err any, stack []byte)
 )
 
+// TimeWheel 单层时间轮
+type TimeWheel interface {
+	// Go 异步一个任务并返回任务ID；
+	// 注意：任务是异步执行的，`ctx`一旦被取消/超时，则任务也随之取消；
+	// 如要保证任务不被取消，请使用`context.WithoutCancel`
+	Go(ctx context.Context, taskFn TaskFn, delay time.Duration) string
+
+	// Stop 终止时间轮
+	Stop()
+}
+
 type task struct {
 	id string // 任务ID
 
@@ -32,17 +43,6 @@ type task struct {
 	remainder time.Duration // 任务执行前的剩余延迟（小于时间轮精度）
 
 	ctx context.Context
-}
-
-// TimeWheel 单时间轮
-type TimeWheel interface {
-	// Go 异步一个任务并返回任务ID；
-	// 注意：任务是异步执行的，`ctx`一旦被取消/超时，则任务也随之取消；
-	// 如要保证任务不被取消，请使用`context.WithoutCancel`
-	Go(ctx context.Context, taskFn TaskFn, delay time.Duration) string
-
-	// Stop 终止时间轮
-	Stop()
 }
 
 type timewheel struct {
