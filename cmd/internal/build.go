@@ -58,7 +58,7 @@ func InitGrpcApp(root, mod, name string) {
 
 func initProject(root, mod string, fsys embed.FS) {
 	params := &Params{Module: mod}
-	// root
+	// 项目根目录文件
 	files, _ := fs.ReadDir(fsys, ".")
 	for _, v := range files {
 		if v.IsDir() || filepath.Ext(v.Name()) == ".go" {
@@ -67,7 +67,7 @@ func initProject(root, mod string, fsys embed.FS) {
 		output := buildOutput(root, v.Name(), "")
 		buildTmpl(fsys, v.Name(), output, params)
 	}
-	// pkg/lib
+	// lib目录文件
 	_ = fs.WalkDir(fsys, "pkg/lib", func(path string, d fs.DirEntry, err error) error {
 		if d.IsDir() || filepath.Ext(path) == ".go" {
 			return nil
@@ -88,6 +88,7 @@ func initApp(root, mod, name string, fsys embed.FS) {
 		params.AppPkg = "app/" + name
 		params.AppName = name
 	}
+	// app目录文件
 	_ = fs.WalkDir(fsys, "pkg/app", func(path string, d fs.DirEntry, err error) error {
 		if d.IsDir() {
 			return nil
@@ -103,12 +104,11 @@ func initApp(root, mod, name string, fsys embed.FS) {
 
 func buildOutput(root, path, appName string) string {
 	var builder strings.Builder
-
+	// 项目根目录
 	builder.WriteString(root)
 	builder.WriteString("/")
-
+	// 解析path
 	dir, name := filepath.Split(path)
-
 	// dockerfile
 	if name == "Dockerfile" {
 		if len(appName) != 0 {
@@ -117,15 +117,13 @@ func buildOutput(root, path, appName string) string {
 		} else {
 			builder.WriteString("Dockerfile")
 		}
-		return builder.String()
+		return filepath.Clean(builder.String())
 	}
-
-	// dir
+	// 文件目录
 	if len(dir) != 0 {
 		builder.WriteString(dir)
 	}
-
-	// name
+	// 文件名称
 	switch ext := filepath.Ext(path); ext {
 	case ".yiigo":
 		builder.WriteString(name[:len(name)-6])
@@ -138,12 +136,12 @@ func buildOutput(root, path, appName string) string {
 	default:
 		builder.WriteString(name)
 	}
-
+	// 新的文件路径
 	output := builder.String()
 	if len(appName) != 0 {
 		output = strings.ReplaceAll(output, "app", "app/"+appName)
 	}
-	return output
+	return filepath.Clean(output)
 }
 
 func buildTmpl(fsys embed.FS, path, output string, params *Params) {
