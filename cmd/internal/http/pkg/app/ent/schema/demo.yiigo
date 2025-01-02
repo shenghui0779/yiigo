@@ -1,12 +1,12 @@
 package schema
 
 import (
+	"{{.Module}}/pkg/internal/db"
+
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema"
 	"entgo.io/ent/schema/field"
-
-	"{{.Module}}/pkg/lib/db"
 )
 
 // Demo holds the schema definition for the Demo entity.

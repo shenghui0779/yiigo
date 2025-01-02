@@ -3,8 +3,8 @@ package middleware
 import (
 	"net/http"
 
-	"{{.Module}}/pkg/lib/identity"
-	"{{.Module}}/pkg/lib/result"
+	"{{.Module}}/pkg/internal/identity"
+	"{{.Module}}/pkg/internal/result"
 )
 
 // Auth App授权中间件

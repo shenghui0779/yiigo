@@ -1,4 +1,4 @@
-FROM golang:1.23.1 AS builder
+FROM golang:1.23 AS builder
 
 WORKDIR /project
 
@@ -9,7 +9,7 @@ RUN go mod download
 RUN go generate ./pkg/{{.AppPkg}}/ent
 RUN go mod tidy
 
-RUN CGO_ENABLED=0 go build ./pkg/{{.AppPkg}} -o ./bin/main
+RUN CGO_ENABLED=0 go build -o ./bin/main ./pkg/{{.AppPkg}}
 
 FROM scratch
 

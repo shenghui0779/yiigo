@@ -1,0 +1,43 @@
+package span
+
+import (
+	"context"
+	"runtime"
+	"strings"
+	"time"
+
+	"{{.Module}}/pkg/internal/log"
+
+	"go.uber.org/zap"
+)
+
+type Span struct {
+	c context.Context
+	f string
+	l int
+	n string
+	t time.Time
+}
+
+func (s *Span) Finish() {
+	log.Info(s.c, "time consume", zap.String("function", s.n), zap.String("duration", time.Since(s.t).String()), zap.String("file", s.f), zap.Int("line", s.l))
+}
+
+// New returns a span to log the time consume.
+//
+// Example:
+//
+//	sp := span.New(ctx)
+//	defer sp.Finish()
+func New(ctx context.Context) *Span {
+	sp := &Span{c: ctx, t: time.Now()}
+	// Skip level 1 to get the caller function
+	pc, file, line, _ := runtime.Caller(1)
+	sp.f, sp.l = file, line
+	// Get the function details
+	if fn := runtime.FuncForPC(pc); fn != nil {
+		name := fn.Name()
+		sp.n = name[strings.Index(name, ".")+1:]
+	}
+	return sp
+}

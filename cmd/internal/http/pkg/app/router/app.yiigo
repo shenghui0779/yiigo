@@ -3,12 +3,12 @@ package router
 import (
 	"net/http"
 
-	"github.com/go-chi/chi/v5"
-
 	"{{.Module}}/pkg/{{.AppPkg}}/api"
 	"{{.Module}}/pkg/{{.AppPkg}}/web"
 	"{{.Module}}/pkg/lib"
-	lib_middleware "{{.Module}}/pkg/lib/middleware"
+	lib_middleware "{{.Module}}/pkg/internal/middleware"
+
+	"github.com/go-chi/chi/v5"
 )
 
 // register app routes

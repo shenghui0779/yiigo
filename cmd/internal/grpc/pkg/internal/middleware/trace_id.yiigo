@@ -1,0 +1,30 @@
+package middleware
+
+import (
+	"context"
+
+	"{{.Module}}/pkg/internal/trace"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
+)
+
+// TraceId is a middleware that injects a trace ID into the context of each request.
+func TraceId(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		md = metadata.Pairs()
+	}
+	md.Set(trace.TraceHost, trace.Hostname())
+	// traceId
+	var traceId string
+	if vals := md.Get(trace.TraceId); len(vals) != 0 {
+		traceId = vals[0]
+	} else {
+		traceId = trace.NewTraceId()
+		md.Set(trace.TraceId, traceId)
+	}
+	// set response header
+	_ = grpc.SetHeader(ctx, metadata.Pairs(trace.TraceId, traceId))
+	return handler(metadata.NewIncomingContext(ctx, md), req)
+}

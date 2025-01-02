@@ -6,14 +6,14 @@ import (
 	"os/signal"
 	"syscall"
 
+	"{{.Module}}/pkg/{{.AppPkg}}/ent"
+	"{{.Module}}/pkg/{{.AppPkg}}/server"
+	"{{.Module}}/pkg/internal/log"
+	"{{.Module}}/pkg/internal/util"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
-
-	"{{.Module}}/pkg/{{.AppPkg}}/ent"
-	"{{.Module}}/pkg/{{.AppPkg}}/server"
-	"{{.Module}}/pkg/lib/log"
-	"{{.Module}}/pkg/lib/util"
 )
 
 var cfgFile string

@@ -3,9 +3,9 @@ package cmd
 import (
 	"context"
 
-	"go.uber.org/zap"
+	"{{.Module}}/pkg/internal/log"
 
-	"{{.Module}}/pkg/lib/log"
+	"go.uber.org/zap"
 )
 
 func Init() {

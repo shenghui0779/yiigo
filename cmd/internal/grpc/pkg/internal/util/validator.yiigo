@@ -1,0 +1,25 @@
+package util
+
+import (
+	"context"
+
+	"{{.Module}}/pkg/internal/log"
+
+	"github.com/bufbuild/protovalidate-go"
+	"go.uber.org/zap"
+	"google.golang.org/protobuf/proto"
+)
+
+var v *protovalidate.Validator
+
+func Init(ctx context.Context) {
+	var err error
+	v, err = protovalidate.New()
+	if err != nil {
+		log.Panic(ctx, "Validator初始化失败", zap.Error(err))
+	}
+}
+
+func Validate(msg proto.Message) error {
+	return v.Validate(msg)
+}

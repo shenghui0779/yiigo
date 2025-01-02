@@ -18,6 +18,7 @@ type Params struct {
 	Module  string
 	AppPkg  string
 	AppName string
+	DockerF string
 }
 
 func InitHttpProject(root, mod string, apps ...string) {
@@ -68,7 +69,7 @@ func initProject(root, mod string, fsys embed.FS) {
 		buildTmpl(fsys, v.Name(), output, params)
 	}
 	// lib目录文件
-	_ = fs.WalkDir(fsys, "pkg/lib", func(path string, d fs.DirEntry, err error) error {
+	_ = fs.WalkDir(fsys, "pkg/internal", func(path string, d fs.DirEntry, err error) error {
 		if d.IsDir() || filepath.Ext(path) == ".go" {
 			return nil
 		}
@@ -83,10 +84,12 @@ func initApp(root, mod, name string, fsys embed.FS) {
 		Module:  mod,
 		AppPkg:  "app",
 		AppName: root,
+		DockerF: "Dockerfile",
 	}
 	if len(name) != 0 {
 		params.AppPkg = "app/" + name
 		params.AppName = name
+		params.DockerF = name + ".dockerfile"
 	}
 	// app目录文件
 	_ = fs.WalkDir(fsys, "pkg/app", func(path string, d fs.DirEntry, err error) error {
@@ -110,12 +113,21 @@ func buildOutput(root, path, appName string) string {
 	// 解析path
 	dir, name := filepath.Split(path)
 	// dockerfile
-	if name == "Dockerfile" {
+	switch name {
+	case "Dockerfile":
 		if len(appName) != 0 {
 			builder.WriteString(appName)
 			builder.WriteString(".dockerfile")
 		} else {
 			builder.WriteString("Dockerfile")
+		}
+		return filepath.Clean(builder.String())
+	case "dockerun.sh":
+		if len(appName) != 0 {
+			builder.WriteString(appName)
+			builder.WriteString("_dockerun.sh")
+		} else {
+			builder.WriteString("dockerun.sh")
 		}
 		return filepath.Clean(builder.String())
 	}
@@ -139,7 +151,7 @@ func buildOutput(root, path, appName string) string {
 	// 新的文件路径
 	output := builder.String()
 	if len(appName) != 0 {
-		output = strings.ReplaceAll(output, "app", "app/"+appName)
+		output = strings.Replace(output, "/app", "/app/"+appName, 1)
 	}
 	return filepath.Clean(output)
 }

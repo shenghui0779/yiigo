@@ -8,17 +8,18 @@ import (
 	"syscall"
 	"time"
 
+	"{{.Module}}/pkg/{{.AppPkg}}/ent"
+	"{{.Module}}/pkg/{{.AppPkg}}/router"
+	"{{.Module}}/pkg/internal/log"
+	"{{.Module}}/pkg/internal/middleware"
+	"{{.Module}}/pkg/internal/trace"
+
 	"github.com/go-chi/chi/v5"
 	chi_middleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/rs/cors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
-
-	"{{.Module}}/pkg/{{.AppPkg}}/ent"
-	"{{.Module}}/pkg/{{.AppPkg}}/router"
-	"{{.Module}}/pkg/lib/log"
-	"{{.Module}}/pkg/lib/middleware"
 )
 
 var cfgFile string
@@ -85,7 +86,7 @@ func serveHttp(ctx context.Context) {
 		},
 		AllowedMethods:   []string{http.MethodGet, http.MethodPost, http.MethodPatch, http.MethodPut, http.MethodDelete, http.MethodOptions},
 		AllowedHeaders:   []string{"Authorization", "Content-Type", "withCredentials"},
-		ExposedHeaders:   []string{log.TraceId}, // 服务器暴露一些自定义的头信息，允许客户端访问
+		ExposedHeaders:   []string{trace.TraceId}, // 服务器暴露一些自定义的头信息，允许客户端访问
 		AllowCredentials: true,
 	})
 

@@ -1,0 +1,55 @@
+package log
+
+import (
+	"context"
+
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"google.golang.org/grpc/metadata"
+)
+
+func Info(ctx context.Context, msg string, fields ...zap.Field) {
+	logCtx(ctx, zapcore.InfoLevel, msg, fields...)
+}
+
+func Warn(ctx context.Context, msg string, fields ...zap.Field) {
+	logCtx(ctx, zapcore.WarnLevel, msg, fields...)
+}
+
+func Error(ctx context.Context, msg string, fields ...zap.Field) {
+	logCtx(ctx, zapcore.ErrorLevel, msg, fields...)
+}
+
+func Panic(ctx context.Context, msg string, fields ...zap.Field) {
+	logCtx(ctx, zapcore.PanicLevel, msg, fields...)
+}
+
+func Fatal(ctx context.Context, msg string, fields ...zap.Field) {
+	logCtx(ctx, zapcore.FatalLevel, msg, fields...)
+}
+
+func logCtx(ctx context.Context, level zapcore.Level, msg string, fields ...zap.Field) {
+	if md, ok := metadata.FromIncomingContext(ctx); ok && len(md) != 0 {
+		for k, v := range md {
+			if len(v) == 1 {
+				fields = append(fields, zap.String(k, v[0]))
+			} else {
+				fields = append(fields, zap.Strings(k, v))
+			}
+		}
+	}
+	switch level {
+	case zapcore.InfoLevel:
+		logger.Info(msg, fields...)
+	case zapcore.WarnLevel:
+		logger.Warn(msg, fields...)
+	case zapcore.ErrorLevel:
+		logger.Error(msg, fields...)
+	case zapcore.PanicLevel:
+		logger.Panic(msg, fields...)
+	case zapcore.FatalLevel:
+		logger.Fatal(msg, fields...)
+	default:
+		logger.Debug(msg, fields...)
+	}
+}

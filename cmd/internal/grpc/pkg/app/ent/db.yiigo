@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"runtime/debug"
 
+	"{{.Module}}/pkg/internal/db"
+	"{{.Module}}/pkg/internal/log"
+
 	"entgo.io/ent/dialect"
 	"go.uber.org/zap"
-
-	"{{.Module}}/pkg/lib/db"
-	"{{.Module}}/pkg/lib/log"
 )
 
 var DB *Client

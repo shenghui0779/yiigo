@@ -3,13 +3,13 @@ package api
 import (
 	"net/http"
 
-	"github.com/pkg/errors"
-	"go.uber.org/zap"
-
 	"{{.Module}}/pkg/{{.AppPkg}}/service/greeter"
 	"{{.Module}}/pkg/lib"
-	"{{.Module}}/pkg/lib/log"
-	"{{.Module}}/pkg/lib/result"
+	"{{.Module}}/pkg/internal/log"
+	"{{.Module}}/pkg/internal/result"
+
+	"github.com/pkg/errors"
+	"go.uber.org/zap"
 )
 
 func Hello(w http.ResponseWriter, r *http.Request) {
