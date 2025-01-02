@@ -1,0 +1,25 @@
+package api
+
+import (
+	"net/http"
+
+	"{{.Module}}/pkg/{{.AppPkg}}/service/greeter"
+	"{{.Module}}/pkg/internal/log"
+	"{{.Module}}/pkg/internal/result"
+	"{{.Module}}/pkg/internal/util"
+
+	"github.com/pkg/errors"
+	"go.uber.org/zap"
+)
+
+func Hello(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	req := new(greeter.ReqHello)
+	if err := util.BindJSON(r, req); err != nil {
+		log.Error(ctx, "Error params", zap.Error(err))
+		result.ErrParams(result.E(errors.WithMessage(err, "参数错误"))).JSON(w, r)
+		return
+	}
+	greeter.Hello(ctx, req).JSON(w, r)
+}

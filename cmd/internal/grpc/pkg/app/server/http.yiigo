@@ -1,0 +1,90 @@
+package server
+
+import (
+	"context"
+	"fmt"
+	"net/http"
+	"strings"
+	"time"
+
+	"{{.Module}}/pkg/{{.AppPkg}}/api"
+	"{{.Module}}/pkg/internal/log"
+	"{{.Module}}/pkg/internal/trace"
+
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/rs/cors"
+	"github.com/spf13/viper"
+	"go.uber.org/zap"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/health/grpc_health_v1"
+)
+
+func ServeHttp(ctx context.Context) {
+	addr := ":" + viper.GetString("port.http")
+	// Create a gRPC client conn
+	conn, err := grpc.NewClient("0.0.0.0:"+viper.GetString("port.grpc"), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Fatal(ctx, "Error grpc.NewClient", zap.Error(err))
+	}
+	defer conn.Close()
+	// Create http mux with health check
+	mux := runtime.NewServeMux(
+		runtime.WithHealthzEndpoint(grpc_health_v1.NewHealthClient(conn)),
+		runtime.WithIncomingHeaderMatcher(func(s string) (string, bool) {
+			if v, ok := runtime.DefaultHeaderMatcher(s); ok {
+				return v, true
+			}
+			return strings.ToLower(s), true
+		}),
+		runtime.WithOutgoingHeaderMatcher(func(s string) (string, bool) {
+			if s == trace.TraceId {
+				return s, true
+			}
+			return runtime.MetadataHeaderPrefix + s, true
+		}),
+		runtime.WithErrorHandler(func(ctx context.Context, mux *runtime.ServeMux, m runtime.Marshaler, w http.ResponseWriter, r *http.Request, err error) {
+			_err := &runtime.HTTPStatusError{
+				HTTPStatus: http.StatusOK,
+				Err:        err,
+			}
+			runtime.DefaultHTTPErrorHandler(ctx, mux, m, w, r, _err)
+		}),
+	)
+	// Register http handler
+	if err = registerHttp(ctx, mux, conn); err != nil {
+		log.Fatal(ctx, "Error register http", zap.Error(err))
+	}
+	// With CORS
+	withCors := cors.New(cors.Options{
+		// AllowedOrigins:   []string{"*"},
+		AllowOriginFunc: func(origin string) bool {
+			return true
+		},
+		AllowedMethods:   []string{http.MethodGet, http.MethodPost, http.MethodPatch, http.MethodPut, http.MethodDelete, http.MethodOptions},
+		AllowedHeaders:   []string{"Authorization", "Content-Type", "withCredentials"},
+		ExposedHeaders:   []string{trace.TraceId}, // 服务器暴露一些自定义的头信息，允许客户端访问
+		AllowCredentials: true,
+	}).Handler(mux)
+	// Serve HTTP server
+	s := &http.Server{
+		Addr:         addr,
+		Handler:      withCors,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  10 * time.Second,
+	}
+	log.Info(ctx, "Serving HTTP OK", zap.String("port", addr))
+	if err = s.ListenAndServe(); err != nil {
+		log.Fatal(ctx, "Error ListenAndServe", zap.Error(err))
+	}
+}
+
+// 服务注册
+func registerHttp(ctx context.Context, mux *runtime.ServeMux, conn *grpc.ClientConn) error {
+	if err := api.RegisterGreeterHandler(ctx, mux, conn); err != nil {
+		return fmt.Errorf("RegisterGreeterHandler: %w", err)
+	}
+	return nil
+}
+

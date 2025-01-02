@@ -1,0 +1,40 @@
+package middleware
+
+import (
+	"context"
+	"encoding/json"
+	"time"
+
+	"{{.Module}}/pkg/internal/log"
+
+	"go.uber.org/zap"
+	"google.golang.org/grpc"
+)
+
+const HealthCheckMethod = "/grpc.health.v1.Health/Check"
+
+func Log(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
+	now := time.Now().Local()
+	defer func() {
+		if info.FullMethod == HealthCheckMethod {
+			return
+		}
+		// request
+		reqBody, _ := json.Marshal(req)
+		// response
+		var respBody []byte
+		if err != nil {
+			respBody = []byte(err.Error())
+		} else {
+			respBody, _ = json.Marshal(resp)
+		}
+		log.Info(ctx, "request info",
+			zap.String("method", info.FullMethod),
+			zap.ByteString("request", reqBody),
+			zap.ByteString("response", respBody),
+			zap.String("duration", time.Since(now).String()),
+		)
+	}()
+	resp, err = handler(ctx, req)
+	return
+}

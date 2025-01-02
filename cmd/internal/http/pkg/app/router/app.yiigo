@@ -1,0 +1,35 @@
+package router
+
+import (
+	"net/http"
+
+	"{{.Module}}/pkg/{{.AppPkg}}/api"
+	"{{.Module}}/pkg/{{.AppPkg}}/web"
+	lib_middleware "{{.Module}}/pkg/internal/middleware"
+	"{{.Module}}/pkg/internal/util"
+
+	"github.com/go-chi/chi/v5"
+)
+
+// register app routes
+func App(r chi.Router) {
+	util.FileServer(r, "/", http.FS(web.Asserts()))
+
+	// 浏览器访问会主动发送 /favicon.ico 请求
+	// r.Get("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
+	// 	http.ServeFile(w, r, "favicon.ico")
+	// })
+
+	r.Get("/ping", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("pong"))
+	})
+
+	// prometheus metrics
+	// r.Method(http.MethodGet, "/metrics", promhttp.Handler())
+
+	r.With(lib_middleware.Log).Group(func(r chi.Router) {
+		r.Route("/v1", func(r chi.Router) {
+			r.Post("/greeter", api.Hello)
+		})
+	})
+}

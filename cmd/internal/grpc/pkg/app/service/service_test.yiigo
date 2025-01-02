@@ -1,0 +1,27 @@
+package service
+
+import (
+	"context"
+	"testing"
+
+	"{{.Module}}/pkg/{{.AppPkg}}/ent"
+	"{{.Module}}/pkg/internal/log"
+
+	"github.com/spf13/viper"
+)
+
+func TestMain(m *testing.M) {
+	// 加载配置(注意：替换成自己的配置文件路径)
+	viper.SetConfigFile("../config.toml")
+	if err := viper.ReadInConfig(); err != nil {
+		panic(err)
+	}
+	// 初始化日志
+	log.Init()
+	// 初始化数据库
+	ent.Init(context.Background())
+	// 执行测试
+	m.Run()
+	// 关闭资源
+	ent.Close()
+}

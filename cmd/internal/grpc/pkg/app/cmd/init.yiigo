@@ -1,0 +1,20 @@
+package cmd
+
+import (
+	"context"
+
+	"{{.Module}}/pkg/internal/log"
+
+	"go.uber.org/zap"
+)
+
+func Init() {
+	// 注册全局参数
+	root.PersistentFlags().StringVarP(&cfgFile, "config", "C", "config.toml", "设置配置文件")
+	// 注册子命令
+	root.AddCommand(cmdHello())
+	// 执行命令
+	if err := root.Execute(); err != nil {
+		log.Error(context.Background(), "Error cmd execute", zap.Error(err))
+	}
+}

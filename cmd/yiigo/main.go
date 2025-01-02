@@ -7,12 +7,11 @@ import (
 	"os"
 	"os/exec"
 
+	"github.com/shenghui0779/yiigo"
+	"github.com/shenghui0779/yiigo/cmd/internal"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 	"golang.org/x/mod/modfile"
-
-	"github.com/shenghui0779/yiigo"
-	"github.com/shenghui0779/yiigo/cmd/internal"
 )
 
 func main() {

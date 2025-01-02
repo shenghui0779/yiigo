@@ -1,0 +1,48 @@
+package db
+
+import (
+	"context"
+	"fmt"
+	"time"
+
+	"{{.Module}}/pkg/internal/log"
+
+	"entgo.io/ent/dialect"
+	entsql "entgo.io/ent/dialect/sql"
+	"github.com/shenghui0779/yiigo"
+	"github.com/spf13/cast"
+	"github.com/spf13/viper"
+	"go.uber.org/zap"
+)
+
+// InitDBDriver 初始化Ent实例(如有多个实例，在此方法中初始化)
+func InitDBDriver(entDialect, cfgName string) (dialect.Driver, error) {
+	cfg := &yiigo.DBConfig{
+		Driver: entDialect,
+		DSN:    viper.GetString(cfgName + ".dsn"),
+	}
+	if entDialect == dialect.Postgres {
+		cfg.Driver = "pgx"
+	}
+
+	opts := viper.GetStringMap(cfgName + ".options")
+	if len(opts) != 0 {
+		cfg.MaxOpenConns = cast.ToInt(opts["max_open_conns"])
+		cfg.MaxIdleConns = cast.ToInt(opts["max_idle_conns"])
+		cfg.ConnMaxLifetime = cast.ToDuration(opts["conn_max_lifetime"]) * time.Second
+		cfg.ConnMaxIdleTime = cast.ToDuration(opts["conn_max_idle_time"]) * time.Second
+	}
+
+	db, err := yiigo.NewDB(cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	driver := entsql.OpenDB(entDialect, db)
+	if viper.GetBool("app.debug") {
+		return dialect.DebugWithContext(driver, func(ctx context.Context, v ...any) {
+			log.Info(ctx, "SQL info", zap.String("SQL", fmt.Sprint(v...)))
+		}), nil
+	}
+	return driver, nil
+}

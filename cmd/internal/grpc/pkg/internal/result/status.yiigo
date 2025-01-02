@@ -1,0 +1,38 @@
+package result
+
+import (
+	"context"
+	"fmt"
+
+	"{{.Module}}/pkg/internal/trace"
+
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
+)
+
+type Status interface {
+	Error(ctx context.Context) error
+}
+
+type errstatus struct {
+	code codes.Code
+	err  error
+}
+
+func (s *errstatus) Error(ctx context.Context) error {
+	var traceId string
+	if md, ok := metadata.FromIncomingContext(ctx); ok {
+		if vals := md.Get(trace.TraceId); len(vals) != 0 {
+			traceId = vals[0]
+		}
+	}
+	return status.Error(s.code, fmt.Sprintf("[%s] %+v", traceId, s.err))
+}
+
+func New(code int, err error) Status {
+	return &errstatus{
+		code: codes.Code(code),
+		err:  err,
+	}
+}

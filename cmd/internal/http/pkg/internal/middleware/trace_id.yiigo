@@ -1,0 +1,36 @@
+package middleware
+
+import (
+	"net/http"
+
+	"{{.Module}}/pkg/internal/trace"
+
+	"github.com/shenghui0779/yiigo/metadata"
+)
+
+// TraceId is a middleware that injects a trace ID into the context of each request.
+func TraceId(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		md, ok := metadata.FromIncomingContext(r.Context())
+		if !ok {
+			md = metadata.Pairs()
+		}
+		md.Set(trace.TraceHost, trace.Hostname())
+		// traceId
+		var traceId string
+		if vals := md.Get(trace.TraceId); len(vals) != 0 {
+			traceId = vals[0]
+		} else {
+			traceId = r.Header.Get(trace.TraceId)
+			if len(traceId) == 0 {
+				traceId = trace.NewTraceId()
+			}
+			md.Set(trace.TraceId, traceId)
+		}
+		// set response header
+		w.Header().Set(trace.TraceId, traceId)
+		// reset request context
+		ctx := metadata.NewIncomingContext(r.Context(), md)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}

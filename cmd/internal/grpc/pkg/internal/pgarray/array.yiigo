@@ -1,0 +1,64 @@
+package pgarray
+
+import (
+	"entgo.io/ent/dialect/sql"
+	"github.com/shenghui0779/yiigo/pgtype"
+)
+
+// 查找包含单个元素的数组
+func Any(field string, value any) func(*sql.Selector) {
+	return func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.Arg(value)
+			b.WriteString(" = ANY(")
+			b.Ident(s.C(field))
+			b.WriteString(")")
+		}))
+	}
+}
+
+// 查找包含多个元素的数组（oid指定pg数组元素类型）
+func Contains[T ~[]E, E comparable](field string, values T, oid pgtype.Oid) func(*sql.Selector) {
+	if len(values) == 0 {
+		return func(selector *sql.Selector) {}
+	}
+	return func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.Ident(s.C(field))
+			b.WriteString(" @> ARRAY[")
+			if len(values) != 0 {
+				b.Arg(values[0])
+				for _, v := range values[1:] {
+					b.WriteString(", ")
+					b.Arg(v)
+				}
+			}
+			b.WriteString("]::")
+			b.WriteString(pgtype.TypeName[oid])
+			b.WriteString("[]")
+		}))
+	}
+}
+
+// 查找有交集元素的数组（oid指定pg数组元素类型）
+func Intersect[T ~[]E, E comparable](field string, values T, oid pgtype.Oid) func(*sql.Selector) {
+	if len(values) == 0 {
+		return func(selector *sql.Selector) {}
+	}
+	return func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.Ident(s.C(field))
+			b.WriteString(" && ARRAY[")
+			if len(values) != 0 {
+				b.Arg(values[0])
+				for _, v := range values[1:] {
+					b.WriteString(", ")
+					b.Arg(v)
+				}
+			}
+			b.WriteString("]::")
+			b.WriteString(pgtype.TypeName[oid])
+			b.WriteString("[]")
+		}))
+	}
+}

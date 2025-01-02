@@ -1,0 +1,59 @@
+package ent
+
+import (
+	"context"
+	"fmt"
+	"runtime/debug"
+
+	"{{.Module}}/pkg/internal/db"
+	"{{.Module}}/pkg/internal/log"
+
+	"entgo.io/ent/dialect"
+	"go.uber.org/zap"
+)
+
+var DB *Client
+
+func Init(ctx context.Context) {
+	driver, err := db.InitDBDriver(dialect.MySQL, "db")
+	if err != nil {
+		log.Panic(ctx, "数据库初始化失败", zap.Error(err))
+	}
+	DB = NewClient(Driver(driver))
+}
+
+// Transaction Executes ent transaction with callback function.
+// The provided context is used until the transaction is committed or rolledback.
+func Transaction(ctx context.Context, fn func(ctx context.Context, tx *Tx) error) (err error) {
+	tx, _err := DB.Tx(ctx)
+	if _err != nil {
+		err = fmt.Errorf("db.Tx: %w", _err)
+		return
+	}
+
+	defer func() {
+		if r := recover(); r != nil {
+			_ = tx.Rollback() // if panic, should rollback
+			err = fmt.Errorf("transaction: panic recovered: %+v\n%s", r, string(debug.Stack()))
+		}
+	}()
+
+	err = fn(ctx, tx)
+	if err != nil {
+		if err_ := tx.Rollback(); err_ != nil {
+			err = fmt.Errorf("%w: tx.Rollback: %w", err, err_)
+		}
+		return
+	}
+	if err_ := tx.Commit(); err_ != nil {
+		err = fmt.Errorf("tx.Commit: %w", err_)
+		return
+	}
+	return
+}
+
+func Close() {
+	if DB != nil {
+		_ = DB.Close()
+	}
+}

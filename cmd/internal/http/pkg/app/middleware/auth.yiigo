@@ -1,0 +1,21 @@
+package middleware
+
+import (
+	"net/http"
+
+	"{{.Module}}/pkg/internal/identity"
+	"{{.Module}}/pkg/internal/result"
+)
+
+// Auth App授权中间件
+func Auth(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		id := identity.FromContext(r.Context())
+		if id.ID() == 0 {
+			result.ErrAuth().JSON(w, r)
+			return
+		}
+		// TODO ...
+		next.ServeHTTP(w, r)
+	})
+}
