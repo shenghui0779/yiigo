@@ -9,7 +9,7 @@ import (
 	"{{.Module}}/pkg/{{.AppPkg}}/ent"
 	"{{.Module}}/pkg/{{.AppPkg}}/server"
 	"{{.Module}}/pkg/internal/log"
-	"{{.Module}}/pkg/internal/util"
+	"{{.Module}}/pkg/internal/validator"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -46,8 +46,8 @@ var root = &cobra.Command{
 func preInit(ctx context.Context) {
 	// 初始化日志
 	log.Init()
-	// 初始化Util
-	util.Init(ctx)
+	// 初始化Validator
+	validator.Init(ctx)
 	// 初始化数据库
 	ent.Init(ctx)
 }

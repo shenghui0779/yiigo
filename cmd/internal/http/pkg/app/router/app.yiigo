@@ -5,15 +5,15 @@ import (
 
 	"{{.Module}}/pkg/{{.AppPkg}}/api"
 	"{{.Module}}/pkg/{{.AppPkg}}/web"
-	"{{.Module}}/pkg/lib"
 	lib_middleware "{{.Module}}/pkg/internal/middleware"
+	"{{.Module}}/pkg/internal/util"
 
 	"github.com/go-chi/chi/v5"
 )
 
 // register app routes
 func App(r chi.Router) {
-	lib.FileServer(r, "/", http.FS(web.Asserts()))
+	util.FileServer(r, "/", http.FS(web.Asserts()))
 
 	// 浏览器访问会主动发送 /favicon.ico 请求
 	// r.Get("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {

@@ -65,18 +65,11 @@ func New(code int, msg string, options ...Option) Result {
 	resp := &response{
 		x: yiigo.X{
 			"code": code,
-			"err":  false,
 			"msg":  msg,
 		},
 	}
-
-	if code != CodeOK {
-		resp.x["err"] = true
-	}
-
 	for _, f := range options {
 		f(resp)
 	}
-
 	return resp
 }

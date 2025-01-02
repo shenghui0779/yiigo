@@ -52,7 +52,7 @@ func Log(next http.Handler) http.Handler {
 			}
 		}
 		defer func() {
-			log.Info(r.Context(), "Request info",
+			log.Info(r.Context(), "request info",
 				zap.String("method", r.Method),
 				zap.String("path", r.URL.Path),
 				zap.String("ip", r.RemoteAddr),

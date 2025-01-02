@@ -1,4 +1,4 @@
-package lib
+package util
 
 import (
 	"context"
@@ -18,7 +18,6 @@ func Safe(ctx context.Context, fn func(ctx context.Context)) {
 			log.Error(ctx, "Goroutine panic recovered", zap.Any("error", err), zap.ByteString("stack", debug.Stack()))
 		}
 	}()
-
 	fn(ctx)
 }
 

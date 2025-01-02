@@ -1,4 +1,4 @@
-package util
+package validator
 
 import (
 	"context"
@@ -20,6 +20,6 @@ func Init(ctx context.Context) {
 	}
 }
 
-func Validate(msg proto.Message) error {
+func Check(msg proto.Message) error {
 	return v.Validate(msg)
 }
