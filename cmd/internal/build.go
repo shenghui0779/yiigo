@@ -65,7 +65,7 @@ func initProject(root, mod string, fsys embed.FS) {
 		if v.IsDir() || filepath.Ext(v.Name()) == ".go" {
 			continue
 		}
-		output := buildOutput(root, v.Name(), "")
+		output := genOutput(root, v.Name(), "")
 		buildTmpl(fsys, v.Name(), output, params)
 	}
 	// lib目录文件
@@ -73,7 +73,7 @@ func initProject(root, mod string, fsys embed.FS) {
 		if d.IsDir() || filepath.Ext(path) == ".go" {
 			return nil
 		}
-		output := buildOutput(root, path, "")
+		output := genOutput(root, path, "")
 		buildTmpl(fsys, path, output, params)
 		return nil
 	})
@@ -99,13 +99,13 @@ func initApp(root, mod, name string, fsys embed.FS) {
 		if filepath.Ext(path) == ".go" {
 			return nil
 		}
-		output := buildOutput(root, path, name)
+		output := genOutput(root, path, name)
 		buildTmpl(fsys, path, output, params)
 		return nil
 	})
 }
 
-func buildOutput(root, path, appName string) string {
+func genOutput(root, path, appName string) string {
 	var builder strings.Builder
 	// 项目根目录
 	builder.WriteString(root)
@@ -157,7 +157,10 @@ func buildOutput(root, path, appName string) string {
 }
 
 func buildTmpl(fsys embed.FS, path, output string, params *Params) {
-	b, _ := fsys.ReadFile(path)
+	b, err := fsys.ReadFile(path)
+	if err != nil {
+		log.Fatalln(err)
+	}
 	// 模板解析
 	t, err := template.New(path).Parse(string(b))
 	if err != nil {
