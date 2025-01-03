@@ -34,7 +34,7 @@ yiigo new demo --mod=xxx.yyy.com # 指定module名称
     │   ├── router
     │   ├── service
     │   └── web
-    └── lib
+    └── internal
 
 # 多应用
 yiigo new demo --apps=foo,bar
@@ -58,7 +58,7 @@ yiigo app hello # 新增应用
     │   │   └── web
     │   ├── bar
     │   └── hello
-    └── lib
+    └── internal
 ```
 
 ##### 👉 gRPC
@@ -89,7 +89,7 @@ yiigo new demo --mod=xxx.yyy.com --grpc # 指定module名称
     │   ├── main.go
     │   ├── server
     │   └── service
-    └── lib
+    └── internal
 
 # 多应用
 yiigo new demo --apps=foo,bar --grpc
@@ -121,7 +121,7 @@ yiigo app hello --grpc # 新增应用
     │   │   └── service
     │   ├── bar
     │   └── hello
-    └── lib
+    └── internal
 ```
 
 ## 工具包
@@ -145,7 +145,7 @@ go get -u github.com/shenghui0779/yiigo
 - timewheel - 简单实用的单层时间轮(支持一次性和多次重试任务)
 - 实用的辅助方法：IP、file、time、slice、string、version compare 等
 
-> ⚠️ 注意：`errgroup` 和 `timewheel` 如果需要协程并发复用，请使用 👉 [nightfall](https://github.com/shenghui0779/nightfall)
+> ⚠️ 注意：如需支持协程并发复用的 `errgroup` 和 `timewheel`，请使用 👉 [nightfall](https://github.com/shenghui0779/nightfall)
 
 #### SQL Builder
 
