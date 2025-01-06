@@ -4,7 +4,7 @@ go 1.23.0
 
 require (
 	git.sr.ht/~sbinet/gg v0.6.0
-	github.com/disintegration/imaging v1.6.2
+	github.com/disintegration/imaging v1.6.3-0.20201218193011-d40f48ce0f09
 	github.com/go-playground/locales v0.14.1
 	github.com/go-playground/universal-translator v0.18.1
 	github.com/go-playground/validator/v10 v10.23.0
