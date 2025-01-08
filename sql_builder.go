@@ -38,8 +38,7 @@ type txBuilder struct {
 
 func (b *txBuilder) Wrap(opts ...SQLOption) SQLWrapper {
 	wrapper := &sqlWrapper{
-		tx:      b,
-		columns: []string{"*"},
+		tx: b,
 	}
 	for _, f := range opts {
 		f(wrapper)
@@ -87,8 +86,7 @@ type sqlBuilder struct {
 
 func (b *sqlBuilder) Wrap(opts ...SQLOption) SQLWrapper {
 	wrapper := &sqlWrapper{
-		tx:      b,
-		columns: []string{"*"},
+		tx: b,
 	}
 	for _, f := range opts {
 		f(wrapper)
@@ -196,14 +194,14 @@ type sqlWrapper struct {
 	tx        TXBuilder
 	table     string
 	columns   []string
-	where     *SQLClause
+	where     []*SQLClause
 	joins     []*SQLClause
 	groups    []string
-	having    *SQLClause
+	having    []*SQLClause
 	orders    []string
 	offset    int
 	limit     int
-	returning string
+	returning []string
 	unions    []*SQLClause
 	distinct  bool
 	whereIn   bool
@@ -297,7 +295,7 @@ func (w *sqlWrapper) querySQL() (sql string, args []any, err error) {
 }
 
 func (w *sqlWrapper) subquery() (string, []any) {
-	binds := make([]any, 0)
+	args := make([]any, 0)
 
 	var builder strings.Builder
 
@@ -306,75 +304,96 @@ func (w *sqlWrapper) subquery() (string, []any) {
 		builder.WriteString("DISTINCT ")
 	}
 
-	builder.WriteString(w.columns[0])
-
-	for _, column := range w.columns[1:] {
-		builder.WriteString(", ")
-		builder.WriteString(column)
+	// columns
+	if len(w.columns) == 0 {
+		builder.WriteString("*")
+	} else {
+		builder.WriteString(w.columns[0])
+		for _, column := range w.columns[1:] {
+			builder.WriteString(", ")
+			builder.WriteString(column)
+		}
 	}
 
+	// from
 	builder.WriteString(" FROM ")
 	builder.WriteString(w.table)
 
+	// join
 	if len(w.joins) != 0 {
-		for _, join := range w.joins {
+		for _, cond := range w.joins {
 			builder.WriteString(" ")
-			builder.WriteString(join.keyword)
+			builder.WriteString(cond.keyword)
 			builder.WriteString(" JOIN ")
-			builder.WriteString(join.table)
-
-			if len(join.query) != 0 {
+			builder.WriteString(cond.table)
+			if len(cond.query) != 0 {
 				builder.WriteString(" ON ")
-				builder.WriteString(join.query)
+				builder.WriteString(cond.query)
 			}
 		}
 	}
 
-	if w.where != nil {
-		builder.WriteString(" WHERE ")
-		builder.WriteString(w.where.query)
-
-		binds = append(binds, w.where.binds...)
+	// where
+	if len(w.where) != 0 {
+		builder.WriteString(" WHERE (")
+		builder.WriteString(w.where[0].query)
+		builder.WriteString(")")
+		args = append(args, w.where[0].binds...)
+		for _, cond := range w.where[1:] {
+			builder.WriteString(" AND (")
+			builder.WriteString(cond.query)
+			builder.WriteString(")")
+			args = append(args, cond.binds...)
+		}
 	}
 
+	// group by
 	if len(w.groups) != 0 {
 		builder.WriteString(" GROUP BY ")
 		builder.WriteString(w.groups[0])
-
 		for _, column := range w.groups[1:] {
 			builder.WriteString(", ")
 			builder.WriteString(column)
 		}
 	}
 
-	if w.having != nil {
-		builder.WriteString(" HAVING ")
-		builder.WriteString(w.having.query)
-
-		binds = append(binds, w.having.binds...)
+	// having
+	if len(w.having) != 0 {
+		builder.WriteString(" HAVING (")
+		builder.WriteString(w.having[0].query)
+		builder.WriteString(")")
+		args = append(args, w.having[0].binds...)
+		for _, cond := range w.having[1:] {
+			builder.WriteString(" AND (")
+			builder.WriteString(cond.query)
+			builder.WriteString(")")
+			args = append(args, cond.binds...)
+		}
 	}
 
+	// order by
 	if len(w.orders) != 0 {
 		builder.WriteString(" ORDER BY ")
 		builder.WriteString(w.orders[0])
-
 		for _, column := range w.orders[1:] {
 			builder.WriteString(", ")
 			builder.WriteString(column)
 		}
 	}
 
-	if w.limit != 0 {
+	// limit
+	if w.limit > 0 {
 		builder.WriteString(" LIMIT ?")
-		binds = append(binds, w.limit)
+		args = append(args, w.limit)
 	}
 
-	if w.offset != 0 {
+	// offset
+	if w.offset > 0 {
 		builder.WriteString(" OFFSET ?")
-		binds = append(binds, w.offset)
+		args = append(args, w.offset)
 	}
 
-	return builder.String(), binds
+	return builder.String(), args
 }
 
 func (w *sqlWrapper) insertSQL(data any) (sql string, args []any, err error) {
@@ -404,7 +423,6 @@ func (w *sqlWrapper) insertSQL(data any) (sql string, args []any, err error) {
 	if l := len(columns); l != 0 {
 		builder.WriteString(" (")
 		builder.WriteString(columns[0])
-
 		for _, column := range columns[1:] {
 			builder.WriteString(", ")
 			builder.WriteString(column)
@@ -419,7 +437,11 @@ func (w *sqlWrapper) insertSQL(data any) (sql string, args []any, err error) {
 
 	if len(w.returning) != 0 {
 		builder.WriteString(" RETURNING ")
-		builder.WriteString(w.returning)
+		builder.WriteString(w.returning[0])
+		for _, column := range w.returning[1:] {
+			builder.WriteString(", ")
+			builder.WriteString(column)
+		}
 	}
 
 	sql = builder.String()
@@ -427,25 +449,23 @@ func (w *sqlWrapper) insertSQL(data any) (sql string, args []any, err error) {
 	return
 }
 
-func (w *sqlWrapper) insertWithMap(data X) (columns []string, binds []any) {
+func (w *sqlWrapper) insertWithMap(data X) (columns []string, args []any) {
 	fieldNum := len(data)
 
 	columns = make([]string, 0, fieldNum)
-	binds = make([]any, 0, fieldNum)
-
+	args = make([]any, 0, fieldNum)
 	for k, v := range data {
 		columns = append(columns, k)
-		binds = append(binds, v)
+		args = append(args, v)
 	}
-
 	return
 }
 
-func (w *sqlWrapper) insertWithStruct(v reflect.Value) (columns []string, binds []any) {
+func (w *sqlWrapper) insertWithStruct(v reflect.Value) (columns []string, args []any) {
 	fieldNum := v.NumField()
 
 	columns = make([]string, 0, fieldNum)
-	binds = make([]any, 0, fieldNum)
+	args = make([]any, 0, fieldNum)
 
 	t := v.Type()
 
@@ -466,7 +486,7 @@ func (w *sqlWrapper) insertWithStruct(v reflect.Value) (columns []string, binds 
 			column = name
 		}
 		columns = append(columns, column)
-		binds = append(binds, fieldV.Interface())
+		args = append(args, fieldV.Interface())
 	}
 
 	return
@@ -545,12 +565,12 @@ func (w *sqlWrapper) batchInsertSQL(data any) (sql string, args []any, err error
 	return
 }
 
-func (w *sqlWrapper) batchInsertWithMap(data []X) (columns []string, binds []any) {
+func (w *sqlWrapper) batchInsertWithMap(data []X) (columns []string, args []any) {
 	dataLen := len(data)
 	fieldNum := len(data[0])
 
 	columns = make([]string, 0, fieldNum)
-	binds = make([]any, 0, fieldNum*dataLen)
+	args = make([]any, 0, fieldNum*dataLen)
 
 	for k := range data[0] {
 		columns = append(columns, k)
@@ -558,21 +578,21 @@ func (w *sqlWrapper) batchInsertWithMap(data []X) (columns []string, binds []any
 
 	for _, x := range data {
 		for _, v := range columns {
-			binds = append(binds, x[v])
+			args = append(args, x[v])
 		}
 	}
 
 	return
 }
 
-func (w *sqlWrapper) batchInsertWithStruct(v reflect.Value) (columns []string, binds []any) {
+func (w *sqlWrapper) batchInsertWithStruct(v reflect.Value) (columns []string, args []any) {
 	first := reflect.Indirect(v.Index(0))
 
 	dataLen := v.Len()
 	fieldNum := first.NumField()
 
 	columns = make([]string, 0, fieldNum)
-	binds = make([]any, 0, fieldNum*dataLen)
+	args = make([]any, 0, fieldNum*dataLen)
 
 	t := first.Type()
 
@@ -601,7 +621,7 @@ func (w *sqlWrapper) batchInsertWithStruct(v reflect.Value) (columns []string, b
 				columns = append(columns, column)
 			}
 
-			binds = append(binds, fieldV.Interface())
+			args = append(args, fieldV.Interface())
 		}
 	}
 
@@ -661,11 +681,17 @@ func (w *sqlWrapper) updateSQL(data any) (sql string, args []any, err error) {
 		}
 	}
 
-	if w.where != nil {
-		builder.WriteString(" WHERE ")
-		builder.WriteString(w.where.query)
-
-		args = append(args, w.where.binds...)
+	if len(w.where) != 0 {
+		builder.WriteString(" WHERE (")
+		builder.WriteString(w.where[0].query)
+		builder.WriteString(")")
+		args = append(args, w.where[0].binds...)
+		for _, cond := range w.where[1:] {
+			builder.WriteString(" AND (")
+			builder.WriteString(cond.query)
+			builder.WriteString(")")
+			args = append(args, cond.binds...)
+		}
 	}
 
 	sql = builder.String()
@@ -680,34 +706,34 @@ func (w *sqlWrapper) updateSQL(data any) (sql string, args []any, err error) {
 	return
 }
 
-func (w *sqlWrapper) updateWithMap(data X) (columns []string, exprs map[string]string, binds []any) {
+func (w *sqlWrapper) updateWithMap(data X) (columns []string, exprs map[string]string, args []any) {
 	fieldNum := len(data)
 
 	columns = make([]string, 0, fieldNum)
 	exprs = make(map[string]string)
-	binds = make([]any, 0, fieldNum)
+	args = make([]any, 0, fieldNum)
 
 	for k, v := range data {
 		columns = append(columns, k)
 
 		if clause, ok := v.(*SQLClause); ok {
 			exprs[k] = clause.query
-			binds = append(binds, clause.binds...)
+			args = append(args, clause.binds...)
 
 			continue
 		}
 
-		binds = append(binds, v)
+		args = append(args, v)
 	}
 
 	return
 }
 
-func (w *sqlWrapper) updateWithStruct(v reflect.Value) (columns []string, binds []any) {
+func (w *sqlWrapper) updateWithStruct(v reflect.Value) (columns []string, args []any) {
 	fieldNum := v.NumField()
 
 	columns = make([]string, 0, fieldNum)
-	binds = make([]any, 0, fieldNum)
+	args = make([]any, 0, fieldNum)
 
 	t := v.Type()
 
@@ -732,7 +758,7 @@ func (w *sqlWrapper) updateWithStruct(v reflect.Value) (columns []string, binds 
 		}
 
 		columns = append(columns, column)
-		binds = append(binds, fieldV.Interface())
+		args = append(args, fieldV.Interface())
 	}
 
 	return
@@ -744,11 +770,17 @@ func (w *sqlWrapper) deleteSQL() (sql string, args []any, err error) {
 	builder.WriteString("DELETE FROM ")
 	builder.WriteString(w.table)
 
-	if w.where != nil {
-		builder.WriteString(" WHERE ")
-		builder.WriteString(w.where.query)
-
-		args = append(args, w.where.binds...)
+	if len(w.where) != 0 {
+		builder.WriteString(" WHERE (")
+		builder.WriteString(w.where[0].query)
+		builder.WriteString(")")
+		args = append(args, w.where[0].binds...)
+		for _, cond := range w.where[1:] {
+			builder.WriteString(" AND (")
+			builder.WriteString(cond.query)
+			builder.WriteString(")")
+			args = append(args, cond.binds...)
+		}
 	}
 
 	sql = builder.String()
@@ -854,20 +886,20 @@ func CrossJoin(table string) SQLOption {
 // Where 指定 `WHERE` 子句
 func Where(query string, binds ...any) SQLOption {
 	return func(w *sqlWrapper) {
-		w.where = &SQLClause{
+		w.where = append(w.where, &SQLClause{
 			query: query,
 			binds: binds,
-		}
+		})
 	}
 }
 
-// WhereIn 指定 `WHERE IN` 子句
+// WhereIn 指定 `IN` 子句
 func WhereIn(query string, binds ...any) SQLOption {
 	return func(w *sqlWrapper) {
-		w.where = &SQLClause{
+		w.where = append(w.where, &SQLClause{
 			query: query,
 			binds: binds,
-		}
+		})
 		w.whereIn = true
 	}
 }
@@ -882,10 +914,10 @@ func GroupBy(columns ...string) SQLOption {
 // Having 指定 `HAVING` 子句
 func Having(query string, binds ...any) SQLOption {
 	return func(w *sqlWrapper) {
-		w.having = &SQLClause{
+		w.having = append(w.having, &SQLClause{
 			query: query,
 			binds: binds,
-		}
+		})
 	}
 }
 
@@ -912,9 +944,9 @@ func Limit(n int) SQLOption {
 
 // Returning 指定 `RETURNING` 子句；
 // 用于 PostgresSQL 和 SQLite(3.35.0) `INSERT` 语句
-func Returning(column string) SQLOption {
+func Returning(columns ...string) SQLOption {
 	return func(w *sqlWrapper) {
-		w.returning = column
+		w.returning = columns
 	}
 }
 

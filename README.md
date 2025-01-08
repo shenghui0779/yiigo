@@ -169,51 +169,62 @@ type User struct {
     Phone  string `db:"phone,omitempty"`
 }
 
-var record User
+var (
+    record User
+    records []User
+)
+
 builder.Wrap(
     yiigo.Table("user"),
     yiigo.Where("id = ?", 1),
 ).One(ctx, &record)
-// SELECT * FROM user WHERE id = ?
+// SELECT * FROM user WHERE (id = ?)
 // [1]
 
-var records []User
 builder.Wrap(
     yiigo.Table("user"),
     yiigo.Where("name = ? AND age > ?", "shenghui0779", 20),
 ).All(ctx, &records)
-// SELECT * FROM user WHERE name = ? AND age > ?
+// SELECT * FROM user WHERE (name = ? AND age > ?)
+// [shenghui0779 20]
+
+builder.Wrap(
+    yiigo.Table("user"),
+    yiigo.Where("name = ?", "shenghui0779"),
+    yiigo.Where("age > ?", 20),
+).All(ctx, &records)
+// SELECT * FROM user WHERE (name = ?) AND (age > ?)
 // [shenghui0779 20]
 
 builder.Wrap(
     yiigo.Table("user"),
     yiigo.WhereIn("age IN (?)", []int{20, 30}),
-).All(...)
-// SELECT * FROM user WHERE age IN (?, ?)
+).All(ctx, &records)
+// SELECT * FROM user WHERE (age IN (?, ?))
 // [20 30]
 
 builder.Wrap(
     yiigo.Table("user"),
     yiigo.Select("id", "name", "age"),
     yiigo.Where("id = ?", 1),
-).One(...)
-// SELECT id, name, age FROM user WHERE id = ?
+).One(ctx, &record)
+// SELECT id, name, age FROM user WHERE (id = ?)
 // [1]
 
 builder.Wrap(
     yiigo.Table("user"),
     yiigo.Distinct("name"),
     yiigo.Where("id = ?", 1),
-).One(...)
-// SELECT DISTINCT name FROM user WHERE id = ?
+).One(ctx, &record)
+// SELECT DISTINCT name FROM user WHERE (id = ?)
 // [1]
 
 builder.Wrap(
     yiigo.Table("user"),
     yiigo.LeftJoin("address", "user.id = address.user_id"),
     yiigo.Where("user.id = ?", 1),
-).One(...)
-// SELECT * FROM user LEFT JOIN address ON user.id = address.user_id WHERE user.id = ?
+).One(ctx, &record)
+// SELECT * FROM user LEFT JOIN address ON user.id = address.user_id WHERE (user.id = ?)
 // [1]
 
 builder.Wrap(
@@ -221,8 +232,8 @@ builder.Wrap(
     yiigo.Select("user_id", "COUNT(*) AS total"),
     yiigo.GroupBy("user_id"),
     yiigo.Having("user_id = ?", 1),
-).All(...)
-// SELECT user_id, COUNT(*) AS total FROM address GROUP BY user_id HAVING user_id = ?
+).All(ctx, &records)
+// SELECT user_id, COUNT(*) AS total FROM address GROUP BY user_id HAVING (user_id = ?)
 // [1]
 
 builder.Wrap(
@@ -231,8 +242,8 @@ builder.Wrap(
     yiigo.OrderBy("age ASC", "id DESC"),
     yiigo.Offset(5),
     yiigo.Limit(10),
-).All(...)
-// SELECT * FROM user WHERE age > ? ORDER BY age ASC, id DESC LIMIT ? OFFSET ?
+).All(ctx, &records)
+// SELECT * FROM user WHERE (age > ?) ORDER BY age ASC, id DESC LIMIT ? OFFSET ?
 // [20, 10, 5]
 
 wrap1 := builder.Wrap(
@@ -244,16 +255,16 @@ builder.Wrap(
     yiigo.Table("user_0"),
     yiigo.Where("id = ?", 1),
     yiigo.Union(wrap1),
-).All(...)
-// (SELECT * FROM user_0 WHERE id = ?) UNION (SELECT * FROM user_1 WHERE id = ?)
+).All(ctx, &records)
+// (SELECT * FROM user_0 WHERE (id = ?)) UNION (SELECT * FROM user_1 WHERE (id = ?))
 // [1, 2]
 
 builder.Wrap(
     yiigo.Table("user_0"),
     yiigo.Where("id = ?", 1),
     yiigo.UnionAll(wrap1),
-).All(...)
-// (SELECT * FROM user_0 WHERE id = ?) UNION ALL (SELECT * FROM user_1 WHERE id = ?)
+).All(ctx, &records)
+// (SELECT * FROM user_0 WHERE (id = ?)) UNION ALL (SELECT * FROM user_1 WHERE (id = ?))
 // [1, 2]
 
 builder.Wrap(
@@ -267,8 +278,8 @@ builder.Wrap(
             yiigo.Limit(5),
         ),
     ),
-).All(...)
-// (SELECT * FROM user_0 WHERE age IN (?, ?) LIMIT ?) UNION (SELECT * FROM user_1 WHERE age IN (?, ?) LIMIT ?)
+).All(ctx, &records)
+// (SELECT * FROM user_0 WHERE (age IN (?, ?)) LIMIT ?) UNION (SELECT * FROM user_1 WHERE (age IN (?, ?)) LIMIT ?)
 // [10, 20, 5, 30, 40, 5]
 ```
 
@@ -356,7 +367,7 @@ builder.Wrap(
     Name: "yiigo",
     Age:  29,
 })
-// UPDATE user SET name = ?, age = ? WHERE id = ?
+// UPDATE user SET name = ?, age = ? WHERE (id = ?)
 // [yiigo 29 1]
 
 builder.Wrap(
@@ -366,7 +377,7 @@ builder.Wrap(
     "name": "yiigo",
     "age":  29,
 })
-// UPDATE user SET name = ?, age = ? WHERE id = ?
+// UPDATE user SET name = ?, age = ? WHERE (id = ?)
 // [yiigo 29 1]
 
 builder.Wrap(
@@ -375,7 +386,7 @@ builder.Wrap(
 ).Update(ctx, yiigo.X{
     "price": yiigo.SQLExpr("price * ? + ?", 2, 100),
 })
-// UPDATE product SET price = price * ? + ? WHERE id = ?
+// UPDATE product SET price = price * ? + ? WHERE (id = ?)
 // [2 100 1]
 ```
 
