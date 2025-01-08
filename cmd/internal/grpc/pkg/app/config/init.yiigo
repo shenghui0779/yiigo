@@ -3,9 +3,11 @@ package config
 import (
 	"context"
 
+	"{{.Module}}/pkg/internal/log"
+	"{{.Module}}/pkg/internal/validator"
+
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
-	"{{.Module}}/pkg/internal/log"
 )
 
 // Init 初始化资源
@@ -19,6 +21,9 @@ func Init(ctx context.Context, cfgFile string) {
 
 	// 初始化日志
 	log.Init()
+
+	// 初始化Validator
+	validator.Init(ctx)
 
 	// TODO: 其它初始化操作，如：数据库等
 }

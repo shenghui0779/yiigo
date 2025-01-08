@@ -10,6 +10,6 @@ type GreeterService struct {
 	api.UnimplementedGreeterServer
 }
 
-func (s *GreeterService) SayHello(ctx context.Context, in *api.HelloRequest) (*api.HelloReply, error) {
-	return &api.HelloReply{Message: "Hello " + in.Name}, nil
+func (s *GreeterService) SayHello(ctx context.Context, in *api.HelloRequest) (*api.HelloResponse, error) {
+	return &api.HelloResponse{Message: "Hello " + in.Name}, nil
 }

@@ -24,7 +24,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/apiHelloReply"
+              "$ref": "#/definitions/apiHelloResponse"
             }
           },
           "default": {
@@ -51,15 +51,6 @@
     }
   },
   "definitions": {
-    "apiHelloReply": {
-      "type": "object",
-      "properties": {
-        "message": {
-          "type": "string"
-        }
-      },
-      "title": "The response message containing the greetings"
-    },
     "apiHelloRequest": {
       "type": "object",
       "properties": {
@@ -68,6 +59,15 @@
         }
       },
       "title": "The request message containing the user's name"
+    },
+    "apiHelloResponse": {
+      "type": "object",
+      "properties": {
+        "message": {
+          "type": "string"
+        }
+      },
+      "title": "The response message containing the greetings"
     },
     "protobufAny": {
       "type": "object",

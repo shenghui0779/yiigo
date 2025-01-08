@@ -9,10 +9,8 @@ import (
 	"{{.Module}}/pkg/{{.AppPkg}}/config"
 	"{{.Module}}/pkg/{{.AppPkg}}/server"
 	"{{.Module}}/pkg/internal/log"
-	"{{.Module}}/pkg/internal/validator"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"go.uber.org/zap"
 )
 
