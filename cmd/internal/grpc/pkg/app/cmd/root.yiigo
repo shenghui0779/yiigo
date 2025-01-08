@@ -6,7 +6,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"{{.Module}}/pkg/{{.AppPkg}}/ent"
+	"{{.Module}}/pkg/{{.AppPkg}}/config"
 	"{{.Module}}/pkg/{{.AppPkg}}/server"
 	"{{.Module}}/pkg/internal/log"
 	"{{.Module}}/pkg/internal/validator"
@@ -25,13 +25,7 @@ var root = &cobra.Command{
 	Annotations: map[string]string{},
 	Version:     "v1.0.0",
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		viper.SetConfigFile(cfgFile)
-		if err := viper.ReadInConfig(); err != nil {
-			log.Panic(context.Background(), "配置读取失败", zap.Error(err))
-		}
-		viper.WatchConfig()
-		// 初始化
-		preInit(context.Background())
+		config.Init(context.Background(), cfgFile)
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		// make sure we have a working tempdir in minimal containers, because:
@@ -41,21 +35,6 @@ var root = &cobra.Command{
 		}
 		serving(context.Background())
 	},
-}
-
-func preInit(ctx context.Context) {
-	// 初始化日志
-	log.Init()
-	// 初始化Validator
-	validator.Init(ctx)
-	// 初始化数据库
-	ent.Init(ctx)
-}
-
-// CleanUp 清理资源
-func CleanUp() {
-	// 关闭数据库连接
-	ent.Close()
 }
 
 func serving(ctx context.Context) {
@@ -71,7 +50,7 @@ func serving(ctx context.Context) {
 	sig := <-ch
 	log.Warn(context.TODO(), "Received system signal", zap.String("signal", sig.String()))
 	// 执行清理操作
-	CleanUp()
+	config.CleanUp()
 	// 退出程序
 	os.Exit(0)
 }

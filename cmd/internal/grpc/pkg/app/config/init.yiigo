@@ -1,0 +1,29 @@
+package config
+
+import (
+	"context"
+
+	"github.com/spf13/viper"
+	"go.uber.org/zap"
+	"{{.Module}}/pkg/internal/log"
+)
+
+// Init 初始化资源
+func Init(ctx context.Context, cfgFile string) {
+	// 初始化配置
+	viper.SetConfigFile(cfgFile)
+	if err := viper.ReadInConfig(); err != nil {
+		log.Panic(ctx, "配置读取失败", zap.Error(err))
+	}
+	viper.WatchConfig()
+
+	// 初始化日志
+	log.Init()
+
+	// TODO: 其它初始化操作，如：数据库等
+}
+
+// CleanUp 清理资源
+func CleanUp() {
+	// TODO: 资源Close，如：数据库连接等
+}

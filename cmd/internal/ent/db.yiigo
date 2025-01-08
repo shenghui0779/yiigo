@@ -1,4 +1,4 @@
-package ent
+package {{.AppName}}
 
 import (
 	"context"
@@ -14,8 +14,8 @@ import (
 
 var DB *Client
 
-func Init(ctx context.Context) {
-	driver, err := db.InitDBDriver(dialect.MySQL, "db")
+func Init(ctx context.Context, cfgName string) {
+	driver, err := db.InitDBDriver(dialect.MySQL, cfgName)
 	if err != nil {
 		log.Panic(ctx, "数据库初始化失败", zap.Error(err))
 	}

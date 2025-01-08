@@ -10,6 +10,7 @@ import (
 	"text/template"
 
 	"github.com/shenghui0779/yiigo"
+	"github.com/shenghui0779/yiigo/cmd/internal/ent"
 	"github.com/shenghui0779/yiigo/cmd/internal/grpc"
 	"github.com/shenghui0779/yiigo/cmd/internal/http"
 )
@@ -57,6 +58,28 @@ func InitGrpcApp(root, mod, name string) {
 	initApp(root, mod, name, grpc.FS)
 }
 
+func InitEnt(root, mod, name string) {
+	params := &Params{
+		Module:  mod,
+		AppName: "ent",
+	}
+	if len(name) != 0 {
+		params.AppName = name
+	}
+	// ent目录文件
+	_ = fs.WalkDir(ent.FS, ".", func(path string, d fs.DirEntry, err error) error {
+		if d.IsDir() || filepath.Ext(path) == ".go" {
+			return nil
+		}
+		output := genOutput(root+"/pkg/ent", path, "")
+		if len(name) != 0 {
+			output = strings.Replace(output, "/ent", "/ent/"+name, 1)
+		}
+		buildTmpl(ent.FS, path, filepath.Clean(output), params)
+		return nil
+	})
+}
+
 func initProject(root, mod string, fsys embed.FS) {
 	params := &Params{Module: mod}
 	// 项目根目录文件
@@ -66,15 +89,15 @@ func initProject(root, mod string, fsys embed.FS) {
 			continue
 		}
 		output := genOutput(root, v.Name(), "")
-		buildTmpl(fsys, v.Name(), output, params)
+		buildTmpl(fsys, v.Name(), filepath.Clean(output), params)
 	}
-	// lib目录文件
+	// internal目录文件
 	_ = fs.WalkDir(fsys, "pkg/internal", func(path string, d fs.DirEntry, err error) error {
 		if d.IsDir() || filepath.Ext(path) == ".go" {
 			return nil
 		}
 		output := genOutput(root, path, "")
-		buildTmpl(fsys, path, output, params)
+		buildTmpl(fsys, path, filepath.Clean(output), params)
 		return nil
 	})
 }
@@ -93,14 +116,14 @@ func initApp(root, mod, name string, fsys embed.FS) {
 	}
 	// app目录文件
 	_ = fs.WalkDir(fsys, "pkg/app", func(path string, d fs.DirEntry, err error) error {
-		if d.IsDir() {
-			return nil
-		}
-		if filepath.Ext(path) == ".go" {
+		if d.IsDir() || filepath.Ext(path) == ".go" {
 			return nil
 		}
 		output := genOutput(root, path, name)
-		buildTmpl(fsys, path, output, params)
+		if len(name) != 0 {
+			output = strings.Replace(output, "/app", "/app/"+name, 1)
+		}
+		buildTmpl(fsys, path, filepath.Clean(output), params)
 		return nil
 	})
 }
@@ -148,12 +171,8 @@ func genOutput(root, path, appName string) string {
 	default:
 		builder.WriteString(name)
 	}
-	// 新的文件路径
-	output := builder.String()
-	if len(appName) != 0 {
-		output = strings.Replace(output, "/app", "/app/"+appName, 1)
-	}
-	return filepath.Clean(output)
+	// 文件路径
+	return builder.String()
 }
 
 func buildTmpl(fsys embed.FS, path, output string, params *Params) {
