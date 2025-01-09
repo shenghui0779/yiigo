@@ -70,6 +70,12 @@ func project() *cobra.Command {
 			if len(mod) == 0 {
 				mod = workDir
 			}
+			// 判断目录是否为空
+			if path, ok := internal.IsDirEmpty(workDir); !ok {
+				fmt.Printf("👿 目录(%s)不为空，请确认！\n", path)
+				return
+			}
+			// 创建项目文件
 			fmt.Println("🍺 创建项目文件")
 			if grpc {
 				internal.InitGrpcProject(workDir, mod, apps...)
@@ -81,7 +87,7 @@ func project() *cobra.Command {
 			modInit := exec.Command("go", "mod", "init", mod)
 			modInit.Dir = workDir
 			if err := modInit.Run(); err != nil {
-				log.Fatalln("🐛 go mod init 执行失败:", err)
+				log.Fatalln("🐛 go mod init 执行失败:", internal.FmtErr(err))
 			}
 			// go mod tidy
 			fmt.Println("🍺 执行 go mod tidy")
@@ -89,7 +95,7 @@ func project() *cobra.Command {
 			modTidy.Dir = workDir
 			modTidy.Stderr = os.Stderr
 			if err := modTidy.Run(); err != nil {
-				log.Fatalln("🐛 go mod tidy 执行失败:", err)
+				log.Fatalln("🐛 go mod tidy 执行失败:", internal.FmtErr(err))
 			}
 			fmt.Println("🍺 项目创建完成！请阅读README")
 		},
@@ -119,30 +125,42 @@ func app() *cobra.Command {
 			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
-			appName := args[0]
 			fmt.Println("🍺 解析 go.mod")
 			// 读取 go.mod 文件
 			data, err := os.ReadFile("go.mod")
 			if err != nil {
-				log.Fatalln("🐛 读取go.mod文件失败:", err)
+				log.Fatalln("🐛 读取go.mod文件失败:", internal.FmtErr(err))
 			}
 			// 解析 go.mod 文件
 			f, err := modfile.Parse("go.mod", data, nil)
 			if err != nil {
-				log.Fatalln("🐛 解析go.mod文件失败:", err)
+				log.Fatalln("🐛 解析go.mod文件失败:", internal.FmtErr(err))
 			}
+			// 创建应用文件
 			fmt.Println("🍺 创建应用文件")
 			if grpc {
-				internal.InitGrpcApp(".", f.Module.Mod.Path, appName)
+				for _, name := range args {
+					if path, ok := internal.IsDirEmpty("pkg/app/" + name); !ok {
+						fmt.Printf("👿 目录(%s)不为空，请确认！\n", path)
+						return
+					}
+					internal.InitGrpcApp(".", f.Module.Mod.Path, name)
+				}
 			} else {
-				internal.InitHttpApp(".", f.Module.Mod.Path, appName)
+				for _, name := range args {
+					if path, ok := internal.IsDirEmpty("pkg/app/" + name); !ok {
+						fmt.Printf("👿 目录(%s)不为空，请确认！\n", path)
+						return
+					}
+					internal.InitHttpApp(".", f.Module.Mod.Path, name)
+				}
 			}
 			// go mod tidy
 			fmt.Println("🍺 执行 go mod tidy")
 			modTidy := exec.Command("go", "mod", "tidy")
 			modTidy.Stderr = os.Stderr
 			if err := modTidy.Run(); err != nil {
-				log.Fatalln("🐛 go mod tidy 执行失败:", err)
+				log.Fatalln("🐛 go mod tidy 执行失败:", internal.FmtErr(err))
 			}
 			fmt.Println("🍺 应用创建完成！请阅读README")
 		},
@@ -168,19 +186,28 @@ func ent() *cobra.Command {
 			// 读取 go.mod 文件
 			data, err := os.ReadFile("go.mod")
 			if err != nil {
-				log.Fatalln("🐛 读取go.mod文件失败:", err)
+				log.Fatalln("🐛 读取go.mod文件失败:", internal.FmtErr(err))
 			}
 			// 解析 go.mod 文件
 			f, err := modfile.Parse("go.mod", data, nil)
 			if err != nil {
-				log.Fatalln("🐛 解析go.mod文件失败:", err)
+				log.Fatalln("🐛 解析go.mod文件失败:", internal.FmtErr(err))
 			}
+			// 创建Ent文件
 			fmt.Println("🍺 创建Ent文件")
 			if len(args) != 0 {
 				for _, name := range args {
+					if path, ok := internal.IsDirEmpty("pkg/ent/" + name); !ok {
+						fmt.Printf("👿 目录(%s)不为空，请确认！\n", path)
+						return
+					}
 					internal.InitEnt(".", f.Module.Mod.Path, name)
 				}
 			} else {
+				if path, ok := internal.IsDirEmpty("pkg/ent"); !ok {
+					fmt.Printf("👿 目录(%s)不为空，请确认！\n", path)
+					return
+				}
 				internal.InitEnt(".", f.Module.Mod.Path, "")
 			}
 			// go mod tidy
@@ -188,7 +215,7 @@ func ent() *cobra.Command {
 			modTidy := exec.Command("go", "mod", "tidy")
 			modTidy.Stderr = os.Stderr
 			if err := modTidy.Run(); err != nil {
-				log.Fatalln("🐛 go mod tidy 执行失败:", err)
+				log.Fatalln("🐛 go mod tidy 执行失败:", internal.FmtErr(err))
 			}
 			// ent generate
 			fmt.Println("🍺 执行 ent generate")
@@ -196,13 +223,13 @@ func ent() *cobra.Command {
 				for _, name := range args {
 					entGen := exec.Command("go", "generate", "./pkg/ent/"+name)
 					if err := entGen.Run(); err != nil {
-						log.Fatalln("🐛 ent generate 执行失败:", err)
+						log.Fatalln("🐛 ent generate 执行失败:", internal.FmtErr(err))
 					}
 				}
 			} else {
 				entGen := exec.Command("go", "generate", "./pkg/ent")
 				if err := entGen.Run(); err != nil {
-					log.Fatalln("🐛 ent generate 执行失败:", err)
+					log.Fatalln("🐛 ent generate 执行失败:", internal.FmtErr(err))
 				}
 			}
 			// go mod tidy
@@ -210,7 +237,7 @@ func ent() *cobra.Command {
 			modClean := exec.Command("go", "mod", "tidy")
 			modClean.Stderr = os.Stderr
 			if err := modClean.Run(); err != nil {
-				log.Fatalln("🐛 go mod tidy 执行失败:", err)
+				log.Fatalln("🐛 go mod tidy 执行失败:", internal.FmtErr(err))
 			}
 			fmt.Println("🍺 Ent实例创建完成！请阅读README")
 		},
