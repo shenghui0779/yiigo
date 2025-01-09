@@ -20,7 +20,7 @@ go install github.com/shenghui0779/yiigo/cmd/yiigo@latest
 # 单应用
 yiigo new demo
 yiigo new demo --mod=xxx.yyy.com # 指定module名称
-yiigo ent # 创建Ent实例
+yiigo ent # 创建Ent默认实例
 .
 ├── go.mod
 ├── go.sum
@@ -43,7 +43,7 @@ yiigo new demo --apps=foo,bar
 yiigo new demo --apps=foo --apps=bar
 yiigo new demo --mod=xxx.yyy.com --apps=foo --apps=bar
 yiigo ent foo bar # 创建Ent实例
-yiigo app hello # 新增应用
+yiigo app hello # 创建应用
 yiigo ent hello # 创建Ent实例
 .
 ├── go.mod
@@ -75,7 +75,7 @@ yiigo ent hello # 创建Ent实例
 # 单应用
 yiigo new demo --grpc
 yiigo new demo --mod=xxx.yyy.com --grpc # 指定module名称
-yiigo ent # 创建Ent实例
+yiigo ent # 创建Ent默认实例
 .
 ├── go.mod
 ├── go.sum
@@ -106,7 +106,7 @@ yiigo new demo --apps=foo,bar --grpc
 yiigo new demo --apps=foo --apps=bar --grpc
 yiigo new demo --mod=xxx.yyy.com --apps=foo --apps=bar --grpc
 yiigo ent foo bar # 创建Ent实例
-yiigo app hello --grpc # 新增应用
+yiigo app hello --grpc # 创建应用
 yiigo ent hello # 创建Ent实例
 .
 ├── go.mod
