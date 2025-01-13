@@ -18,6 +18,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/health/grpc_health_v1"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 func ServeHttp(ctx context.Context) {
@@ -49,6 +50,14 @@ func ServeHttp(ctx context.Context) {
 				Err:        err,
 			}
 			runtime.DefaultHTTPErrorHandler(ctx, mux, m, w, r, _err)
+		}),
+		runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{
+			MarshalOptions: protojson.MarshalOptions{
+				EmitUnpopulated: true, // 包括未设置（零值）的字段
+			},
+			UnmarshalOptions: protojson.UnmarshalOptions{
+				DiscardUnknown: true, // 忽略未知字段
+			},
 		}),
 	)
 	// Register http handler

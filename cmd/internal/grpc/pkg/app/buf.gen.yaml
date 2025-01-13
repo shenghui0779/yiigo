@@ -20,8 +20,4 @@ plugins:
     out: api
     strategy: all
     opt: allow_merge=true,merge_file_name=api,include_package_in_tags=true
-inputs:
-  - directory: api
-    exclude_paths:
-      - api/buf
-      - api/google
+
