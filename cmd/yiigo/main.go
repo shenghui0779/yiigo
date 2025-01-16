@@ -10,7 +10,6 @@ import (
 	"github.com/shenghui0779/yiigo"
 	"github.com/shenghui0779/yiigo/cmd/internal"
 	"github.com/spf13/cobra"
-	"go.uber.org/zap"
 	"golang.org/x/mod/modfile"
 )
 
@@ -22,7 +21,7 @@ func main() {
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			if cmd.Use == "new" && len(args) != 0 {
 				if err := os.MkdirAll(args[0], 0o775); err != nil {
-					log.Fatalln(err)
+					log.Fatalln("os.MkdirAll:", internal.FmtErr(err))
 				}
 			}
 		},
@@ -34,7 +33,7 @@ func main() {
 	cmd.AddCommand(project(), app(), ent())
 	// 执行
 	if err := cmd.Execute(); err != nil {
-		log.Fatalln("Error cmd execute", zap.Error(err))
+		log.Fatalln("cmd.Execute:", internal.FmtErr(err))
 	}
 }
 
