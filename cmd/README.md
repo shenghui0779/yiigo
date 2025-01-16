@@ -138,7 +138,7 @@ yiigo ent hello # 创建Ent实例
 
 ## gg
 
-受 `protoc-gen-go` 启发，为结构体生成 `Get` 方法，以避免空指针引起的 Panic
+受 `protoc-gen-go` 启发，为结构体生成 `Get` 方法(支持泛型！！！)，以避免空指针引起的Panic
 
 Generate `Get` method for structure, inspired by `protoc-gen-go`, to avoid Panic caused by null pointer
 

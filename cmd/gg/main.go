@@ -20,7 +20,7 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
-type Gen struct {
+type GenBody struct {
 	PkgName string
 	Imports map[string]struct{}
 	Structs []Struct
@@ -37,7 +37,17 @@ type Struct struct {
 type Field struct {
 	Name    string
 	Type    string
-	Default string
+	Default Default
+}
+
+type Default struct {
+	GenType *GenType // 泛型
+	Value   string
+}
+
+type GenType struct {
+	Ident string
+	Type  string
 }
 
 // Template for generating Get methods
@@ -78,7 +88,12 @@ func ({{ $s.Receiver }} *{{ $s.Name }}) Get{{ .Name }}() {{ .Type }} {
 	if {{ $s.Receiver }} != nil {
 		return {{ $s.Receiver }}.{{ .Name }}
 	}
-	return {{ .Default }}
+	{{- if .Default.GenType }}
+	var v {{ .Default.GenType.Ident }}
+	return v
+	{{- else }}
+	return {{ .Default.Value }}
+	{{- end }}
 }
 
 {{- end }}
@@ -150,7 +165,7 @@ func genGetter(filename string) {
 		log.Fatalln("conf.Check:", internal.FmtErr(err))
 	}
 
-	gen := Gen{
+	gen := GenBody{
 		PkgName: node.Name.Name,
 		Imports: make(map[string]struct{}),
 		Structs: make([]Struct, 0),
@@ -170,49 +185,24 @@ func genGetter(filename string) {
 			return true
 		}
 
-		receiver := "s"
-		if name := ts.Name.String(); name != "<nil>" {
-			receiver = strings.ToLower(name[:1])
-		}
-
-		// Collect fields
-		var fields []Field
-		for _, field := range st.Fields.List {
-			// Skip embedded fields
-			if len(field.Names) == 0 {
-				continue
-			}
-
-			// 字段类型
-			fieldType := info.TypeOf(field.Type).String()
-			underlyingType := info.TypeOf(field.Type).Underlying().String()
-			// fmt.Println(field.Names, "[fieldType]", fieldType, "[underlyingType]", underlyingType)
-			if dotIndex := strings.LastIndex(fieldType, "."); dotIndex >= 0 {
-				pkg := fieldType[:dotIndex]
-				if !filepath.IsAbs(pkg) {
-					gen.Imports[pkg] = struct{}{}
-					if slashIndex := strings.LastIndex(fieldType, "/"); slashIndex >= 0 {
-						fieldType = fieldType[slashIndex+1:]
-					}
-				} else {
-					fieldType = fieldType[dotIndex+1:]
+		// Generics identifier
+		var gt []GenType
+		if ts.TypeParams != nil {
+			for _, field := range ts.TypeParams.List {
+				for _, ident := range field.Names {
+					gt = append(gt, GenType{
+						Ident: ident.Name,
+						Type:  info.TypeOf(field.Type).String(),
+					})
 				}
 			}
-
-			for _, name := range field.Names {
-				fields = append(fields, Field{
-					Name:    name.Name,
-					Type:    fieldType,
-					Default: getTypeValue(field.Type, fieldType, underlyingType),
-				})
-			}
 		}
 
-		gen.Structs = append(gen.Structs, Struct{
-			Receiver: receiver,
-			Name:     ts.Name.Name,
-			Fields:   fields,
-		})
+		imports, data := buildStruct(info, ts, st, gt)
+		for _, v := range imports {
+			gen.Imports[v] = struct{}{}
+		}
+		gen.Structs = append(gen.Structs, data)
 
 		return true
 	})
@@ -232,40 +222,111 @@ func genGetter(filename string) {
 	fmt.Println("Generated code saved to", outputFile)
 }
 
-// 获取类型的默认值
-func getTypeValue(expr ast.Expr, fieldType, underlyingType string) string {
-	switch expr.(type) {
-	case *ast.Ident, *ast.SelectorExpr: // 基本类型 || 自定义类型 || 包路径类型
-		return getDefaultValue(fieldType, underlyingType)
-	case *ast.ArrayType, *ast.MapType, *ast.InterfaceType, *ast.StarExpr:
-		return "nil"
-	default:
-		return "unknown"
+func buildStruct(info *types.Info, ts *ast.TypeSpec, st *ast.StructType, gt []GenType) ([]string, Struct) {
+	name := ts.Name.String()
+	receiver := "s"
+	if name != "<nil>" {
+		receiver = strings.ToLower(name[:1])
+	}
+	// Generics identifier
+	if len(gt) != 0 {
+		name += " ["
+		name += gt[0].Ident
+		for _, v := range gt[1:] {
+			name += ", "
+			name += v.Ident
+		}
+		name += "]"
+	}
+
+	// Collect imports and fields
+	var (
+		imports []string
+		fields  []Field
+	)
+	for _, field := range st.Fields.List {
+		// Skip embedded fields
+		if len(field.Names) == 0 {
+			continue
+		}
+
+		// 字段类型
+		fieldType := info.TypeOf(field.Type).String()
+		underlyingType := info.TypeOf(field.Type).Underlying().String()
+		fmt.Println(field.Names, "[fieldType]", fieldType, "[underlyingType]", underlyingType)
+		if dotIndex := strings.LastIndex(fieldType, "."); dotIndex >= 0 {
+			if pkg := fieldType[:dotIndex]; !filepath.IsAbs(pkg) {
+				imports = append(imports, pkg)
+				if slashIndex := strings.LastIndex(fieldType, "/"); slashIndex >= 0 {
+					fieldType = fieldType[slashIndex+1:]
+				}
+			} else {
+				fieldType = fieldType[dotIndex+1:]
+			}
+		}
+
+		for _, name := range field.Names {
+			fields = append(fields, Field{
+				Name:    name.Name,
+				Type:    fieldType,
+				Default: getTypeValue(field.Type, fieldType, underlyingType, gt),
+			})
+		}
+	}
+
+	return imports, Struct{
+		Receiver: receiver,
+		Name:     name,
+		Fields:   fields,
 	}
 }
 
-func getDefaultValue(fieldType, underlyingType string) string {
+// 获取类型的默认值
+func getTypeValue(expr ast.Expr, fieldType, underlyingType string, gt []GenType) Default {
+	switch expr.(type) {
+	case *ast.Ident, *ast.SelectorExpr: // 基本类型 || 自定义类型 || 包路径类型
+		return getDefaultValue(fieldType, underlyingType, gt)
+	case *ast.ArrayType, *ast.MapType, *ast.InterfaceType, *ast.StarExpr:
+		return Default{Value: "nil"}
+	default:
+		return Default{Value: "unknown"}
+	}
+}
+
+func getDefaultValue(fieldType, underlyingType string, gt []GenType) Default {
+	// 泛型字段
+	for _, v := range gt {
+		if fieldType == v.Ident {
+			return Default{
+				GenType: &GenType{
+					Ident: v.Ident,
+					Type:  v.Type,
+				},
+			}
+		}
+	}
+	// 普通字段
 	switch underlyingType {
 	case "string":
-		return `""`
+		return Default{Value: `""`}
 	case "int", "int8", "int16", "int32", "int64", "uint", "uint8", "uint16", "uint32", "uint64":
-		return "0"
+		return Default{Value: "0"}
 	case "float32", "float64":
-		return "0"
+		return Default{Value: "0"}
 	case "bool":
-		return "false"
+		return Default{Value: "false"}
 	case "any":
-		return "nil"
+		return Default{Value: "nil"}
 	default:
 		if strings.HasPrefix(underlyingType, "*") ||
 			strings.HasPrefix(underlyingType, "interface") ||
 			strings.HasPrefix(underlyingType, "[]") ||
 			strings.HasPrefix(underlyingType, "map") {
-			return "nil"
+			return Default{Value: "nil"}
 		}
 		if strings.HasPrefix(underlyingType, "struct") {
-			return fmt.Sprintf("%s{}", fieldType)
+			return Default{Value: fmt.Sprintf("%s{}", fieldType)}
 		}
-		return "unknown"
+		return Default{Value: "unknown"}
 	}
 }
