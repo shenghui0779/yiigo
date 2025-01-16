@@ -2,19 +2,37 @@
 
 [![golang](https://img.shields.io/badge/Language-Go-green.svg?style=flat)](https://golang.org) [![GitHub release](https://img.shields.io/github/release/shenghui0779/yiigo.svg)](https://github.com/shenghui0779/yiigo/releases/latest) [![pkg.go.dev](https://img.shields.io/badge/dev-reference-007d9c?logo=go&logoColor=white&style=flat)](https://pkg.go.dev/github.com/shenghui0779/yiigo) [![Apache 2.0 license](http://img.shields.io/badge/license-Apache%202.0-brightgreen.svg)](http://opensource.org/licenses/apache2.0)
 
-一个好用的Go项目脚手架和工具包
+一个好用的Go项目脚手架和工具库
 
-## 脚手架
+## 工具
 
-请参考 [yiigo cmd](cmd/README.md)
+具体请查看 👉 [详情](cmd/README.md)
 
-## 工具包
+#### 脚手架
+
+自动生成项目，分HTTP和gRPC，且支持单应用和多应用
+
+```shell
+go install github.com/shenghui0779/yiigo/cmd/yiigo@latest
+```
+
+#### gg
+
+为结构体生成`Get`方法，避免空指针导致Panic
+
+```shell
+go install github.com/shenghui0779/yiigo/cmd/gg@latest
+```
+
+## 实用库
+
+#### 获取
 
 ```shell
 go get -u github.com/shenghui0779/yiigo
 ```
 
-### Features
+#### 特点
 
 - xhash - 封装便于使用
 - xcrypto - 封装便于使用(支持 AES & RSA)
