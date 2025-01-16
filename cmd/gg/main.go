@@ -253,7 +253,7 @@ func buildStruct(info *types.Info, ts *ast.TypeSpec, st *ast.StructType, gt []Ge
 		// 字段类型
 		fieldType := info.TypeOf(field.Type).String()
 		underlyingType := info.TypeOf(field.Type).Underlying().String()
-		fmt.Println(field.Names, "[fieldType]", fieldType, "[underlyingType]", underlyingType)
+		// fmt.Println(field.Names, "[fieldType]", fieldType, "[underlyingType]", underlyingType)
 		if dotIndex := strings.LastIndex(fieldType, "."); dotIndex >= 0 {
 			if pkg := fieldType[:dotIndex]; !filepath.IsAbs(pkg) {
 				imports = append(imports, pkg)
