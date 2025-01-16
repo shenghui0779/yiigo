@@ -4,9 +4,9 @@
 
 一个好用的Go项目脚手架和工具库
 
-## 工具
+## 工具集
 
-具体请查看 👉 [详情](cmd/README.md)
+请查看 👉 [详情](cmd/README.md)
 
 #### 脚手架
 
@@ -18,7 +18,7 @@ go install github.com/shenghui0779/yiigo/cmd/yiigo@latest
 
 #### gg
 
-为结构体生成`Get`方法，避免空指针导致Panic
+受 `protoc-gen-go` 启发，为结构体生成 `Get` 方法，以避免空指针引起的 Panic
 
 ```shell
 go install github.com/shenghui0779/yiigo/cmd/gg@latest

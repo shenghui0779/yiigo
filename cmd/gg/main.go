@@ -116,11 +116,11 @@ type customImporter struct{}
 
 func (ci *customImporter) Import(path string) (*types.Package, error) {
 	cfg := &packages.Config{
-		Mode: packages.NeedName | packages.NeedTypes | packages.NeedImports | packages.NeedModule,
+		Mode: packages.NeedName | packages.NeedTypes | packages.NeedImports | packages.NeedDeps | packages.NeedModule,
 	}
 	pkgs, err := packages.Load(cfg, path)
 	if err != nil {
-		return nil, fmt.Errorf("failed to load package: %w", err)
+		return nil, fmt.Errorf("packages.Load: %w", err)
 	}
 	if len(pkgs) > 0 {
 		return pkgs[0].Types, nil
