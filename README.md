@@ -8,7 +8,7 @@
 
 #### 脚手架
 
-自动生成项目，支持 `HTTP` 和 `gRPC`，并同时支持创建 `单应用` 和 `多应用`
+自动生成项目，支持 `HTTP` 和 `gRPC`，并同时支持创建「单应用」和「多应用」
 
 ```shell
 go install github.com/shenghui0779/yiigo/cmd/yiigo@latest
