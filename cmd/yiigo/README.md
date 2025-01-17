@@ -115,7 +115,7 @@ yiigo new demo --mod=xxx.com/demo --apps=foo --apps=bar --grpc
 ## 创建应用
 
 ```shell
-# 多应用项目适用，且在项目根目录执行（即：go.mod所在目录）
+# 多应用项目适用，需在项目根目录执行（即：go.mod所在目录）
 yiigo app foo # 创建应用 -- foo
 yiigo app foo bar # 创建两个应用 -- foo 和 bar
 .
