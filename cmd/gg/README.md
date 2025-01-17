@@ -71,91 +71,91 @@ import (
 
 // Get methods for Demo [T, E]
 
-func (d *Demo [T, E]) GetFieldInt() int {
+func (d *Demo[T, E]) GetFieldInt() int {
 	if d != nil {
 		return d.FieldInt
 	}
 	return 0
 }
 
-func (d *Demo [T, E]) GetFieldFloat() float64 {
+func (d *Demo[T, E]) GetFieldFloat() float64 {
 	if d != nil {
 		return d.FieldFloat
 	}
 	return 0
 }
 
-func (d *Demo [T, E]) GetFieldBool() bool {
+func (d *Demo[T, E]) GetFieldBool() bool {
 	if d != nil {
 		return d.FieldBool
 	}
 	return false
 }
 
-func (d *Demo [T, E]) GetFieldStr() string {
+func (d *Demo[T, E]) GetFieldStr() string {
 	if d != nil {
 		return d.FieldStr
 	}
 	return ""
 }
 
-func (d *Demo [T, E]) GetFieldArr() []int {
+func (d *Demo[T, E]) GetFieldArr() []int {
 	if d != nil {
 		return d.FieldArr
 	}
 	return nil
 }
 
-func (d *Demo [T, E]) GetFieldMap() map[string]int {
+func (d *Demo[T, E]) GetFieldMap() map[string]int {
 	if d != nil {
 		return d.FieldMap
 	}
 	return nil
 }
 
-func (d *Demo [T, E]) GetFieldAny() any {
+func (d *Demo[T, E]) GetFieldAny() any {
 	if d != nil {
 		return d.FieldAny
 	}
 	return nil
 }
 
-func (d *Demo [T, E]) GetFieldInterface() interface{} {
+func (d *Demo[T, E]) GetFieldInterface() interface{} {
 	if d != nil {
 		return d.FieldInterface
 	}
 	return nil
 }
 
-func (d *Demo [T, E]) GetFieldCode() Code {
+func (d *Demo[T, E]) GetFieldCode() Code {
 	if d != nil {
 		return d.FieldCode
 	}
 	return 0
 }
 
-func (d *Demo [T, E]) GetFieldCtx() context.Context {
+func (d *Demo[T, E]) GetFieldCtx() context.Context {
 	if d != nil {
 		return d.FieldCtx
 	}
 	return nil
 }
 
-func (d *Demo [T, E]) GetFieldTime() time.Time {
+func (d *Demo[T, E]) GetFieldTime() time.Time {
 	if d != nil {
 		return d.FieldTime
 	}
 	return time.Time{}
 }
 
-func (d *Demo [T, E]) GetFieldStep() yiigo.Step {
+func (d *Demo[T, E]) GetFieldStep() yiigo.Step {
 	if d != nil {
 		return d.FieldStep
 	}
 	return yiigo.Step{}
 }
 
-func (d *Demo [T, E]) GetFieldGenT() T {
+func (d *Demo[T, E]) GetFieldGenT() T {
 	if d != nil {
 		return d.FieldGenT
 	}
@@ -163,7 +163,7 @@ func (d *Demo [T, E]) GetFieldGenT() T {
 	return v
 }
 
-func (d *Demo [T, E]) GetFieldGenE() E {
+func (d *Demo[T, E]) GetFieldGenE() E {
 	if d != nil {
 		return d.FieldGenE
 	}
