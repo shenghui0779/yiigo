@@ -8,23 +8,23 @@
 
 #### 脚手架
 
-请查看 👉 [详情](cmd/yiigo/README.md)
-
 自动生成项目，支持 `HTTP` 和 `gRPC`，且支持单应用和多应用
 
 ```shell
 go install github.com/shenghui0779/yiigo/cmd/yiigo@latest
 ```
 
-#### gg
+进一步了解 👉 [详情](cmd/yiigo/README.md)
 
-请查看 👉 [详情](cmd/gg/README.md)
+#### gg
 
 受 `protoc-gen-go` 启发，为结构体生成 `Get` 方法【支持泛型!!!】，以避免空指针引起的Panic
 
 ```shell
 go install github.com/shenghui0779/yiigo/cmd/gg@latest
 ```
+
+进一步了解 👉 [详情](cmd/gg/README.md)
 
 ## 实用库
 
