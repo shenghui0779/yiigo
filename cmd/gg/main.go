@@ -230,7 +230,7 @@ func buildStruct(info *types.Info, ts *ast.TypeSpec, st *ast.StructType, gt []Ge
 	}
 	// Generics identifier
 	if len(gt) != 0 {
-		name += " ["
+		name += "["
 		name += gt[0].Ident
 		for _, v := range gt[1:] {
 			name += ", "
