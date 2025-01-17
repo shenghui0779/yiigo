@@ -16,7 +16,7 @@ go install github.com/shenghui0779/yiigo/cmd/yiigo@latest
 
 进一步了解 👉 [详情](cmd/yiigo/README.md)
 
-#### gg
+#### Getter生成器
 
 受 `protoc-gen-go` 启发，为结构体生成 `Get` 方法【支持泛型!!!】，以避免空指针引起的Panic
 
