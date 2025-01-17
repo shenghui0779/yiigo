@@ -20,7 +20,7 @@ gg xxx.go
 //go:generate gg xxx.go
 ```
 
-## Demo
+## 例子
 
 #### demo.go
 
