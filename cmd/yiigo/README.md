@@ -81,6 +81,7 @@ yiigo new demo --mod=xxx.com/demo --apps=foo --apps=bar
     │   │   ├── service
     │   │   └── web
     │   ├── bar
+    │   │   ├── ...
     │   │   └── main.go
     └── internal
 
@@ -108,6 +109,7 @@ yiigo new demo --mod=xxx.com/demo --apps=foo --apps=bar --grpc
     │   │   ├── server
     │   │   └── service
     │   ├── bar
+    │   │   ├── ...
     │   │   └── main.go
     └── internal
 ```
@@ -126,8 +128,10 @@ yiigo app foo bar # 创建两个应用 -- foo 和 bar
 └── pkg
     ├── app
     │   ├── foo
+    │   │   ├── ...
     │   │   └── main.go
     │   ├── bar
+    │   │   ├── ...
     │   │   └── main.go
     └── internal
 ```
@@ -144,6 +148,7 @@ yiigo ent
 └── pkg
     ├── app
     ├── ent
+    │   ├── ...
     │   └── schema
     └── internal
 ```
@@ -160,8 +165,10 @@ yiigo ent foo bar
     ├── app
     ├── ent
     │   ├── foo
+    │   │   ├── ...
     │   │   └── schema
     │   ├── bar
+    │   │   ├── ...
     │   │   └── schema
     └── internal
 ```
