@@ -21,7 +21,7 @@ func BindJSON(r *http.Request, obj any) error {
 
 // BindForm 解析Form表单并校验
 func BindForm(r *http.Request, obj any) error {
-	switch yiigo.ContentType(r) {
+	switch yiigo.ContentType(r.Header) {
 	case yiigo.ContentForm:
 		if err := r.ParseForm(); err != nil {
 			return err

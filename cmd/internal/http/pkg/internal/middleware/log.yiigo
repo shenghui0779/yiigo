@@ -4,17 +4,27 @@ import (
 	"bytes"
 	"io"
 	"net/http"
+	"sync"
 	"time"
 
 	"{{.Module}}/pkg/internal/identity"
 	"{{.Module}}/pkg/internal/log"
 	"{{.Module}}/pkg/internal/result"
 
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/pkg/errors"
 	"github.com/shenghui0779/yiigo"
 	"github.com/tidwall/pretty"
 	"go.uber.org/zap"
 )
+
+const MaxBodyLogSize = 200 << 10 // 200KB
+
+var bufPool = sync.Pool{
+	New: func() any {
+		return bytes.NewBuffer(make([]byte, 0, 4<<10)) // 4KB
+	},
+}
 
 // Log 日志中间件
 func Log(next http.Handler) http.Handler {
@@ -22,19 +32,57 @@ func Log(next http.Handler) http.Handler {
 		now := time.Now()
 		body := "<nil>"
 
+		var err error
+
+		buf := bufPool.Get().(*bytes.Buffer)
+		buf.Reset()
+		defer bufPool.Put(buf)
+		// 自定义响应
+		ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
+		ww.Tee(buf)
+
+		// 记录日志
+		defer func() {
+			fields := make([]zap.Field, 0, 10)
+			fields = append(fields,
+				zap.String("method", r.Method),
+				zap.String("path", r.URL.Path),
+				zap.String("ip", r.RemoteAddr),
+				zap.String("req_body", body),
+			)
+			respSize := buf.Len()
+			if respSize <= MaxBodyLogSize {
+				fields = append(fields, zap.String("resp_body", buf.String()))
+			} else {
+				fields = append(fields, zap.String("resp_body", "body too large"))
+			}
+			fields = append(fields, zap.Int("resp_size", respSize))
+			if err != nil {
+				fields = append(fields, zap.String("err_body", err.Error()))
+			}
+			fields = append(fields,
+				zap.String("identity", identity.FromContext(r.Context()).String()),
+				zap.Int("status", ww.Status()),
+				zap.String("duration", time.Since(now).String()),
+			)
+			log.Info(r.Context(), "request log", fields...)
+		}()
+
 		// 请求包含body
 		if r.Body != nil && r.Body != http.NoBody {
-			switch yiigo.ContentType(r) {
+			switch yiigo.ContentType(r.Header) {
 			case yiigo.ContentForm:
-				if err := r.ParseForm(); err != nil {
-					result.ErrSystem(result.E(errors.WithMessage(err, "表单解析失败"))).JSON(w, r)
+				if _err := r.ParseForm(); _err != nil {
+					err = errors.WithMessage(err, "Form解析失败")
+					result.ErrSystem(result.E(err)).JSON(w, r)
 					return
 				}
 				body = r.Form.Encode()
 			case yiigo.ContentFormMultipart:
 				if err := r.ParseMultipartForm(yiigo.MaxFormMemory); err != nil {
 					if err != http.ErrNotMultipart {
-						result.ErrSystem(result.E(errors.WithMessage(err, "表单解析失败"))).JSON(w, r)
+						err = errors.WithMessage(err, "MultipartForm解析失败")
+						result.ErrSystem(result.E(err)).JSON(w, r)
 						return
 					}
 				}
@@ -42,25 +90,17 @@ func Log(next http.Handler) http.Handler {
 			case yiigo.ContentJSON:
 				b, err := io.ReadAll(r.Body) // 取出Body
 				if err != nil {
-					result.ErrSystem(result.E(errors.WithMessage(err, "请求Body读取失败"))).JSON(w, r)
+					err = errors.WithMessage(err, "请求Body读取失败")
+					result.ErrSystem(result.E(err)).JSON(w, r)
 					return
 				}
 				_ = r.Body.Close() // 关闭原Body
 				body = string(pretty.Ugly(b))
-				// 重新赋值Body
+				// 重置Body
 				r.Body = io.NopCloser(bytes.NewReader(b))
 			}
 		}
-		defer func() {
-			log.Info(r.Context(), "request info",
-				zap.String("method", r.Method),
-				zap.String("path", r.URL.Path),
-				zap.String("ip", r.RemoteAddr),
-				zap.String("body", body),
-				zap.String("identity", identity.FromContext(r.Context()).String()),
-				zap.String("duration", time.Since(now).String()),
-			)
-		}()
-		next.ServeHTTP(w, r)
+
+		next.ServeHTTP(ww, r)
 	})
 }

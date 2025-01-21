@@ -41,7 +41,7 @@ func InitDBDriver(entDialect, cfgName string) (dialect.Driver, error) {
 	driver := entsql.OpenDB(entDialect, db)
 	if viper.GetBool("app.debug") {
 		return dialect.DebugWithContext(driver, func(ctx context.Context, v ...any) {
-			log.Info(ctx, "SQL info", zap.String("SQL", fmt.Sprint(v...)))
+			log.Info(ctx, "SQL log", zap.String("SQL", fmt.Sprint(v...)))
 		}), nil
 	}
 	return driver, nil

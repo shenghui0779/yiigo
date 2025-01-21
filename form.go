@@ -16,8 +16,8 @@ var (
 	emptyField     = reflect.StructField{}
 )
 
-func ContentType(r *http.Request) string {
-	content := r.Header.Get("Content-Type")
+func ContentType(h http.Header) string {
+	content := h.Get("Content-Type")
 	for i, char := range content {
 		if char == ' ' || char == ';' {
 			return content[:i]
