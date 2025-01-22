@@ -18,7 +18,7 @@ import (
 	"go.uber.org/zap"
 )
 
-const MaxBodyLogSize = 200 << 10 // 200KB
+const MaxBodyLogSize = 20 << 10 // 20KB
 
 var bufPool = sync.Pool{
 	New: func() any {
@@ -50,6 +50,7 @@ func Log(next http.Handler) http.Handler {
 				zap.String("ip", r.RemoteAddr),
 				zap.String("req_body", body),
 			)
+			// 响应体
 			respSize := buf.Len()
 			if respSize <= MaxBodyLogSize {
 				fields = append(fields, zap.String("resp_body", buf.String()))
@@ -57,6 +58,7 @@ func Log(next http.Handler) http.Handler {
 				fields = append(fields, zap.String("resp_body", "body too large"))
 			}
 			fields = append(fields, zap.Int("resp_size", respSize))
+			// 错误
 			if err != nil {
 				fields = append(fields, zap.String("err_body", err.Error()))
 			}
@@ -73,24 +75,24 @@ func Log(next http.Handler) http.Handler {
 			switch yiigo.ContentType(r.Header) {
 			case yiigo.ContentForm:
 				if _err := r.ParseForm(); _err != nil {
-					err = errors.WithMessage(err, "Form解析失败")
+					err = errors.WithMessage(_err, "Form解析失败")
 					result.ErrSystem(result.E(err)).JSON(w, r)
 					return
 				}
 				body = r.Form.Encode()
 			case yiigo.ContentFormMultipart:
-				if err := r.ParseMultipartForm(yiigo.MaxFormMemory); err != nil {
-					if err != http.ErrNotMultipart {
-						err = errors.WithMessage(err, "MultipartForm解析失败")
+				if _err := r.ParseMultipartForm(yiigo.MaxFormMemory); _err != nil {
+					if _err != http.ErrNotMultipart {
+						err = errors.WithMessage(_err, "MultipartForm解析失败")
 						result.ErrSystem(result.E(err)).JSON(w, r)
 						return
 					}
 				}
 				body = r.Form.Encode()
 			case yiigo.ContentJSON:
-				b, err := io.ReadAll(r.Body) // 取出Body
-				if err != nil {
-					err = errors.WithMessage(err, "请求Body读取失败")
+				b, _err := io.ReadAll(r.Body) // 取出Body
+				if _err != nil {
+					err = errors.WithMessage(_err, "请求Body读取失败")
 					result.ErrSystem(result.E(err)).JSON(w, r)
 					return
 				}
