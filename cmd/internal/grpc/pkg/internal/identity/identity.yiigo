@@ -32,15 +32,21 @@ type identity struct {
 }
 
 func (i *identity) ID() int64 {
-	return i.I
+	if i != nil {
+		return i.I
+	}
+	return 0
 }
 
 func (i *identity) Token() string {
-	return i.T
+	if i != nil {
+		return i.T
+	}
+	return ""
 }
 
 func (i *identity) String() string {
-	if i.I == 0 {
+	if i == nil || i.I == 0 {
 		return "<nil>"
 	}
 	return fmt.Sprintf("id:%d|token:%s", i.I, i.T)
