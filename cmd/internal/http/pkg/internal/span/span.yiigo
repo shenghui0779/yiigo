@@ -20,7 +20,12 @@ type Span struct {
 }
 
 func (s *Span) Finish() {
-	log.Info(s.c, "time consume", zap.String("function", s.n), zap.String("duration", time.Since(s.t).String()), zap.String("file", s.f), zap.Int("line", s.l))
+	log.Info(s.c, "time consume",
+		zap.String("function", s.n),
+		zap.String("duration", time.Since(s.t).String()),
+		zap.String("file", s.f),
+		zap.Int("line", s.l),
+	)
 }
 
 // New returns a span to log the time consume.
