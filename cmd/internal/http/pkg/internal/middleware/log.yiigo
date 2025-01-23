@@ -48,6 +48,7 @@ func Log(next http.Handler) http.Handler {
 				zap.String("method", r.Method),
 				zap.String("path", r.URL.Path),
 				zap.String("ip", r.RemoteAddr),
+				zap.Any("header", r.Header),
 				zap.String("req_body", body),
 			)
 			// 响应体

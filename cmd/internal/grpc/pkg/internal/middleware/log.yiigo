@@ -28,7 +28,7 @@ func Log(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handl
 		} else {
 			respBody, _ = json.Marshal(resp)
 		}
-		log.Info(ctx, "request info",
+		log.Info(ctx, "request log",
 			zap.String("method", info.FullMethod),
 			zap.ByteString("request", reqBody),
 			zap.ByteString("response", respBody),
