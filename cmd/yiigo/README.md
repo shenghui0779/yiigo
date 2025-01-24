@@ -25,12 +25,12 @@ yiigo new demo --mod=xxx.com/demo # 指定module名称
     │   ├── api
     │   ├── cmd
     │   ├── config
-    │   ├── config.toml
-    │   ├── main.go
     │   ├── middleware
     │   ├── router
     │   ├── service
-    │   └── web
+    │   ├── web
+    │   ├── config.toml
+    │   └── main.go
     └── internal
 
 # grpc
@@ -44,15 +44,15 @@ yiigo new demo --mod=xxx.com/demo --grpc # 指定module名称
     ├── app
     │   ├── api
     │   │   └── greeter.proto
+    │   ├── cmd
+    │   ├── config
+    │   ├── server
+    │   ├── service
     │   ├── buf.gen.yaml
     │   ├── buf.lock
     │   ├── buf.yaml
-    │   ├── cmd
-    │   ├── config
     │   ├── config.toml
-    │   ├── main.go
-    │   ├── server
-    │   └── service
+    │   └── main.go
     └── internal
 ```
 
@@ -74,12 +74,12 @@ yiigo new demo --mod=xxx.com/demo --apps=foo --apps=bar
     │   │   ├── api
     │   │   ├── cmd
     │   │   ├── config
-    │   │   ├── config.toml
-    │   │   ├── main.go
     │   │   ├── middleware
     │   │   ├── router
     │   │   ├── service
-    │   │   └── web
+    │   │   ├── web
+    │   │   ├── config.toml
+    │   │   └── main.go
     │   ├── bar
     │   │   ├── ...
     │   │   └── main.go
@@ -99,15 +99,15 @@ yiigo new demo --mod=xxx.com/demo --apps=foo --apps=bar --grpc
     │   ├── foo
     │   │   ├── api
     │   │   │   └── greeter.proto
+    │   │   ├── cmd
+    │   │   ├── config
+    │   │   ├── server
+    │   │   ├── service
     │   │   ├── buf.gen.yaml
     │   │   ├── buf.lock
     │   │   ├── buf.yaml
-    │   │   ├── cmd
-    │   │   ├── config
     │   │   ├── config.toml
-    │   │   ├── main.go
-    │   │   ├── server
-    │   │   └── service
+    │   │   └── main.go
     │   ├── bar
     │   │   ├── ...
     │   │   └── main.go
